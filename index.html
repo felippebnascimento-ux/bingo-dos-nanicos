@@ -226,7 +226,7 @@ ul.list li:last-child{border-bottom:0}
 
     <nav class="nav" role="tablist" aria-label="Seções">
       <button role="tab" aria-selected="true" data-tab="jogar">Jogar</button>
-      <button role="tab" aria-selected="false" data-tab="frases">Frases <span class="count" id="nFrases"></span></button>
+      <button role="tab" aria-selected="false" data-tab="frases">Nanicadas <span class="count" id="nFrases"></span></button>
       <button role="tab" aria-selected="false" data-tab="nanicos">Nanicos <span class="count" id="nAmigos"></span></button>
     </nav>
 
@@ -243,7 +243,7 @@ ul.list li:last-child{border-bottom:0}
       <section id="view-jogar" class="inner" style="max-width:none">
         <header class="hero">
           <h1>Quem tá na partida?</h1>
-          <p>Monte a escalação, sorteie sua cartela e marque cada frase quando ela sair no Discord.</p>
+          <p>Monte a escalação, sorteie sua cartela e marque cada nanicada quando ela acontecer.</p>
         </header>
         <div class="block">
           <h2>Escalação</h2>
@@ -260,21 +260,21 @@ ul.list li:last-child{border-bottom:0}
       <!-- FRASES -->
       <section id="view-frases" class="inner" style="max-width:none" hidden>
         <header class="hero">
-          <h1>Banco de frases</h1>
-          <p>Tudo que esse grupo fala toda santa partida. Ligue a frase a um nanico, a campeões, aos dois, ou deixe valendo para qualquer jogo.</p>
+          <h1>Nanicadas</h1>
+          <p>Tudo que esse grupo fala e faz toda santa partida. Ligue a nanicada a um nanico, a campeões, aos dois, ou deixe valendo para qualquer jogo.</p>
         </header>
         <div class="block">
-          <h2>Nova frase</h2>
-          <p class="hint">Tudo em minúsculas, do jeito que sai no Discord. Com mais de um campeão, a frase entra se qualquer um deles estiver na partida.</p>
+          <h2>Nova nanicada</h2>
+          <p class="hint">Tudo em minúsculas, do jeito que sai no Discord.<br>Com mais de um campeão, a nanicada entra se qualquer um deles estiver na partida.</p>
           <form class="add" id="formFrase">
-            <div class="full"><label class="lbl" for="fTexto">Frase</label><input id="fTexto" maxlength="90" placeholder="ex.: foca a torre" required autocomplete="off" autocapitalize="none" spellcheck="false"></div>
+            <div class="full"><label class="lbl" for="fTexto">Nanicada</label><input id="fTexto" maxlength="90" placeholder="ex.: foca a torre" required autocomplete="off" autocapitalize="none" spellcheck="false"></div>
             <div><span class="lbl">Nanico</span><div class="picker" id="fAmigo"></div></div>
             <div><label class="lbl" for="fCamp">Campeões</label><div class="row" style="flex-wrap:nowrap;gap:6px"><input id="fCamp" list="champs" placeholder="Qualquer um" autocomplete="off"><button class="btn soft sq" type="button" id="addCamp" aria-label="Incluir campeão">+</button></div></div>
-            <div class="add-foot"><div class="selchamps" id="selCamps"></div><button class="btn" type="submit">Adicionar frase</button></div>
+            <div class="add-foot"><div class="selchamps" id="selCamps"></div><button class="btn" type="submit">Adicionar nanicada</button></div>
           </form>
         </div>
         <div class="block">
-          <div class="list-head"><h2 style="margin:0">Todas as frases</h2><input id="busca" placeholder="Buscar frase, nanico ou campeão" aria-label="Buscar"></div>
+          <div class="list-head"><h2 style="margin:0">Todas as nanicadas</h2><input id="busca" placeholder="Buscar nanicada, nanico ou campeão" aria-label="Buscar"></div>
           <div class="filters" id="filtros"></div>
           <ul class="list" id="listaFrases"></ul>
         </div>
@@ -462,7 +462,7 @@ function eligible(){
 }
 function renderMeter(){
   const {spec,gen}=eligible(); const tot=spec.length+gen.length;
-  $("#meter").innerHTML=`<strong>${spec.length}</strong> da partida e <strong>${gen.length}</strong> genéricas. ${tot>=24?`<span class="ok">Dá para sortear.</span>`:`Faltam <strong>${24-tot}</strong> frases.`}`;
+  $("#meter").innerHTML=`<strong>${spec.length}</strong> da partida e <strong>${gen.length}</strong> genéricas. ${tot>=24?`<span class="ok">Dá para sortear.</span>`:`Faltam <strong>${24-tot}</strong> nanicadas.`}`;
   $("#gerar").disabled=tot<24;
 }
 $("#gerar").onclick=()=>{
@@ -501,7 +501,7 @@ function renderCard(){
       ?`<div class="cell free">${STAR}<span>Livre</span></div>`
       :`<button class="cell${card.marked[i]?" on":""}${inLine.has(i)?" line":""}" data-i="${i}" aria-pressed="${card.marked[i]}" style="--rot:${c.rot||0}deg;--dx:${((c.rot||0)%4)}px;--dy:${(((c.rot||0)*7)%4)}px"><span class="t">${esc(c.text)}</span>${cellTag(c)}</button>`).join("")}</div>
     <div class="row" style="margin-top:16px;justify-content:space-between">
-      <span class="status">Toque numa casa quando a frase sair.</span>
+      <span class="status">Toque numa casa quando a nanicada acontecer.</span>
       <button class="btn soft" id="limpar">Limpar marcações</button>
     </div></div>`;
   area.querySelectorAll(".cell[data-i]").forEach(b=>b.onclick=()=>{
@@ -515,7 +515,7 @@ function renderCard(){
 }
 
 /* ---------- frases ---------- */
-const phrasePicker=makePicker($("#fAmigo"),{value:"",emptyLabel:"Qualquer um",ariaLabel:"Nanico da frase",onChange:()=>{}});
+const phrasePicker=makePicker($("#fAmigo"),{value:"",emptyLabel:"Qualquer um",ariaLabel:"Nanico da nanicada",onChange:()=>{}});
 function renderFriendSelects(){
   if(phrasePicker.value&&!friends.some(f=>f.id===phrasePicker.value))phrasePicker.value="";
   drawPicker(phrasePicker);
@@ -530,7 +530,7 @@ function renderPhrases(){
   else if(filtro!=="todas")list=list.filter(p=>p.friendId===filtro);
   if(busca)list=list.filter(p=>norm(p.text+" "+champsOf(p).join(" ")+" "+friendName(p.friendId)).includes(busca));
   const ul=$("#listaFrases");
-  if(!list.length){ul.innerHTML=`<li class="li-empty">${phrases.length?"Nenhuma frase com esse filtro.":"Nenhuma frase ainda. Cadastre a primeira aqui em cima."}</li>`;return;}
+  if(!list.length){ul.innerHTML=`<li class="li-empty">${phrases.length?"Nenhuma nanicada com esse filtro.":"Nenhuma nanicada ainda. Cadastre a primeira aqui em cima."}</li>`;return;}
   ul.innerHTML=list.map(p=>`<li><div class="ptext">${esc(p.text)}<div class="badges">
     ${p.friendId?`<span class="badge f">${avatar(friendOf(p.friendId)||null,"xs")}${esc(friendName(p.friendId)||"nanico removido")}</span>`:""}
     ${champsOf(p).map(c=>`<span class="badge c">${esc(c)}</span>`).join("")}
@@ -558,8 +558,8 @@ $("#formFrase").onsubmit=async e=>{
   const text=lower($("#fTexto").value).trim(); if(!text)return;
   const pend=canon($("#fCamp").value); if(pend&&!selCamps.some(x=>norm(x)===norm(pend)))selCamps.push(pend);
   const data={text,friendId:phrasePicker.value||null,champions:selCamps.slice()};
-  try{await api.addPhrase(data);$("#fTexto").value="";$("#fCamp").value="";selCamps=[];renderSelCamps();$("#fTexto").focus();toast("Frase adicionada");}
-  catch(err){console.error(err);toast("Não deu para adicionar a frase. Confira a internet.");}
+  try{await api.addPhrase(data);$("#fTexto").value="";$("#fCamp").value="";selCamps=[];renderSelCamps();$("#fTexto").focus();toast("Nanicada adicionada");}
+  catch(err){console.error(err);toast("Não deu para adicionar a nanicada. Confira a internet.");}
 };
 
 /* ---------- nanicos ---------- */
@@ -568,7 +568,7 @@ function renderFriends(){
   const box=$("#listaAmigos");
   if(!friends.length){box.innerHTML=`<p class="status" style="grid-column:1/-1;text-align:center;padding:20px 0">Nenhum nanico cadastrado ainda.</p>`;return;}
   box.innerHTML=friends.map(f=>{const n=phrases.filter(p=>p.friendId===f.id).length;
-    return `<div class="nanico">${avatar(f,"lg")}<strong>${esc(f.name)}</strong><span class="status">${n} frase${n===1?"":"s"}</span>
+    return `<div class="nanico">${avatar(f,"lg")}<strong>${esc(f.name)}</strong><span class="status">${n} nanicada${n===1?"":"s"}</span>
       <label class="lnk">${f.photo?"Trocar foto":"Pôr foto"}<input type="file" accept="image/*" data-id="${esc(f.id)}" style="position:absolute;opacity:0;width:1px;height:1px"></label></div>`;}).join("");
   box.querySelectorAll("input[type=file]").forEach(inp=>inp.onchange=async()=>{
     const file=inp.files[0]; if(!file)return;
