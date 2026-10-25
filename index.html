@@ -49,7 +49,10 @@ button{font:inherit;color:inherit}
 .app{display:grid;grid-template-columns:268px minmax(0,1fr);min-height:100vh}
 .side{position:sticky;top:0;height:100vh;min-width:0;display:flex;flex-direction:column;gap:22px;padding:28px 18px 22px max(18px,env(safe-area-inset-left,0px));border-right:1px solid var(--line);background:var(--surface)}
 .main{min-width:0;padding-block:32px 64px;padding-left:max(16px,4vw);padding-right:max(16px,env(safe-area-inset-right,0px),4vw)}
-.inner{max-width:780px;margin:0 auto;display:grid;gap:22px}
+.inner{display:grid;gap:22px}
+#view-jogar,#view-frases{width:100%;max-width:780px;margin:0 auto}
+#view-nanicos{width:100%;max-width:1320px;margin:0 auto}
+#view-nanicos .hero{max-width:780px}
 
 .brand{display:grid;gap:2px;padding-inline:6px}
 .brand small{font:500 13px var(--body);color:var(--muted)}
@@ -64,7 +67,7 @@ button{font:inherit;color:inherit}
 .people .who{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
 .people .you{font-size:12px;color:var(--muted);font-weight:500}
 .bingo-pill{font:700 10px var(--display);color:var(--accent-ink);background:var(--accent);padding:3px 7px;border-radius:99px;letter-spacing:.02em}
-.u{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;font:700 11px var(--display);color:#fff;background:hsl(var(--h) 22% 42%)}
+.u{width:34px;height:34px;border-radius:50%;flex:none;display:grid;place-items:center;font:700 11px var(--display);color:#fff;background:hsl(var(--h) 22% 42%)}
 
 .nav{display:grid;gap:4px}
 .nav button{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;border:0;background:none;padding:11px 12px;border-radius:var(--r-sm);font-weight:600;color:var(--muted);cursor:pointer}
@@ -85,7 +88,7 @@ button{font:inherit;color:inherit}
   .people li{flex:none;background:var(--surface-2);padding:4px 10px 4px 4px;border-radius:99px}
   .people li.me{outline:1.5px solid var(--ink)}
   .people .who{max-width:120px}
-  .u{width:26px;height:26px;font-size:10px}
+  .u,.people .av{width:30px;height:30px;font-size:10px}
   .nav{grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface-2);padding:4px;border-radius:var(--r-md)}
   .nav button{justify-content:center;padding:9px 6px;font-size:14px}
   .side-foot{grid-auto-flow:column;justify-content:space-between;margin-top:0}
@@ -123,16 +126,16 @@ input:focus{outline:none;border-color:var(--accent)}
 .go{margin-top:18px;justify-content:space-between}
 
 /* seletor com foto */
-.av{width:28px;height:28px;border-radius:50%;object-fit:cover;flex:none;display:inline-grid;place-items:center;background:var(--mint-soft);color:var(--ink);font:700 11px var(--display);overflow:hidden}
-.av.lg{width:48px;height:48px;font-size:15px}
-.av.xs{width:16px;height:16px;font-size:7px}
+.av{width:34px;height:34px;border-radius:50%;object-fit:cover;flex:none;display:inline-grid;place-items:center;background:var(--mint-soft);color:var(--ink);font:700 12px var(--display);overflow:hidden}
+.av.lg{width:58px;height:58px;font-size:17px}
+.av.xs{width:20px;height:20px;font-size:8px}
 .av.none{background:var(--surface-2);color:var(--muted)}
 .picker{position:relative;min-width:0}
 .pick-btn{display:flex;align-items:center;gap:8px;width:100%;min-width:0;background:var(--bg);border:1.5px solid transparent;border-radius:var(--r-sm);padding:5px 10px 5px 5px;cursor:pointer;text-align:left}
 .pick-btn:hover{border-color:var(--line)}
 .pick-btn .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pick-btn::after{content:"";width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translateY(-2px);flex:none;margin-right:4px}
-.pick-panel{position:absolute;z-index:30;top:calc(100% + 6px);left:0;width:min(340px,calc(100vw - 40px));background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:8px;display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:4px;box-shadow:0 18px 40px var(--shadow)}
+.pick-panel{position:absolute;z-index:30;top:calc(100% + 6px);left:0;width:min(380px,calc(100vw - 40px));background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:8px;display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:4px;box-shadow:0 18px 40px var(--shadow)}
 .tile{display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:1.5px solid transparent;border-radius:var(--r-sm);padding:7px 2px;cursor:pointer;font-size:12px;font-weight:600;min-width:0}
 .tile span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tile:hover{background:var(--surface-2)}
@@ -159,7 +162,7 @@ input:focus{outline:none;border-color:var(--accent)}
 .cell.line.on .tag{color:var(--accent-ink);opacity:.8}
 .cell.free{background:var(--sun-soft);color:var(--sun);font:800 13px var(--display);cursor:default;gap:2px}
 .cell.free svg{width:42%;height:auto}
-@media (max-width:520px){.card,.letters{gap:4px}.cell{font-size:10.5px;padding:3px 2px;border-radius:9px}.cell .tag{font-size:8px}}
+@media (max-width:520px){.card,.letters{gap:4px}.cell{font-size:10.5px;padding:3px 2px;border-radius:9px}.cell .tag{font-size:8px}.cell .av.xs{width:14px;height:14px;font-size:6px}}
 .banner{display:flex;align-items:center;justify-content:center;gap:10px;font:800 22px var(--display);color:var(--accent-ink);background:var(--accent);border-radius:var(--r-md);padding:12px;margin-bottom:14px;letter-spacing:-.01em;animation:pop .4s cubic-bezier(.3,1.6,.5,1)}
 @keyframes pop{from{transform:scale(.85);opacity:0}}
 .empty{display:grid;justify-items:center;gap:8px;text-align:center;color:var(--muted);padding:40px 16px;border:2px dashed var(--line);border-radius:28px}
@@ -195,11 +198,13 @@ ul.list li:last-child{border-bottom:0}
 .li-empty{justify-content:center;color:var(--muted);border:0!important;padding:28px 0!important}
 
 /* nanicos */
-.nanicos{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
-.nanico{display:grid;justify-items:center;gap:8px;text-align:center;padding:18px 10px 12px;border-radius:var(--r-md);background:var(--bg)}
-.nanico .av.lg{width:72px;height:72px;font-size:22px}
+.nanicos{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px}
+.nanico{display:grid;justify-items:center;align-content:start;gap:6px;text-align:center;padding:14px 8px 8px;border-radius:var(--r-md);background:var(--bg)}
+.nanico .av.lg{width:88px;height:88px;font-size:26px;margin-bottom:4px}
 .nanico strong{font:700 15px var(--display);letter-spacing:-.01em;overflow-wrap:anywhere}
-.nanico .status{margin-top:-6px}
+.nanico .status{margin-top:-4px}
+.nanico .lnk{padding:4px 8px}
+@media (max-width:520px){.nan-block{padding:12px}.nanicos{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.nanico{padding:10px 4px 4px}.nanico .av.lg{width:64px;height:64px;font-size:20px}.nanico strong{font-size:13px}.nanico .status,.nanico .lnk{font-size:11.5px}}
 
 /* ---------- entrada (username) ---------- */
 .gate{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px max(16px,env(safe-area-inset-right,0px)) 20px max(16px,env(safe-area-inset-left,0px));background:color-mix(in srgb,var(--bg) 70%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
@@ -240,7 +245,7 @@ ul.list li:last-child{border-bottom:0}
     <div class="inner">
 
       <!-- JOGAR -->
-      <section id="view-jogar" class="inner" style="max-width:none">
+      <section id="view-jogar" class="inner">
         <header class="hero">
           <h1>Quem tá na partida?</h1>
           <p>Monte a escalação, sorteie sua cartela e marque cada nanicada quando ela acontecer.</p>
@@ -258,7 +263,7 @@ ul.list li:last-child{border-bottom:0}
       </section>
 
       <!-- FRASES -->
-      <section id="view-frases" class="inner" style="max-width:none" hidden>
+      <section id="view-frases" class="inner" hidden>
         <header class="hero">
           <h1>Nanicadas</h1>
           <p>Tudo que esse grupo fala e faz toda santa partida. Ligue a nanicada a um nanico, a campeões, aos dois, ou deixe valendo para qualquer jogo.</p>
@@ -281,12 +286,12 @@ ul.list li:last-child{border-bottom:0}
       </section>
 
       <!-- NANICOS -->
-      <section id="view-nanicos" class="inner" style="max-width:none" hidden>
+      <section id="view-nanicos" class="inner" hidden>
         <header class="hero">
           <h1>Os Nanicos</h1>
           <p>Toque em “Trocar foto” para atualizar a foto de alguém. Para entrar ou sair gente do grupo, fale com o admin.</p>
         </header>
-        <div class="block"><div class="nanicos" id="listaAmigos"></div></div>
+        <div class="block nan-block"><div class="nanicos" id="listaAmigos"></div></div>
       </section>
 
     </div>
@@ -424,10 +429,10 @@ function renderLineup(){
       <div class="picker" id="lp-f-${i}"></div>
       <input id="lp-c-${i}" list="champs" placeholder="Campeão" aria-label="Campeão ${l}" autocomplete="off">
     </div>`).join("");
-  lanePickers=LANES.map((l,i)=>makePicker($("#lp-f-"+i),{value:lineup[i]?.friendId,emptyLabel:"Ninguém",ariaLabel:"Jogador "+l,
-    onChange:v=>{lineup[i].friendId=v;saveLineup();}}));
+  lanePickers=LANES.map((l,i)=>makePicker($("#lp-f-"+i),{value:lineup[i]?.friendId,emptyLabel:"Random",ariaLabel:"Jogador "+l,
+    onChange:v=>{lineup[i].friendId=v;if(!v)lineup[i].champion="";syncLineupInputs();saveLineup();}}));
   LANES.forEach((_,i)=>{
-    const c=$("#lp-c-"+i); c.value=lineup[i]?.champion||"";
+    const c=$("#lp-c-"+i); c.value=lineup[i]?.champion||""; c.hidden=!lineup[i]?.friendId;
     c.onchange=()=>{c.value=canon(c.value);lineup[i].champion=c.value;saveLineup();};
   });
   renderMeter();
@@ -435,7 +440,8 @@ function renderLineup(){
 function syncLineupInputs(){
   LANES.forEach((_,i)=>{const p=lanePickers[i],c=$("#lp-c-"+i);if(!p)return;
     if(!p.open&&p.value!==(lineup[i]?.friendId||"")){p.value=lineup[i]?.friendId||"";drawPicker(p);}
-    if(document.activeElement!==c)c.value=lineup[i]?.champion||"";});
+    if(document.activeElement!==c)c.value=lineup[i]?.champion||"";
+    c.hidden=!lineup[i]?.friendId;});
   renderMeter();
 }
 async function saveLineup(){
@@ -446,7 +452,7 @@ async function saveLineup(){
 
 /* ---------- elegibilidade e sorteio ---------- */
 function eligible(){
-  const pl=lineup.filter(p=>p.friendId||p.champion);
+  const pl=lineup.filter(p=>p.friendId);
   const fs=new Set(pl.map(p=>p.friendId).filter(Boolean));
   const cs=new Set(pl.map(p=>norm(p.champion)).filter(Boolean));
   const pairs=new Set(pl.map(p=>p.friendId+"|"+norm(p.champion)));
