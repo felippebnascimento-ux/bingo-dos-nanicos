@@ -166,15 +166,17 @@ input:focus{outline:none;border-color:var(--accent)}
 .empty b{font:700 16px var(--display);color:var(--ink)}
 
 /* frases */
-.add{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1.2fr);gap:10px;align-items:end}
+.add{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:start}
+.add .pick-btn{min-height:44px}
 .add .full{grid-column:1/-1}
-@media (max-width:640px){.add{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){.add{grid-template-columns:minmax(0,1fr)}}
 .add-foot{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .selchamps{display:flex;gap:6px;flex-wrap:wrap}
 .selchamps button{border:0;background:var(--sun-soft);color:var(--ink);font-size:13px;font-weight:600;border-radius:99px;padding:5px 10px;cursor:pointer}
 .selchamps button span{color:var(--muted);margin-left:4px}
 .list-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
-.list-head input{max-width:220px}
+.list-head h2{flex:none}
+.list-head input{flex:1 1 280px;max-width:420px;min-width:0;padding-block:12px}
 .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
 .chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;border:0;background:var(--bg);color:var(--muted);border-radius:99px;padding:5px 12px 5px 5px;cursor:pointer}
 .chip.plain{padding-left:12px}
