@@ -51,6 +51,22 @@ button{font:inherit;color:inherit}
 .main{min-width:0;padding-block:32px 64px;padding-left:max(16px,4vw);padding-right:max(16px,env(safe-area-inset-right,0px),4vw)}
 .inner{display:grid;gap:22px}
 #view-jogar,#view-frases{width:100%;max-width:780px;margin:0 auto}
+.play{display:grid;gap:22px;align-items:start}
+.lane .pick-btn{padding:4px 10px 4px 4px;min-height:50px}
+.lane .pick-btn .av{width:42px;height:42px;font-size:14px}
+.lane input{min-height:50px}
+@media (min-width:1180px){
+  #view-jogar{max-width:1560px;grid-template-columns:minmax(360px,440px) minmax(0,1fr);grid-template-rows:auto 1fr;align-items:start}
+  #view-jogar .hero{grid-column:1}
+  .play{display:contents}
+  .lineup-block{grid-column:1}
+  #cardArea{grid-column:2;grid-row:1 / span 2}
+  .lineup-block .lane{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 8px}
+  .lineup-block .lane b{grid-column:1/-1;font-size:13px;margin-top:4px}
+  .lineup-block .go{flex-direction:column;align-items:stretch;text-align:center}
+  #cardArea>.card-wrap,#cardArea>.empty{max-width:max(560px,calc(100vh - 220px));margin-inline:auto}
+  #cardArea>.empty{min-height:420px;align-content:center}
+}
 #view-nanicos{width:100%;max-width:1320px;margin:0 auto}
 #view-nanicos .hero{max-width:780px}
 
@@ -250,7 +266,8 @@ ul.list li:last-child{border-bottom:0}
           <h1>Quem tá na partida?</h1>
           <p>Monte a escalação, sorteie sua cartela e marque cada nanicada quando ela acontecer.</p>
         </header>
-        <div class="block">
+        <div class="play">
+        <div class="block lineup-block">
           <h2>Escalação</h2>
           <p class="hint">A escalação é a mesma para todo mundo na sala. A cartela é só sua.</p>
           <div class="lineup" id="lineup"></div>
@@ -260,6 +277,7 @@ ul.list li:last-child{border-bottom:0}
           </div>
         </div>
         <div id="cardArea"></div>
+        </div>
       </section>
 
       <!-- FRASES -->
