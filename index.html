@@ -367,7 +367,9 @@ let friends=[], phrases=[];
 let lineup=store.get("rift-lineup")||LANES.map(()=>({friendId:"",champion:""}));
 let card=store.get("rift-card");
 let filtros=new Set(), busca="";
-let myName=store.get("nanicos-user")||"";
+const cookie={get(k){const m=document.cookie.match(new RegExp("(?:^|; )"+k+"=([^;]*)"));try{return m?decodeURIComponent(m[1]):"";}catch{return "";}},
+  set(k,v){document.cookie=k+"="+encodeURIComponent(v)+"; max-age=31536000; path=/; SameSite=Lax";}};
+let myName=store.get("nanicos-user")||cookie.get("nanicos_user")||"";
 const myKey=(crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2));
 let online=[];
 
@@ -424,7 +426,7 @@ function openGate(){
 }
 $("#gateForm").onsubmit=e=>{
   e.preventDefault(); const n=$("#gateName").value.trim().slice(0,20); if(!n)return;
-  myName=n; store.set("nanicos-user",n); $("#gate").hidden=true; trackMe(); toast(`Bem-vindo, ${n}`);
+  myName=n; store.set("nanicos-user",n); cookie.set("nanicos_user",n); $("#gate").hidden=true; trackMe(); toast(`Bem-vindo, ${n}`);
 };
 $("#trocarNome").onclick=openGate;
 
@@ -633,7 +635,7 @@ function resizePhoto(file){
 
 function renderAll(){renderFriendSelects();renderLineup();renderPhrases();renderFriends();renderPeople();}
 renderAll(); renderCard();
-openGate();
+if(!myName) openGate();
 
 /* ---------- conexão (Supabase) ---------- */
 const byName=(a,b)=>String(a.name||"").localeCompare(String(b.name||""),"pt-BR",{sensitivity:"base"});
