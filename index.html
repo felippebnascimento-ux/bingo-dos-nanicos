@@ -195,7 +195,7 @@ input:focus{outline:none;border-color:var(--accent)}
 .pick-btn:hover{border-color:var(--line)}
 .pick-btn .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pick-btn::after{content:"";width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translateY(-2px);flex:none;margin-right:4px}
-.pick-panel{position:fixed;z-index:30;overflow:auto;width:min(380px,calc(100vw - 40px));background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:8px;display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:4px;box-shadow:0 18px 40px var(--shadow)}
+.pick-panel{position:fixed;z-index:80;overflow:auto;width:min(380px,calc(100vw - 40px));background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:8px;display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:4px;box-shadow:0 18px 40px var(--shadow)}
 .tile{display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:1.5px solid transparent;border-radius:var(--r-sm);padding:7px 2px;cursor:pointer;font-size:12px;font-weight:600;min-width:0}
 .tile span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tile:hover{background:var(--surface-2)}
@@ -489,19 +489,25 @@ function makePicker(el,{value,emptyLabel,onChange,ariaLabel}){
 }
 function drawPicker(st){
   const f=friendOf(st.value);
-  st.el.innerHTML=`<button type="button" class="pick-btn" aria-haspopup="true" aria-expanded="${st.open}" aria-label="${esc(st.ariaLabel)}">${avatar(f)}<span class="nm">${esc(f?f.name:st.emptyLabel)}</span></button>
-    ${st.open?`<div class="pick-panel" role="group">
-      <button type="button" class="tile" data-id="" aria-pressed="${!st.value}">${avatar(null,"lg")}<span>${esc(st.emptyLabel)}</span></button>
-      ${friends.map(x=>`<button type="button" class="tile" data-id="${esc(x.id)}" aria-pressed="${x.id===st.value}">${avatar(x,"lg")}<span>${esc(x.name)}</span></button>`).join("")}
-      ${friends.length?"":`<span class="status" style="grid-column:1/-1;padding:6px">Nenhum nanico cadastrado ainda.</span>`}
-    </div>`:""}`;
+  st.el.innerHTML=`<button type="button" class="pick-btn" aria-haspopup="true" aria-expanded="${st.open}" aria-label="${esc(st.ariaLabel)}">${avatar(f)}<span class="nm">${esc(f?f.name:st.emptyLabel)}</span></button>`;
   st.el.querySelector(".pick-btn").onclick=e=>{e.stopPropagation();const o=!st.open;closePickers();st.open=o;drawPicker(st);};
-  if(st.open)placePanel(st);
-  st.el.querySelectorAll(".tile").forEach(t=>t.onclick=e=>{e.stopPropagation();st.value=t.dataset.id;st.open=false;drawPicker(st);st.onChange(st.value);st.el.querySelector(".pick-btn").focus();});
+  /* o painel fica direto no <body>, fora dos quadros, para nunca ficar atrás de nada */
+  if(st.panel){st.panel.remove();st.panel=null;}
+  if(!st.open)return;
+  const pn=document.createElement("div");
+  pn.className="pick-panel"; pn.setAttribute("role","group"); pn.setAttribute("aria-label",st.ariaLabel);
+  pn.innerHTML=`<button type="button" class="tile" data-id="" aria-pressed="${!st.value}">${avatar(null,"lg")}<span>${esc(st.emptyLabel)}</span></button>
+      ${friends.map(x=>`<button type="button" class="tile" data-id="${esc(x.id)}" aria-pressed="${x.id===st.value}">${avatar(x,"lg")}<span>${esc(x.name)}</span></button>`).join("")}
+      ${friends.length?"":`<span class="status" style="grid-column:1/-1;padding:6px">Nenhum nanico cadastrado ainda.</span>`}`;
+  pn.addEventListener("click",e=>e.stopPropagation());
+  pn.querySelectorAll(".tile").forEach(t=>t.onclick=()=>{st.value=t.dataset.id;st.open=false;drawPicker(st);st.onChange(st.value);st.el.querySelector(".pick-btn")?.focus();});
+  document.body.appendChild(pn); st.panel=pn;
+  placePanel(st);
+  (pn.querySelector('.tile[aria-pressed="true"]')||pn.querySelector(".tile"))?.focus({preventScroll:true});
 }
 /* posiciona o painel onde ele cabe: embaixo, em cima ou ao lado do botão */
 function placePanel(st){
-  const btn=st.el.querySelector(".pick-btn"), pn=st.el.querySelector(".pick-panel"); if(!btn||!pn)return;
+  const btn=st.el.querySelector(".pick-btn"), pn=st.panel; if(!btn||!pn)return;
   const M=8, vw=innerWidth, vh=innerHeight, b=btn.getBoundingClientRect();
   pn.style.position="fixed"; pn.style.maxHeight=(vh-2*M)+"px"; pn.style.top="0px"; pn.style.left="0px";
   const w=pn.offsetWidth, h=pn.offsetHeight;
@@ -518,12 +524,13 @@ function placePanel(st){
 addEventListener("resize",()=>closePickers());
 addEventListener("scroll",()=>pickers.forEach(p=>p.open&&placePanel(p)),{passive:true,capture:true});
 function closePickers(){pickers.forEach(p=>{if(p.open){p.open=false;drawPicker(p);}});}
-document.addEventListener("click",e=>{if(!e.target.closest(".picker"))closePickers();});
+document.addEventListener("click",e=>{if(!e.target.closest(".picker,.pick-panel"))closePickers();});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closePickers();});
 
 /* ---------- escalação ---------- */
 let lanePickers=[];
 function renderLineup(){
+  lanePickers.forEach(p=>{if(p.panel){p.panel.remove();p.panel=null;}});
   pickers.splice(0,pickers.length,...pickers.filter(p=>!lanePickers.includes(p)));
   $("#lineup").innerHTML=LANES.map((l,i)=>`
     <div class="lane"><b>${l}</b>
