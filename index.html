@@ -263,9 +263,9 @@ ul.list li:last-child{border-bottom:0}
         </header>
         <div class="block">
           <h2>Nova frase</h2>
-          <p class="hint">Com mais de um campeão, a frase entra se qualquer um deles estiver na partida.</p>
+          <p class="hint">Tudo em minúsculas, do jeito que sai no Discord. Com mais de um campeão, a frase entra se qualquer um deles estiver na partida.</p>
           <form class="add" id="formFrase">
-            <div class="full"><label class="lbl" for="fTexto">Frase</label><input id="fTexto" maxlength="90" placeholder="Ex.: foca a torre" required autocomplete="off"></div>
+            <div class="full"><label class="lbl" for="fTexto">Frase</label><input id="fTexto" maxlength="90" placeholder="ex.: foca a torre" required autocomplete="off" autocapitalize="none" spellcheck="false"></div>
             <div><span class="lbl">Nanico</span><div class="picker" id="fAmigo"></div></div>
             <div><label class="lbl" for="fCamp">Campeões</label><div class="row" style="flex-wrap:nowrap;gap:6px"><input id="fCamp" list="champs" placeholder="Qualquer um" autocomplete="off"><button class="btn soft sq" type="button" id="addCamp" aria-label="Incluir campeão">+</button></div></div>
             <div class="add-foot"><div class="selchamps" id="selCamps"></div><button class="btn" type="submit">Adicionar frase</button></div>
@@ -535,6 +535,8 @@ function renderPhrases(){
     ${!p.friendId&&!champsOf(p).length?`<span class="badge g">Genérica</span>`:""}
   </div></div></li>`).join("");
 }
+const lower=s=>String(s||"").toLocaleLowerCase("pt-BR");
+$("#fTexto").addEventListener("input",e=>{const el=e.target,v=lower(el.value);if(v!==el.value){const a=el.selectionStart,b=el.selectionEnd;el.value=v;try{el.setSelectionRange(a,b);}catch{}}});
 $("#busca").oninput=e=>{busca=norm(e.target.value);renderPhrases();};
 let selCamps=[];
 function renderSelCamps(){
@@ -551,7 +553,7 @@ $("#fCamp").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault(
 $("#fCamp").addEventListener("change",()=>{if(CHAMPS.some(c=>norm(c)===norm($("#fCamp").value)))addCamp();});
 $("#formFrase").onsubmit=async e=>{
   e.preventDefault(); if(!db)return toast("Sem conexão com o banco.");
-  const text=$("#fTexto").value.trim(); if(!text)return;
+  const text=lower($("#fTexto").value).trim(); if(!text)return;
   const pend=canon($("#fCamp").value); if(pend&&!selCamps.some(x=>norm(x)===norm(pend)))selCamps.push(pend);
   const data={text,friendId:phrasePicker.value||null,champions:selCamps.slice()};
   try{await api.addPhrase(data);$("#fTexto").value="";$("#fCamp").value="";selCamps=[];renderSelCamps();$("#fTexto").focus();toast("Frase adicionada");}
