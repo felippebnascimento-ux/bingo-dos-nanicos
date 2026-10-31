@@ -449,6 +449,9 @@ body.pip .mcell{font-size:11.5px}
 .log-entry h3 time{font:500 13px var(--body);color:var(--muted)}
 .log-entry .atual{font:700 10px var(--display);color:var(--accent-ink);background:var(--accent);padding:2px 7px;border-radius:99px}
 .log-entry ul{margin:0;padding-left:18px;display:grid;gap:3px;color:var(--ink);font-size:14px}
+.log-entry li.off{color:var(--muted)}
+.log-entry li.off s{text-decoration-thickness:1.5px;text-decoration-color:var(--muted)}
+.off-why{font-size:12px;font-style:italic;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -635,6 +638,7 @@ body.pip .mcell{font-size:11.5px}
 <div class="gate" id="logGate" role="dialog" aria-modal="true" aria-labelledby="logTitle" hidden>
   <div class="gate-card log-card">
     <div class="log-head"><h2 id="logTitle">Atualizações</h2><button class="btn soft sm" id="logClose" type="button">Fechar</button></div>
+    <p class="status" style="margin:-6px 0 0">Itens riscados não funcionam mais.</p>
     <div class="log-list" id="logList"></div>
   </div>
 </div>
@@ -1403,9 +1407,9 @@ function setSideMin(on){
    Para lançar uma versão nova: acrescente um item no fim da lista. O número da versão sobe sozinho. */
 const CHANGELOG=[
   {data:"24/10/2026",itens:["Banco de frases compartilhado pelo grupo","Escalação da partida igual para todos","Cartela 5x5 sorteada para cada pessoa"]},
-  {data:"24/10/2026",itens:["Frase ligada a mais de um campeão","Fotos dos amigos no seletor","Lista de amigos em ordem alfabética e opção de renomear"]},
-  {data:"25/10/2026",itens:["Site próprio, aberto pelo link, sem precisar de conta do Claude","Público só cadastra frases e troca fotos"]},
-  {data:"25/10/2026",itens:["Novo visual: Bingo dos Nanicos","Lista de quem está na sala agora","Nome salvo no navegador"]},
+  {data:"24/10/2026",itens:["Frase ligada a mais de um campeão",{t:"Fotos dos amigos no seletor",off:"trocado pela arte de cada nanico na v1.05"},"Lista de amigos em ordem alfabética",{t:"Opção de renomear amigos",off:"removido na v1.02"}]},
+  {data:"25/10/2026",itens:["Site próprio, sem precisar de conta do Claude",{t:"Público só cadastra frases e troca fotos",off:"trocado pelo login de cada nanico na v1.07"}]},
+  {data:"25/10/2026",itens:["Novo visual: Bingo dos Nanicos","Lista de quem está na sala agora",{t:"Nome salvo no navegador",off:"trocado pelo login de cada nanico na v1.07"}]},
   {data:"25/10/2026",itens:["Frases viram Nanicadas, sempre em minúsculas","Filtro por vários nanicos ao mesmo tempo","Opção Random na escalação","Telas largas aproveitam o espaço em colunas"]},
   {data:"25/10/2026",itens:["Arte de cada nanico: rosto em todo o site e corpo inteiro na aba Nanicos","Marca d'água do grupo e ícone da bola de bingo","Seletor de nanico abre onde cabe na tela"]},
   {data:"30/10/2026",itens:["Botão para entrar no Google Meet do grupo"]},
@@ -1418,7 +1422,7 @@ const VERSION=versionAt(CHANGELOG.length-1);
 $("#ver").textContent=VERSION;
 try{ if(localStorage.getItem("log-visto")!==VERSION)$("#logBtn").classList.add("new"); }catch{}
 function openLog(){
-  $("#logList").innerHTML=CHANGELOG.map((e,i)=>({...e,v:versionAt(i)})).reverse().map((e,k)=>`<section class="log-entry"><h3>${e.v}<time>${e.data}</time>${k===0?`<span class="atual">ATUAL</span>`:""}</h3><ul>${e.itens.map(t=>`<li>${esc(t)}</li>`).join("")}</ul></section>`).join("");
+  $("#logList").innerHTML=CHANGELOG.map((e,i)=>({...e,v:versionAt(i)})).reverse().map((e,k)=>`<section class="log-entry"><h3>${e.v}<time>${e.data}</time>${k===0?`<span class="atual">ATUAL</span>`:""}</h3><ul>${e.itens.map(t=>typeof t==="string"?`<li>${esc(t)}</li>`:`<li class="off"><s>${esc(t.t)}</s> <span class="off-why">${esc(t.off)}</span></li>`).join("")}</ul></section>`).join("");
   $("#logGate").hidden=false; $("#logClose").focus();
   $("#logBtn").classList.remove("new"); try{localStorage.setItem("log-visto",VERSION);}catch{}
 }
