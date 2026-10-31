@@ -228,7 +228,7 @@ input:focus{outline:none;border-color:var(--accent)}
 .cell.line.on .tag{color:var(--accent-ink);opacity:.8}
 .cell.free{background:var(--sun-soft);color:var(--sun);font:800 13px var(--display);cursor:default;gap:2px}
 .cell.free svg{width:42%;height:auto}
-@media (max-width:520px){.card,.letters{gap:4px}.cell{font-size:10.5px;padding:3px 2px;border-radius:9px}.cell .tag{font-size:8px}.cell .av.xs{width:14px;height:14px;font-size:6px}}
+@media (max-width:520px){.pacts{flex-direction:column;align-items:stretch}.card,.letters{gap:4px}.cell{font-size:10.5px;padding:3px 2px;border-radius:9px}.cell .tag{font-size:8px}.cell .av.xs{width:14px;height:14px;font-size:6px}}
 .banner{display:flex;align-items:center;justify-content:center;gap:10px;font:800 22px var(--display);color:var(--accent-ink);background:var(--accent);border-radius:var(--r-md);padding:12px;margin-bottom:14px;letter-spacing:-.01em;animation:pop .4s cubic-bezier(.3,1.6,.5,1)}
 @keyframes pop{from{transform:scale(.85);opacity:0}}
 .empty{display:grid;justify-items:center;gap:8px;text-align:center;color:var(--muted);padding:40px 16px;border:2px dashed var(--line);border-radius:28px}
@@ -243,6 +243,19 @@ input:focus{outline:none;border-color:var(--accent)}
 .selchamps{display:flex;gap:6px;flex-wrap:wrap}
 .selchamps button{border:0;background:var(--sun-soft);color:var(--ink);font-size:13px;font-weight:600;border-radius:99px;padding:5px 10px;cursor:pointer}
 .selchamps button span{color:var(--muted);margin-left:4px}
+.modo-row .seg{margin-bottom:6px}
+.modo-exp{margin:0;color:var(--muted);font-size:13px}
+.foot-btns{display:flex;gap:8px;flex-wrap:wrap}
+.form-block.editing{box-shadow:inset 0 0 0 2px var(--accent)}
+.pacts{display:flex;gap:4px;flex:none;align-self:center}
+.pact{border:0;background:none;color:var(--muted);font:600 12px var(--body);padding:6px 8px;border-radius:99px;cursor:pointer}
+.pact:hover{background:var(--surface-2);color:var(--ink)}
+.pact.del:hover,.pact.del.sure{background:var(--live);color:#fff}
+ul.list li.editing{box-shadow:inset 0 0 0 2px var(--accent)}
+.badge.m{background:var(--olive);color:#FAF9F6}
+.pick-btn .avs{display:inline-flex;flex:none}
+.pick-btn .avs .av+.av{margin-left:-12px;box-shadow:0 0 0 2px var(--bg)}
+.tag .av.xs+.av.xs{margin-left:-6px}
 .list-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
 .list-head h2{flex:none}
 .list-head input{flex:1 1 280px;max-width:420px;min-width:0;padding-block:12px}
@@ -266,6 +279,26 @@ ul.list li.li-empty{grid-column:1/-1;background:none}
 .li-empty{justify-content:center;color:var(--muted);border:0!important;padding:28px 0!important}
 
 /* nanicos */
+#view-perfil{width:100%;max-width:1200px;margin:0 auto}
+.perfil-grid{display:grid;gap:18px;align-items:start}
+@media (min-width:1000px){.perfil-grid{grid-template-columns:minmax(0,380px) minmax(0,1fr)}}
+.me-head{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.me-head .av{width:72px;height:72px}
+.me-head b{font:700 22px var(--display);display:block}
+.me-head span{color:var(--muted);font-size:13px}
+.me-block form{display:grid;gap:8px}
+.me-block .row{display:flex;gap:8px;flex-wrap:wrap}
+.me-block .row .btn{flex:1;text-decoration:none}
+.opgg-list{list-style:none;margin:0;padding:0;display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.opgg-list li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r-md);background:var(--bg);min-width:0}
+.opgg-list li.me{box-shadow:inset 0 0 0 2px var(--accent)}
+.opgg-list .nm{flex:1;min-width:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.opgg-list .nm small{display:block;font-weight:500;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis}
+.opgg-go{flex:none;text-decoration:none;padding:7px 12px;font-size:13px}
+.opgg-none{flex:none;color:var(--muted);font-size:12px}
+button.nanico{border:0;font:inherit;color:inherit;cursor:pointer;transition:transform .12s,box-shadow .12s}
+button.nanico:hover{transform:translateY(-2px);box-shadow:inset 0 0 0 2px var(--accent)}
+button.nanico:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px}
 .nanicos{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
 .nanico{display:grid;grid-template-rows:auto 1fr auto;justify-items:center;gap:6px;text-align:center;padding:14px 8px 10px;border-radius:var(--r-md);background:var(--bg)}
 .nanico .body{width:100%;max-width:170px;height:auto;aspect-ratio:9/11;object-fit:contain;filter:drop-shadow(0 8px 10px var(--shadow))}
@@ -552,6 +585,7 @@ body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live
       <button role="tab" aria-selected="false" data-tab="frases" title="Nanicadas"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-4 3v-3H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/></svg><span class="t">Nanicadas</span><span class="count" id="nFrases"></span></button>
       <button role="tab" aria-selected="false" data-tab="nanicos" title="Nanicos"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.6c2.6-.3 4.6 1.1 5 4.4"/></svg><span class="t">Nanicos</span><span class="count" id="nAmigos"></span></button>
       <button role="tab" aria-selected="false" data-tab="live" id="navLive" title="Ao vivo"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="2.2"/><path d="M8.2 8.2a5.4 5.4 0 0 0 0 7.6M15.8 8.2a5.4 5.4 0 0 1 0 7.6M5.3 5.3a9.5 9.5 0 0 0 0 13.4M18.7 5.3a9.5 9.5 0 0 1 0 13.4"/></svg><span class="t">Ao vivo</span><span class="count" id="nLive"></span></button>
+      <button role="tab" aria-selected="false" data-tab="perfil" title="Perfil"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.6 7-5.6s6.2 2 7 5.6"/></svg><span class="t">Perfil</span></button>
     </nav>
 
     <a class="btn meet-btn" href="https://meet.google.com/nua-cvax-gyw" target="_blank" rel="noopener" title="Entrar no Meet">
@@ -599,13 +633,21 @@ body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live
           <p>Tudo que esse grupo fala e faz toda santa partida. Ligue a nanicada a um nanico, a campeões, aos dois, ou deixe valendo para qualquer jogo.</p>
         </header>
         <div class="block form-block">
-          <h2>Nova nanicada</h2>
-          <p class="hint">Tudo em minúsculas, do jeito que sai no Discord.<br>Com mais de um campeão, a nanicada entra se qualquer um deles estiver na partida.</p>
+          <h2 id="formTitle">Nova nanicada</h2>
+          <p class="hint">Tudo em minúsculas, do jeito que sai no Discord. Dá para ligar a mais de um nanico e a mais de um campeão.</p>
           <form class="add" id="formFrase">
             <div class="full"><label class="lbl" for="fTexto">Nanicada</label><input id="fTexto" maxlength="90" placeholder="ex.: foca a torre" required autocomplete="off" autocapitalize="none" spellcheck="false"></div>
-            <div><span class="lbl">Nanico</span><div class="picker" id="fAmigo"></div></div>
+            <div><span class="lbl">Nanicos</span><div class="picker" id="fAmigo"></div></div>
             <div><label class="lbl" for="fCamp">Campeões</label><div class="row" style="flex-wrap:nowrap;gap:6px"><input id="fCamp" list="champs" placeholder="Qualquer um" autocomplete="off"><button class="btn soft sq" type="button" id="addCamp" aria-label="Incluir campeão">+</button></div></div>
-            <div class="add-foot"><div class="selchamps" id="selCamps"></div><button class="btn" type="submit">Adicionar nanicada</button></div>
+            <div class="full modo-row" id="modoRow" hidden>
+              <span class="lbl" id="lblModo">Aparece na cartela quando</span>
+              <div class="seg" role="radiogroup" aria-labelledby="lblModo">
+                <button type="button" role="radio" data-modo="qualquer" aria-checked="true">Qualquer um estiver na partida</button>
+                <button type="button" role="radio" data-modo="todos" aria-checked="false">Todos estiverem na partida</button>
+              </div>
+              <p class="modo-exp" id="modoExp"></p>
+            </div>
+            <div class="add-foot"><div class="selchamps" id="selCamps"></div><div class="foot-btns"><button class="btn soft" type="button" id="cancelEdit" hidden>Cancelar</button><button class="btn" type="submit" id="submitFrase">Adicionar nanicada</button></div></div>
           </form>
         </div>
         <div class="block list-block">
@@ -623,6 +665,21 @@ body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live
           <p>Para entrar ou sair gente do grupo, fale com o admin.</p>
         </header>
         <div class="block nan-block"><div class="nanicos" id="listaAmigos"></div></div>
+      </section>
+
+      <!-- PERFIL -->
+      <section id="view-perfil" class="inner" hidden>
+        <header class="hero">
+          <h1>Perfil</h1>
+          <p>Coloque o link do seu op.gg para a galera ver seu elo, histórico e campeões.</p>
+        </header>
+        <div class="perfil-grid">
+          <div class="block me-block" id="meBlock"></div>
+          <div class="block">
+            <h2>op.gg dos nanicos</h2>
+            <ul class="opgg-list" id="opggList"></ul>
+          </div>
+        </div>
       </section>
 
       <!-- AO VIVO -->
@@ -794,14 +851,17 @@ async function q(p){const {data,error}=await p;if(error)throw error;return data;
 /* o banco recusa quando alguém manda coisa demais em pouco tempo: mostra a mensagem dele */
 const errMsg=(e,padrao)=>e&&typeof e.message==="string"&&/^Calma/.test(e.message)?e.message.slice(0,140):padrao;
 const api={
-  addPhrase:d=>q(sb.from("phrases").insert({text:d.text,friend_id:d.friendId,champions:d.champions})),
+  addPhrase:d=>q(sb.from("phrases").insert(phrasesV2?{text:d.text,friend_ids:d.friendIds,champions:d.champions,modo:d.modo}:{text:d.text,friend_id:d.friendIds[0]||null,champions:d.champions})),
+  updPhrase:(id,d)=>q(sb.from("phrases").update({text:d.text,friend_ids:d.friendIds,champions:d.champions,modo:d.modo}).eq("id",id).select("id")),
+  delPhrase:id=>q(sb.from("phrases").delete().eq("id",id).select("id")),
   saveGame:players=>q(sb.from("game").update({players,updated_at:new Date().toISOString()}).eq("id",1)),
 };
 
 /* ---------- abas ---------- */
 document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{
   document.querySelectorAll(".nav button").forEach(x=>x.setAttribute("aria-selected",x===b));
-  ["jogar","frases","nanicos","live"].forEach(v=>$("#view-"+v).hidden=v!==b.dataset.tab);
+  ["jogar","frases","nanicos","live","perfil"].forEach(v=>$("#view-"+v).hidden=v!==b.dataset.tab);
+  if(b.dataset.tab==="perfil")renderPerfil();
   if(b.dataset.tab==="live"){renderLive();if(railTab==="chat"){chatUnread=0;renderChat();}}
   closePickers();
 });
@@ -905,12 +965,16 @@ $("#pwForm").onsubmit=async e=>{
 
 /* ---------- seletor de nanico com foto ---------- */
 const pickers=[];
-function makePicker(el,{value,emptyLabel,onChange,ariaLabel}){
-  const st={el,value:value||"",emptyLabel,onChange,ariaLabel,open:false};
+function makePicker(el,{value,emptyLabel,onChange,ariaLabel,multi}){
+  const st={el,value:value||"",values:[],multi:!!multi,emptyLabel,onChange,ariaLabel,open:false};
   pickers.push(st); drawPicker(st); return st;
 }
 function drawPicker(st){
   const f=friendOf(st.value);
+  if(st.multi){
+    const sel=st.values.map(friendOf).filter(Boolean);
+    st.el.innerHTML=`<button type="button" class="pick-btn" aria-haspopup="true" aria-expanded="${st.open}" aria-label="${esc(st.ariaLabel)}"><span class="avs">${sel.length?sel.slice(0,3).map(x=>avatar(x)).join(""):avatar(null)}</span><span class="nm">${esc(sel.length?sel.map(x=>x.name).join(", "):st.emptyLabel)}</span></button>`;
+  } else
   st.el.innerHTML=`<button type="button" class="pick-btn" aria-haspopup="true" aria-expanded="${st.open}" aria-label="${esc(st.ariaLabel)}">${avatar(f)}<span class="nm">${esc(f?f.name:st.emptyLabel)}</span></button>`;
   st.el.querySelector(".pick-btn").onclick=e=>{e.stopPropagation();const o=!st.open;closePickers();st.open=o;drawPicker(st);};
   /* o painel fica direto no <body>, fora dos quadros, para nunca ficar atrás de nada */
@@ -918,14 +982,19 @@ function drawPicker(st){
   if(!st.open)return;
   const pn=document.createElement("div");
   pn.className="pick-panel"; pn.setAttribute("role","group"); pn.setAttribute("aria-label",st.ariaLabel);
-  pn.innerHTML=`<button type="button" class="tile" data-id="" aria-pressed="${!st.value}">${avatar(null,"lg")}<span>${esc(st.emptyLabel)}</span></button>
-      ${friends.map(x=>`<button type="button" class="tile" data-id="${esc(x.id)}" aria-pressed="${x.id===st.value}">${avatar(x,"lg")}<span>${esc(x.name)}</span></button>`).join("")}
+  const on=id=>st.multi?(id?st.values.includes(id):!st.values.length):(id?id===st.value:!st.value);
+  pn.innerHTML=`<button type="button" class="tile" data-id="" aria-pressed="${on("")}">${avatar(null,"lg")}<span>${esc(st.emptyLabel)}</span></button>
+      ${friends.map(x=>`<button type="button" class="tile" data-id="${esc(x.id)}" aria-pressed="${on(x.id)}">${avatar(x,"lg")}<span>${esc(x.name)}</span></button>`).join("")}
       ${friends.length?"":`<span class="status" style="grid-column:1/-1;padding:6px">Nenhum nanico cadastrado ainda.</span>`}`;
   pn.addEventListener("click",e=>e.stopPropagation());
-  pn.querySelectorAll(".tile").forEach(t=>t.onclick=()=>{st.value=t.dataset.id;st.open=false;drawPicker(st);st.onChange(st.value);st.el.querySelector(".pick-btn")?.focus();});
+  pn.querySelectorAll(".tile").forEach(t=>t.onclick=()=>{
+    if(st.multi){ /* vários nanicos: cada toque marca ou desmarca; o painel continua aberto */
+      const id=t.dataset.id; st.values=!id?[]:st.values.includes(id)?st.values.filter(x=>x!==id):[...st.values,id];
+      drawPicker(st); st.onChange(st.values); st.panel?.querySelector(`.tile[data-id="${CSS.escape(id)}"]`)?.focus({preventScroll:true}); return; }
+    st.value=t.dataset.id;st.open=false;drawPicker(st);st.onChange(st.value);st.el.querySelector(".pick-btn")?.focus();});
   document.body.appendChild(pn); st.panel=pn;
   placePanel(st);
-  (pn.querySelector('.tile[aria-pressed="true"]')||pn.querySelector(".tile"))?.focus({preventScroll:true});
+  if(!st.multi)(pn.querySelector('.tile[aria-pressed="true"]')||pn.querySelector(".tile"))?.focus({preventScroll:true});
 }
 /* posiciona o painel onde ele cabe: embaixo, em cima ou ao lado do botão */
 function placePanel(st){
@@ -981,19 +1050,32 @@ async function saveLineup(){
 }
 
 /* ---------- elegibilidade e sorteio ---------- */
+/* quando cada nanicada entra na cartela:
+   - "qualquer": só nanicos → um deles jogando; só campeões → um deles na partida;
+                 nanicos + campeões → um desses nanicos jogando com um desses campeões
+   - "todos":    todos os nanicos jogando E todos os campeões na partida */
+function matchPhrase(p,pl,fs,cs){
+  const N=p.friendIds||[], C=champsOf(p);
+  if(!N.length&&!C.length)return {gen:true};
+  if(p.modo==="todos"){
+    if(!N.every(id=>fs.has(id))||!C.every(c=>cs.has(norm(c))))return null;
+    return {f:N.slice(),c:C.slice()};
+  }
+  if(N.length&&C.length){
+    const hit=pl.filter(x=>N.includes(x.friendId)&&C.some(c=>norm(c)===norm(x.champion)));
+    if(!hit.length)return null;
+    return {f:[...new Set(hit.map(x=>x.friendId))],c:C.filter(c=>hit.some(x=>norm(x.champion)===norm(c)))};
+  }
+  const fh=N.filter(id=>fs.has(id)), ch=C.filter(c=>cs.has(norm(c)));
+  if(N.length?!fh.length:!ch.length)return null;
+  return {f:fh,c:ch};
+}
 function eligible(){
   const pl=lineup.filter(p=>p.friendId);
   const fs=new Set(pl.map(p=>p.friendId).filter(Boolean));
   const cs=new Set(pl.map(p=>norm(p.champion)).filter(Boolean));
-  const pairs=new Set(pl.map(p=>p.friendId+"|"+norm(p.champion)));
   const spec=[],gen=[];
-  for(const p of phrases){
-    const f=p.friendId, cl=champsOf(p);
-    if(f&&cl.length){ const m=cl.filter(c=>pairs.has(f+"|"+norm(c))); if(m.length) spec.push({...p,hit:m}); }
-    else if(f){ if(fs.has(f)) spec.push(p); }
-    else if(cl.length){ const m=cl.filter(c=>cs.has(norm(c))); if(m.length) spec.push({...p,hit:m}); }
-    else gen.push(p);
-  }
+  for(const p of phrases){ const m=matchPhrase(p,pl,fs,cs); if(!m)continue; if(m.gen)gen.push(p); else spec.push({...p,hitF:m.f,hit:m.c}); }
   return {spec,gen};
 }
 function renderMeter(){
@@ -1007,7 +1089,7 @@ $("#gerar").onclick=()=>{
   let pick=s.slice(0,16); pick=pick.concat(g.slice(0,24-pick.length));
   if(pick.length<24) pick=pick.concat(s.slice(16,16+24-pick.length));
   pick=shuffle(pick).slice(0,24);
-  const cells=pick.map(p=>({text:p.text,friendId:p.friendId||"",fname:friendName(p.friendId),champs:(p.hit||[]).join("/"),rot:Math.round(Math.random()*24-12)}));
+  const cells=pick.map(p=>{ const ids=p.hitF||[]; return {text:p.text,friendIds:ids,fnames:ids.map(friendName),champs:(p.hit||[]).join("/"),rot:Math.round(Math.random()*24-12)}; });
   cells.splice(12,0,{free:true,text:"LIVRE"});
   card={cells,marked:cells.map(c=>!!c.free)};
   store.set("rift-card",card); renderCard(); trackMe(); toast("Cartela sorteada");
@@ -1019,9 +1101,13 @@ const LINES=(()=>{const L=[];for(let i=0;i<5;i++){L.push([0,1,2,3,4].map(j=>i*5+
 const STAR=`<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.5l2.6 6.3 6.8.5-5.2 4.4 1.6 6.6L12 16.8l-5.8 3.5 1.6-6.6-5.2-4.4 6.8-.5z"/></svg>`;
 function cellTag(c){
   if(c.tag)return `<span class="tag">${esc(c.tag)}</span>`;
-  const f=friendOf(c.friendId); const nm=f?f.name:c.fname;
+  /* cartelas antigas guardavam um nanico só (friendId); as novas guardam uma lista */
+  const ids=Array.isArray(c.friendIds)?c.friendIds:(c.friendId?[c.friendId]:[]);
+  const fn=Array.isArray(c.fnames)?c.fnames:[c.fname];
+  const fl=ids.map((id,i)=>{const f=friendOf(id);return {f,nm:f?f.name:(fn[i]||"")};});
+  const nm=fl.map(x=>x.nm).filter(Boolean).join(" + ");
   if(!nm&&!c.champs)return "";
-  return `<span class="tag">${c.friendId?avatar(f||{name:nm},"xs"):""}${esc([nm,c.champs].filter(Boolean).join(" / "))}</span>`;
+  return `<span class="tag">${fl.slice(0,3).map(x=>avatar(x.f||{name:x.nm},"xs")).join("")}${esc([nm,c.champs].filter(Boolean).join(" / "))}</span>`;
 }
 function renderCard(){ renderCardMain(); renderMiniCards(); }
 function renderCardMain(){
@@ -1090,32 +1176,82 @@ async function openPipCard(){
 }
 
 /* ---------- frases ---------- */
-const phrasePicker=makePicker($("#fAmigo"),{value:"",emptyLabel:"Qualquer um",ariaLabel:"Nanico da nanicada",onChange:()=>{}});
+const phrasePicker=makePicker($("#fAmigo"),{value:"",emptyLabel:"Nenhum (qualquer um)",ariaLabel:"Nanicos da nanicada",multi:true,onChange:()=>renderModo()});
 function renderFriendSelects(){
-  if(phrasePicker.value&&!friends.some(f=>f.id===phrasePicker.value))phrasePicker.value="";
+  phrasePicker.values=phrasePicker.values.filter(id=>friends.some(f=>f.id===id));
   drawPicker(phrasePicker);
   for(const k of [...filtros]) if(k!=="gen"&&!friends.some(f=>f.id===k)) filtros.delete(k);
   const chips=[["todas","Todas",null],["gen","Genéricas",null],...friends.map(f=>[f.id,f.name,f])];
   $("#filtros").innerHTML=chips.map(([k,n,f])=>`<button class="chip${f?"":" plain"}" data-k="${esc(k)}" aria-pressed="${k==="todas"?filtros.size===0:filtros.has(k)}">${f?avatar(f,"xs"):""}${esc(n)}</button>`).join("");
   $("#filtros").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{
     const k=b.dataset.k;
-    if(k==="todas")filtros.clear(); else if(filtros.has(k))filtros.delete(k); else filtros.add(k);
+    /* um filtro por vez: tocar em quem já está escolhido volta para Todas */
+    const ja=filtros.has(k)&&filtros.size===1; filtros.clear(); if(k!=="todas"&&!ja)filtros.add(k);
     renderFriendSelects();renderPhrases();
   });
 }
 function renderPhrases(){
   $("#nFrases").textContent=phrases.length||"";
   let list=phrases.slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-  if(filtros.size)list=list.filter(p=>(filtros.has("gen")&&!p.friendId&&!champsOf(p).length)||(p.friendId&&filtros.has(p.friendId)));
-  if(busca)list=list.filter(p=>norm(p.text+" "+champsOf(p).join(" ")+" "+friendName(p.friendId)).includes(busca));
+  if(filtros.size)list=list.filter(p=>(filtros.has("gen")&&!p.friendIds.length&&!champsOf(p).length)||p.friendIds.some(id=>filtros.has(id)));
+  if(busca)list=list.filter(p=>norm(p.text+" "+champsOf(p).join(" ")+" "+p.friendIds.map(friendName).join(" ")).includes(busca));
   const ul=$("#listaFrases");
   $("#resumo").textContent=(filtros.size||busca)?`Mostrando ${list.length} de ${phrases.length} nanicadas`:`${phrases.length} nanicada${phrases.length===1?"":"s"}`;
   if(!list.length){ul.innerHTML=`<li class="li-empty">${phrases.length?"Nenhuma nanicada com esse filtro.":"Nenhuma nanicada ainda. Cadastre a primeira no formulário."}</li>`;return;}
-  ul.innerHTML=list.map(p=>`<li><div class="ptext">${esc(p.text)}<div class="badges">
-    ${p.friendId?`<span class="badge f">${avatar(friendOf(p.friendId)||null,"xs")}${esc(friendName(p.friendId)||"nanico removido")}</span>`:""}
+  ul.innerHTML=list.map(p=>`<li data-id="${esc(p.id)}"${p.id===editingId?' class="editing"':""}><div class="ptext">${esc(p.text)}<div class="badges">
+    ${p.friendIds.map(id=>`<span class="badge f">${avatar(friendOf(id)||null,"xs")}${esc(friendName(id)||"nanico removido")}</span>`).join("")}
     ${champsOf(p).map(c=>`<span class="badge c">${esc(c)}</span>`).join("")}
-    ${!p.friendId&&!champsOf(p).length?`<span class="badge g">Genérica</span>`:""}
-  </div></div></li>`).join("");
+    ${p.modo==="todos"&&p.friendIds.length+champsOf(p).length>1?`<span class="badge m" title="Só entra na cartela quando todos estiverem na partida">todos juntos</span>`:""}
+    ${!p.friendIds.length&&!champsOf(p).length?`<span class="badge g">Genérica</span>`:""}
+  </div></div><div class="pacts"><button type="button" class="pact" data-edit aria-label="Editar: ${esc(p.text)}">Editar</button><button type="button" class="pact del" data-del aria-label="Remover: ${esc(p.text)}">Remover</button></div></li>`).join("");
+  ul.querySelectorAll("li[data-id]").forEach(li=>{
+    const id=li.dataset.id;
+    li.querySelector("[data-edit]").onclick=()=>startEdit(id);
+    const del=li.querySelector("[data-del]");
+    del.onclick=async()=>{
+      /* remover pede um segundo toque para confirmar */
+      if(!del.classList.contains("sure")){ del.classList.add("sure"); del.textContent="Confirmar"; clearTimeout(del._t); del._t=setTimeout(()=>{del.classList.remove("sure");del.textContent="Remover";},3500); return; }
+      if(!phrasesV2)return toast("Para remover, rode o SQL novo no Supabase.");
+      del.disabled=true;
+      try{ const r=await api.delPhrase(id); if(!r||!r.length)throw new Error("nada removido");
+        phrases=phrases.filter(x=>x.id!==id); if(editingId===id)stopEdit(); renderAll(); toast("Nanicada removida"); }
+      catch(err){ console.error(err); del.disabled=false; toast(errMsg(err,"Não deu para remover. Confira a internet.")); }
+    };
+  });
+}
+/* ---------- editar nanicada (qualquer nanico pode) ---------- */
+var editingId=null;
+function startEdit(id){
+  const p=phrases.find(x=>x.id===id); if(!p)return;
+  if(!phrasesV2)return toast("Para editar, rode o SQL novo no Supabase.");
+  editingId=id;
+  $("#fTexto").value=p.text; $("#fCamp").value="";
+  phrasePicker.values=p.friendIds.filter(x=>friendOf(x)); drawPicker(phrasePicker);
+  selCamps=champsOf(p).slice(); renderSelCamps();
+  setModo(p.modo);
+  $("#formTitle").textContent="Editar nanicada"; $("#submitFrase").textContent="Salvar alterações"; $("#cancelEdit").hidden=false;
+  $(".form-block").classList.add("editing"); renderPhrases();
+  $(".form-block").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});
+  $("#fTexto").focus({preventScroll:true});
+}
+function stopEdit(){
+  editingId=null;
+  $("#fTexto").value=""; $("#fCamp").value=""; phrasePicker.values=[]; drawPicker(phrasePicker); selCamps=[]; renderSelCamps(); setModo("qualquer");
+  $("#formTitle").textContent="Nova nanicada"; $("#submitFrase").textContent="Adicionar nanicada"; $("#cancelEdit").hidden=true;
+  $(".form-block").classList.remove("editing"); renderPhrases();
+}
+$("#cancelEdit").onclick=stopEdit;
+/* qualquer um × todos: só aparece com 2 ou mais nanicos/campeões */
+var modo="qualquer";
+function setModo(m){ modo=m==="todos"?"todos":"qualquer"; document.querySelectorAll("#modoRow [data-modo]").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.modo===modo))); renderModo(); }
+document.querySelectorAll("#modoRow [data-modo]").forEach(b=>b.onclick=()=>setModo(b.dataset.modo));
+function renderModo(){
+  const n=phrasePicker.values.length, c=selCamps.length+(canon($("#fCamp").value)&&!selCamps.some(x=>norm(x)===norm(canon($("#fCamp").value)))?1:0);
+  $("#modoRow").hidden=n+c<2;
+  const nn=n>1?"esses nanicos":"esse nanico", cc=c>1?"esses campeões":"esse campeão";
+  $("#modoExp").textContent=modo==="todos"
+    ?(n&&c?`Entra só se ${n>1?"todos esses nanicos estiverem":"esse nanico estiver"} jogando e ${c>1?"todos esses campeões estiverem":"esse campeão estiver"} na partida.`:n?"Entra só se todos esses nanicos estiverem jogando.":"Entra só se todos esses campeões estiverem na partida.")
+    :(n&&c?`Entra se ${n>1?"um desses nanicos":"esse nanico"} estiver jogando com ${c>1?"um desses campeões":"esse campeão"}.`:n?"Entra se pelo menos um desses nanicos estiver jogando.":"Entra se pelo menos um desses campeões estiver na partida.");
 }
 const lower=s=>String(s||"").toLocaleLowerCase("pt-BR");
 $("#fTexto").addEventListener("input",e=>{const el=e.target,v=lower(el.value);if(v!==el.value){const a=el.selectionStart,b=el.selectionEnd;el.value=v;try{el.setSelectionRange(a,b);}catch{}}});
@@ -1124,6 +1260,7 @@ let selCamps=[];
 function renderSelCamps(){
   $("#selCamps").innerHTML=selCamps.map((c,i)=>`<button type="button" data-i="${i}" aria-label="Tirar ${esc(c)}">${esc(c)}<span aria-hidden="true">×</span></button>`).join("");
   $("#selCamps").querySelectorAll("button").forEach(b=>b.onclick=()=>{selCamps.splice(+b.dataset.i,1);renderSelCamps();});
+  if(typeof renderModo==="function")renderModo();
 }
 function addCamp(){
   const c=canon($("#fCamp").value); $("#fCamp").value="";
@@ -1131,26 +1268,92 @@ function addCamp(){
   $("#fCamp").focus();
 }
 $("#addCamp").onclick=addCamp;
+$("#fCamp").addEventListener("input",()=>renderModo());
 $("#fCamp").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addCamp();}});
 $("#fCamp").addEventListener("change",()=>{if(CHAMPS.some(c=>norm(c)===norm($("#fCamp").value)))addCamp();});
 $("#formFrase").onsubmit=async e=>{
   e.preventDefault(); if(!db)return toast("Sem conexão com o banco.");
   const text=lower($("#fTexto").value).trim(); if(!text)return;
   const pend=canon($("#fCamp").value); if(pend&&!selCamps.some(x=>norm(x)===norm(pend)))selCamps.push(pend);
-  const data={text,friendId:phrasePicker.value||null,champions:selCamps.slice()};
-  try{await api.addPhrase(data);$("#fTexto").value="";$("#fCamp").value="";selCamps=[];renderSelCamps();$("#fTexto").focus();toast("Nanicada adicionada");}
-  catch(err){console.error(err);toast(errMsg(err,"Não deu para adicionar a nanicada. Confira a internet."));}
+  const ids=phrasePicker.values.filter(id=>friendOf(id));
+  const data={text,friendIds:ids,champions:selCamps.slice(),modo:ids.length+selCamps.length>1?modo:"qualquer"};
+  if(!phrasesV2&&(ids.length>1||data.modo==="todos"))return toast("Para usar vários nanicos ou “todos”, rode o SQL novo no Supabase.");
+  const btn=$("#submitFrase"); btn.disabled=true;
+  try{
+    if(editingId){ const r=await api.updPhrase(editingId,data); if(!r||!r.length)throw new Error("nada salvo"); stopEdit(); await loadPhrases().catch(()=>{}); renderAll(); toast("Nanicada salva"); }
+    else{ await api.addPhrase(data); loadPhrases().then(renderAll).catch(()=>{}); $("#fTexto").value=""; $("#fCamp").value=""; selCamps=[]; renderSelCamps(); phrasePicker.values=[]; drawPicker(phrasePicker); setModo("qualquer"); $("#fTexto").focus(); toast("Nanicada adicionada"); }
+  }catch(err){console.error(err);toast(errMsg(err,editingId?"Não deu para salvar. Confira a internet.":"Não deu para adicionar a nanicada. Confira a internet."));}
+  finally{btn.disabled=false;}
 };
+
+/* ---------- perfil: link do op.gg ---------- */
+/* só aceita endereço do op.gg (https://op.gg/... ou https://www.op.gg/...) */
+function cleanOpgg(v){
+  let t=String(v||"").trim(); if(!t)return "";
+  if(!/^https?:\/\//i.test(t))t="https://"+t;
+  let u; try{u=new URL(t);}catch{return null;}
+  const host=u.hostname.toLowerCase();
+  if(u.protocol!=="https:"&&u.protocol!=="http:")return null;
+  if(host!=="op.gg"&&host!=="www.op.gg"&&!host.endsWith(".op.gg"))return null;
+  if(u.username||u.password||u.port)return null;
+  u.protocol="https:";
+  const out=u.toString(); return out.length<=300?out:null;
+}
+const opggOf=f=>{ const v=f&&typeof f.opgg==="string"?cleanOpgg(f.opgg):""; return v||""; };
+function opggLabel(url){ try{ const u=new URL(url); return decodeURIComponent(u.pathname.replace(/^\/(lol\/)?(summoners\/)?/,"").replace(/\/$/,"")).replace(/\//g," · ")||u.hostname; }catch{return url;} }
+function renderPerfil(){
+  const me=friendOf(myFid), box=$("#meBlock"), cur=opggOf(me);
+  if(!me){ box.innerHTML=`<p class="status">Carregando…</p>`; }
+  else if(!box.querySelector("#opggInput")||box.dataset.fid!==me.id){
+    box.dataset.fid=me.id;
+    box.innerHTML=`<div class="me-head">${avatar(me,"lg")}<div><b>${esc(me.name)}</b><span>Seu perfil</span></div></div>
+      <form id="opggForm" novalidate>
+        <label class="lbl" for="opggInput">Link do seu op.gg</label>
+        <input id="opggInput" type="url" inputmode="url" maxlength="300" autocomplete="off" spellcheck="false" placeholder="https://op.gg/lol/summoners/br/Nome-BR1">
+        <p class="hint" style="margin:0">No op.gg, procure seu nome, abra seu perfil e copie o endereço da página.</p>
+        <div class="row"><button class="btn" type="submit" id="opggSave">Salvar</button>${cur?`<a class="btn soft" id="opggOpen" href="${esc(cur)}" target="_blank" rel="noopener noreferrer">Abrir meu op.gg</a>`:""}</div>
+        ${cur?`<button type="button" class="linkish" id="opggClear">Tirar o link</button>`:""}
+      </form>`;
+    $("#opggInput").value=cur;
+    $("#opggForm").onsubmit=e=>{e.preventDefault();saveOpgg($("#opggInput").value);};
+    $("#opggClear")&&($("#opggClear").onclick=()=>saveOpgg(""));
+  }
+  const list=friends.slice().sort((a,b)=>(a.id===myFid?-1:b.id===myFid?1:0)||byName(a,b));
+  $("#opggList").innerHTML=list.map(f=>{ const u=opggOf(f);
+    return `<li class="${f.id===myFid?"me":""}">${avatar(f)}<span class="nm">${esc(f.name)}${u?`<small>${esc(opggLabel(u))}</small>`:""}</span>${u?`<a class="btn sm opgg-go" href="${esc(u)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir o op.gg de ${esc(f.name)}">op.gg</a>`:`<span class="opgg-none">sem link</span>`}</li>`; }).join("");
+}
+async function saveOpgg(v){
+  if(!opggOk)return toast("Para salvar o op.gg, rode o SQL novo no Supabase.");
+  const url=cleanOpgg(v);
+  if(url===null)return toast("Esse link não é do op.gg. Copie o endereço da página do seu perfil no op.gg.");
+  const btn=$("#opggSave"); if(btn)btn.disabled=true;
+  try{
+    const r=await q(sb.from("friends").update({opgg:url||null}).eq("id",myFid).select("id,opgg"));
+    if(!r||!r.length)throw new Error("nada salvo");
+    const me=friendOf(myFid); if(me)me.opgg=("opgg" in r[0])?r[0].opgg:(url||null);
+    $("#meBlock").dataset.fid=""; renderPerfil(); toast(url?"op.gg salvo":"Link tirado");
+  }catch(err){ console.error(err); toast(errMsg(err,"Não deu para salvar. Confira a internet.")); }
+  finally{ if(btn)btn.disabled=false; }
+}
 
 /* ---------- nanicos ---------- */
 function renderFriends(){
   $("#nAmigos").textContent=friends.length||"";
   const box=$("#listaAmigos");
   if(!friends.length){box.innerHTML=`<p class="status" style="grid-column:1/-1;text-align:center;padding:20px 0">Nenhum nanico cadastrado ainda.</p>`;return;}
-  box.innerHTML=friends.map(f=>{const n=phrases.filter(p=>p.friendId===f.id).length;
+  box.innerHTML=friends.map(f=>{const n=phrases.filter(p=>p.friendIds.includes(f.id)).length;
     const art=artOf(f);
     const body=art?`<img class="body" src="${art.full}" width="${art.w}" height="${art.h}" alt="${esc(f.name)}">`:`<div class="body none">${avatar(f,"lg")}</div>`;
-    return `<div class="nanico"><strong>${esc(f.name)}</strong>${body}<span class="status">${n} nanicada${n===1?"":"s"}</span></div>`;}).join("");
+    return `<button type="button" class="nanico" data-fid="${esc(f.id)}" aria-label="Ver as nanicadas de ${esc(f.name)}" title="Ver as nanicadas de ${esc(f.name)}"><strong>${esc(f.name)}</strong>${body}<span class="status">${n} nanicada${n===1?"":"s"}</span></button>`;}).join("");
+  box.querySelectorAll("button.nanico").forEach(b=>b.onclick=()=>verNanicadas(b.dataset.fid));
+}
+/* abre a aba Nanicadas já filtrada na pessoa */
+function verNanicadas(fid){
+  filtros.clear(); if(fid)filtros.add(fid);
+  busca=""; $("#busca").value="";
+  document.querySelector('.nav [data-tab="frases"]').click();
+  renderFriendSelects(); renderPhrases();
+  $(".list-block").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});
 }
 /* foto: recorta quadrado no centro e reduz para 192px */
 function resizePhoto(file){
@@ -1775,7 +1978,7 @@ const CHANGELOG=[
   {data:"24/10/2026",itens:["Frase ligada a mais de um campeão",{t:"Fotos dos amigos no seletor",off:"trocado pela arte de cada nanico na v1.05"},"Lista de amigos em ordem alfabética",{t:"Opção de renomear amigos",off:"removido na v1.02"}]},
   {data:"25/10/2026",itens:["Site próprio, sem precisar de conta do Claude",{t:"Público só cadastra frases e troca fotos",off:"trocado pelo login de cada nanico na v1.07"}]},
   {data:"25/10/2026",itens:["Novo visual: Bingo dos Nanicos","Lista de quem está na sala agora",{t:"Nome salvo no navegador",off:"trocado pelo login de cada nanico na v1.07"}]},
-  {data:"25/10/2026",itens:["Frases viram Nanicadas, sempre em minúsculas","Filtro por vários nanicos ao mesmo tempo","Opção Random na escalação","Telas largas aproveitam o espaço em colunas"]},
+  {data:"25/10/2026",itens:["Frases viram Nanicadas, sempre em minúsculas",{t:"Filtro por vários nanicos ao mesmo tempo",off:"voltou a ser uma pessoa por vez na v1.19"},"Opção Random na escalação","Telas largas aproveitam o espaço em colunas"]},
   {data:"25/10/2026",itens:["Arte de cada nanico: rosto em todo o site e corpo inteiro na aba Nanicos","Marca d'água do grupo e ícone da bola de bingo","Seletor de nanico abre onde cabe na tela"]},
   {data:"30/10/2026",itens:["Botão para entrar no Google Meet do grupo"]},
   {data:"31/10/2026",itens:["Login de cada nanico, com senha própria no primeiro acesso","Aba Ao vivo: várias transmissões de tela ao mesmo tempo, com o som só da principal"]},
@@ -1789,6 +1992,8 @@ const CHANGELOG=[
   {data:"31/10/2026",itens:[{t:"Qualidade da transmissão: 1080p ou 1440p (2K), com 30 ou 60 fps",off:"reorganizado na v1.17"}]},
   {data:"31/10/2026",itens:["Câmera: o vídeo aparece no lugar do personagem na lista da sala","Câmeras numa janela flutuante, de todo mundo ou de uma pessoa só"]},
   {data:"31/10/2026",itens:["Qualidade da transmissão: 1440p ou 1080p, com 60 ou 30 fps (o mais alto à esquerda)","Proteção contra abuso: limite de mensagens, nanicadas e mudanças de escalação, e tudo que chega da sala é conferido antes de aparecer"]},
+  {data:"31/10/2026",itens:["Nanicada com vários nanicos e campeões","Escolha se a nanicada entra com qualquer um ou só com todos na partida","Qualquer nanico pode editar e remover nanicadas"]},
+  {data:"31/10/2026",itens:["Aba Perfil com o link do op.gg de cada um","Clicar num nanico abre as nanicadas dele","Filtro das nanicadas volta a mostrar uma pessoa por vez"]},
 ];
 const versionAt=i=>"v1."+String(i).padStart(2,"0");
 const VERSION=versionAt(CHANGELOG.length-1);
@@ -1817,17 +2022,27 @@ renderAll(); renderCard(); renderLive();
 
 /* ---------- conexão (Supabase) ---------- */
 const byName=(a,b)=>String(a.name||"").localeCompare(String(b.name||""),"pt-BR",{sensitivity:"base"});
+/* se o SQL do op.gg ainda não rodou, o site segue funcionando sem a coluna */
+var opggOk=true;
 async function loadFriends(){
-  const rows=await q(sb.from("friends").select("id,name,photo,user_id,created_at"));
+  let rows;
+  try{ rows=await q(sb.from("friends").select("id,name,photo,user_id,created_at,opgg")); opggOk=true; }
+  catch(e){ console.warn("banco sem op.gg",e); opggOk=false; rows=await q(sb.from("friends").select("id,name,photo,user_id,created_at")); }
   setTimeout(()=>{try{renderChat();}catch{}},0);
   friends=rows.sort(byName);
   const mine=myUid&&friends.find(f=>f.user_id===myUid);
   if(mine){myFid=mine.id;myName=mine.name;}
-  renderFriendSelects();renderLineup();renderPhrases();renderFriends();renderCard();renderPeople();renderLive();
+  renderFriendSelects();renderLineup();renderPhrases();renderFriends();renderCard();renderPeople();renderLive();renderPerfil();
 }
+/* se o SQL novo ainda não rodou no Supabase, o site continua funcionando do jeito antigo (sem editar/remover) */
+var phrasesV2=true;
 async function loadPhrases(){
-  const rows=await q(sb.from("phrases").select("id,text,friend_id,champions,created_at"));
-  phrases=rows.map(r=>({id:r.id,text:r.text,friendId:r.friend_id||null,champions:r.champions||[],createdAt:Date.parse(r.created_at)||0}));
+  let rows;
+  try{ rows=await q(sb.from("phrases").select("id,text,friend_id,friend_ids,champions,modo,created_at")); phrasesV2=true; }
+  catch(e){ console.warn("banco sem nanicadas v2",e); phrasesV2=false; rows=await q(sb.from("phrases").select("id,text,friend_id,champions,created_at")); }
+  phrases=rows.map(r=>{ const ids=Array.isArray(r.friend_ids)&&r.friend_ids.length?r.friend_ids:(r.friend_id?[r.friend_id]:[]);
+    return {id:String(r.id),text:String(r.text||""),friendIds:[...new Set(ids.filter(x=>typeof x==="string"))],champions:Array.isArray(r.champions)?r.champions.filter(c=>typeof c==="string"):[],modo:r.modo==="todos"?"todos":"qualquer",createdAt:Date.parse(r.created_at)||0}; });
+  if(editingId&&!phrases.some(p=>p.id===editingId))stopEdit();
   renderPhrases();renderFriends();renderMeter();
 }
 async function loadGame(){
