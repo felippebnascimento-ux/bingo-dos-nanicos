@@ -1382,17 +1382,45 @@ function renderRiot(){
   }
 }
 function riotNossoTime(g){ const c={}; for(const p of g.jogo.participantes)if(p&&p.fid&&g.fids.has(p.fid))c[p.time]=(c[p.time]||0)+1; return Number(Object.keys(c).sort((a,b)=>c[b]-c[a])[0])||0; }
-/* coloca os nanicos da partida na escalação; quem tem Golpear (Smite) vai para a Jungle */
+/* ---------- lane de cada um ----------
+   A Riot não diz a lane durante a partida. Então o site deduz a lane dos 5 do time juntos:
+   pela posição mais comum de cada campeão (T=Top J=Jungle M=Mid A=ADC S=Suporte, a primeira é a principal)
+   e pelos feitiços (Golpear = Jungle, Teleporte = Top, Curar = ADC, Exaustão = Suporte…).
+   Depois testa todas as combinações e fica com a que faz mais sentido. */
+const LANE_CAMP={"Aatrox":"T","Ahri":"M","Akali":"MT","Akshan":"MA","Alistar":"S","Ambessa":"TJ","Amumu":"JS","Anivia":"M","Annie":"MS","Aphelios":"A","Ashe":"AS","Aurelion Sol":"M","Aurora":"MT","Azir":"M","Bard":"S","Bel'Veth":"J","Blitzcrank":"S","Brand":"SMJ","Braum":"S","Briar":"J","Caitlyn":"A","Camille":"TS","Cassiopeia":"MT","Cho'Gath":"TMJ","Corki":"MA","Darius":"T","Diana":"JM","Dr. Mundo":"TJ","Draven":"A","Ekko":"JM","Elise":"J","Evelynn":"J","Ezreal":"AM","Fiddlesticks":"JS","Fiora":"T","Fizz":"M","Galio":"MS","Gangplank":"T","Garen":"T","Gnar":"T","Gragas":"JTMS","Graves":"J","Gwen":"TJ","Hecarim":"J","Heimerdinger":"MTS","Hwei":"MS","Illaoi":"T","Irelia":"TM","Ivern":"J","Janna":"S","Jarvan IV":"J","Jax":"TJ","Jayce":"TM","Jhin":"A","Jinx":"A","K'Sante":"T","Kai'Sa":"A","Kalista":"A","Karma":"SM","Karthus":"JM","Kassadin":"M","Katarina":"M","Kayle":"TM","Kayn":"J","Kennen":"T","Kha'Zix":"J","Kindred":"J","Kled":"T","Kog'Maw":"A","LeBlanc":"M","Lee Sin":"J","Leona":"S","Lillia":"J","Lissandra":"M","Lucian":"AM","Lulu":"S","Lux":"SM","Malphite":"TS","Malzahar":"M","Maokai":"SJT","Master Yi":"J","Mel":"MS","Milio":"S","Miss Fortune":"A","Mordekaiser":"T","Morgana":"SJ","Naafiri":"MJ","Nami":"S","Nasus":"T","Nautilus":"S","Neeko":"MS","Nidalee":"J","Nilah":"A","Nocturne":"J","Nunu & Willump":"J","Olaf":"JT","Orianna":"M","Ornn":"T","Pantheon":"SMTJ","Poppy":"JTS","Pyke":"S","Qiyana":"MJ","Quinn":"T","Rakan":"S","Rammus":"J","Rek'Sai":"J","Rell":"S","Renata Glasc":"S","Renekton":"T","Rengar":"JT","Riven":"T","Rumble":"TM","Ryze":"MT","Samira":"A","Sejuani":"J","Senna":"SA","Seraphine":"SMA","Sett":"TS","Shaco":"JS","Shen":"TS","Shyvana":"J","Singed":"T","Sion":"T","Sivir":"A","Skarner":"JT","Smolder":"AM","Sona":"S","Soraka":"S","Swain":"SMA","Sylas":"MJ","Syndra":"M","Tahm Kench":"ST","Taliyah":"JM","Talon":"MJ","Taric":"S","Teemo":"T","Thresh":"S","Tristana":"AM","Trundle":"JT","Tryndamere":"T","Twisted Fate":"M","Twitch":"A","Udyr":"JT","Urgot":"T","Varus":"A","Vayne":"AT","Veigar":"MA","Vel'Koz":"SM","Vex":"M","Vi":"J","Viego":"J","Viktor":"M","Vladimir":"MT","Volibear":"TJ","Warwick":"JT","Wukong":"JT","Xayah":"A","Xerath":"SM","Xin Zhao":"J","Yasuo":"MT","Yone":"MT","Yorick":"T","Yunara":"A","Yuumi":"S","Zaahen":"TJ","Zac":"J","Zed":"MJ","Zeri":"A","Ziggs":"AM","Zilean":"SM","Zoe":"M","Zyra":"S"};
+const LANE_LETRA="TJMAS";                       /* mesma ordem de LANES: Top, Jungle, Mid, ADC, Suporte */
+const PESO_POS=[3,2,1.2,0.8];
+/* feitiços: 11 Golpear, 12 Teleporte, 7 Curar, 21 Barreira, 3 Exaustão, 14 Incendiar, 1 Purificar, 6 Fantasma */
+const PESO_FEITICO={11:{J:12},12:{T:2,M:1},7:{A:2,S:.5},21:{A:1,M:.5},3:{S:2,A:.5},14:{M:.7,S:.7,T:.5},1:{A:1.5},6:{T:1,A:.7}};
+function notaLane(p,lane){
+  const L=LANE_LETRA[lane], pos=LANE_CAMP[canon(String(p.campeao||""))]||"";
+  let n=pos?(pos.indexOf(L)>=0?PESO_POS[pos.indexOf(L)]||.5:0):.3;
+  const fs=Array.isArray(p.feiticos)?p.feiticos.map(Number):[];
+  for(const f of fs){ const w=PESO_FEITICO[f]; if(w&&w[L])n+=w[L]; }
+  if(L==="J"&&!fs.includes(11))n-=4;            /* jungle sem Golpear é muito raro */
+  return n;
+}
+/* devolve, para cada jogador do time, o índice da lane (0..4) */
+function deduzirLanes(time){
+  if(time.length!==5)return null;
+  let melhor=null, nota=-Infinity;
+  const perm=(a,k=0)=>{ if(k===a.length){ const t=a.reduce((s,l,i)=>s+notaLane(time[i],l),0); if(t>nota){nota=t;melhor=a.slice();} return; }
+    for(let i=k;i<a.length;i++){ [a[k],a[i]]=[a[i],a[k]]; perm(a,k+1); [a[k],a[i]]=[a[i],a[k]]; } };
+  perm([0,1,2,3,4]);
+  return melhor;
+}
+/* coloca os nanicos da partida na escalação, cada um na lane deduzida */
 function riotPreencher(g,manual){
   const t=riotNossoTime(g);
-  const ps=g.jogo.participantes.filter(p=>p&&p.fid&&g.fids.has(p.fid)&&Number(p.time)===t&&friendOf(p.fid)).slice(0,5);
+  const time=g.jogo.participantes.filter(p=>p&&Number(p.time)===t);
+  const ps=time.filter(p=>p.fid&&g.fids.has(p.fid)&&friendOf(p.fid)).slice(0,5);
   if(!ps.length)return manual&&toast("Nenhum nanico encontrado nessa partida.");
   const novo=LANES.map(()=>({friendId:"",champion:""}));
+  const lanes=Number(g.jogo.queueId)===450||g.jogo.modo==="ARAM"?null:deduzirLanes(time);
   const livres=[0,1,2,3,4];
-  const jg=ps.find(p=>Array.isArray(p.feiticos)&&p.feiticos.includes(11));
   const pos=(p,i)=>{ novo[i]={friendId:p.fid,champion:canon(String(p.campeao||"")).slice(0,30)}; livres.splice(livres.indexOf(i),1); };
-  if(jg)pos(jg,1);
-  ps.filter(p=>p!==jg).forEach(p=>pos(p,livres[0]));
+  if(lanes) ps.forEach(p=>pos(p,lanes[time.indexOf(p)]));
+  else ps.forEach(p=>pos(p,livres[0]));       /* ARAM ou time incompleto: lane não existe, vai em ordem */
   lineup=novo; syncLineupInputs(); saveLineup();
   toast(manual?"Escalação preenchida com a partida":"Partida detectada: escalação preenchida");
 }
@@ -2114,6 +2142,7 @@ const CHANGELOG=[
   {data:"31/10/2026",itens:["Aba Perfil com o link do op.gg de cada um","Clicar num nanico abre as nanicadas dele","Filtro das nanicadas volta a mostrar uma pessoa por vez"]},
   {data:"31/10/2026",itens:["Partida ao vivo: o site percebe quando um nanico com op.gg entra em jogo e mostra os 10 campeões","Escalação preenchida sozinha quando a partida começa"]},
   {data:"31/10/2026",itens:["Perfil mostra o nick de cada um embaixo do nome"]},
+  {data:"31/10/2026",itens:["Escalação automática acerta a lane de cada um pelo campeão e pelos feitiços"]},
 ];
 const versionAt=i=>"v1."+String(i).padStart(2,"0");
 const VERSION=versionAt(CHANGELOG.length-1);
