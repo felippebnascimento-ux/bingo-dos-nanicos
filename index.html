@@ -469,6 +469,14 @@ body.pip .mcell{font-size:11.5px}
 .live-grid:fullscreen.no-rail .stage{border-radius:0;box-shadow:none}
 .live-grid:fullscreen.no-rail .minis{display:none}
 @media (prefers-reduced-motion:reduce){.stage-bar{transition:none}}
+
+/* quem está ao vivo na lista da sala é clicável */
+.people li[data-live]{cursor:pointer}
+.people li[data-live]:hover{background:var(--surface-2)}
+.people li[data-live]:focus-visible{outline:2.5px solid var(--accent);outline-offset:1px}
+body.side-min .people li[data-live]:hover{background:none}
+body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live]:hover .u{transform:scale(1.08)}
+.people .av,.people .u{transition:transform .12s}
 </style>
 </head>
 <body>
@@ -758,8 +766,20 @@ function renderPeople(){
   $("#people").innerHTML=list.length?list.map(p=>{
     const f=friendOf(p.fid)||friends.find(x=>norm(x.name)===norm(p.name));
     const pic=f?avatar(f):`<span class="u" style="--h:${hueOf(p.name)}" aria-hidden="true">${esc(initials(p.name))}</span>`;
-    return `<li class="${p.key===myKey?"me":""}${p.live?" live":""}" title="${esc(f?f.name:p.name)}${p.live?" · ao vivo":""}">${pic}<span class="who">${esc(f?f.name:p.name)}${p.key===myKey?` <span class="you">(você)</span>`:""}</span>${p.live?`<span class="live-pill">AO VIVO</span>`:""}${p.lines?`<span class="bingo-pill">BINGO${p.lines>1?" ×"+p.lines:""}</span>`:""}</li>`;
+    const nm=esc(f?f.name:p.name), eu=p.key===myKey;
+    const liveAttrs=p.live?` data-live="${esc(p.key)}" role="button" tabindex="0" aria-label="${eu?"Ver a sua transmissão":`Assistir a tela de ${nm}`}"`:"";
+    return `<li class="${eu?"me":""}${p.live?" live":""}" title="${p.live?(eu?"Ver a sua transmissão":`Assistir a tela de ${nm}`):nm}"${liveAttrs}>${pic}<span class="who">${esc(f?f.name:p.name)}${p.key===myKey?` <span class="you">(você)</span>`:""}</span>${p.live?`<span class="live-pill">AO VIVO</span>`:""}${p.lines?`<span class="bingo-pill">BINGO${p.lines>1?" ×"+p.lines:""}</span>`:""}</li>`;
   }).join(""):`<li class="status">Ninguém por aqui ainda.</li>`;
+  $("#people").querySelectorAll("li[data-live]").forEach(li=>{
+    const go=()=>goWatch(li.dataset.live);
+    li.onclick=go; li.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go();}};
+  });
+}
+/* clicar em quem está ao vivo na lista da sala: abre a aba Ao vivo já na tela da pessoa */
+function goWatch(key){
+  document.querySelector('.nav [data-tab="live"]').click();
+  if(key!==myKey)watch(key,true); else setRail("telas");
+  if(matchMedia("(max-width:860px)").matches)$("#stage").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});
 }
 function trackMe(){ if(room&&myName) room.track({name:myName,fid:myFid,lines:bingoLines(),live:LIVE.mySid||null,at:Date.now()}).catch(()=>{}); renderPeople(); }
 
@@ -1489,6 +1509,7 @@ const CHANGELOG=[
   {data:"31/10/2026",itens:["Uma surpresa que só aparece no fim do dia"]},
   {data:"31/10/2026",itens:["Som da transmissão: pede o som da janela do jogo quando o navegador permite","Aviso explicando por que a transmissão saiu sem som, com botão para transmitir de novo"]},
   {data:"31/10/2026",itens:["Controles do vídeo somem sozinhos e só aparecem ao mexer o mouse, para não tapar o jogo"]},
+  {data:"31/10/2026",itens:["Clicar em quem está ao vivo na lista da sala abre direto a transmissão da pessoa"]},
 ];
 const versionAt=i=>"v1."+String(i).padStart(2,"0");
 const VERSION=versionAt(CHANGELOG.length-1);
