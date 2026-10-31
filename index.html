@@ -48,6 +48,10 @@ button{font:inherit;color:inherit}
 /* texto fixo não seleciona nem mostra cursor de digitação; só os campos de escrever */
 body{-webkit-user-select:none;user-select:none;caret-color:transparent;cursor:default;-webkit-touch-callout:none}
 input,textarea{-webkit-user-select:text;user-select:text;caret-color:var(--accent);cursor:text}
+input[type=range],input[type=checkbox],input[type=radio],input[type=button],input[type=submit]{-webkit-user-select:none;user-select:none;caret-color:transparent;cursor:pointer}
+.stage,.stage *,.minis,.minis *{-webkit-user-select:none;user-select:none}
+.stage ::selection,.stage::selection,.minis ::selection{background:transparent}
+.stage video,.mini video{-webkit-user-drag:none;pointer-events:none}
 button,label.lnk,.cell,.chip,.tile,.pick-btn{cursor:pointer}
 .cell.free{cursor:default}
 :focus-visible{outline:2.5px solid var(--accent);outline-offset:2px}
@@ -424,11 +428,7 @@ body.pip .mcell{font-size:11.5px}
 .seg button{border:0;background:none;border-radius:var(--r-sm);padding:8px 4px;font-weight:600;font-size:13px;color:var(--muted);cursor:pointer}
 .seg button[aria-checked="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px var(--shadow)}
 .stage-bar .q{font-size:12px;opacity:.85;font-variant-numeric:tabular-nums}
-#panelBtn{display:none}
 .live-grid:fullscreen{background:var(--bg);padding:14px;height:100vh;grid-template-columns:minmax(0,1fr) 360px;align-items:stretch;overflow:hidden}
-.live-grid:fullscreen #panelBtn{display:inline-block}
-.live-grid:fullscreen.no-rail{grid-template-columns:minmax(0,1fr)}
-.live-grid:fullscreen.no-rail .rail{display:none}
 .live-grid:fullscreen .stage-col{grid-template-rows:minmax(0,1fr) auto;min-height:0}
 .live-grid:fullscreen .stage{aspect-ratio:auto;height:100%;min-height:0;border-radius:var(--r-md)}
 .live-grid:fullscreen .minis{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:200px;overflow-x:auto}
@@ -469,6 +469,25 @@ body.pip .mcell{font-size:11.5px}
 .live-grid:fullscreen.no-rail .stage{border-radius:0;box-shadow:none}
 .live-grid:fullscreen.no-rail .minis{display:none}
 @media (prefers-reduced-motion:reduce){.stage-bar{transition:none}}
+
+/* painel da direita do Ao vivo: alça retrátil na borda, igual ao menu lateral */
+.live-grid{position:relative}
+.rail-toggle{display:none;position:absolute;top:50%;right:337px;width:28px;height:48px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--ink);place-items:center;cursor:pointer;z-index:7;padding:0;transform:translateY(-50%) scaleX(-1);opacity:0;transition:opacity .15s,background .15s;box-shadow:0 2px 10px var(--shadow)}
+.rail-toggle svg{width:16px;height:16px;transform:translateX(-1px)}
+.rail-toggle:hover{background:var(--surface-2)}
+.rail:hover ~ .rail-toggle,.rail-toggle:hover,.rail-toggle:focus-visible,.stage-col:has(.stage:not(.idle)) ~ .rail-toggle{opacity:1}
+.live-grid.no-rail .rail-toggle{right:4px;transform:translateY(-50%)}
+@media (min-width:1180px){
+  .rail-toggle{display:grid}
+  .live-grid.no-rail{grid-template-columns:minmax(0,1fr) 0;column-gap:0}
+  .live-grid.no-rail .rail{display:none}
+}
+.live-grid:fullscreen .rail-toggle{display:grid;right:371px}
+.live-grid:fullscreen.no-rail{grid-template-columns:minmax(0,1fr) 0;column-gap:0}
+.live-grid:fullscreen.no-rail .rail{display:none}
+.live-grid:fullscreen.no-rail .rail-toggle{right:10px}
+@media (hover:none){.rail-toggle{opacity:1}}
+@media (prefers-reduced-motion:reduce){.rail-toggle{transition:none}}
 
 /* quem está ao vivo na lista da sala é clicável */
 .people li[data-live]{cursor:pointer}
@@ -587,7 +606,6 @@ body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live
                 <span class="sp"></span>
                 <label class="vol" for="vol">Volume <input type="range" id="vol" min="0" max="1" step="0.05" value="1"></label>
                 <button class="sbtn" id="pipBtn" type="button">Janela flutuante</button>
-                <button class="sbtn" id="panelBtn" type="button">Esconder painel</button>
                 <button class="sbtn" id="fsBtn" type="button">Tela cheia</button>
               </div>
             </div>
@@ -619,6 +637,7 @@ body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live
               <div class="block" id="miniCardBlock"></div>
             </div>
           </aside>
+          <button class="rail-toggle" id="railToggle" type="button" aria-label="Recolher painel" title="Recolher painel" aria-expanded="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
         </div>
       </section>
 
@@ -1422,13 +1441,21 @@ $("#pipBtn").onclick=async()=>{ const w=LIVE.watching.get(LIVE.main); try{ if(do
 /* tela cheia: a área inteira (vídeo + chat/cartela) */
 function toggleFs(){ const el=$("#liveWrap"); const pr=document.fullscreenElement?document.exitFullscreen():el.requestFullscreen?.(); pr?.catch?.(()=>toast("Seu navegador não abriu a tela cheia.")); }
 $("#fsBtn").onclick=toggleFs; $("#liveFs").onclick=toggleFs;
-$("#panelBtn").onclick=()=>{ const g=$("#liveWrap"); g.classList.toggle("no-rail"); $("#panelBtn").textContent=g.classList.contains("no-rail")?"Mostrar painel":"Esconder painel"; };
 document.addEventListener("fullscreenchange",()=>{
   const fs=!!document.fullscreenElement;
   $("#fsBtn").textContent=fs?"Sair da tela cheia":"Tela cheia"; $("#liveFs").textContent=fs?"Sair da tela cheia":"Tela cheia";
-  if(!fs){$("#liveWrap").classList.remove("no-rail");$("#panelBtn").textContent="Esconder painel";}
   (document.fullscreenElement||document.body).appendChild($("#toast"));
 });
+
+/* painel da direita: recolher/abrir pela alça (fica salvo) */
+function setRailMin(on){
+  $("#liveWrap").classList.toggle("no-rail",on);
+  const b=$("#railToggle"); b.setAttribute("aria-expanded",String(!on));
+  b.setAttribute("aria-label",on?"Abrir painel":"Recolher painel"); b.title=on?"Abrir painel":"Recolher painel";
+  try{localStorage.setItem("rail-min",on?"1":"0");}catch{}
+}
+$("#railToggle").onclick=()=>setRailMin(!$("#liveWrap").classList.contains("no-rail"));
+try{ if(localStorage.getItem("rail-min")==="1")setRailMin(true); }catch{}
 
 /* painel do Ao vivo: Telas / Chat / Cartela */
 let railTab="telas"; try{const t=localStorage.getItem("rail-tab");if(["telas","chat","cartela"].includes(t))railTab=t;}catch{}
@@ -1504,12 +1531,13 @@ const CHANGELOG=[
   {data:"25/10/2026",itens:["Arte de cada nanico: rosto em todo o site e corpo inteiro na aba Nanicos","Marca d'água do grupo e ícone da bola de bingo","Seletor de nanico abre onde cabe na tela"]},
   {data:"30/10/2026",itens:["Botão para entrar no Google Meet do grupo"]},
   {data:"31/10/2026",itens:["Login de cada nanico, com senha própria no primeiro acesso","Aba Ao vivo: várias transmissões de tela ao mesmo tempo, com o som só da principal"]},
-  {data:"31/10/2026",itens:["Transmissão em Full HD com 60 ou 30 fps","Tela cheia com chat e cartela ao lado","Chat da sala","Cartela no painel e cartela flutuante","Menu lateral recolhível"]},
+  {data:"31/10/2026",itens:["Transmissão em Full HD com 60 ou 30 fps",{t:"Tela cheia com chat e cartela ao lado e botão de esconder o painel",off:"botão trocado pela alça retrátil na v1.14"},"Chat da sala","Cartela no painel e cartela flutuante","Menu lateral recolhível"]},
   {data:"31/10/2026",itens:["Número da versão no rodapé e este log de atualizações"]},
   {data:"31/10/2026",itens:["Uma surpresa que só aparece no fim do dia"]},
   {data:"31/10/2026",itens:["Som da transmissão: pede o som da janela do jogo quando o navegador permite","Aviso explicando por que a transmissão saiu sem som, com botão para transmitir de novo"]},
   {data:"31/10/2026",itens:["Controles do vídeo somem sozinhos e só aparecem ao mexer o mouse, para não tapar o jogo"]},
   {data:"31/10/2026",itens:["Clicar em quem está ao vivo na lista da sala abre direto a transmissão da pessoa"]},
+  {data:"31/10/2026",itens:["Painel do Ao vivo recolhe pela alça na borda direita, dentro ou fora da tela cheia","Arrastar o volume ou clicar no vídeo não seleciona mais texto"]},
 ];
 const versionAt=i=>"v1."+String(i).padStart(2,"0");
 const VERSION=versionAt(CHANGELOG.length-1);
