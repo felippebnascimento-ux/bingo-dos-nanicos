@@ -558,6 +558,33 @@ body.cams{padding:8px;background:#151613;min-height:100vh}
 .cam-tile span{position:absolute;left:8px;bottom:8px;color:#fff;font:700 13px var(--body);text-shadow:0 1px 3px rgba(0,0,0,.9)}
 .cams-empty{color:#D9D5C8;font:500 14px var(--body);text-align:center;padding:30px 10px}
 
+/* ---------- partida ao vivo (API da Riot) ---------- */
+.riot-box{display:grid;gap:14px;margin-bottom:18px}
+.riot-box:empty{display:none}
+.riot-game{padding:16px 18px}
+.rg-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.rg-head b{font:700 16px var(--display)}
+.rg-time{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:600}
+.rg-head .sp{flex:1}
+.rg-auto{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer}
+.rg-auto input{accent-color:var(--accent);width:16px;height:16px;margin:0;cursor:pointer}
+.rg-teams{display:grid;gap:10px}
+@media (min-width:760px){.rg-teams{grid-template-columns:1fr 1fr}}
+.rg-team{display:grid;gap:4px;align-content:start;padding:8px;border-radius:var(--r-md);background:var(--bg)}
+.rg-team h3{margin:0 0 2px 4px;font:700 12px var(--body);color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.rg-p{display:flex;align-items:center;gap:9px;padding:4px 6px;border-radius:var(--r-sm);min-width:0}
+.rg-p.nan{background:var(--accent-soft);box-shadow:inset 0 0 0 1.5px var(--accent)}
+.rg-p img.ch{width:32px;height:32px;border-radius:8px;flex:none;background:var(--surface-2)}
+.rg-p .ch.none{display:inline-block}
+.rg-p .tx{min-width:0;display:grid;line-height:1.2}
+.rg-p .tx b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rg-p .tx small{color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rg-p .av.xs{width:22px;height:22px;margin-left:auto;flex:none}
+.rg-bans{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--muted)}
+.rg-bans img{width:22px;height:22px;border-radius:6px;filter:grayscale(1);opacity:.75}
+.riot-note{font-size:12px;color:var(--muted);margin:0}
+.ingame-pill{font:700 10px var(--display);letter-spacing:.04em;color:#fff;background:var(--olive);padding:3px 7px;border-radius:99px;white-space:nowrap;flex:none}
+
 /* quem está ao vivo na lista da sala é clicável */
 .people li[data-live]{cursor:pointer}
 .people li[data-live]:hover{background:var(--surface-2)}
@@ -612,6 +639,7 @@ body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live
           <h1>Quem tá na partida?</h1>
           <p>Monte a escalação, sorteie sua cartela e marque cada nanicada quando ela acontecer.</p>
         </header>
+        <div id="riotBox" class="riot-box" aria-live="polite"></div>
         <div class="play">
         <div class="block lineup-block">
           <h2>Escalação</h2>
@@ -1286,6 +1314,90 @@ $("#formFrase").onsubmit=async e=>{
   finally{btn.disabled=false;}
 };
 
+/* ---------- partida ao vivo (API da Riot, pela função riot-ao-vivo do Supabase) ----------
+   A cada minuto o site pergunta à função quem dos nanicos com op.gg está em partida.
+   Quando aparece uma partida nova, a escalação pode ser preenchida sozinha. */
+const RIOT={linhas:[],erro:null,checado:null,off:false,ult:0,t:null,visto:[]};
+try{RIOT.visto=JSON.parse(localStorage.getItem("riot-visto")||"[]");if(!Array.isArray(RIOT.visto))RIOT.visto=[];}catch{RIOT.visto=[];}
+var riotAuto=true; try{riotAuto=localStorage.getItem("riot-auto")!=="0";}catch{}
+const FILAS={0:"Personalizada",400:"Normal (escolha)",420:"Ranqueada Solo/Duo",430:"Normal (às cegas)",440:"Ranqueada Flex",450:"ARAM",480:"Partida rápida",490:"Partida rápida",700:"Clash",720:"Clash ARAM",830:"Co-op vs IA",840:"Co-op vs IA",850:"Co-op vs IA",870:"Co-op vs IA",880:"Co-op vs IA",890:"Co-op vs IA",900:"URF",1020:"Um por Todos",1300:"Nexus Blitz",1700:"Arena",1900:"URF",2400:"ARAM: Caos"};
+const SAFE_ID=/^[A-Za-z0-9]{1,40}$/, SAFE_V=/^[0-9.]{1,20}$/;
+function champImg(j,img){ return SAFE_ID.test(img||"")&&SAFE_V.test(j.versao||"")?`https://ddragon.leagueoflegends.com/cdn/${j.versao}/img/champion/${img}.png`:""; }
+async function riotTick(){
+  clearTimeout(RIOT.t);
+  if(!sb||!myFid){RIOT.t=setTimeout(riotTick,15000);return;}
+  if(document.hidden){RIOT.t=setTimeout(riotTick,30000);return;}
+  RIOT.ult=Date.now();
+  try{
+    const {data,error}=await sb.functions.invoke("riot-ao-vivo",{body:{}});
+    if(error)throw error;
+    RIOT.off=false;
+    RIOT.linhas=Array.isArray(data?.linhas)?data.linhas.slice(0,30):[];
+    RIOT.erro=typeof data?.erro==="string"?data.erro.slice(0,160):null;
+    RIOT.checado=data?.checado_em?Date.parse(data.checado_em):null;
+  }catch(e){ console.warn("partida ao vivo indisponível",e); RIOT.off=true; RIOT.linhas=[]; }
+  renderRiot(); renderPerfil();
+  RIOT.t=setTimeout(riotTick,RIOT.off?300000:60000);
+}
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden&&Date.now()-RIOT.ult>60000)riotTick(); });
+/* junta os nanicos que estão na mesma partida */
+function riotJogos(){
+  const m=new Map(), agora=Date.now();
+  for(const r of RIOT.linhas){
+    const j=r&&r.jogo; if(!j||typeof j!=="object"||!Array.isArray(j.participantes))continue;
+    if(agora-(Date.parse(r.atualizado)||0)>5*60000)continue;            /* dado velho: ignora */
+    const id=String(j.gameId||r.game_id); if(!m.has(id))m.set(id,{id,jogo:j,fids:new Set()});
+    m.get(id).fids.add(r.friend_id);
+  }
+  return [...m.values()];
+}
+function riotEmJogo(){ const o=new Map(); for(const g of riotJogos())for(const p of g.jogo.participantes)if(p&&p.fid&&g.fids.has(p.fid))o.set(p.fid,String(p.campeao||"")); return o; }
+const mmss=s=>{s=Math.max(0,Math.floor(s));return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;};
+function rgTempo(j){ const ini=Number(j.inicio)||0; return ini>0?(Date.now()-ini)/1000:Number(j.duracao)||0; }
+function renderRiot(){
+  const box=$("#riotBox"), jogos=riotJogos();
+  if(!jogos.length){ box.innerHTML=RIOT.erro&&!RIOT.off?`<p class="riot-note">Partida ao vivo: ${esc(RIOT.erro)}</p>`:""; return; }
+  box.innerHTML=jogos.map(g=>{
+    const j=g.jogo, ps=j.participantes.filter(p=>p&&typeof p==="object");
+    const times=[...new Set(ps.map(p=>Number(p.time)||0))].sort();
+    const nos=riotNossoTime(g);
+    const fila=FILAS[Number(j.queueId)]||(j.modo==="ARAM"?"ARAM":"Partida");
+    const linha=p=>{ const f=p.fid&&g.fids.has(p.fid)?friendOf(p.fid):null; const src=champImg(j,p.img); const nome=String(p.riotId||"").split("#")[0];
+      return `<div class="rg-p${f?" nan":""}">${src?`<img class="ch" src="${esc(src)}" alt="" loading="lazy" width="32" height="32">`:`<span class="ch none"></span>`}<span class="tx"><b>${esc(p.campeao||"?")}</b><small>${esc(f?f.name:nome)}</small></span>${f?avatar(f,"xs"):""}</div>`; };
+    const bans=(Array.isArray(j.bans)?j.bans:[]).map(b=>champImg(j,b&&b.img)).filter(Boolean);
+    return `<div class="block riot-game">
+      <div class="rg-head"><span class="live-pill">EM PARTIDA</span><b>${esc(fila)}</b><span class="rg-time" data-ini="${Number(j.inicio)||0}" data-dur="${Number(j.duracao)||0}" data-em="${Date.now()}">${mmss(rgTempo(j))}</span><span class="sp"></span>
+        <label class="rg-auto"><input type="checkbox" data-auto ${riotAuto?"checked":""}>Preencher a escalação sozinho</label>
+        <button class="btn sm" type="button" data-fill="${esc(g.id)}">Usar na escalação</button></div>
+      <div class="rg-teams">${times.map(t=>`<div class="rg-team"><h3>${t===nos?"Time dos nanicos":t===100?"Time azul":t===200?"Time vermelho":"Time"}</h3>${ps.filter(p=>(Number(p.time)||0)===t).map(linha).join("")}</div>`).join("")}</div>
+      ${bans.length?`<div class="rg-bans">Bans: ${bans.slice(0,10).map(s=>`<img src="${esc(s)}" alt="" loading="lazy" width="22" height="22">`).join("")}</div>`:""}
+    </div>`;
+  }).join("");
+  box.querySelectorAll("[data-fill]").forEach(b=>b.onclick=()=>{ const g=riotJogos().find(x=>x.id===b.dataset.fill); if(g)riotPreencher(g,true); });
+  box.querySelectorAll("[data-auto]").forEach(c=>c.onchange=()=>{ riotAuto=c.checked; try{localStorage.setItem("riot-auto",riotAuto?"1":"0");}catch{} box.querySelectorAll("[data-auto]").forEach(x=>x.checked=riotAuto); });
+  /* partida nova e só uma acontecendo: preenche a escalação sozinho (uma vez por partida) */
+  if(riotAuto&&jogos.length===1&&!RIOT.visto.includes(jogos[0].id)){
+    RIOT.visto=[...RIOT.visto,jogos[0].id].slice(-20); try{localStorage.setItem("riot-visto",JSON.stringify(RIOT.visto));}catch{}
+    riotPreencher(jogos[0],false);
+  }
+}
+function riotNossoTime(g){ const c={}; for(const p of g.jogo.participantes)if(p&&p.fid&&g.fids.has(p.fid))c[p.time]=(c[p.time]||0)+1; return Number(Object.keys(c).sort((a,b)=>c[b]-c[a])[0])||0; }
+/* coloca os nanicos da partida na escalação; quem tem Golpear (Smite) vai para a Jungle */
+function riotPreencher(g,manual){
+  const t=riotNossoTime(g);
+  const ps=g.jogo.participantes.filter(p=>p&&p.fid&&g.fids.has(p.fid)&&Number(p.time)===t&&friendOf(p.fid)).slice(0,5);
+  if(!ps.length)return manual&&toast("Nenhum nanico encontrado nessa partida.");
+  const novo=LANES.map(()=>({friendId:"",champion:""}));
+  const livres=[0,1,2,3,4];
+  const jg=ps.find(p=>Array.isArray(p.feiticos)&&p.feiticos.includes(11));
+  const pos=(p,i)=>{ novo[i]={friendId:p.fid,champion:canon(String(p.campeao||"")).slice(0,30)}; livres.splice(livres.indexOf(i),1); };
+  if(jg)pos(jg,1);
+  ps.filter(p=>p!==jg).forEach(p=>pos(p,livres[0]));
+  lineup=novo; syncLineupInputs(); saveLineup();
+  toast(manual?"Escalação preenchida com a partida":"Partida detectada: escalação preenchida");
+}
+setInterval(()=>{ document.querySelectorAll(".rg-time").forEach(el=>{ const ini=+el.dataset.ini; el.textContent=mmss(ini>0?(Date.now()-ini)/1000:(+el.dataset.dur)+(Date.now()-(+el.dataset.em))/1000); }); },1000);
+
 /* ---------- perfil: link do op.gg ---------- */
 /* só aceita endereço do op.gg (https://op.gg/... ou https://www.op.gg/...) */
 function cleanOpgg(v){
@@ -1319,8 +1431,9 @@ function renderPerfil(){
     $("#opggClear")&&($("#opggClear").onclick=()=>saveOpgg(""));
   }
   const list=friends.slice().sort((a,b)=>(a.id===myFid?-1:b.id===myFid?1:0)||byName(a,b));
-  $("#opggList").innerHTML=list.map(f=>{ const u=opggOf(f);
-    return `<li class="${f.id===myFid?"me":""}">${avatar(f)}<span class="nm">${esc(f.name)}${u?`<small>${esc(opggLabel(u))}</small>`:""}</span>${u?`<a class="btn sm opgg-go" href="${esc(u)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir o op.gg de ${esc(f.name)}">op.gg</a>`:`<span class="opgg-none">sem link</span>`}</li>`; }).join("");
+  const emJogo=riotEmJogo();
+  $("#opggList").innerHTML=list.map(f=>{ const u=opggOf(f), ch=emJogo.get(f.id);
+    return `<li class="${f.id===myFid?"me":""}">${avatar(f)}<span class="nm">${esc(f.name)}${u?`<small>${esc(opggLabel(u))}</small>`:""}</span>${emJogo.has(f.id)?`<span class="ingame-pill" title="Em partida agora">EM PARTIDA${ch?" · "+esc(ch):""}</span>`:""}${u?`<a class="btn sm opgg-go" href="${esc(u)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir o op.gg de ${esc(f.name)}">op.gg</a>`:`<span class="opgg-none">sem link</span>`}</li>`; }).join("");
 }
 async function saveOpgg(v){
   if(!opggOk)return toast("Para salvar o op.gg, rode o SQL novo no Supabase.");
@@ -1994,6 +2107,7 @@ const CHANGELOG=[
   {data:"31/10/2026",itens:["Qualidade da transmissão: 1440p ou 1080p, com 60 ou 30 fps (o mais alto à esquerda)","Proteção contra abuso: limite de mensagens, nanicadas e mudanças de escalação, e tudo que chega da sala é conferido antes de aparecer"]},
   {data:"31/10/2026",itens:["Nanicada com vários nanicos e campeões","Escolha se a nanicada entra com qualquer um ou só com todos na partida","Qualquer nanico pode editar e remover nanicadas"]},
   {data:"31/10/2026",itens:["Aba Perfil com o link do op.gg de cada um","Clicar num nanico abre as nanicadas dele","Filtro das nanicadas volta a mostrar uma pessoa por vez"]},
+  {data:"31/10/2026",itens:["Partida ao vivo: o site percebe quando um nanico com op.gg entra em jogo e mostra os 10 campeões","Escalação preenchida sozinha quando a partida começa"]},
 ];
 const versionAt=i=>"v1."+String(i).padStart(2,"0");
 const VERSION=versionAt(CHANGELOG.length-1);
@@ -2085,7 +2199,7 @@ async function startSession(session){
 }
 function enterApp(){
   $("#gate").hidden=true; $("#firstGate").hidden=true; $("#conn").textContent="Conectando…";
-  joinRoom(true); loadChat();
+  joinRoom(true); loadChat(); setTimeout(riotTick,1500);
   document.addEventListener("visibilitychange",()=>{if(!document.hidden){later("f",loadFriends);later("p",loadPhrases);later("g",loadGame);}});
 }
 /* primeiro acesso: troca obrigatória da senha que o admin passou */
