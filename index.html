@@ -136,8 +136,6 @@ button,label.lnk,.cell,.chip,.tile,.pick-btn{cursor:pointer}
 .nav button[aria-selected="true"]{background:var(--olive);color:#FAF9F6}
 .nav .count{font-size:12px;font-weight:500;opacity:.75;font-variant-numeric:tabular-nums}
 .side-foot{margin-top:auto;display:grid;gap:6px;padding-inline:6px}
-.meet-btn{text-decoration:none;width:100%}
-.meet-btn:focus-visible{outline:2.5px solid var(--ink);outline-offset:3px}
 .linkish{border:0;background:none;padding:0;color:var(--muted);font-size:13px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;justify-self:start}
 .conn{font-size:12px;color:var(--muted)}
 
@@ -279,9 +277,9 @@ ul.list li.li-empty{grid-column:1/-1;background:none}
 .li-empty{justify-content:center;color:var(--muted);border:0!important;padding:28px 0!important}
 
 /* nanicos */
-#view-perfil{width:100%;max-width:1200px;margin:0 auto}
+#view-perfil{width:100%;max-width:1400px;margin:0 auto}
 .perfil-grid{display:grid;gap:18px;align-items:start}
-@media (min-width:1000px){.perfil-grid{grid-template-columns:minmax(0,380px) minmax(0,1fr)}}
+@media (min-width:1000px){.perfil-grid{grid-template-columns:minmax(0,340px) minmax(0,1fr)}}
 .me-head{display:flex;align-items:center;gap:14px;margin-bottom:14px}
 .me-head .av{width:72px;height:72px}
 .me-head b{font:700 22px var(--display);display:block}
@@ -289,13 +287,13 @@ ul.list li.li-empty{grid-column:1/-1;background:none}
 .me-block form{display:grid;gap:8px}
 .me-block .row{display:flex;gap:8px;flex-wrap:wrap}
 .me-block .row .btn{flex:1;text-decoration:none}
-.opgg-list{list-style:none;margin:0;padding:0;display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
-.opgg-list li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r-md);background:var(--bg);min-width:0}
+.opgg-list{list-style:none;margin:0;padding:0;display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.opgg-list li{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-md);background:var(--bg);min-width:0}
 .opgg-list li.me{box-shadow:inset 0 0 0 2px var(--accent)}
-.opgg-list .nm{flex:1;min-width:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.opgg-list .nm small{display:block;font-weight:500;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis}
-.opgg-go{flex:none;text-decoration:none;padding:7px 12px;font-size:13px}
-.opgg-none{flex:none;color:var(--muted);font-size:12px}
+.opgg-list .nm{flex:1;min-width:0;font-weight:700;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.opgg-list .nm small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal;overflow-wrap:anywhere;font-weight:600;color:var(--muted);font-size:12.5px;margin-top:1px}
+.opgg-go{flex:none;text-decoration:none;padding:6px 10px;font-size:12px}
+.opgg-none{flex:none;color:var(--muted);font-size:11.5px;opacity:.8}
 button.nanico{border:0;font:inherit;color:inherit;cursor:pointer;transition:transform .12s,box-shadow .12s}
 button.nanico:hover{transform:translateY(-2px);box-shadow:inset 0 0 0 2px var(--accent)}
 button.nanico:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px}
@@ -412,8 +410,6 @@ body.side-min .side-toggle{transform:translateY(-50%) scaleX(-1)}
   body.side-min .nav button{justify-content:center;padding:11px 0}
   body.side-min .nav .t,body.side-min .nav .count:not(.on){display:none}
   body.side-min .nav .count.on{position:absolute;top:2px;right:4px;font-size:10px}
-  body.side-min .meet-btn{width:46px;height:46px;padding:0;border-radius:50%}
-  body.side-min .meet-btn .t{display:none}
   body.side-min .side-foot{display:none}
   body.side-min .main{padding-left:max(16px,3vw)}
 }
@@ -615,10 +611,6 @@ body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live
       <button role="tab" aria-selected="false" data-tab="perfil" title="Perfil"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.6 7-5.6s6.2 2 7 5.6"/></svg><span class="t">Perfil</span></button>
     </nav>
 
-    <a class="btn meet-btn" href="https://meet.google.com/nua-cvax-gyw" target="_blank" rel="noopener" title="Entrar no Meet">
-      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M4 6.5A2.5 2.5 0 0 1 6.5 4h7A2.5 2.5 0 0 1 16 6.5v1.6l3.4-2.3A1 1 0 0 1 21 6.6v10.8a1 1 0 0 1-1.6.8L16 15.9v1.6a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 4 17.5z"/></svg>
-      <span class="t">Entrar no Meet</span>
-    </a>
     <div class="cam-row">
       <button class="btn soft cam-btn" id="camBtn" type="button" title="Ligar câmera" aria-pressed="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 10l4.6-2.6a.9.9 0 0 1 1.4.8v7.6a.9.9 0 0 1-1.4.8L15 14"/><rect x="3" y="6" width="12" height="12" rx="2.5"/></svg><span class="t">Ligar câmera</span></button>
       <button class="btn soft cam-pip" id="camPipBtn" type="button" title="Câmeras numa janela flutuante" aria-label="Câmeras numa janela flutuante"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><rect x="12" y="11" width="7" height="6" rx="1.2" fill="currentColor" stroke="none"/></svg></button>
@@ -1412,7 +1404,12 @@ function cleanOpgg(v){
   const out=u.toString(); return out.length<=300?out:null;
 }
 const opggOf=f=>{ const v=f&&typeof f.opgg==="string"?cleanOpgg(f.opgg):""; return v||""; };
-function opggLabel(url){ try{ const u=new URL(url); return decodeURIComponent(u.pathname.replace(/^\/(lol\/)?(summoners\/)?/,"").replace(/\/$/,"")).replace(/\//g," · ")||u.hostname; }catch{return url;} }
+/* nick do jogador a partir do link: ".../summoners/br/Nome-BR1" → "Nome" */
+function opggNick(url){
+  try{ const ps=new URL(url).pathname.split("/").filter(Boolean); const i=ps.findIndex(x=>/^summoners?$/i.test(x));
+    let id=i>=0&&ps[i+2]?ps[i+2]:ps[ps.length-1]||""; id=decodeURIComponent(id).replace(/\+/g," ").trim();
+    const c=id.lastIndexOf("-"); return (c>0?id.slice(0,c):id).trim()||"perfil"; }catch{return "perfil";}
+}
 function renderPerfil(){
   const me=friendOf(myFid), box=$("#meBlock"), cur=opggOf(me);
   if(!me){ box.innerHTML=`<p class="status">Carregando…</p>`; }
@@ -1433,7 +1430,7 @@ function renderPerfil(){
   const list=friends.slice().sort((a,b)=>(a.id===myFid?-1:b.id===myFid?1:0)||byName(a,b));
   const emJogo=riotEmJogo();
   $("#opggList").innerHTML=list.map(f=>{ const u=opggOf(f), ch=emJogo.get(f.id);
-    return `<li class="${f.id===myFid?"me":""}">${avatar(f)}<span class="nm">${esc(f.name)}${u?`<small>${esc(opggLabel(u))}</small>`:""}</span>${emJogo.has(f.id)?`<span class="ingame-pill" title="Em partida agora">EM PARTIDA${ch?" · "+esc(ch):""}</span>`:""}${u?`<a class="btn sm opgg-go" href="${esc(u)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir o op.gg de ${esc(f.name)}">op.gg</a>`:`<span class="opgg-none">sem link</span>`}</li>`; }).join("");
+    return `<li class="${f.id===myFid?"me":""}">${avatar(f)}<span class="nm">${esc(f.name)}${u?`<small title="${esc(opggNick(u))}">${esc(opggNick(u))}</small>`:""}</span>${emJogo.has(f.id)?`<span class="ingame-pill" title="Em partida agora">EM PARTIDA${ch?" · "+esc(ch):""}</span>`:""}${u?`<a class="btn sm opgg-go" href="${esc(u)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir o op.gg de ${esc(f.name)}">op.gg</a>`:`<span class="opgg-none">sem link</span>`}</li>`; }).join("");
 }
 async function saveOpgg(v){
   if(!opggOk)return toast("Para salvar o op.gg, rode o SQL novo no Supabase.");
@@ -2093,7 +2090,7 @@ const CHANGELOG=[
   {data:"25/10/2026",itens:["Novo visual: Bingo dos Nanicos","Lista de quem está na sala agora",{t:"Nome salvo no navegador",off:"trocado pelo login de cada nanico na v1.07"}]},
   {data:"25/10/2026",itens:["Frases viram Nanicadas, sempre em minúsculas",{t:"Filtro por vários nanicos ao mesmo tempo",off:"voltou a ser uma pessoa por vez na v1.19"},"Opção Random na escalação","Telas largas aproveitam o espaço em colunas"]},
   {data:"25/10/2026",itens:["Arte de cada nanico: rosto em todo o site e corpo inteiro na aba Nanicos","Marca d'água do grupo e ícone da bola de bingo","Seletor de nanico abre onde cabe na tela"]},
-  {data:"30/10/2026",itens:["Botão para entrar no Google Meet do grupo"]},
+  {data:"30/10/2026",itens:[{t:"Botão para entrar no Google Meet do grupo",off:"removido na v1.21: agora tem câmera e transmissão no site"}]},
   {data:"31/10/2026",itens:["Login de cada nanico, com senha própria no primeiro acesso","Aba Ao vivo: várias transmissões de tela ao mesmo tempo, com o som só da principal"]},
   {data:"31/10/2026",itens:[{t:"Transmissão em Full HD com 60 ou 30 fps",off:"ganhou a opção 1440p na v1.15"},{t:"Tela cheia com chat e cartela ao lado e botão de esconder o painel",off:"botão trocado pela alça retrátil na v1.14"},"Chat da sala","Cartela no painel e cartela flutuante","Menu lateral recolhível"]},
   {data:"31/10/2026",itens:["Número da versão no rodapé e este log de atualizações"]},
@@ -2108,6 +2105,7 @@ const CHANGELOG=[
   {data:"31/10/2026",itens:["Nanicada com vários nanicos e campeões","Escolha se a nanicada entra com qualquer um ou só com todos na partida","Qualquer nanico pode editar e remover nanicadas"]},
   {data:"31/10/2026",itens:["Aba Perfil com o link do op.gg de cada um","Clicar num nanico abre as nanicadas dele","Filtro das nanicadas volta a mostrar uma pessoa por vez"]},
   {data:"31/10/2026",itens:["Partida ao vivo: o site percebe quando um nanico com op.gg entra em jogo e mostra os 10 campeões","Escalação preenchida sozinha quando a partida começa"]},
+  {data:"31/10/2026",itens:["Perfil mostra o nick de cada um embaixo do nome"]},
 ];
 const versionAt=i=>"v1."+String(i).padStart(2,"0");
 const VERSION=versionAt(CHANGELOG.length-1);
