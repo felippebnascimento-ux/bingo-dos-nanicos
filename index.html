@@ -571,7 +571,8 @@ body.cams{padding:8px;background:#151613;min-height:100vh}
 .rg-p{display:flex;align-items:center;gap:9px;padding:4px 6px;border-radius:var(--r-sm);min-width:0}
 .rg-p.nan{background:var(--accent-soft);box-shadow:inset 0 0 0 1.5px var(--accent)}
 .rg-p img.ch{width:32px;height:32px;border-radius:8px;flex:none;background:var(--surface-2)}
-.rg-p .ch.none{display:inline-block}
+.rg-p .ch.none,.rg-bans .ch.none{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:8px;flex:none;background:var(--surface-2);color:var(--muted);font:700 12px var(--display)}
+.rg-bans .ch.none{width:22px;height:22px;border-radius:6px;font-size:9px;opacity:.75}
 .rg-p .tx{min-width:0;display:grid;line-height:1.2}
 .rg-p .tx b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rg-p .tx small{color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1313,6 +1314,7 @@ const RIOT={linhas:[],erro:null,checado:null,off:false,ult:0,t:null,visto:[]};
 try{RIOT.visto=JSON.parse(localStorage.getItem("riot-visto")||"[]");if(!Array.isArray(RIOT.visto))RIOT.visto=[];}catch{RIOT.visto=[];}
 var riotAuto=true; try{riotAuto=localStorage.getItem("riot-auto")!=="0";}catch{}
 const FILAS={0:"Personalizada",400:"Normal (escolha)",420:"Ranqueada Solo/Duo",430:"Normal (às cegas)",440:"Ranqueada Flex",450:"ARAM",480:"Partida rápida",490:"Partida rápida",700:"Clash",720:"Clash ARAM",830:"Co-op vs IA",840:"Co-op vs IA",850:"Co-op vs IA",870:"Co-op vs IA",880:"Co-op vs IA",890:"Co-op vs IA",900:"URF",1020:"Um por Todos",1300:"Nexus Blitz",1700:"Arena",1900:"URF",2400:"ARAM: Caos"};
+function chFallback(nome,ban){ const n=String(nome||"?").replace(/[^A-Za-zÀ-ÿ0-9]/g,"").slice(0,2)||"?"; return `<span class="ch none${ban?" ban":""}" aria-hidden="true">${esc(n)}</span>`; }
 const SAFE_ID=/^[A-Za-z0-9]{1,40}$/, SAFE_V=/^[0-9.]{1,20}$/;
 function champImg(j,img){ return SAFE_ID.test(img||"")&&SAFE_V.test(j.versao||"")?`https://ddragon.leagueoflegends.com/cdn/${j.versao}/img/champion/${img}.png`:""; }
 async function riotTick(){
@@ -1355,16 +1357,22 @@ function renderRiot(){
     const nos=riotNossoTime(g);
     const fila=FILAS[Number(j.queueId)]||(j.modo==="ARAM"?"ARAM":"Partida");
     const linha=p=>{ const f=p.fid&&g.fids.has(p.fid)?friendOf(p.fid):null; const src=champImg(j,p.img); const nome=String(p.riotId||"").split("#")[0];
-      return `<div class="rg-p${f?" nan":""}">${src?`<img class="ch" src="${esc(src)}" alt="" loading="lazy" width="32" height="32">`:`<span class="ch none"></span>`}<span class="tx"><b>${esc(p.campeao||"?")}</b><small>${esc(f?f.name:nome)}</small></span>${f?avatar(f,"xs"):""}</div>`; };
-    const bans=(Array.isArray(j.bans)?j.bans:[]).map(b=>champImg(j,b&&b.img)).filter(Boolean);
+      return `<div class="rg-p${f?" nan":""}">${src?`<img class="ch" src="${esc(src)}" alt="" width="32" height="32" data-cid="${Number(p.campeaoId)||0}" data-n="${esc(p.campeao||"")}">`:chFallback(p.campeao)}<span class="tx"><b>${esc(p.campeao||"?")}</b><small>${esc(f?f.name:nome)}</small></span>${f?avatar(f,"xs"):""}</div>`; };
+    const bans=(Array.isArray(j.bans)?j.bans:[]).map(b=>({src:champImg(j,b&&b.img),n:String(b&&b.campeao||"")})).filter(b=>b.src);
     return `<div class="block riot-game">
       <div class="rg-head"><span class="live-pill">EM PARTIDA</span><b>${esc(fila)}</b><span class="rg-time" data-ini="${Number(j.inicio)||0}" data-dur="${Number(j.duracao)||0}" data-em="${Date.now()}">${mmss(rgTempo(j))}</span><span class="sp"></span>
         <label class="rg-auto"><input type="checkbox" data-auto ${riotAuto?"checked":""}>Preencher a escalação sozinho</label>
         <button class="btn sm" type="button" data-fill="${esc(g.id)}">Usar na escalação</button></div>
       <div class="rg-teams">${times.map(t=>`<div class="rg-team"><h3>${t===nos?"Time dos nanicos":t===100?"Time azul":t===200?"Time vermelho":"Time"}</h3>${ps.filter(p=>(Number(p.time)||0)===t).map(linha).join("")}</div>`).join("")}</div>
-      ${bans.length?`<div class="rg-bans">Bans: ${bans.slice(0,10).map(s=>`<img src="${esc(s)}" alt="" loading="lazy" width="22" height="22">`).join("")}</div>`:""}
+      ${bans.length?`<div class="rg-bans">Bans: ${bans.slice(0,10).map(b=>`<img class="ban" src="${esc(b.src)}" alt="${esc(b.n)}" title="${esc(b.n)}" width="22" height="22" data-n="${esc(b.n)}">`).join("")}</div>`:""}
     </div>`;
   }).join("");
+  /* imagem do campeão não carregou: tenta o CommunityDragon e, se falhar de novo, mostra a inicial */
+  box.querySelectorAll("img.ch,img.ban").forEach(img=>img.addEventListener("error",()=>{
+    const cid=Number(img.dataset.cid)||0;
+    if(cid>0&&!img.dataset.t){ img.dataset.t="1"; img.src=`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${cid}.png`; return; }
+    const ph=document.createElement("span"); ph.innerHTML=chFallback(img.dataset.n,img.classList.contains("ban")); img.replaceWith(ph.firstChild);
+  }));
   box.querySelectorAll("[data-fill]").forEach(b=>b.onclick=()=>{ const g=riotJogos().find(x=>x.id===b.dataset.fill); if(g)riotPreencher(g,true); });
   box.querySelectorAll("[data-auto]").forEach(c=>c.onchange=()=>{ riotAuto=c.checked; try{localStorage.setItem("riot-auto",riotAuto?"1":"0");}catch{} box.querySelectorAll("[data-auto]").forEach(x=>x.checked=riotAuto); });
   /* partida nova e só uma acontecendo: preenche a escalação sozinho (uma vez por partida) */
