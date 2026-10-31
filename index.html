@@ -460,6 +460,15 @@ body.pip .mcell{font-size:11.5px}
 .fome:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
 @keyframes fome-pula{0%,78%,100%{transform:none}82%{transform:translateY(-6px) rotate(-6deg)}86%{transform:translateY(0) rotate(5deg)}90%{transform:translateY(-3px) rotate(-3deg)}94%{transform:none}}
 @media (max-width:860px){.fome{bottom:calc(16px + env(safe-area-inset-bottom,0px));right:16px;padding:11px 16px 11px 13px;font-size:14px}}
+
+/* controles do vídeo somem sozinhos (aparecem ao mexer o mouse) */
+.stage-bar{transition:opacity .25s}
+.stage.idle .stage-bar{opacity:0;pointer-events:none}
+.stage.idle{cursor:none}
+.live-grid:fullscreen.no-rail{padding:0;gap:0}
+.live-grid:fullscreen.no-rail .stage{border-radius:0;box-shadow:none}
+.live-grid:fullscreen.no-rail .minis{display:none}
+@media (prefers-reduced-motion:reduce){.stage-bar{transition:none}}
 </style>
 </head>
 <body>
@@ -1103,13 +1112,28 @@ function stereo(sdp){
 /* quem transmite */
 async function startLive(){
   if(!canShare)return toast("Transmitir só funciona no navegador do computador.");
-  let stream;
-  try{
-    stream=await navigator.mediaDevices.getDisplayMedia({
-      video:{frameRate:{ideal:LIVE.fps,max:LIVE.fps},width:{ideal:1920,max:1920},height:{ideal:1080,max:1080}},
-      audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},
-      systemAudio:"include",windowAudio:"window",selfBrowserSurface:"exclude",surfaceSwitching:"include"});
-  }catch(e){ if(e&&e.name!=="NotAllowedError"&&e.name!=="AbortError"){console.error(e);toast("Não deu para capturar a tela.");} return; }
+  /* cada navegador aceita opções diferentes: tenta da mais completa para a mais simples */
+  const vid={frameRate:{ideal:LIVE.fps,max:LIVE.fps},width:{ideal:1920,max:1920},height:{ideal:1080,max:1080}};
+  const aud={echoCancellation:false,noiseSuppression:false,autoGainControl:false};
+  const extra={systemAudio:"include",selfBrowserSurface:"exclude",surfaceSwitching:"include"};
+  const tentativas=[
+    {video:vid,audio:aud,...extra,windowAudio:"window"},
+    {video:vid,audio:aud,...extra},
+    {video:vid,audio:true,systemAudio:"include"},
+    {video:{frameRate:LIVE.fps},audio:true},
+    {video:true,audio:true},
+  ];
+  let stream=null, erro=null;
+  for(let i=0;i<tentativas.length;i++){
+    try{ stream=await navigator.mediaDevices.getDisplayMedia(tentativas[i]); break; }
+    catch(e){
+      erro=e; console.warn("captura, tentativa",i+1,e&&e.name,e&&e.message);
+      if(e&&e.name==="AbortError")return;
+      if(e&&e.name==="NotAllowedError"){ if(i>0)toast("Clique de novo em “Transmitir minha tela”."); return; }
+      if(!e||!["TypeError","NotSupportedError","OverconstrainedError","InvalidStateError"].includes(e.name))break;
+    }
+  }
+  if(!stream){ console.error(erro); toast(`Não deu para capturar a tela${erro&&erro.name?` (${erro.name})`:""}. Tente pelo Chrome ou Edge atualizado.`); return; }
   const vt=stream.getVideoTracks()[0]; if(vt){try{vt.contentHint="motion";}catch{} vt.addEventListener("ended",()=>stopLive());}
   LIVE.myStream=stream; LIVE.mySid=newId(); LIVE.hasAudio=stream.getAudioTracks().length>0;
   try{LIVE.surface=(vt&&vt.getSettings&&vt.getSettings().displaySurface)||"";}catch{LIVE.surface="";}
@@ -1361,6 +1385,20 @@ setInterval(async()=>{
 $("#vol").oninput=e=>{ LIVE.vol=+e.target.value; try{localStorage.setItem("live-vol",String(LIVE.vol));}catch{} const w=LIVE.watching.get(LIVE.main); if(w&&w.video)w.video.volume=LIVE.vol; };
 $("#unmute").onclick=()=>{ const w=LIVE.watching.get(LIVE.main); if(!w||!w.video)return; w.video.muted=false; w.video.play().then(()=>$("#unmute").hidden=true).catch(()=>{}); };
 $("#pipBtn").onclick=async()=>{ const w=LIVE.watching.get(LIVE.main); try{ if(document.pictureInPictureElement)await document.exitPictureInPicture(); else if(w&&w.video)await w.video.requestPictureInPicture(); }catch{toast("Seu navegador não abriu a janela flutuante.");} };
+/* controles do vídeo: aparecem ao mexer o mouse/tocar e somem depois de 2,5 s parado */
+(()=>{
+  const st=$("#stage"), bar=$("#stageBar"); let t=null, overBar=false;
+  const hide=()=>{ if(overBar||bar.contains(document.activeElement)&&document.activeElement.matches(":focus-visible"))return; st.classList.add("idle"); };
+  const show=(ms=2500)=>{ st.classList.remove("idle"); clearTimeout(t); t=setTimeout(hide,ms); };
+  st.addEventListener("pointermove",e=>{ if(e.pointerType==="mouse")show(); });
+  st.addEventListener("pointerdown",e=>show(e.pointerType==="mouse"?2500:3500));
+  st.addEventListener("mouseleave",()=>{ overBar=false; clearTimeout(t); hide(); });
+  bar.addEventListener("pointerenter",()=>{ overBar=true; show(); });
+  bar.addEventListener("pointerleave",()=>{ overBar=false; show(); });
+  bar.addEventListener("focusin",()=>show(4000));
+  st.classList.add("idle");
+})();
+
 /* tela cheia: a área inteira (vídeo + chat/cartela) */
 function toggleFs(){ const el=$("#liveWrap"); const pr=document.fullscreenElement?document.exitFullscreen():el.requestFullscreen?.(); pr?.catch?.(()=>toast("Seu navegador não abriu a tela cheia.")); }
 $("#fsBtn").onclick=toggleFs; $("#liveFs").onclick=toggleFs;
@@ -1450,6 +1488,7 @@ const CHANGELOG=[
   {data:"31/10/2026",itens:["Número da versão no rodapé e este log de atualizações"]},
   {data:"31/10/2026",itens:["Uma surpresa que só aparece no fim do dia"]},
   {data:"31/10/2026",itens:["Som da transmissão: pede o som da janela do jogo quando o navegador permite","Aviso explicando por que a transmissão saiu sem som, com botão para transmitir de novo"]},
+  {data:"31/10/2026",itens:["Controles do vídeo somem sozinhos e só aparecem ao mexer o mouse, para não tapar o jogo"]},
 ];
 const versionAt=i=>"v1."+String(i).padStart(2,"0");
 const VERSION=versionAt(CHANGELOG.length-1);
