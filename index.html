@@ -1179,12 +1179,12 @@ const ICE=[{urls:["stun:stun.l.google.com:19302","stun:stun1.l.google.com:19302"
 const LIVE={fps:60,res:1080,mySid:null,myStream:null,hasAudio:false,selfVideo:null,viewers:new Map(),watching:new Map(),main:null,vol:1};
 try{const v=parseFloat(localStorage.getItem("live-vol"));if(v>=0&&v<=1)LIVE.vol=v;}catch{}
 try{const f=parseInt(localStorage.getItem("live-fps"));if(f===30||f===60)LIVE.fps=f;}catch{}
-try{const r=parseInt(localStorage.getItem("live-res"));if(r===1080||r===1440||r===2160)LIVE.res=r;}catch{}
+try{const r=parseInt(localStorage.getItem("live-res"));if(r===1080||r===1440)LIVE.res=r;}catch{}
 /* qualidade: resolução (1080p ou 1440p) x fluidez (30 ou 60 fps; o WebRTC dos navegadores não passa de 60) */
-const RES={1080:{w:1920,h:1080,nome:"1080p · Full HD"},1440:{w:2560,h:1440,nome:"1440p · 2K"},2160:{w:3840,h:2160,nome:"2160p · 4K"}};
+const RES={1080:{w:1920,h:1080,nome:"1080p · Full HD"},1440:{w:2560,h:1440,nome:"1440p · 2K"}};
 /* teto por pessoa que assiste e o upload total que dá para dividir entre todos */
-const liveCap=()=>({1080:{60:9e6,30:6e6},1440:{60:16e6,30:10e6},2160:{60:30e6,30:20e6}})[LIVE.res][LIVE.fps];
-const liveBudget=()=>({1080:24e6,1440:32e6,2160:45e6})[LIVE.res];
+const liveCap=()=>({1080:{60:9e6,30:6e6},1440:{60:16e6,30:10e6}})[LIVE.res][LIVE.fps];
+const liveBudget=()=>({1080:24e6,1440:32e6})[LIVE.res];
 /* Full HD: prefere H.264 (codificação por hardware, pesa menos no PC que joga) e começa com bitrate alto */
 function preferH264(pc){
   try{ const caps=RTCRtpSender.getCapabilities&&RTCRtpSender.getCapabilities("video"); if(!caps)return;
@@ -1194,7 +1194,7 @@ function preferH264(pc){
 }
 function hiBitrate(sdp){
   const vids=new Set(); sdp.replace(/a=rtpmap:(\d+) (H264|VP8|VP9|AV1)\//gi,(a,pt)=>{vids.add(pt);return a;});
-  return sdp.replace(/a=fmtp:(\d+) ([^\r\n]*)/g,(all,pt,par)=>vids.has(pt)&&!par.includes("x-google-")?`a=fmtp:${pt} ${par};x-google-start-bitrate=5000;x-google-min-bitrate=2000;x-google-max-bitrate=30000`:all);
+  return sdp.replace(/a=fmtp:(\d+) ([^\r\n]*)/g,(all,pt,par)=>vids.has(pt)&&!par.includes("x-google-")?`a=fmtp:${pt} ${par};x-google-start-bitrate=5000;x-google-min-bitrate=2000;x-google-max-bitrate=16000`:all);
 }
 const canShare=!!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia);
 /* que navegador/sistema é: o som da transmissão depende disso */
@@ -1257,7 +1257,7 @@ function closeViewer(key,silent){
   tuneSenders(); renderSelf();
 }
 function tuneSenders(){
-  /* por pessoa: 1080p até 9 Mbps (60 fps) ou 6 (30); 1440p até 16 ou 10; 4K até 30 ou 20. Com muita gente, divide o upload */
+  /* por pessoa: 1080p até 9 Mbps (60 fps) ou 6 (30); 1440p até 16 ou 10. Com muita gente, divide o upload */
   const n=Math.max(1,LIVE.viewers.size), cap=liveCap();
   const br=Math.round(Math.min(cap,Math.max(2.5e6,liveBudget()/n)));
   for(const v of LIVE.viewers.values())for(const sd of v.pc.getSenders()){
@@ -1619,8 +1619,7 @@ function renderSelf(){
   if(!LIVE.mySid){
     box.innerHTML=`<h2>Sua tela</h2>
       ${canShare?`<span class="seg-lbl" id="lblRes">Resolução</span>
-      <div class="seg three" role="radiogroup" aria-labelledby="lblRes">
-        <button type="button" role="radio" data-res="2160" aria-checked="${LIVE.res===2160}">2160p · 4K</button>
+      <div class="seg" role="radiogroup" aria-labelledby="lblRes">
         <button type="button" role="radio" data-res="1440" aria-checked="${LIVE.res===1440}">1440p · 2K</button>
         <button type="button" role="radio" data-res="1080" aria-checked="${LIVE.res===1080}">1080p</button></div>
       <span class="seg-lbl" id="lblFps">Fluidez</span>
@@ -1628,7 +1627,7 @@ function renderSelf(){
         <button type="button" role="radio" data-fps="60" aria-checked="${LIVE.fps===60}">60 fps</button>
         <button type="button" role="radio" data-fps="30" aria-checked="${LIVE.fps===30}">30 fps</button></div>
       <button class="btn" id="goLive" style="width:100%">Transmitir minha tela</button>
-      <ol class="howto">${audioHowto()}${LIVE.res===1440?"<li>1440p só sai em 2K se o seu monitor for 1440p ou maior, e pede uns 16 Mbps de upload por pessoa assistindo.</li>":LIVE.res===2160?"<li>4K só sai em 4K se o seu monitor for 4K, pesa na placa de vídeo e pede uns 30 Mbps de upload por pessoa assistindo.</li>":""}<li>Se travar para quem assiste, baixe para 30 fps ou uma resolução menor.</li></ol>`
+      <ol class="howto">${audioHowto()}${LIVE.res===1440?"<li>1440p só sai em 2K se o seu monitor for 1440p ou maior, e pede uns 16 Mbps de upload por pessoa assistindo.</li>":""}<li>Se travar para quem assiste, baixe para 30 fps ou uma resolução menor.</li></ol>`
       :`<p class="hint" style="margin:0">Transmitir só funciona no navegador do computador. Daqui você pode assistir.</p>`}`;
     $("#goLive")&&($("#goLive").onclick=startLive);
     box.querySelectorAll("[data-fps]").forEach(b=>b.onclick=()=>{LIVE.fps=+b.dataset.fps;try{localStorage.setItem("live-fps",String(LIVE.fps));}catch{}renderSelf();});
@@ -1787,9 +1786,9 @@ const CHANGELOG=[
   {data:"31/10/2026",itens:["Controles do vídeo somem sozinhos e só aparecem ao mexer o mouse, para não tapar o jogo"]},
   {data:"31/10/2026",itens:["Clicar em quem está ao vivo na lista da sala abre direto a transmissão da pessoa"]},
   {data:"31/10/2026",itens:["Painel do Ao vivo recolhe pela alça entre o vídeo e o painel, dentro ou fora da tela cheia","Arrastar o volume ou clicar no vídeo não seleciona mais texto"]},
-  {data:"31/10/2026",itens:[{t:"Qualidade da transmissão: 1080p ou 1440p (2K), com 30 ou 60 fps",off:"ganhou a opção 4K na v1.17"}]},
+  {data:"31/10/2026",itens:[{t:"Qualidade da transmissão: 1080p ou 1440p (2K), com 30 ou 60 fps",off:"reorganizado na v1.17"}]},
   {data:"31/10/2026",itens:["Câmera: o vídeo aparece no lugar do personagem na lista da sala","Câmeras numa janela flutuante, de todo mundo ou de uma pessoa só"]},
-  {data:"31/10/2026",itens:["Qualidade da transmissão: 4K, 1440p ou 1080p, com 60 ou 30 fps (o mais alto à esquerda)","Proteção contra abuso: limite de mensagens, nanicadas e mudanças de escalação, e tudo que chega da sala é conferido antes de aparecer"]},
+  {data:"31/10/2026",itens:["Qualidade da transmissão: 1440p ou 1080p, com 60 ou 30 fps (o mais alto à esquerda)","Proteção contra abuso: limite de mensagens, nanicadas e mudanças de escalação, e tudo que chega da sala é conferido antes de aparecer"]},
 ];
 const versionAt=i=>"v1."+String(i).padStart(2,"0");
 const VERSION=versionAt(CHANGELOG.length-1);
