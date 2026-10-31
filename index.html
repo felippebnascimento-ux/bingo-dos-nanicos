@@ -356,12 +356,15 @@ body.side-min{--side-w:84px}
 .people li.live .av,.people li.live .u{box-shadow:0 0 0 2px var(--live)}
 @media (min-width:861px){
   body.side-min .side{padding:14px 10px 18px;align-items:center;gap:14px}
-  body.side-min .side-toggle{position:static;transform:scaleX(-1)}
+  body.side-min .side{z-index:6}
+  /* seta escondida no meio da borda direita; aparece ao passar o mouse no menu */
+  body.side-min .side-toggle{top:50%;right:-15px;width:30px;height:30px;transform:translateY(-50%) scaleX(-1);opacity:0;transition:opacity .15s;background:var(--surface);border:1px solid var(--line);box-shadow:0 2px 8px var(--shadow)}
+  body.side-min .side:hover .side-toggle,body.side-min .side-toggle:focus-visible{opacity:1}
   body.side-min .brand{display:none}
   body.side-min .brand-mini{display:block;width:46px;height:46px;flex:none}
   body.side-min .room{flex:1;min-height:0;overflow:auto;width:100%}
   body.side-min .room h3{display:none}
-  body.side-min .people{max-height:none;justify-items:center;gap:10px;overflow:visible}
+  body.side-min .people{max-height:none;justify-items:center;gap:10px;overflow:visible;padding:6px 0}
   body.side-min .people li{padding:0;background:none;border-radius:50%}
   body.side-min .people li .who,body.side-min .people li .bingo-pill,body.side-min .people li .live-pill{display:none}
   body.side-min .people .av,body.side-min .people .u{width:42px;height:42px;font-size:13px}
@@ -376,6 +379,7 @@ body.side-min{--side-w:84px}
   body.side-min .side-foot{display:none}
   body.side-min .main{padding-left:max(16px,3vw)}
 }
+@media (hover:none) and (min-width:861px){body.side-min .side-toggle{opacity:1}}
 @media (max-width:860px){.side-toggle{display:none}.nav svg{display:none}.nav button{justify-content:center}.nav button .t{flex:none}}
 
 /* ---------- ao vivo: topo, painel, chat, cartela ---------- */
@@ -430,6 +434,21 @@ body.pip .mcell{font-size:11.5px}
 .live-grid:fullscreen .minis:empty{display:none}
 .live-grid:fullscreen .rail{overflow:auto;min-height:0;align-content:start}
 .live-grid:fullscreen .chat{height:calc(100vh - 110px)}
+
+/* ---------- versão e log ---------- */
+.foot-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ver{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.log-btn{position:relative;border:1px solid var(--line);background:none;color:var(--muted);font:600 11px/1.4 var(--body);padding:1px 8px;border-radius:99px;cursor:pointer}
+.log-btn:hover{color:var(--ink);border-color:var(--muted)}
+.log-btn.new::after{content:"";position:absolute;top:-3px;right:-3px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.log-card{width:min(520px,100%);max-height:calc(100vh - 40px);overflow:auto;gap:14px}
+.log-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.gate-card .log-head .btn{width:auto;flex:none}
+.log-list{display:grid;gap:16px}
+.log-entry h3{display:flex;align-items:baseline;gap:10px;margin:0 0 6px;font:700 15px var(--display)}
+.log-entry h3 time{font:500 13px var(--body);color:var(--muted)}
+.log-entry .atual{font:700 10px var(--display);color:var(--accent-ink);background:var(--accent);padding:2px 7px;border-radius:99px}
+.log-entry ul{margin:0;padding-left:18px;display:grid;gap:3px;color:var(--ink);font-size:14px}
 </style>
 </head>
 <body>
@@ -459,7 +478,7 @@ body.pip .mcell{font-size:11.5px}
 
     <div class="side-foot">
       <div class="links"><button class="linkish" id="trocarSenha">Trocar senha</button><button class="linkish" id="sair">Sair</button></div>
-      <span class="conn" id="conn">Conectando…</span>
+      <div class="foot-row"><span class="conn" id="conn">Conectando…</span><span class="ver" id="ver"></span><button class="log-btn" id="logBtn" type="button" aria-label="Ver o que mudou em cada versão">Log</button></div>
     </div>
   </aside>
 
@@ -611,6 +630,13 @@ body.pip .mcell{font-size:11.5px}
     <button class="btn" type="submit" id="fpSave">Salvar e entrar</button>
     <button class="linkish" type="button" id="firstOut" style="justify-self:center">Sair</button>
   </form>
+</div>
+
+<div class="gate" id="logGate" role="dialog" aria-modal="true" aria-labelledby="logTitle" hidden>
+  <div class="gate-card log-card">
+    <div class="log-head"><h2 id="logTitle">Atualizações</h2><button class="btn soft sm" id="logClose" type="button">Fechar</button></div>
+    <div class="log-list" id="logList"></div>
+  </div>
 </div>
 
 <div class="gate" id="pwGate" role="dialog" aria-modal="true" aria-labelledby="pwTitle" hidden>
@@ -1373,6 +1399,34 @@ function setSideMin(on){
   b.setAttribute("aria-label",on?"Abrir menu":"Recolher menu"); b.title=on?"Abrir menu":"Recolher menu";
   try{localStorage.setItem("side-min",on?"1":"0");}catch{}
 }
+/* ---------- versão e log de atualizações ----------
+   Para lançar uma versão nova: acrescente um item no fim da lista. O número da versão sobe sozinho. */
+const CHANGELOG=[
+  {data:"24/10/2026",itens:["Banco de frases compartilhado pelo grupo","Escalação da partida igual para todos","Cartela 5x5 sorteada para cada pessoa"]},
+  {data:"24/10/2026",itens:["Frase ligada a mais de um campeão","Fotos dos amigos no seletor","Lista de amigos em ordem alfabética e opção de renomear"]},
+  {data:"25/10/2026",itens:["Site próprio, aberto pelo link, sem precisar de conta do Claude","Público só cadastra frases e troca fotos"]},
+  {data:"25/10/2026",itens:["Novo visual: Bingo dos Nanicos","Lista de quem está na sala agora","Nome salvo no navegador"]},
+  {data:"25/10/2026",itens:["Frases viram Nanicadas, sempre em minúsculas","Filtro por vários nanicos ao mesmo tempo","Opção Random na escalação","Telas largas aproveitam o espaço em colunas"]},
+  {data:"25/10/2026",itens:["Arte de cada nanico: rosto em todo o site e corpo inteiro na aba Nanicos","Marca d'água do grupo e ícone da bola de bingo","Seletor de nanico abre onde cabe na tela"]},
+  {data:"30/10/2026",itens:["Botão para entrar no Google Meet do grupo"]},
+  {data:"31/10/2026",itens:["Login de cada nanico, com senha própria no primeiro acesso","Aba Ao vivo: várias transmissões de tela ao mesmo tempo, com o som só da principal"]},
+  {data:"31/10/2026",itens:["Transmissão em Full HD com 60 ou 30 fps","Tela cheia com chat e cartela ao lado","Chat da sala","Cartela no painel e cartela flutuante","Menu lateral recolhível"]},
+  {data:"31/10/2026",itens:["Número da versão no rodapé e este log de atualizações"]},
+];
+const versionAt=i=>"v1."+String(i).padStart(2,"0");
+const VERSION=versionAt(CHANGELOG.length-1);
+$("#ver").textContent=VERSION;
+try{ if(localStorage.getItem("log-visto")!==VERSION)$("#logBtn").classList.add("new"); }catch{}
+function openLog(){
+  $("#logList").innerHTML=CHANGELOG.map((e,i)=>({...e,v:versionAt(i)})).reverse().map((e,k)=>`<section class="log-entry"><h3>${e.v}<time>${e.data}</time>${k===0?`<span class="atual">ATUAL</span>`:""}</h3><ul>${e.itens.map(t=>`<li>${esc(t)}</li>`).join("")}</ul></section>`).join("");
+  $("#logGate").hidden=false; $("#logClose").focus();
+  $("#logBtn").classList.remove("new"); try{localStorage.setItem("log-visto",VERSION);}catch{}
+}
+const closeLog=()=>{$("#logGate").hidden=true;};
+$("#logBtn").onclick=openLog; $("#logClose").onclick=closeLog;
+$("#logGate").addEventListener("click",e=>{if(e.target.id==="logGate")closeLog();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#logGate").hidden)closeLog();});
+
 $("#sideToggle").onclick=()=>setSideMin(!document.body.classList.contains("side-min"));
 try{ if(localStorage.getItem("side-min")==="1")setSideMin(true); }catch{}
 $("#brandMini").src=document.querySelector('link[rel="apple-touch-icon"]')?.href||"";
