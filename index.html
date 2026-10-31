@@ -132,6 +132,8 @@ button,label.lnk,.cell,.chip,.tile,.pick-btn{cursor:pointer}
 .nav button[aria-selected="true"]{background:var(--olive);color:#FAF9F6}
 .nav .count{font-size:12px;font-weight:500;opacity:.75;font-variant-numeric:tabular-nums}
 .side-foot{margin-top:auto;display:grid;gap:6px;padding-inline:6px}
+.meet-btn{text-decoration:none;width:100%}
+.meet-btn:focus-visible{outline:2.5px solid var(--ink);outline-offset:3px}
 .linkish{border:0;background:none;padding:0;color:var(--muted);font-size:13px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;justify-self:start}
 .conn{font-size:12px;color:var(--muted)}
 
@@ -300,6 +302,11 @@ ul.list li.li-empty{grid-column:1/-1;background:none}
       <button role="tab" aria-selected="false" data-tab="frases">Nanicadas <span class="count" id="nFrases"></span></button>
       <button role="tab" aria-selected="false" data-tab="nanicos">Nanicos <span class="count" id="nAmigos"></span></button>
     </nav>
+
+    <a class="btn meet-btn" href="https://meet.google.com/nua-cvax-gyw" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M4 6.5A2.5 2.5 0 0 1 6.5 4h7A2.5 2.5 0 0 1 16 6.5v1.6l3.4-2.3A1 1 0 0 1 21 6.6v10.8a1 1 0 0 1-1.6.8L16 15.9v1.6a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 4 17.5z"/></svg>
+      Entrar no Meet
+    </a>
 
     <div class="side-foot">
       <button class="linkish" id="trocarNome">Trocar meu nome</button>
