@@ -345,8 +345,13 @@ ul.list li.li-empty{grid-column:1/-1;background:none}
 .wm{left:var(--side-w)}
 body.side-min{--side-w:84px}
 @media (max-width:860px){.app{grid-template-columns:minmax(0,1fr)}.wm{left:0}}
-.side-toggle{position:absolute;top:12px;right:12px;width:34px;height:34px;border:0;border-radius:50%;background:var(--surface-2);color:var(--ink);display:grid;place-items:center;cursor:pointer;z-index:2}
-.side-toggle:hover{filter:brightness(1.08)}
+/* alça de recolher: escondida no meio da borda direita do menu, aparece ao passar o mouse (aberto ou recolhido) */
+.side{z-index:6}
+.side-toggle{position:absolute;top:50%;right:-14px;width:28px;height:48px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center;cursor:pointer;z-index:7;transform:translateY(-50%);opacity:0;transition:opacity .15s,background .15s;box-shadow:0 2px 10px var(--shadow)}
+.side-toggle svg{width:16px;height:16px;transform:translateX(-1px)}
+.side:hover .side-toggle,.side-toggle:focus-visible{opacity:1}
+.side-toggle:hover{background:var(--surface-2)}
+body.side-min .side-toggle{transform:translateY(-50%) scaleX(-1)}
 .brand-mini{display:none}
 .nav button{justify-content:flex-start;position:relative}
 .nav button .t{flex:1}
@@ -356,10 +361,6 @@ body.side-min{--side-w:84px}
 .people li.live .av,.people li.live .u{box-shadow:0 0 0 2px var(--live)}
 @media (min-width:861px){
   body.side-min .side{padding:14px 10px 18px;align-items:center;gap:14px}
-  body.side-min .side{z-index:6}
-  /* seta escondida no meio da borda direita; aparece ao passar o mouse no menu */
-  body.side-min .side-toggle{top:50%;right:-15px;width:30px;height:30px;transform:translateY(-50%) scaleX(-1);opacity:0;transition:opacity .15s;background:var(--surface);border:1px solid var(--line);box-shadow:0 2px 8px var(--shadow)}
-  body.side-min .side:hover .side-toggle,body.side-min .side-toggle:focus-visible{opacity:1}
   body.side-min .brand{display:none}
   body.side-min .brand-mini{display:block;width:46px;height:46px;flex:none}
   body.side-min .room{flex:1;min-height:0;overflow:auto;width:100%}
@@ -379,7 +380,7 @@ body.side-min{--side-w:84px}
   body.side-min .side-foot{display:none}
   body.side-min .main{padding-left:max(16px,3vw)}
 }
-@media (hover:none) and (min-width:861px){body.side-min .side-toggle{opacity:1}}
+@media (hover:none) and (min-width:861px){.side-toggle{opacity:1}}
 @media (max-width:860px){.side-toggle{display:none}.nav svg{display:none}.nav button{justify-content:center}.nav button .t{flex:none}}
 
 /* ---------- ao vivo: topo, painel, chat, cartela ---------- */
@@ -1086,6 +1087,11 @@ function hiBitrate(sdp){
   return sdp.replace(/a=fmtp:(\d+) ([^\r\n]*)/g,(all,pt,par)=>vids.has(pt)&&!par.includes("x-google-")?`a=fmtp:${pt} ${par};x-google-start-bitrate=5000;x-google-min-bitrate=2000;x-google-max-bitrate=9000`:all);
 }
 const canShare=!!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia);
+/* que navegador/sistema é: o som da transmissão depende disso */
+const UA=navigator.userAgent||"";
+const isMac=/Macintosh|Mac OS X/.test(UA)&&!/Mobile/.test(UA);
+const isChromium=/Chrome\/|Edg\//.test(UA)&&!/OPR\//.test(UA);
+const chromeVer=parseInt((UA.match(/Chrome\/(\d+)/)||[])[1]||"0",10);
 const newId=()=>(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));
 const liveStreams=()=>online.filter(p=>p.live&&p.key!==myKey).sort((a,b)=>String(a.name).localeCompare(String(b.name),"pt-BR"));
 function sendRtc(m){ if(room) room.send({type:"broadcast",event:"rtc",payload:{...m,from:myKey}}).catch(()=>{}); }
@@ -1102,10 +1108,11 @@ async function startLive(){
     stream=await navigator.mediaDevices.getDisplayMedia({
       video:{frameRate:{ideal:LIVE.fps,max:LIVE.fps},width:{ideal:1920,max:1920},height:{ideal:1080,max:1080}},
       audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},
-      systemAudio:"include",selfBrowserSurface:"exclude",surfaceSwitching:"include"});
+      systemAudio:"include",windowAudio:"window",selfBrowserSurface:"exclude",surfaceSwitching:"include"});
   }catch(e){ if(e&&e.name!=="NotAllowedError"&&e.name!=="AbortError"){console.error(e);toast("Não deu para capturar a tela.");} return; }
   const vt=stream.getVideoTracks()[0]; if(vt){try{vt.contentHint="motion";}catch{} vt.addEventListener("ended",()=>stopLive());}
   LIVE.myStream=stream; LIVE.mySid=newId(); LIVE.hasAudio=stream.getAudioTracks().length>0;
+  try{LIVE.surface=(vt&&vt.getSettings&&vt.getSettings().displaySurface)||"";}catch{LIVE.surface="";}
   trackMe(); renderLive();
   toast(LIVE.hasAudio?"Você está ao vivo":"Você está ao vivo, mas sem som");
 }
@@ -1289,6 +1296,19 @@ function t_html(w){
   if(w.state!=="live")t.insertAdjacentHTML("beforeend",`<span class="wait">${w.state==="failed"?"Não conectou":"Conectando…"}</span>`);
   t.insertAdjacentHTML("beforeend",`<span class="cap">${faceFor(w)}${esc(w.name)}<small>sem som</small></span>`);
 }
+function audioHowto(){
+  if(!isChromium)return `<li>Este navegador não manda som. Para transmitir com o som do jogo, use o <b>Chrome</b> ou o <b>Edge</b>.</li>`;
+  if(isMac)return `<li>Na janela que abrir, escolha <b>Tela inteira</b> e ligue <b>Compartilhar áudio do sistema</b>.</li><li>No Mac isso só aparece no Chrome 141 ou mais novo e no macOS 14.2 ou mais novo${chromeVer&&chromeVer<141?` (o seu Chrome é o ${chromeVer}: atualize em Ajuda › Sobre o Google Chrome)`:""}.</li>`;
+  return `<li>Na janela que abrir, escolha <b>Tela inteira</b> e ligue <b>Compartilhar áudio do sistema</b> (fica embaixo, à esquerda).</li><li>Se escolher só a <b>janela</b> do jogo, o som pode não ir junto, dependendo da versão do navegador.</li>`;
+}
+function noAudioMsg(){
+  if(!isChromium)return "Sem som: este navegador não transmite áudio. Use o Chrome ou o Edge.";
+  const s=LIVE.surface;
+  if(s==="window")return "Sem som: você escolheu uma janela e o navegador não mandou o som dela. Transmita de novo escolhendo <b>Tela inteira</b> com <b>Compartilhar áudio do sistema</b> ligado.";
+  if(s==="browser")return "Sem som: ao escolher uma aba, ligue <b>Compartilhar áudio da guia</b>.";
+  if(isMac)return `Sem som: escolha <b>Tela inteira</b> e ligue <b>Compartilhar áudio do sistema</b>. No Mac isso precisa do Chrome 141+ e do macOS 14.2+${chromeVer&&chromeVer<141?` (o seu Chrome é o ${chromeVer})`:""}.`;
+  return "Sem som: a opção <b>Compartilhar áudio do sistema</b> estava desligada. Transmita de novo e ligue essa opção (fica embaixo, à esquerda, na janela de escolher a tela).";
+}
 function renderSelf(){
   const box=$("#selfBlock");
   if(!LIVE.mySid){
@@ -1297,7 +1317,7 @@ function renderSelf(){
         <button type="button" role="radio" data-fps="60" aria-checked="${LIVE.fps===60}">Full HD · 60 fps</button>
         <button type="button" role="radio" data-fps="30" aria-checked="${LIVE.fps===30}">Full HD · 30 fps</button></div>
       <button class="btn" id="goLive" style="width:100%">Transmitir minha tela</button>
-      <ol class="howto"><li>Escolha <b>Tela inteira</b> para mandar o jogo com som.</li><li>Marque <b>Compartilhar áudio do sistema</b> antes de confirmar.</li><li>Funciona no Chrome e no Edge do Windows.</li><li>Se travar para quem assiste, use 30 fps.</li></ol>`
+      <ol class="howto">${audioHowto()}<li>Se travar para quem assiste, use 30 fps.</li></ol>`
       :`<p class="hint" style="margin:0">Transmitir só funciona no navegador do computador. Daqui você pode assistir.</p>`}`;
     $("#goLive")&&($("#goLive").onclick=startLive);
     box.querySelectorAll("[data-fps]").forEach(b=>b.onclick=()=>{LIVE.fps=+b.dataset.fps;try{localStorage.setItem("live-fps",String(LIVE.fps));}catch{}renderSelf();});
@@ -1308,10 +1328,11 @@ function renderSelf(){
   if(LIVE.selfVideo.srcObject!==LIVE.myStream)LIVE.selfVideo.srcObject=LIVE.myStream;
   box.innerHTML=`<h2>Sua tela</h2><div id="selfSlot"></div>
     <div class="self-live"><span class="live-pill">AO VIVO</span><span>${n===1?"1 pessoa assistindo":n+" pessoas assistindo"}</span></div>
-    ${LIVE.hasAudio?"":`<p class="warn">Sem som. Para mandar o som do jogo, pare e transmita de novo escolhendo “Tela inteira” com “Compartilhar áudio do sistema” marcado.</p>`}
+    ${LIVE.hasAudio?`<p class="status" style="margin:0 0 10px">Som: indo junto.</p>`:`<p class="warn">${noAudioMsg()}</p><button class="btn sm" id="retryAudio" style="width:100%;margin-bottom:8px">Transmitir de novo com som</button>`}
     <button class="btn soft" id="stopLive" style="width:100%">Parar transmissão</button>`;
   $("#selfSlot").appendChild(LIVE.selfVideo); LIVE.selfVideo.play().catch(()=>{});
   $("#stopLive").onclick=stopLive;
+  const ra=$("#retryAudio"); if(ra)ra.onclick=()=>{stopLive();startLive();};
 }
 function renderCards(){
   const ls=liveStreams(), box=$("#lcards");
@@ -1428,6 +1449,7 @@ const CHANGELOG=[
   {data:"31/10/2026",itens:["Transmissão em Full HD com 60 ou 30 fps","Tela cheia com chat e cartela ao lado","Chat da sala","Cartela no painel e cartela flutuante","Menu lateral recolhível"]},
   {data:"31/10/2026",itens:["Número da versão no rodapé e este log de atualizações"]},
   {data:"31/10/2026",itens:["Uma surpresa que só aparece no fim do dia"]},
+  {data:"31/10/2026",itens:["Som da transmissão: pede o som da janela do jogo quando o navegador permite","Aviso explicando por que a transmissão saiu sem som, com botão para transmitir de novo"]},
 ];
 const versionAt=i=>"v1."+String(i).padStart(2,"0");
 const VERSION=versionAt(CHANGELOG.length-1);
