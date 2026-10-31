@@ -470,24 +470,22 @@ body.pip .mcell{font-size:11.5px}
 .live-grid:fullscreen.no-rail .minis{display:none}
 @media (prefers-reduced-motion:reduce){.stage-bar{transition:none}}
 
-/* painel da direita do Ao vivo: alça retrátil na borda, igual ao menu lateral */
+/* painel da direita do Ao vivo: alça retrátil na borda, só na tela cheia.
+   Parada, vira uma barrinha discreta; ao mexer o mouse vira a alça com seta. */
 .live-grid{position:relative}
-.rail-toggle{display:none;position:absolute;top:50%;right:337px;width:28px;height:48px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--ink);place-items:center;cursor:pointer;z-index:7;padding:0;transform:translateY(-50%) scaleX(-1);opacity:0;transition:opacity .15s,background .15s;box-shadow:0 2px 10px var(--shadow)}
-.rail-toggle svg{width:16px;height:16px;transform:translateX(-1px)}
+.rail-toggle{display:none;position:absolute;top:50%;right:371px;width:28px;height:48px;border-radius:99px;border:1px solid transparent;background:transparent;color:var(--ink);place-items:center;cursor:pointer;z-index:7;padding:0;transform:translateY(-50%) scaleX(-1);transition:background .15s,border-color .15s,box-shadow .15s}
+.rail-toggle svg{width:16px;height:16px;transform:translateX(-1px);opacity:0;transition:opacity .15s}
+.rail-toggle::before{content:"";position:absolute;left:50%;top:50%;width:4px;height:36px;margin:-18px 0 0 -2px;border-radius:99px;background:var(--muted);opacity:.55;transition:opacity .15s}
+.live-grid.no-rail .rail-toggle::before{background:#FAF9F6;opacity:.4;box-shadow:0 0 6px rgba(0,0,0,.6)}
+.rail:hover ~ .rail-toggle,.rail-toggle:hover,.rail-toggle:focus-visible,.stage-col:has(.stage:not(.idle)) ~ .rail-toggle{background:var(--surface);border-color:var(--line);box-shadow:0 2px 10px var(--shadow)}
+.rail:hover ~ .rail-toggle svg,.rail-toggle:hover svg,.rail-toggle:focus-visible svg,.stage-col:has(.stage:not(.idle)) ~ .rail-toggle svg{opacity:1}
+.rail:hover ~ .rail-toggle::before,.rail-toggle:hover::before,.rail-toggle:focus-visible::before,.stage-col:has(.stage:not(.idle)) ~ .rail-toggle::before{opacity:0}
 .rail-toggle:hover{background:var(--surface-2)}
-.rail:hover ~ .rail-toggle,.rail-toggle:hover,.rail-toggle:focus-visible,.stage-col:has(.stage:not(.idle)) ~ .rail-toggle{opacity:1}
-.live-grid.no-rail .rail-toggle{right:4px;transform:translateY(-50%)}
-@media (min-width:1180px){
-  .rail-toggle{display:grid}
-  .live-grid.no-rail{grid-template-columns:minmax(0,1fr) 0;column-gap:0}
-  .live-grid.no-rail .rail{display:none}
-}
-.live-grid:fullscreen .rail-toggle{display:grid;right:371px}
+.live-grid:fullscreen .rail-toggle{display:grid}
 .live-grid:fullscreen.no-rail{grid-template-columns:minmax(0,1fr) 0;column-gap:0}
 .live-grid:fullscreen.no-rail .rail{display:none}
-.live-grid:fullscreen.no-rail .rail-toggle{right:10px}
-@media (hover:none){.rail-toggle{opacity:1}}
-@media (prefers-reduced-motion:reduce){.rail-toggle{transition:none}}
+.live-grid:fullscreen.no-rail .rail-toggle{right:10px;transform:translateY(-50%)}
+@media (prefers-reduced-motion:reduce){.rail-toggle,.rail-toggle svg,.rail-toggle::before{transition:none}}
 
 /* quem está ao vivo na lista da sala é clicável */
 .people li[data-live]{cursor:pointer}
@@ -1537,7 +1535,7 @@ const CHANGELOG=[
   {data:"31/10/2026",itens:["Som da transmissão: pede o som da janela do jogo quando o navegador permite","Aviso explicando por que a transmissão saiu sem som, com botão para transmitir de novo"]},
   {data:"31/10/2026",itens:["Controles do vídeo somem sozinhos e só aparecem ao mexer o mouse, para não tapar o jogo"]},
   {data:"31/10/2026",itens:["Clicar em quem está ao vivo na lista da sala abre direto a transmissão da pessoa"]},
-  {data:"31/10/2026",itens:["Painel do Ao vivo recolhe pela alça na borda direita, dentro ou fora da tela cheia","Arrastar o volume ou clicar no vídeo não seleciona mais texto"]},
+  {data:"31/10/2026",itens:["Na tela cheia, o painel do Ao vivo recolhe pela alça na borda direita, marcada por uma barrinha quando o mouse está parado","Arrastar o volume ou clicar no vídeo não seleciona mais texto"]},
 ];
 const versionAt=i=>"v1."+String(i).padStart(2,"0");
 const VERSION=versionAt(CHANGELOG.length-1);
