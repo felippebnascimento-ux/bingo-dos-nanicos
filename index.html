@@ -452,6 +452,13 @@ body.pip .mcell{font-size:11.5px}
 .log-entry li.off{color:var(--muted)}
 .log-entry li.off s{text-decoration-thickness:1.5px;text-decoration-color:var(--muted)}
 .off-why{font-size:12px;font-style:italic;white-space:nowrap}
+
+/* ---------- easter egg: das 18h às 22h ---------- */
+.fome{position:fixed;z-index:40;right:max(20px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));display:inline-flex;align-items:center;gap:8px;padding:13px 20px 13px 16px;border-radius:99px;background:var(--live);color:#fff;font:800 15px var(--display);letter-spacing:-.01em;text-decoration:none;box-shadow:0 10px 26px -6px color-mix(in srgb,var(--live) 70%,transparent),0 0 0 4px color-mix(in srgb,var(--live) 22%,transparent);transform-origin:70% 100%;animation:fome-pula 3.2s ease-in-out infinite}
+.fome:hover{filter:brightness(1.08);animation-play-state:paused}
+.fome:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+@keyframes fome-pula{0%,78%,100%{transform:none}82%{transform:translateY(-6px) rotate(-6deg)}86%{transform:translateY(0) rotate(5deg)}90%{transform:translateY(-3px) rotate(-3deg)}94%{transform:none}}
+@media (max-width:860px){.fome{bottom:calc(16px + env(safe-area-inset-bottom,0px));right:16px;padding:11px 16px 11px 13px;font-size:14px}}
 </style>
 </head>
 <body>
@@ -654,6 +661,10 @@ body.pip .mcell{font-size:11.5px}
   </form>
 </div>
 
+<a class="fome" id="fome" href="https://heim.ratskeller.com.br" target="_blank" rel="noopener" hidden>
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11h16a8 8 0 0 1-16 0z"/><path d="M5 11c0-3.5 3.1-6 7-6s7 2.5 7 6"/><path d="M3 15h18M9 7.5v.01M12 6.5v.01M15 7.5v.01"/></svg>
+  Estou com fome
+</a>
 <datalist id="champs"></datalist>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -1416,6 +1427,7 @@ const CHANGELOG=[
   {data:"31/10/2026",itens:["Login de cada nanico, com senha própria no primeiro acesso","Aba Ao vivo: várias transmissões de tela ao mesmo tempo, com o som só da principal"]},
   {data:"31/10/2026",itens:["Transmissão em Full HD com 60 ou 30 fps","Tela cheia com chat e cartela ao lado","Chat da sala","Cartela no painel e cartela flutuante","Menu lateral recolhível"]},
   {data:"31/10/2026",itens:["Número da versão no rodapé e este log de atualizações"]},
+  {data:"31/10/2026",itens:["Uma surpresa que só aparece no fim do dia"]},
 ];
 const versionAt=i=>"v1."+String(i).padStart(2,"0");
 const VERSION=versionAt(CHANGELOG.length-1);
@@ -1430,6 +1442,10 @@ const closeLog=()=>{$("#logGate").hidden=true;};
 $("#logBtn").onclick=openLog; $("#logClose").onclick=closeLog;
 $("#logGate").addEventListener("click",e=>{if(e.target.id==="logGate")closeLog();});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#logGate").hidden)closeLog();});
+
+/* easter egg: "Estou com fome" aparece das 18h às 22h (horário de quem está vendo) */
+function checkFome(){ const h=new Date().getHours(); $("#fome").hidden=!(h>=18&&h<22); }
+checkFome(); setInterval(checkFome,60000);
 
 $("#sideToggle").onclick=()=>setSideMin(!document.body.classList.contains("side-min"));
 try{ if(localStorage.getItem("side-min")==="1")setSideMin(true); }catch{}
