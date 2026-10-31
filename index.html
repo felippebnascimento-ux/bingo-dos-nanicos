@@ -284,6 +284,60 @@ ul.list li.li-empty{grid-column:1/-1;background:none}
 .toast{position:fixed;left:50%;transform:translate(-50%,8px);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:99px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;z-index:60;max-width:calc(100vw - 32px)}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 @media (prefers-reduced-motion:reduce){*,*::before{transition:none!important;animation:none!important}}
+
+/* ---------- login e senha ---------- */
+:root{--live:#B4442F}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--live:#E0705A}}
+:root[data-theme="dark"]{--live:#E0705A}
+.gate-crew{width:100%;height:auto;display:block;margin:-6px 0 2px;filter:drop-shadow(0 10px 14px var(--shadow))}
+.gate-wait{margin:0;color:var(--muted);text-align:center}
+.form-err{margin:0;color:var(--live);font-size:14px;font-weight:600}
+.gate-card .row .btn{flex:1;width:auto}
+.side-foot .links{display:flex;gap:14px;flex-wrap:wrap}
+.live-pill{font:700 10px var(--display);letter-spacing:.04em;color:#fff;background:var(--live);padding:3px 7px;border-radius:99px;white-space:nowrap}
+.nav .count.on{color:var(--live);opacity:1;font-weight:700}
+.nav button[aria-selected="true"] .count.on{color:#FAF9F6}
+
+/* ---------- ao vivo ---------- */
+#view-live{width:100%;max-width:1560px;margin:0 auto}
+.live-grid{display:grid;gap:22px;align-items:start}
+@media (min-width:1180px){.live-grid{grid-template-columns:minmax(0,1fr) 340px}}
+.stage-col{display:grid;gap:12px;min-width:0}
+.stage{position:relative;aspect-ratio:16/9;max-width:100%;background:#1F201D;border-radius:var(--r-lg);overflow:hidden;box-shadow:0 24px 60px -30px var(--shadow)}
+.stage-slot{position:absolute;inset:0}
+.stage-slot video{width:100%;height:100%;object-fit:contain;background:#000;display:block}
+.stage-empty{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:8px;padding:24px;text-align:center;color:#D9D5C8}
+.stage-empty b{font:700 18px var(--display);color:#FAF9F6}
+.stage-empty .acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+.stage-bar{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:28px 14px 12px;background:linear-gradient(transparent,rgba(0,0,0,.72));color:#FAF9F6}
+.stage-bar .who{display:flex;align-items:center;gap:8px;font-weight:700;min-width:0}
+.stage-bar .sp{flex:1}
+.stage-bar .vol{display:flex;align-items:center;gap:6px;font-size:13px}
+.stage-bar input[type=range]{width:110px;padding:0;background:none;border:0;accent-color:var(--accent)}
+.sbtn{border:0;background:rgba(250,249,246,.16);color:#FAF9F6;border-radius:99px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer}
+.sbtn:hover{background:rgba(250,249,246,.26)}
+.unmute{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2}
+.minis{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.mini{position:relative;aspect-ratio:16/9;border:0;padding:0;border-radius:var(--r-md);overflow:hidden;background:#1F201D;cursor:pointer;display:block;width:100%}
+.mini video{width:100%;height:100%;object-fit:cover;display:block}
+.mini .cap{position:absolute;left:8px;right:8px;bottom:8px;display:flex;align-items:center;gap:6px;color:#fff;font-size:13px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+.mini .cap small{margin-left:auto;font-weight:500;opacity:.85}
+.mini .wait{position:absolute;inset:0;display:grid;place-items:center;color:#D9D5C8;font-size:13px}
+.rail{display:grid;gap:14px}
+.rail .block h2{margin-bottom:10px}
+.lcards{display:grid;gap:8px}
+.lcard{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;align-items:center;padding:10px;border-radius:var(--r-md);background:var(--bg)}
+.lcard.main{box-shadow:inset 0 0 0 2px var(--accent)}
+.lcard .nm{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lcard .st{font-size:12.5px;color:var(--muted)}
+.lcard .acts{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.btn.sm{padding:8px 14px;font-size:13px}
+.self-prev{width:100%;aspect-ratio:16/9;border-radius:var(--r-sm);background:#000;object-fit:contain;display:block;margin-bottom:10px}
+.self-live{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-weight:600}
+.warn{background:var(--sun-soft);color:var(--ink);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;margin:0 0 10px}
+.howto{margin:10px 0 0;padding-left:18px;color:var(--muted);font-size:13px;display:grid;gap:4px}
+@media (max-width:860px){.nav button{padding:9px 4px;font-size:13px}}
+@media (max-width:430px){.nav .count:not(.on){display:none}}
 </style>
 </head>
 <body>
@@ -301,6 +355,7 @@ ul.list li.li-empty{grid-column:1/-1;background:none}
       <button role="tab" aria-selected="true" data-tab="jogar">Jogar</button>
       <button role="tab" aria-selected="false" data-tab="frases">Nanicadas <span class="count" id="nFrases"></span></button>
       <button role="tab" aria-selected="false" data-tab="nanicos">Nanicos <span class="count" id="nAmigos"></span></button>
+      <button role="tab" aria-selected="false" data-tab="live">Ao vivo <span class="count" id="nLive"></span></button>
     </nav>
 
     <a class="btn meet-btn" href="https://meet.google.com/nua-cvax-gyw" target="_blank" rel="noopener">
@@ -309,7 +364,7 @@ ul.list li.li-empty{grid-column:1/-1;background:none}
     </a>
 
     <div class="side-foot">
-      <button class="linkish" id="trocarNome">Trocar meu nome</button>
+      <div class="links"><button class="linkish" id="trocarSenha">Trocar senha</button><button class="linkish" id="sair">Sair</button></div>
       <span class="conn" id="conn">Conectando…</span>
     </div>
   </aside>
@@ -370,18 +425,84 @@ ul.list li.li-empty{grid-column:1/-1;background:none}
         <div class="block nan-block"><div class="nanicos" id="listaAmigos"></div></div>
       </section>
 
+      <!-- AO VIVO -->
+      <section id="view-live" class="inner" hidden>
+        <header class="hero">
+          <h1>Ao vivo</h1>
+          <p>Veja a tela de quem está jogando. Dá para abrir várias ao mesmo tempo, e o som vem só da tela principal.</p>
+        </header>
+        <div class="live-grid">
+          <div class="stage-col">
+            <div class="stage" id="stage">
+              <div class="stage-slot" id="stageSlot"></div>
+              <div class="stage-empty" id="stageEmpty"></div>
+              <button class="btn unmute" id="unmute" hidden>Ativar som</button>
+              <div class="stage-bar" id="stageBar" hidden>
+                <span class="who" id="stageWho"></span>
+                <span class="sp"></span>
+                <label class="vol" for="vol">Volume <input type="range" id="vol" min="0" max="1" step="0.05" value="1"></label>
+                <button class="sbtn" id="pipBtn" type="button">Janela flutuante</button>
+                <button class="sbtn" id="fsBtn" type="button">Tela cheia</button>
+              </div>
+            </div>
+            <div class="minis" id="minis"></div>
+          </div>
+          <aside class="rail">
+            <div class="block" id="selfBlock"></div>
+            <div class="block">
+              <h2>Transmitindo agora</h2>
+              <div class="lcards" id="lcards"></div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
     </div>
   </main>
 </div>
 
-<!-- entrada -->
-<div class="gate" id="gate" role="dialog" aria-modal="true" aria-labelledby="gateTitle" hidden>
-  <form class="gate-card" id="gateForm">
-    <h2 id="gateTitle">Quem tá jogando?</h2>
-    <p>Escolha um nome para aparecer na sala. Ele fica salvo neste aparelho para a próxima vez.</p>
-    <div class="quick" id="quick"></div>
-    <div><label class="lbl" for="gateName">Seu nome na sala</label><input id="gateName" maxlength="20" required autocomplete="nickname" placeholder="Ex.: Pin"></div>
-    <button class="btn" type="submit">Entrar na sala</button>
+<!-- login -->
+<div class="gate" id="gate" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
+  <form class="gate-card" id="loginForm" novalidate>
+    <img class="gate-crew" data-crew alt="">
+    <h2 id="gateTitle">Bingo dos Nanicos</h2>
+    <p id="gateWait" class="gate-wait">Carregando…</p>
+    <div id="loginFields" hidden style="display:grid;gap:14px">
+      <p id="gateMsg">Entre com o usuário e a senha que o admin te passou.</p>
+      <div><label class="lbl" for="loginUser">Usuário</label><input id="loginUser" autocomplete="username" autocapitalize="none" spellcheck="false" required></div>
+      <div><label class="lbl" for="loginPass">Senha</label><input id="loginPass" type="password" autocomplete="current-password" required></div>
+      <p class="form-err" id="loginErr" role="alert" hidden></p>
+      <button class="btn" type="submit" id="loginBtn">Entrar</button>
+    </div>
+    <div id="unlinked" hidden style="display:grid;gap:14px">
+      <p>Sua conta entrou, mas ainda não está ligada a nenhum nanico. Fale com o admin.</p>
+      <button class="btn soft" type="button" id="unlinkedOut">Sair</button>
+    </div>
+  </form>
+</div>
+
+<div class="gate" id="firstGate" role="dialog" aria-modal="true" aria-labelledby="firstTitle" hidden>
+  <form class="gate-card" id="firstForm" novalidate>
+    <img class="gate-crew" data-crew alt="">
+    <h2 id="firstTitle">Escolha sua senha</h2>
+    <p>É o seu primeiro acesso. Troque a senha que o admin te passou por uma só sua. Depois disso, este navegador lembra de você e não pede login de novo.</p>
+    <input type="text" id="firstUser" autocomplete="username" hidden>
+    <div><label class="lbl" for="fp1">Senha nova</label><input id="fp1" type="password" autocomplete="new-password"></div>
+    <div><label class="lbl" for="fp2">Repita a senha nova</label><input id="fp2" type="password" autocomplete="new-password"></div>
+    <p class="form-err" id="fpErr" role="alert" hidden></p>
+    <button class="btn" type="submit" id="fpSave">Salvar e entrar</button>
+    <button class="linkish" type="button" id="firstOut" style="justify-self:center">Sair</button>
+  </form>
+</div>
+
+<div class="gate" id="pwGate" role="dialog" aria-modal="true" aria-labelledby="pwTitle" hidden>
+  <form class="gate-card" id="pwForm" novalidate>
+    <h2 id="pwTitle">Trocar senha</h2>
+    <p>Use pelo menos 6 caracteres. A senha nova já vale no próximo login, em qualquer aparelho.</p>
+    <div><label class="lbl" for="pw1">Senha nova</label><input id="pw1" type="password" autocomplete="new-password"></div>
+    <div><label class="lbl" for="pw2">Repita a senha nova</label><input id="pw2" type="password" autocomplete="new-password"></div>
+    <p class="form-err" id="pwErr" role="alert" hidden></p>
+    <div class="row"><button type="button" class="btn soft" id="pwCancel">Cancelar</button><button class="btn" type="submit" id="pwSave">Salvar senha</button></div>
   </form>
 </div>
 
@@ -421,9 +542,9 @@ let friends=[], phrases=[];
 let lineup=store.get("rift-lineup")||LANES.map(()=>({friendId:"",champion:""}));
 let card=store.get("rift-card");
 let filtros=new Set(), busca="";
-const cookie={get(k){const m=document.cookie.match(new RegExp("(?:^|; )"+k+"=([^;]*)"));try{return m?decodeURIComponent(m[1]):"";}catch{return "";}},
-  set(k,v){document.cookie=k+"="+encodeURIComponent(v)+"; max-age=31536000; path=/; SameSite=Lax";}};
-let myName=store.get("nanicos-user")||cookie.get("nanicos_user")||"";
+/* login: o usuário vira um e-mail interno do Supabase (ex.: pin → pin@nanicos.app) */
+const EMAIL_DOMAIN="nanicos.app";
+let myName="", myFid=null, myUid=null;
 const myKey=(crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2));
 let online=[];
 
@@ -437,7 +558,8 @@ const api={
 /* ---------- abas ---------- */
 document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{
   document.querySelectorAll(".nav button").forEach(x=>x.setAttribute("aria-selected",x===b));
-  ["jogar","frases","nanicos"].forEach(v=>$("#view-"+v).hidden=v!==b.dataset.tab);
+  ["jogar","frases","nanicos","live"].forEach(v=>$("#view-"+v).hidden=v!==b.dataset.tab);
+  if(b.dataset.tab==="live")renderLive();
   closePickers();
 });
 
@@ -461,32 +583,61 @@ const hueOf=s=>{let h=0;for(const c of String(s))h=(h*31+c.charCodeAt(0))%360;re
 const bingoLines=()=>card?LINES.filter(l=>l.every(i=>card.marked[i])).length:0;
 function renderPeople(){
   let list=online.slice();
-  if(myName&&!list.some(p=>p.key===myKey))list.unshift({key:myKey,name:myName,lines:bingoLines()});
+  if(myName&&!list.some(p=>p.key===myKey))list.unshift({key:myKey,name:myName,fid:myFid,lines:bingoLines(),live:LIVE.mySid});
   list.sort((a,b)=>(a.key===myKey?-1:b.key===myKey?1:String(a.name).localeCompare(String(b.name),"pt-BR")));
   $("#roomCount").textContent=`Na sala agora (${list.length})`;
   $("#people").innerHTML=list.length?list.map(p=>{
-    const f=friends.find(x=>norm(x.name)===norm(p.name));
-    const pic=f&&(f.photo||artOf(f))?avatar(f):`<span class="u" style="--h:${hueOf(p.name)}" aria-hidden="true">${esc(initials(p.name))}</span>`;
-    return `<li class="${p.key===myKey?"me":""}">${pic}<span class="who">${esc(p.name)}${p.key===myKey?` <span class="you">(você)</span>`:""}</span>${p.lines?`<span class="bingo-pill">BINGO${p.lines>1?" ×"+p.lines:""}</span>`:""}</li>`;
+    const f=friendOf(p.fid)||friends.find(x=>norm(x.name)===norm(p.name));
+    const pic=f?avatar(f):`<span class="u" style="--h:${hueOf(p.name)}" aria-hidden="true">${esc(initials(p.name))}</span>`;
+    return `<li class="${p.key===myKey?"me":""}">${pic}<span class="who">${esc(f?f.name:p.name)}${p.key===myKey?` <span class="you">(você)</span>`:""}</span>${p.live?`<span class="live-pill">AO VIVO</span>`:""}${p.lines?`<span class="bingo-pill">BINGO${p.lines>1?" ×"+p.lines:""}</span>`:""}</li>`;
   }).join(""):`<li class="status">Ninguém por aqui ainda.</li>`;
 }
-function trackMe(){ if(room&&myName) room.track({name:myName,lines:bingoLines(),at:Date.now()}).catch(()=>{}); renderPeople(); }
+function trackMe(){ if(room&&myName) room.track({name:myName,fid:myFid,lines:bingoLines(),live:LIVE.mySid||null,at:Date.now()}).catch(()=>{}); renderPeople(); }
 
-/* ---------- entrada com nome ---------- */
-function renderQuick(){
-  $("#quick").innerHTML=friends.map(f=>`<button type="button" class="chip" data-n="${esc(f.name)}">${avatar(f)}${esc(f.name)}</button>`).join("");
-  $("#quick").hidden=!friends.length;
-  $("#quick").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{$("#gateName").value=b.dataset.n;$("#gateName").focus();});
+/* ---------- login, troca de senha e sair ---------- */
+function showLogin(msg){
+  $("#gate").hidden=false; $("#gateWait").hidden=true; $("#unlinked").hidden=true; $("#loginFields").hidden=false;
+  if(msg){$("#loginErr").textContent=msg;$("#loginErr").hidden=false;}
+  setTimeout(()=>($("#loginUser").value?$("#loginPass"):$("#loginUser")).focus(),30);
 }
-function openGate(){
-  $("#gateName").value=myName; renderQuick();
-  $("#gate").hidden=false; setTimeout(()=>{const i=$("#gateName");i.focus();i.select();},30);
-}
-$("#gateForm").onsubmit=e=>{
-  e.preventDefault(); const n=$("#gateName").value.trim().slice(0,20); if(!n)return;
-  myName=n; store.set("nanicos-user",n); cookie.set("nanicos_user",n); $("#gate").hidden=true; trackMe(); toast(`Bem-vindo, ${n}`);
+function showUnlinked(){ $("#gate").hidden=false; $("#gateWait").hidden=true; $("#loginFields").hidden=true; $("#unlinked").hidden=false; }
+const toEmail=u=>{u=norm(u).replace(/\s+/g,"");return u.includes("@")?u:u+"@"+EMAIL_DOMAIN;};
+$("#loginForm").onsubmit=async e=>{
+  e.preventDefault(); const err=$("#loginErr"); err.hidden=true;
+  const u=$("#loginUser").value, pw=$("#loginPass").value;
+  if(!norm(u)||!pw){err.textContent="Preencha o usuário e a senha.";err.hidden=false;return;}
+  if(!sb){err.textContent="O site não conseguiu falar com o banco. Recarregue a página.";err.hidden=false;return;}
+  $("#loginBtn").disabled=true; $("#loginBtn").textContent="Entrando…";
+  try{
+    const {data,error}=await sb.auth.signInWithPassword({email:toEmail(u),password:pw});
+    if(error){ err.textContent=(error.status===400||/invalid/i.test(error.message||""))?"Usuário ou senha incorretos.":"Não deu para entrar. Confira a internet e tente de novo."; err.hidden=false; return; }
+    $("#loginPass").value=""; await startSession(data.session);
+  }catch(ex){console.error(ex);err.textContent="Não deu para entrar. Confira a internet e tente de novo.";err.hidden=false;}
+  finally{$("#loginBtn").disabled=false;$("#loginBtn").textContent="Entrar";}
 };
-$("#trocarNome").onclick=openGate;
+async function logout(){
+  try{stopLive();closeAllWatches();}catch{}
+  try{await sb?.auth.signOut();}catch{}
+  location.reload();
+}
+$("#sair").onclick=logout; $("#unlinkedOut").onclick=logout;
+function openPw(){ $("#pw1").value="";$("#pw2").value="";$("#pwErr").hidden=true;$("#pwGate").hidden=false;setTimeout(()=>$("#pw1").focus(),30); }
+function closePw(){ $("#pwGate").hidden=true; }
+$("#trocarSenha").onclick=openPw; $("#pwCancel").onclick=closePw;
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#pwGate").hidden)closePw();});
+$("#pwForm").onsubmit=async e=>{
+  e.preventDefault(); const err=$("#pwErr"); err.hidden=true;
+  const a=$("#pw1").value, b=$("#pw2").value;
+  if(a.length<6){err.textContent="A senha precisa ter pelo menos 6 caracteres.";err.hidden=false;return;}
+  if(a!==b){err.textContent="As duas senhas não são iguais.";err.hidden=false;return;}
+  $("#pwSave").disabled=true;
+  try{
+    const {error}=await sb.auth.updateUser({password:a});
+    if(error){err.textContent=/same/i.test(error.code||error.message||"")?"A senha nova é igual à atual.":/weak|short|length/i.test(error.code||error.message||"")?"Senha fraca demais. Use uma mais longa.":"Não deu para trocar a senha. Tente de novo.";err.hidden=false;return;}
+    closePw(); toast("Senha trocada");
+  }catch(ex){console.error(ex);err.textContent="Não deu para trocar a senha. Tente de novo.";err.hidden=false;}
+  finally{$("#pwSave").disabled=false;}
+};
 
 /* ---------- seletor de nanico com foto ---------- */
 const pickers=[];
@@ -714,16 +865,270 @@ function resizePhoto(file){
 }
 
 function renderAll(){renderFriendSelects();renderLineup();renderPhrases();renderFriends();renderPeople();}
-renderAll(); renderCard();
-if(!myName) openGate();
+
+
+/* ---------- ao vivo (transmissão de tela) ----------
+   A imagem vai direto de quem transmite para quem assiste (WebRTC).
+   O Supabase só serve para os dois se acharem (mensagens na sala).
+   Se alguém numa rede mais fechada não conseguir assistir, dá para pôr um servidor TURN aqui. */
+const TURN_SERVERS=[];
+const ICE=[{urls:["stun:stun.l.google.com:19302","stun:stun1.l.google.com:19302"]},...TURN_SERVERS];
+const LIVE={mySid:null,myStream:null,hasAudio:false,selfVideo:null,viewers:new Map(),watching:new Map(),main:null,vol:1};
+try{const v=parseFloat(localStorage.getItem("live-vol"));if(v>=0&&v<=1)LIVE.vol=v;}catch{}
+const canShare=!!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia);
+const newId=()=>(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));
+const liveStreams=()=>online.filter(p=>p.live&&p.key!==myKey).sort((a,b)=>String(a.name).localeCompare(String(b.name),"pt-BR"));
+function sendRtc(m){ if(room) room.send({type:"broadcast",event:"rtc",payload:{...m,from:myKey}}).catch(()=>{}); }
+function stereo(sdp){
+  const m=sdp.match(/a=rtpmap:(\d+) opus\/48000\/2/i); if(!m)return sdp;
+  return sdp.replace(new RegExp(`a=fmtp:${m[1]} ([^\\r\\n]*)`),(all,par)=>par.includes("stereo=1")?all:`a=fmtp:${m[1]} ${par};stereo=1;sprop-stereo=1;maxaveragebitrate=128000`);
+}
+
+/* quem transmite */
+async function startLive(){
+  if(!canShare)return toast("Transmitir só funciona no navegador do computador.");
+  let stream;
+  try{
+    stream=await navigator.mediaDevices.getDisplayMedia({
+      video:{frameRate:{ideal:30,max:30},width:{ideal:1920},height:{ideal:1080}},
+      audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},
+      systemAudio:"include",selfBrowserSurface:"exclude",surfaceSwitching:"include"});
+  }catch(e){ if(e&&e.name!=="NotAllowedError"&&e.name!=="AbortError"){console.error(e);toast("Não deu para capturar a tela.");} return; }
+  const vt=stream.getVideoTracks()[0]; if(vt){try{vt.contentHint="motion";}catch{} vt.addEventListener("ended",()=>stopLive());}
+  LIVE.myStream=stream; LIVE.mySid=newId(); LIVE.hasAudio=stream.getAudioTracks().length>0;
+  trackMe(); renderLive();
+  toast(LIVE.hasAudio?"Você está ao vivo":"Você está ao vivo, mas sem som");
+}
+function stopLive(){
+  if(!LIVE.mySid)return;
+  for(const [key,v] of LIVE.viewers){ sendRtc({t:"bye",to:key,sid:LIVE.mySid,role:"s"}); try{v.pc.close();}catch{} }
+  LIVE.viewers.clear();
+  LIVE.myStream?.getTracks().forEach(t=>t.stop());
+  LIVE.myStream=null; LIVE.mySid=null; LIVE.hasAudio=false;
+  if(LIVE.selfVideo){LIVE.selfVideo.srcObject=null;}
+  trackMe(); renderLive();
+}
+function closeViewer(key,silent){
+  const v=LIVE.viewers.get(key); if(!v)return;
+  try{v.pc.close();}catch{} LIVE.viewers.delete(key);
+  if(!silent)sendRtc({t:"bye",to:key,sid:LIVE.mySid,role:"s"});
+  tuneSenders(); renderSelf();
+}
+function tuneSenders(){
+  const n=Math.max(1,LIVE.viewers.size);
+  const br=Math.round(Math.min(4.5e6,Math.max(1.2e6,12e6/n)));
+  for(const v of LIVE.viewers.values())for(const sd of v.pc.getSenders()){
+    if(!sd.track)continue;
+    const par=sd.getParameters(); if(!par.encodings||!par.encodings.length)continue;
+    if(sd.track.kind==="video"){par.encodings[0].maxBitrate=br;par.encodings[0].maxFramerate=30;par.degradationPreference="maintain-framerate";}
+    else par.encodings[0].maxBitrate=128000;
+    sd.setParameters(par).catch(()=>{});
+  }
+}
+async function onWatch(m){
+  if(!LIVE.mySid||m.sid!==LIVE.mySid){ sendRtc({t:"bye",to:m.from,sid:m.sid,role:"s"}); return; }
+  closeViewer(m.from,true);
+  const pc=new RTCPeerConnection({iceServers:ICE});
+  const v={pc,queue:[],at:Date.now()}; LIVE.viewers.set(m.from,v);
+  LIVE.myStream.getTracks().forEach(t=>pc.addTrack(t,LIVE.myStream));
+  pc.onicecandidate=e=>{ if(e.candidate)sendRtc({t:"ice",to:m.from,sid:LIVE.mySid,role:"s",c:e.candidate.toJSON()}); };
+  pc.onconnectionstatechange=()=>{ if(pc.connectionState==="failed"||pc.connectionState==="closed")closeViewer(m.from,true); else {tuneSenders();renderSelf();} };
+  try{
+    const off=await pc.createOffer(); off.sdp=stereo(off.sdp);
+    await pc.setLocalDescription(off);
+    sendRtc({t:"offer",to:m.from,sid:LIVE.mySid,sdp:pc.localDescription.sdp});
+    tuneSenders(); renderSelf();
+  }catch(e){console.error(e);closeViewer(m.from,true);}
+}
+async function onAnswer(m){
+  const v=LIVE.viewers.get(m.from); if(!v||m.sid!==LIVE.mySid)return;
+  try{ await v.pc.setRemoteDescription({type:"answer",sdp:m.sdp});
+    for(const c of v.queue.splice(0)) await v.pc.addIceCandidate(c).catch(()=>{});
+    tuneSenders();
+  }catch(e){console.error(e);}
+}
+
+/* quem assiste */
+function openWatch(p){
+  const pc=new RTCPeerConnection({iceServers:ICE});
+  const w={key:p.key,sid:p.live,fid:p.fid,name:p.name,pc,stream:null,queue:[],state:"connecting",video:null,tile:null};
+  pc.ontrack=e=>{
+    const st=e.streams&&e.streams[0]; if(st&&w.stream!==st){w.stream=st;} else if(!w.stream){w.stream=new MediaStream([e.track]);} else if(!w.stream.getTracks().includes(e.track)){w.stream.addTrack(e.track);}
+    if(w.video&&w.video.srcObject!==w.stream)w.video.srcObject=w.stream;
+    w.state="live"; clearTimeout(w.to); renderLive();
+  };
+  pc.onicecandidate=e=>{ if(e.candidate)sendRtc({t:"ice",to:w.key,sid:w.sid,role:"v",c:e.candidate.toJSON()}); };
+  pc.onconnectionstatechange=()=>{ if(pc.connectionState==="failed"){w.state="failed";renderLive();} };
+  w.to=setTimeout(()=>{ if(w.state==="connecting"){w.state="failed";renderLive();} },20000);
+  LIVE.watching.set(p.key,w);
+  sendRtc({t:"watch",to:p.key,sid:p.live});
+  return w;
+}
+function closeWatch(key,silent){
+  const w=LIVE.watching.get(key); if(!w)return;
+  clearTimeout(w.to); try{w.pc.close();}catch{}
+  if(!silent)sendRtc({t:"bye",to:key,sid:w.sid,role:"v"});
+  if(w.video){w.video.srcObject=null;w.video.remove();} w.tile?.remove();
+  LIVE.watching.delete(key);
+  if(LIVE.main===key)LIVE.main=[...LIVE.watching.keys()][0]||null;
+}
+function closeAllWatches(){ for(const k of [...LIVE.watching.keys()])closeWatch(k); }
+function watch(key,asMain){
+  const p=online.find(x=>x.key===key&&x.live); if(!p)return;
+  let w=LIVE.watching.get(key);
+  if(w&&(w.sid!==p.live||w.state==="failed")){closeWatch(key);w=null;}
+  if(!w)w=openWatch(p);
+  if(asMain||!LIVE.main)LIVE.main=key;
+  renderLive();
+}
+function unwatch(key){ closeWatch(key); renderLive(); }
+async function onOffer(m){
+  const w=LIVE.watching.get(m.from); if(!w||w.sid!==m.sid)return;
+  try{
+    await w.pc.setRemoteDescription({type:"offer",sdp:m.sdp});
+    for(const c of w.queue.splice(0)) await w.pc.addIceCandidate(c).catch(()=>{});
+    const ans=await w.pc.createAnswer(); ans.sdp=stereo(ans.sdp);
+    await w.pc.setLocalDescription(ans);
+    sendRtc({t:"answer",to:m.from,sid:m.sid,sdp:w.pc.localDescription.sdp});
+  }catch(e){console.error(e);w.state="failed";renderLive();}
+}
+function onIce(m){
+  const tgt=m.role==="s"?LIVE.watching.get(m.from):LIVE.viewers.get(m.from);
+  if(!tgt)return;
+  if(m.role==="s"&&tgt.sid!==m.sid)return;
+  if(m.role==="v"&&m.sid!==LIVE.mySid)return;
+  if(!tgt.pc.remoteDescription)tgt.queue.push(m.c); else tgt.pc.addIceCandidate(m.c).catch(()=>{});
+}
+function onBye(m){
+  if(m.role==="s"){ const w=LIVE.watching.get(m.from); if(!w||w.sid!==m.sid)return;
+    const wasMain=LIVE.main===m.from; closeWatch(m.from,true); if(wasMain)toast(`${w.name} parou de transmitir`); renderLive(); }
+  else if(m.sid===LIVE.mySid) closeViewer(m.from,true);
+}
+function onRtc(m){
+  if(!m||m.to!==myKey||m.from===myKey)return;
+  ({watch:onWatch,offer:onOffer,answer:onAnswer,ice:onIce,bye:onBye})[m.t]?.(m);
+}
+/* presença mudou: fecha o que acabou, reconecta quem reiniciou a transmissão */
+function syncLive(){
+  for(const [key,w] of [...LIVE.watching]){
+    const p=online.find(x=>x.key===key);
+    if(!p||!p.live){ const wasMain=LIVE.main===key; closeWatch(key,true); if(wasMain)toast(`${w.name} parou de transmitir`); }
+    else if(p.live!==w.sid){ const wasMain=LIVE.main===key; closeWatch(key,true); openWatch(p); if(wasMain)LIVE.main=key; }
+  }
+  for(const [key,v] of [...LIVE.viewers]) if(!online.some(x=>x.key===key)&&Date.now()-v.at>15000) closeViewer(key,true);
+  renderLive();
+}
+
+/* tela */
+function vidFor(w){
+  if(!w.video){const v=document.createElement("video");v.autoplay=true;v.playsInline=true;v.muted=true;if(w.stream)v.srcObject=w.stream;w.video=v;}
+  return w.video;
+}
+function faceFor(p){ const f=friendOf(p.fid)||friends.find(x=>norm(x.name)===norm(p.name)); return f?avatar(f,"xs"):""; }
+function updateLiveCount(){
+  const n=liveStreams().length+(LIVE.mySid?1:0), el=$("#nLive");
+  el.textContent=n?`● ${n}`:""; el.classList.toggle("on",n>0);
+}
+function renderStage(){
+  const slot=$("#stageSlot"), empty=$("#stageEmpty"), bar=$("#stageBar");
+  const w=LIVE.main&&LIVE.watching.get(LIVE.main);
+  [...slot.querySelectorAll("video")].forEach(v=>{ if(!w||v!==w.video){v.muted=true;} });
+  if(!w){
+    slot.replaceChildren(); bar.hidden=true; $("#unmute").hidden=true; empty.hidden=false;
+    const ls=liveStreams();
+    empty.innerHTML=ls.length
+      ?`<b>Escolha quem assistir</b><span>Toque em um nome para abrir a tela com som.</span><div class="acts">${ls.map(p=>`<button class="btn sm" data-watch="${esc(p.key)}">${faceFor(p)}${esc(p.name)}</button>`).join("")}</div>`
+      :`<b>Ninguém transmitindo agora</b><span>${canShare?"Toque em “Transmitir minha tela” para começar.":"Quando alguém transmitir do computador, a tela aparece aqui."}</span>`;
+    empty.querySelectorAll("[data-watch]").forEach(b=>b.onclick=()=>watch(b.dataset.watch,true));
+    return;
+  }
+  const v=vidFor(w);
+  if(v.parentNode!==slot){slot.replaceChildren(v);}
+  empty.hidden=w.state==="live";
+  if(w.state==="connecting")empty.innerHTML=`<b>Conectando à tela de ${esc(w.name)}…</b>`;
+  else if(w.state==="failed"){empty.innerHTML=`<b>Não deu para conectar à tela de ${esc(w.name)}</b><span>A rede de algum de vocês pode estar bloqueando.</span><div class="acts"><button class="btn sm" id="retryMain">Tentar de novo</button></div>`;$("#retryMain").onclick=()=>watch(w.key,true);}
+  bar.hidden=w.state!=="live";
+  $("#stageWho").innerHTML=`${faceFor(w)}${esc(w.name)} <span class="live-pill">AO VIVO</span>`;
+  $("#vol").value=LIVE.vol;
+  v.volume=LIVE.vol;
+  if(w.state==="live"){
+    v.muted=false;
+    v.play().then(()=>{$("#unmute").hidden=true;}).catch(()=>{ v.muted=true; v.play().catch(()=>{}); $("#unmute").hidden=false; });
+  }
+  $("#pipBtn").hidden=!document.pictureInPictureEnabled;
+}
+function renderMinis(){
+  const box=$("#minis");
+  const secs=[...LIVE.watching.values()].filter(w=>w.key!==LIVE.main).sort((a,b)=>String(a.name).localeCompare(String(b.name),"pt-BR"));
+  const keep=new Set(secs.map(w=>w.tile).filter(Boolean));
+  [...box.children].forEach(c=>{if(!keep.has(c))c.remove();});
+  for(const w of secs){
+    if(!w.tile){ const t=document.createElement("button"); t.className="mini"; t.type="button"; t.onclick=()=>watch(w.key,true); w.tile=t; }
+    const v=vidFor(w); v.muted=true;
+    t_html(w);
+    if(v.parentNode!==w.tile)w.tile.prepend(v);
+    if(w.tile.parentNode!==box)box.appendChild(w.tile);
+    if(w.state==="live")v.play().catch(()=>{});
+  }
+}
+function t_html(w){
+  const t=w.tile; [...t.querySelectorAll(".cap,.wait")].forEach(e=>e.remove());
+  t.setAttribute("aria-label",`Tornar ${w.name} a tela principal`);
+  if(w.state!=="live")t.insertAdjacentHTML("beforeend",`<span class="wait">${w.state==="failed"?"Não conectou":"Conectando…"}</span>`);
+  t.insertAdjacentHTML("beforeend",`<span class="cap">${faceFor(w)}${esc(w.name)}<small>sem som</small></span>`);
+}
+function renderSelf(){
+  const box=$("#selfBlock");
+  if(!LIVE.mySid){
+    box.innerHTML=`<h2>Sua tela</h2>
+      ${canShare?`<button class="btn" id="goLive" style="width:100%">Transmitir minha tela</button>
+      <ol class="howto"><li>Escolha <b>Tela inteira</b> para mandar o jogo com som.</li><li>Marque <b>Compartilhar áudio do sistema</b> antes de confirmar.</li><li>Funciona no Chrome e no Edge do Windows.</li></ol>`
+      :`<p class="hint" style="margin:0">Transmitir só funciona no navegador do computador. Daqui você pode assistir.</p>`}`;
+    $("#goLive")&&($("#goLive").onclick=startLive);
+    return;
+  }
+  const n=[...LIVE.viewers.values()].filter(v=>v.pc.connectionState==="connected").length;
+  if(!LIVE.selfVideo){const v=document.createElement("video");v.className="self-prev";v.muted=true;v.autoplay=true;v.playsInline=true;LIVE.selfVideo=v;}
+  if(LIVE.selfVideo.srcObject!==LIVE.myStream)LIVE.selfVideo.srcObject=LIVE.myStream;
+  box.innerHTML=`<h2>Sua tela</h2><div id="selfSlot"></div>
+    <div class="self-live"><span class="live-pill">AO VIVO</span><span>${n===1?"1 pessoa assistindo":n+" pessoas assistindo"}</span></div>
+    ${LIVE.hasAudio?"":`<p class="warn">Sem som. Para mandar o som do jogo, pare e transmita de novo escolhendo “Tela inteira” com “Compartilhar áudio do sistema” marcado.</p>`}
+    <button class="btn soft" id="stopLive" style="width:100%">Parar transmissão</button>`;
+  $("#selfSlot").appendChild(LIVE.selfVideo); LIVE.selfVideo.play().catch(()=>{});
+  $("#stopLive").onclick=stopLive;
+}
+function renderCards(){
+  const ls=liveStreams(), box=$("#lcards");
+  if(!ls.length){box.innerHTML=`<p class="status" style="margin:0">Ninguém além de você está transmitindo.</p>`;return;}
+  box.innerHTML=ls.map(p=>{
+    const w=LIVE.watching.get(p.key), isMain=LIVE.main===p.key&&w;
+    const f=friendOf(p.fid)||friends.find(x=>norm(x.name)===norm(p.name));
+    const st=isMain?"Tela principal, com som":w?"Aberta sem som":"Ao vivo";
+    const acts=isMain?`<button class="btn soft sm" data-close="${esc(p.key)}">Fechar</button>`
+      :w?`<button class="btn sm" data-main="${esc(p.key)}">Tornar principal</button><button class="btn soft sm" data-close="${esc(p.key)}">Fechar</button>`
+      :`<button class="btn sm" data-main="${esc(p.key)}">Assistir</button><button class="btn soft sm" data-side="${esc(p.key)}">Abrir sem som</button>`;
+    return `<div class="lcard${isMain?" main":""}">${f?avatar(f):`<span class="av">${esc(initials(p.name))}</span>`}<div style="min-width:0"><div class="nm">${esc(f?f.name:p.name)}</div><div class="st">${st}</div></div><div class="acts">${acts}</div></div>`;
+  }).join("");
+  box.querySelectorAll("[data-main]").forEach(b=>b.onclick=()=>watch(b.dataset.main,true));
+  box.querySelectorAll("[data-side]").forEach(b=>b.onclick=()=>watch(b.dataset.side,false));
+  box.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>unwatch(b.dataset.close));
+}
+function renderLive(){ renderStage(); renderMinis(); renderSelf(); renderCards(); updateLiveCount(); }
+$("#vol").oninput=e=>{ LIVE.vol=+e.target.value; try{localStorage.setItem("live-vol",String(LIVE.vol));}catch{} const w=LIVE.watching.get(LIVE.main); if(w&&w.video)w.video.volume=LIVE.vol; };
+$("#unmute").onclick=()=>{ const w=LIVE.watching.get(LIVE.main); if(!w||!w.video)return; w.video.muted=false; w.video.play().then(()=>$("#unmute").hidden=true).catch(()=>{}); };
+$("#pipBtn").onclick=async()=>{ const w=LIVE.watching.get(LIVE.main); try{ if(document.pictureInPictureElement)await document.exitPictureInPicture(); else if(w&&w.video)await w.video.requestPictureInPicture(); }catch{toast("Seu navegador não abriu a janela flutuante.");} };
+$("#fsBtn").onclick=()=>{ const st=$("#stage"); (document.fullscreenElement?document.exitFullscreen():st.requestFullscreen?.())?.catch?.(()=>{}); };
+addEventListener("pagehide",()=>{ try{stopLive();closeAllWatches();}catch{} });
+renderAll(); renderCard(); renderLive();
 
 /* ---------- conexão (Supabase) ---------- */
 const byName=(a,b)=>String(a.name||"").localeCompare(String(b.name||""),"pt-BR",{sensitivity:"base"});
 async function loadFriends(){
-  const rows=await q(sb.from("friends").select("id,name,photo,created_at"));
+  const rows=await q(sb.from("friends").select("id,name,photo,user_id,created_at"));
   friends=rows.sort(byName);
-  renderFriendSelects();renderLineup();renderPhrases();renderFriends();renderCard();renderPeople();
-  renderQuick();
+  const mine=myUid&&friends.find(f=>f.user_id===myUid);
+  if(mine){myFid=mine.id;myName=mine.name;}
+  renderFriendSelects();renderLineup();renderPhrases();renderFriends();renderCard();renderPeople();renderLive();
 }
 async function loadPhrases(){
   const rows=await q(sb.from("phrases").select("id,text,friend_id,champions,created_at"));
@@ -738,26 +1143,72 @@ async function loadGame(){
 }
 const timers={};
 const later=(k,fn)=>{clearTimeout(timers[k]);timers[k]=setTimeout(()=>fn().catch(console.error),150);};
-(async()=>{
-  if(!window.supabase||SUPABASE_URL.startsWith("COLE")||SUPABASE_KEY.startsWith("COLE")){
-    $("#conn").textContent="Supabase não configurado.";return;}
-  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-  try{await Promise.all([loadFriends(),loadPhrases(),loadGame()]);db=true;$("#conn").textContent="Sincronizado";}
-  catch(e){console.error(e);$("#conn").textContent="Sem conexão com o banco.";return;}
-  room=sb.channel("bingo-dos-nanicos",{config:{presence:{key:myKey}}})
+function joinRoom(priv){
+  room=sb.channel("bingo-dos-nanicos",{config:{presence:{key:myKey},broadcast:{self:false},private:priv}})
     .on("presence",{event:"sync"},()=>{
       const st=room.presenceState();
       online=Object.entries(st).map(([key,arr])=>({key,...(arr[arr.length-1]||{})})).filter(p=>p.name);
-      renderPeople();
+      renderPeople(); syncLive();
     })
+    .on("broadcast",{event:"rtc"},({payload})=>onRtc(payload))
     .on("postgres_changes",{event:"*",schema:"public",table:"friends"},()=>later("f",loadFriends))
     .on("postgres_changes",{event:"*",schema:"public",table:"phrases"},()=>later("p",loadPhrases))
     .on("postgres_changes",{event:"*",schema:"public",table:"game"},()=>later("g",loadGame))
     .subscribe(st=>{
       if(st==="SUBSCRIBED"){$("#conn").textContent="Sincronizado";trackMe();}
+      else if((st==="CHANNEL_ERROR"||st==="TIMED_OUT")&&priv){ console.warn("Sala privada indisponível, usando sala comum"); sb.removeChannel(room); joinRoom(false); }
       else if(st==="CHANNEL_ERROR"||st==="TIMED_OUT")$("#conn").textContent="Sem atualização ao vivo. Recarregue a página.";
     });
+}
+let started=false;
+async function startSession(session){
+  if(started||!session)return; started=true;
+  myUid=session.user.id;
+  try{ sb.realtime.setAuth(session.access_token); }catch{}
+  try{await Promise.all([loadFriends(),loadPhrases(),loadGame()]);db=true;}
+  catch(e){console.error(e);started=false;$("#conn").textContent="Sem conexão com o banco.";showLogin("Não deu para carregar o bingo. Confira a internet e tente de novo.");return;}
+  if(!myFid){started=false;showUnlinked();return;}
+  let u=session.user;
+  try{const r=await sb.auth.getUser(); if(r?.data?.user)u=r.data.user;}catch{}
+  if(u?.user_metadata?.must_change){ showFirstPw(u); return; }
+  enterApp();
+}
+function enterApp(){
+  $("#gate").hidden=true; $("#firstGate").hidden=true; $("#conn").textContent="Conectando…";
+  joinRoom(true);
   document.addEventListener("visibilitychange",()=>{if(!document.hidden){later("f",loadFriends);later("p",loadPhrases);later("g",loadGame);}});
+}
+/* primeiro acesso: troca obrigatória da senha que o admin passou */
+function showFirstPw(u){
+  $("#gate").hidden=true; $("#firstGate").hidden=false;
+  $("#firstUser").value=String(u?.email||"").split("@")[0];
+  $("#fp1").value="";$("#fp2").value="";$("#fpErr").hidden=true;
+  setTimeout(()=>$("#fp1").focus(),30);
+}
+$("#firstOut").onclick=logout;
+$("#firstForm").onsubmit=async e=>{
+  e.preventDefault(); const err=$("#fpErr"); err.hidden=true;
+  const a=$("#fp1").value, b=$("#fp2").value;
+  if(a.length<6){err.textContent="A senha precisa ter pelo menos 6 caracteres.";err.hidden=false;return;}
+  if(a!==b){err.textContent="As duas senhas não são iguais.";err.hidden=false;return;}
+  $("#fpSave").disabled=true; $("#fpSave").textContent="Salvando…";
+  try{
+    const {error}=await sb.auth.updateUser({password:a,data:{must_change:false}});
+    if(error){err.textContent=/same/i.test(error.code||error.message||"")?"Escolha uma senha diferente da que o admin te passou.":/weak|short|length/i.test(error.code||error.message||"")?"Senha fraca demais. Use uma mais longa.":"Não deu para salvar a senha. Tente de novo.";err.hidden=false;return;}
+    toast(`Senha salva. Bem-vindo, ${myName}`); enterApp();
+  }catch(ex){console.error(ex);err.textContent="Não deu para salvar a senha. Tente de novo.";err.hidden=false;}
+  finally{$("#fpSave").disabled=false;$("#fpSave").textContent="Salvar e entrar";}
+};
+(async()=>{
+  if(!window.supabase||SUPABASE_URL.startsWith("COLE")||SUPABASE_KEY.startsWith("COLE")){
+    $("#conn").textContent="Supabase não configurado."; showLogin("O site não conseguiu falar com o banco. Recarregue a página."); return;}
+  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
+  sb.auth.onAuthStateChange((ev,session)=>{
+    if(ev==="TOKEN_REFRESHED"&&session){ try{sb.realtime.setAuth(session.access_token);}catch{} }
+    if(ev==="SIGNED_OUT"&&started)location.reload();
+  });
+  const {data}=await sb.auth.getSession();
+  if(data&&data.session)await startSession(data.session); else showLogin();
 })();
 </script>
 </body>
