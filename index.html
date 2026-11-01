@@ -806,6 +806,7 @@ body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live
                     <span class="draw-esps" id="drawEsps" role="radiogroup" aria-label="Espessura"></span>
                   </span>
                   <label class="draw-ver"><input type="checkbox" id="drawVer" checked>Ver desenhos</label>
+                  <label class="draw-ver"><input type="checkbox" id="reactVer" checked>Ver reações</label>
                 </span>
                 <button class="sbtn" id="fsBtn" type="button">Tela cheia</button>
               </div>
@@ -2066,24 +2067,29 @@ $("#reacts").querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{
   reactMeus.push(agora);
   const i=+b.dataset.r;
   room.send({type:"broadcast",event:"reacao",payload:{i,alvo,from:myKey}}).catch(()=>{});
-  mostrarReacao(i,myName,alvo);
+  mostrarReacao(i,myName,alvo,true);
 });
 const reactDeles=new Map();
+/* "Ver reações": desligado, não aparece nenhum emoji/foto dos outros (fica salvo no navegador) */
+var reactVer=true; try{reactVer=localStorage.getItem("reacoes-ver")!=="0";}catch{}
+$("#reactVer").checked=reactVer;
+$("#reactVer").onchange=e=>{ reactVer=e.target.checked; try{localStorage.setItem("reacoes-ver",reactVer?"1":"0");}catch{}
+  if(!reactVer)document.querySelectorAll("#reactLayer .react-fly:not(.meu),#reactLayerMe .react-fly").forEach(x=>x.remove()); };
 function onReacao(m){
-  if(!m||typeof m!=="object"||typeof m.from!=="string"||typeof m.alvo!=="string"||m.from===myKey)return;
+  if(!reactVer||!m||typeof m!=="object"||typeof m.from!=="string"||typeof m.alvo!=="string"||m.from===myKey)return;
   const i=Number(m.i); if(!Number.isInteger(i)||i<0||i>=N_REACOES)return;
   const p=online.find(x=>x.key===m.from); if(!p)return;                       /* só de quem está na sala */
   const agora=Date.now(), r=(reactDeles.get(m.from)||[]).filter(t=>agora-t<3000); if(r.length>=10)return;
   r.push(agora); reactDeles.set(m.from,r);
   const f=friendOf(p.fid); mostrarReacao(i,f?f.name:p.name,m.alvo);
 }
-function mostrarReacao(i,nome,alvo){
+function mostrarReacao(i,nome,alvo,meu){
   let layer=null;
   if(alvo===myKey&&LIVE.mySid)layer=$("#reactLayerMe");                       /* reagiram na minha transmissão */
   else if(alvo===LIVE.main&&!$("#view-live").hidden)layer=$("#reactLayer");     /* estou vendo essa transmissão */
   if(!layer||layer.childElementCount>40)return;
   const foto=i>=REACOES.length?REACOES_FOTO[i-REACOES.length]:null;
-  const el=document.createElement("span"); el.className="react-fly"+(foto?" foto":"");
+  const el=document.createElement("span"); el.className="react-fly"+(foto?" foto":"")+(meu?" meu":"");
   el.style.left=(4+Math.random()*30)+"%"; el.style.setProperty("--dx",Math.round(Math.random()*50-25)+"px");
   el.innerHTML=`${foto?`<img src="${foto.img}" alt="">`:`<b>${REACOES[i]}</b>`}<small>${esc(String(nome||"").slice(0,20))}</small>`;
   layer.appendChild(el);
@@ -2448,6 +2454,7 @@ const CHANGELOG=[
   {data:"31/10/2026",itens:["Arte nova do Gamer, Grito, Veião e Pin, e foto nova da turma"]},
   {data:"31/10/2026",itens:["Reações com foto na live: os Picarétezzi"]},
   {data:"31/10/2026",itens:["Desenhar na live: o risco aparece para todos que estão assistindo e some em 3 s, com cor e espessura, e dá para desligar"]},
+  {data:"31/10/2026",itens:["Caixinha “Ver reações” para desligar os emojis e fotos dos outros na live"]},
 ];
 const versionAt=i=>"v1."+String(i).padStart(2,"0");
 const VERSION=versionAt(CHANGELOG.length-1);
