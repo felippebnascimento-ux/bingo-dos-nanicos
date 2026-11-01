@@ -593,6 +593,20 @@ body.cams{padding:8px;background:#151613;min-height:100vh}
 .riot-note{font-size:12px;color:var(--muted);margin:0}
 .ingame-pill{font:700 10px var(--display);letter-spacing:.04em;color:#fff;background:var(--olive);padding:3px 7px;border-radius:99px;white-space:nowrap;flex:none}
 
+/* ---------- reações com emoji na live ---------- */
+.reacts{display:flex;gap:3px;flex-wrap:wrap}
+.rbtn{border:0;background:rgba(250,249,246,.12);border-radius:99px;width:34px;height:34px;font-size:18px;line-height:1;padding:0;cursor:pointer;display:grid;place-items:center;transition:transform .1s,background .1s}
+.rbtn:hover{transform:scale(1.18);background:rgba(250,249,246,.26)}
+.rbtn:active{transform:scale(.9)}
+.rbtn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.react-layer{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:3}
+.react-layer.fixed{position:fixed;inset:auto auto 0 0;width:min(420px,45vw);height:70vh;z-index:60}
+.react-fly{position:absolute;bottom:16%;display:grid;justify-items:center;animation:react-sobe 2.8s ease-out forwards;will-change:transform,opacity}
+.react-fly b{font-size:40px;line-height:1;filter:drop-shadow(0 2px 5px rgba(0,0,0,.55))}
+.react-fly small{font:700 11px var(--body);color:#fff;background:rgba(0,0,0,.6);padding:1px 7px;border-radius:99px;margin-top:3px;white-space:nowrap}
+@keyframes react-sobe{0%{transform:translate(0,24px) scale(.5);opacity:0}12%{transform:translate(0,0) scale(1.2);opacity:1}24%{transform:translate(0,-12px) scale(1)}100%{transform:translate(var(--dx,0),-48vh) scale(.95);opacity:0}}
+@media (prefers-reduced-motion:reduce){.react-fly{animation:react-some 2.2s linear forwards}@keyframes react-some{0%,70%{opacity:1}100%{opacity:0}}}
+
 /* quem está ao vivo na lista da sala é clicável */
 .people li[data-live]{cursor:pointer}
 .people li[data-live]:hover{background:var(--surface-2)}
@@ -729,10 +743,12 @@ body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live
               <div class="stage-slot" id="stageSlot"></div>
               <div class="stage-empty" id="stageEmpty"></div>
               <button class="btn unmute" id="unmute" hidden>Ativar som</button>
+              <div class="react-layer" id="reactLayer" aria-hidden="true"></div>
               <div class="stage-bar" id="stageBar" hidden>
                 <span class="who" id="stageWho"></span>
                 <span class="q" id="stageQ"></span>
                 <span class="sp"></span>
+                <span class="reacts" id="reacts" role="group" aria-label="Reagir na live"></span>
                 <label class="vol" for="vol">Volume <input type="range" id="vol" min="0" max="1" step="0.05" value="1"></label>
                 <button class="sbtn" id="pipBtn" type="button">Janela flutuante</button>
                 <button class="sbtn" id="fsBtn" type="button">Tela cheia</button>
@@ -836,6 +852,7 @@ body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live
 </div>
 <datalist id="champs"></datalist>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="react-layer fixed" id="reactLayerMe" aria-hidden="true"></div>
 
 <!-- supabase-js 2.45.4 (arquivo oficial do npm), servido pelo próprio site: suba o supabase.js junto com este index.html -->
 <script src="supabase.js"></script>
@@ -1906,6 +1923,41 @@ function renderCamPip(){
   });
 }
 
+/* ---------- reações com emoji na live ----------
+   Quem assiste toca num emoji; ele sobe na tela de todo mundo que está vendo a mesma transmissão
+   (e no canto da tela de quem está transmitindo). Os emojis sobem pelo lado esquerdo para não tapar o minimapa. */
+const REACOES=["😂","🔥","💀","👏","😮","🤡","😡","❤️"];
+$("#reacts").innerHTML=REACOES.map((e,i)=>`<button type="button" class="rbtn" data-r="${i}" aria-label="Reagir com ${e}" title="Reagir">${e}</button>`).join("");
+let reactMeus=[];
+$("#reacts").querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{
+  const alvo=LIVE.main; if(!alvo||!room)return;
+  const agora=Date.now(); reactMeus=reactMeus.filter(t=>agora-t<3000); if(reactMeus.length>=8)return;   /* até 8 a cada 3 s */
+  reactMeus.push(agora);
+  const i=+b.dataset.r;
+  room.send({type:"broadcast",event:"reacao",payload:{i,alvo,from:myKey}}).catch(()=>{});
+  mostrarReacao(i,myName,alvo);
+});
+const reactDeles=new Map();
+function onReacao(m){
+  if(!m||typeof m!=="object"||typeof m.from!=="string"||typeof m.alvo!=="string"||m.from===myKey)return;
+  const i=Number(m.i); if(!Number.isInteger(i)||i<0||i>=REACOES.length)return;
+  const p=online.find(x=>x.key===m.from); if(!p)return;                       /* só de quem está na sala */
+  const agora=Date.now(), r=(reactDeles.get(m.from)||[]).filter(t=>agora-t<3000); if(r.length>=10)return;
+  r.push(agora); reactDeles.set(m.from,r);
+  const f=friendOf(p.fid); mostrarReacao(i,f?f.name:p.name,m.alvo);
+}
+function mostrarReacao(i,nome,alvo){
+  let layer=null;
+  if(alvo===myKey&&LIVE.mySid)layer=$("#reactLayerMe");                       /* reagiram na minha transmissão */
+  else if(alvo===LIVE.main&&!$("#view-live").hidden)layer=$("#reactLayer");     /* estou vendo essa transmissão */
+  if(!layer||layer.childElementCount>40)return;
+  const el=document.createElement("span"); el.className="react-fly";
+  el.style.left=(4+Math.random()*30)+"%"; el.style.setProperty("--dx",Math.round(Math.random()*50-25)+"px");
+  el.innerHTML=`<b>${REACOES[i]}</b><small>${esc(String(nome||"").slice(0,20))}</small>`;
+  layer.appendChild(el);
+  el.addEventListener("animationend",()=>el.remove()); setTimeout(()=>el.remove(),4000);
+}
+
 /* tela */
 function vidFor(w){
   if(!w.video){const v=document.createElement("video");v.autoplay=true;v.playsInline=true;v.muted=true;if(w.stream)v.srcObject=w.stream;w.video=v;}
@@ -2160,6 +2212,7 @@ const CHANGELOG=[
   {data:"31/10/2026",itens:["Rostos e câmeras maiores na lista da sala, com o menu aberto ou recolhido"]},
   {data:"31/10/2026",itens:["Botão X para esconder o “Estou com fome” até o dia seguinte"]},
   {data:"31/10/2026",itens:["Menu recolhido mais largo, com barra de rolagem fina e sem cortar os rostos"]},
+  {data:"31/10/2026",itens:["Reações com emoji na live: sobem na tela de quem está assistindo e de quem transmite"]},
 ];
 const versionAt=i=>"v1."+String(i).padStart(2,"0");
 const VERSION=versionAt(CHANGELOG.length-1);
@@ -2230,6 +2283,7 @@ function joinRoom(priv){
       renderPeople(); syncLive(); syncCams();
     })
     .on("broadcast",{event:"rtc"},({payload})=>onRtc(payload))
+    .on("broadcast",{event:"reacao"},({payload})=>onReacao(payload))
     .on("postgres_changes",{event:"*",schema:"public",table:"friends"},()=>later("f",loadFriends))
     .on("postgres_changes",{event:"*",schema:"public",table:"phrases"},()=>later("p",loadPhrases))
     .on("postgres_changes",{event:"*",schema:"public",table:"game"},()=>later("g",loadGame))
