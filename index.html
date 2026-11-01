@@ -554,7 +554,7 @@ body.pip .mcell{font-size:11.5px}
   body.side-min .cam-btn .t{display:none}
   body.side-min .cam-pip{width:46px;height:46px;border-radius:50%}
 }
-@media (max-width:860px){.cam-pip{display:none}}
+@media (max-width:860px){.cam-row .cam-pip{flex:0 0 auto;padding:10px 16px}}
 body.cams{padding:8px;background:#151613;min-height:100vh}
 .cams-grid{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));align-content:start}
 .cams-grid.one{grid-template-columns:1fr}
@@ -654,6 +654,68 @@ body.cams{padding:8px;background:#151613;min-height:100vh}
 .draw-ver{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;cursor:pointer;white-space:nowrap}
 .draw-ver input{accent-color:var(--accent);width:15px;height:15px;margin:0;cursor:pointer}
 
+/* ---------- limpeza: barra do vídeo só com ícones ---------- */
+.stage-bar{gap:8px;padding:34px 12px 10px;flex-wrap:nowrap}
+.stage-bar .who{font-size:14px;min-width:0}
+.stage-bar .q{font-size:11.5px;opacity:.65;white-space:nowrap}
+.sb-tools{display:flex;align-items:center;gap:4px;flex:none}
+.ib{position:relative;display:inline-grid;place-items:center;width:38px;height:38px;border:0;border-radius:12px;background:transparent;color:#FAF9F6;cursor:pointer;transition:background .12s}
+.ib:hover,.ib.on,.ib[aria-pressed="true"]{background:rgba(250,249,246,.16)}
+.ib[aria-pressed="true"]{color:var(--accent)}
+.ib:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.ib svg{width:20px;height:20px}
+.ib .fs-out{display:none}.ib.on .fs-in{display:none}.ib.on .fs-out{display:inline}
+.ib.vol{width:auto;padding:0 9px;gap:6px;grid-auto-flow:column}
+.ib.vol input{width:0;opacity:0;transition:width .15s,opacity .15s;padding:0;border:0;background:none;accent-color:var(--accent);margin:0}
+.ib.vol:hover input,.ib.vol:focus-within input{width:84px;opacity:1}
+@media (hover:none){.ib.vol input{width:70px;opacity:1}}
+.pop-wrap{position:relative}
+.pop{position:absolute;right:-6px;bottom:calc(100% + 10px);background:rgba(24,25,22,.94);backdrop-filter:blur(8px);border:1px solid rgba(250,249,246,.12);border-radius:14px;padding:8px;box-shadow:0 12px 30px rgba(0,0,0,.45);z-index:6}
+.pop[hidden]{display:none}
+.pop .reacts{display:grid;grid-template-columns:repeat(5,38px);gap:4px}
+.pop .rbtn{width:38px;height:38px;font-size:20px;background:transparent}
+.pop .rbtn:hover{background:rgba(250,249,246,.14)}
+.pop .rbtn.foto{width:38px;border-radius:10px}
+.draw-pop{display:flex;gap:10px;align-items:center;white-space:nowrap;right:-48px;background:rgba(24,25,22,.94)}
+.opt-pop{display:grid;gap:10px;min-width:210px;padding:12px 14px;color:#FAF9F6}
+.opt-pop label{display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer;white-space:nowrap}
+.opt-pop input{accent-color:var(--accent);width:16px;height:16px;margin:0}
+@media (max-width:640px){.stage-bar .q{display:none}.ib{width:34px;height:34px}.stage-bar{padding:28px 8px 8px}.stage-bar .who{font-size:13px}}
+/* ---------- câmeras embaixo da live ---------- */
+.cams-strip{display:flex;align-items:stretch;gap:10px}
+.cams-strip[hidden]{display:none}
+.cams-row{display:flex;gap:8px;overflow-x:auto;flex:1;min-width:0;scrollbar-width:thin}
+.cam-t{position:relative;flex:none;width:112px;aspect-ratio:1;border:0;padding:0;border-radius:16px;overflow:hidden;background:#111;cursor:pointer;box-shadow:inset 0 0 0 1px var(--line)}
+.cam-t video{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.cam-t.mirror video{transform:scaleX(-1)}
+.cam-t span{position:absolute;left:7px;right:7px;bottom:6px;font:700 11.5px var(--body);color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}
+.cam-t:hover{box-shadow:inset 0 0 0 2px var(--accent)}
+.cam-t:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px}
+.cams-open{flex:none;align-self:center;gap:8px;white-space:nowrap;text-decoration:none}
+.cams-open svg{width:18px;height:18px}
+@media (max-width:640px){.cam-t{width:86px}.cams-open span{display:none}.cams-open{width:44px;height:44px;padding:0}}
+.live-grid:fullscreen.no-rail .cams-strip{display:none}
+.live-grid:fullscreen .stage-col{grid-template-rows:minmax(0,1fr) auto auto}
+/* botão das câmeras no menu: aparece só com câmera ligada, com a contagem */
+.cam-pip{position:relative}
+.cam-pip[hidden]{display:none}
+.cam-row{flex-wrap:wrap}
+.cam-row .cam-pip{flex:1 1 100%;width:auto;padding:12px 20px;gap:10px;background:color-mix(in srgb,var(--accent) 22%,var(--surface-2));box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--accent) 55%,transparent)}
+.cam-row .cam-pip:hover{background:color-mix(in srgb,var(--accent) 34%,var(--surface-2))}
+.cam-pip .n{min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--live);color:#fff;font:700 11px/20px var(--display)}
+@media (min-width:861px){
+  body.side-min .cam-row .cam-pip{flex:none;width:46px;height:46px;padding:0;border-radius:50%}
+  body.side-min .cam-pip .t{display:none}
+  body.side-min .cam-pip .n{position:absolute;top:-5px;right:-5px;box-shadow:0 0 0 2px var(--surface)}
+}
+.cam-pip .n:empty{display:none}
+/* ---------- limpeza geral ---------- */
+.hero-live{margin-bottom:4px}
+.howto-d{margin-top:10px;color:var(--muted);font-size:13px}
+.howto-d summary{cursor:pointer;font-weight:600}
+.howto-d summary:hover{color:var(--ink)}
+.howto-d .howto{margin-top:8px}
+
 /* quem está ao vivo na lista da sala é clicável */
 .people li[data-live]{cursor:pointer}
 .people li[data-live]:hover{background:var(--surface-2)}
@@ -686,7 +748,7 @@ body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live
 
     <div class="cam-row">
       <button class="btn soft cam-btn" id="camBtn" type="button" title="Ligar câmera" aria-pressed="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 10l4.6-2.6a.9.9 0 0 1 1.4.8v7.6a.9.9 0 0 1-1.4.8L15 14"/><rect x="3" y="6" width="12" height="12" rx="2.5"/></svg><span class="t">Ligar câmera</span></button>
-      <button class="btn soft cam-pip" id="camPipBtn" type="button" title="Câmeras numa janela flutuante" aria-label="Câmeras numa janela flutuante"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><rect x="12" y="11" width="7" height="6" rx="1.2" fill="currentColor" stroke="none"/></svg></button>
+      <button class="btn soft cam-pip" id="camPipBtn" type="button" title="Abrir as câmeras numa janela flutuante" aria-label="Abrir as câmeras numa janela flutuante" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><rect x="12" y="11" width="7" height="6" rx="1.2" fill="currentColor" stroke="none"/></svg><span class="t">Ver câmeras</span><span class="n" id="camN"></span></button>
     </div>
 
     <div class="side-foot">
@@ -702,13 +764,12 @@ body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live
       <section id="view-jogar" class="inner">
         <header class="hero">
           <h1>Quem tá na partida?</h1>
-          <p>Monte a escalação, sorteie sua cartela e marque cada nanicada quando ela acontecer.</p>
+          <p>Escalação, cartela e marcar o que acontecer.</p>
         </header>
         <div id="riotBox" class="riot-box" aria-live="polite"></div>
         <div class="play">
         <div class="block lineup-block">
           <h2>Escalação</h2>
-          <p class="hint">A escalação é a mesma para todo mundo na sala. A cartela é só sua.</p>
           <div class="lineup" id="lineup"></div>
           <div class="row go">
             <span class="meter" id="meter"></span>
@@ -723,11 +784,10 @@ body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live
       <section id="view-frases" class="inner" hidden>
         <header class="hero">
           <h1>Nanicadas</h1>
-          <p>Tudo que esse grupo fala e faz toda santa partida. Ligue a nanicada a um nanico, a campeões, aos dois, ou deixe valendo para qualquer jogo.</p>
+          <p>Tudo que esse grupo fala e faz toda santa partida.</p>
         </header>
         <div class="block form-block">
           <h2 id="formTitle">Nova nanicada</h2>
-          <p class="hint">Tudo em minúsculas, do jeito que sai no Discord. Dá para ligar a mais de um nanico e a mais de um campeão.</p>
           <form class="add" id="formFrase">
             <div class="full"><label class="lbl" for="fTexto">Nanicada</label><input id="fTexto" maxlength="90" placeholder="ex.: foca a torre" required autocomplete="off" autocapitalize="none" spellcheck="false"></div>
             <div><span class="lbl">Nanicos</span><div class="picker" id="fAmigo"></div></div>
@@ -755,7 +815,6 @@ body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live
       <section id="view-nanicos" class="inner" hidden>
         <header class="hero">
           <h1>Os Nanicos</h1>
-          <p>Para entrar ou sair gente do grupo, fale com o admin.</p>
         </header>
         <div class="block nan-block"><div class="nanicos" id="listaAmigos"></div></div>
       </section>
@@ -764,7 +823,6 @@ body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live
       <section id="view-perfil" class="inner" hidden>
         <header class="hero">
           <h1>Perfil</h1>
-          <p>Coloque o link do seu op.gg para a galera ver seu elo, histórico e campeões.</p>
         </header>
         <div class="perfil-grid">
           <div class="block me-block" id="meBlock"></div>
@@ -777,13 +835,7 @@ body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live
 
       <!-- AO VIVO -->
       <section id="view-live" class="inner" hidden>
-        <div class="hero-row">
-          <header class="hero">
-            <h1>Ao vivo</h1>
-            <p>Veja a tela de quem está jogando. Dá para abrir várias ao mesmo tempo, e o som vem só da tela principal.</p>
-          </header>
-          <button class="btn soft" id="liveFs" type="button">Tela cheia</button>
-        </div>
+        <header class="hero hero-live"><h1>Ao vivo</h1></header>
         <div class="live-grid" id="liveWrap">
           <div class="stage-col">
             <div class="stage" id="stage">
@@ -796,20 +848,34 @@ body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live
                 <span class="who" id="stageWho"></span>
                 <span class="q" id="stageQ"></span>
                 <span class="sp"></span>
-                <span class="reacts" id="reacts" role="group" aria-label="Reagir na live"></span>
-                <label class="vol" for="vol">Volume <input type="range" id="vol" min="0" max="1" step="0.05" value="1"></label>
-                <button class="sbtn" id="pipBtn" type="button">Janela flutuante</button>
-                <span class="draw-tools">
-                  <button class="sbtn draw-btn" id="drawBtn" type="button" aria-pressed="false" title="Desenhar na tela (todo mundo que está assistindo vê)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11a2.1 2.1 0 0 0-3-3L5 16z"/><path d="M14 6l3 3"/></svg>Desenhar</button>
-                  <span class="draw-opts" id="drawOpts" hidden>
-                    <span class="draw-cores" id="drawCores" role="radiogroup" aria-label="Cor do desenho"></span>
-                    <span class="draw-esps" id="drawEsps" role="radiogroup" aria-label="Espessura"></span>
-                  </span>
-                  <label class="draw-ver"><input type="checkbox" id="drawVer" checked>Ver desenhos</label>
-                  <label class="draw-ver"><input type="checkbox" id="reactVer" checked>Ver reações</label>
-                </span>
-                <button class="sbtn" id="fsBtn" type="button">Tela cheia</button>
+                <div class="sb-tools">
+                  <div class="pop-wrap">
+                    <button class="ib" id="reactBtn" type="button" aria-expanded="false" aria-controls="reactPop" title="Reagir" aria-label="Reagir"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5c.9 1.2 2.1 1.8 3.5 1.8s2.6-.6 3.5-1.8"/><path d="M9 9.5h.01M15 9.5h.01" stroke-width="3"/></svg></button>
+                    <div class="pop" id="reactPop" hidden><span class="reacts" id="reacts" role="group" aria-label="Reagir na live"></span></div>
+                  </div>
+                  <div class="pop-wrap">
+                    <button class="ib" id="drawBtn" type="button" aria-pressed="false" title="Desenhar na tela (quem está assistindo vê)" aria-label="Desenhar na tela"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11a2.1 2.1 0 0 0-3-3L5 16z"/><path d="M14 6l3 3"/></svg></button>
+                    <div class="pop draw-pop" id="drawOpts" hidden>
+                      <span class="draw-cores" id="drawCores" role="radiogroup" aria-label="Cor do desenho"></span>
+                      <span class="draw-esps" id="drawEsps" role="radiogroup" aria-label="Espessura"></span>
+                    </div>
+                  </div>
+                  <label class="ib vol" for="vol" title="Volume"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg><input type="range" id="vol" min="0" max="1" step="0.05" value="1" aria-label="Volume"></label>
+                  <div class="pop-wrap">
+                    <button class="ib" id="optBtn" type="button" aria-expanded="false" aria-controls="optPop" title="Ajustes" aria-label="Ajustes"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
+                    <div class="pop opt-pop" id="optPop" hidden>
+                      <label><input type="checkbox" id="reactVer" checked>Ver reações dos outros</label>
+                      <label><input type="checkbox" id="drawVer" checked>Ver desenhos dos outros</label>
+                    </div>
+                  </div>
+                  <button class="ib" id="pipBtn" type="button" title="Janela flutuante" aria-label="Janela flutuante"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><rect x="12" y="11" width="7" height="6" rx="1.2" fill="currentColor" stroke="none"/></svg></button>
+                  <button class="ib" id="fsBtn" type="button" title="Tela cheia" aria-label="Tela cheia"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="fs-in" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/><path class="fs-out" d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg></button>
+                </div>
               </div>
+            </div>
+            <div class="cams-strip" id="camsStrip" hidden>
+              <div class="cams-row" id="camsRow"></div>
+              <button class="btn soft sm cams-open" id="camsOpen" type="button"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><rect x="12" y="11" width="7" height="6" rx="1.2" fill="currentColor" stroke="none"/></svg><span>Câmeras em janela</span></button>
             </div>
             <div class="minis" id="minis"></div>
           </div>
@@ -821,7 +887,7 @@ body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live
             </div>
             <div class="rail-pane" data-pane="telas">
               <div class="block" id="selfBlock"></div>
-              <div class="block">
+              <div class="block" id="lcardsBlock" hidden>
                 <h2>Transmitindo agora</h2>
                 <div class="lcards" id="lcards"></div>
               </div>
@@ -1689,18 +1755,20 @@ try{const r=parseInt(localStorage.getItem("live-res"));if(r===1080||r===1440)LIV
 /* qualidade: resolução (1080p ou 1440p) x fluidez (30 ou 60 fps; o WebRTC dos navegadores não passa de 60) */
 const RES={1080:{w:1920,h:1080,nome:"1080p · Full HD"},1440:{w:2560,h:1440,nome:"1440p · 2K"}};
 /* teto por pessoa que assiste e o upload total que dá para dividir entre todos */
-const liveCap=()=>({1080:{60:9e6,30:6e6},1440:{60:16e6,30:10e6}})[LIVE.res][LIVE.fps];
-const liveBudget=()=>({1080:24e6,1440:32e6})[LIVE.res];
+const liveCap=()=>({1080:{60:12e6,30:8e6},1440:{60:20e6,30:13e6}})[LIVE.res][LIVE.fps];
+const liveBudget=()=>({1080:30e6,1440:40e6})[LIVE.res];
 /* Full HD: prefere H.264 (codificação por hardware, pesa menos no PC que joga) e começa com bitrate alto */
 function preferH264(pc){
   try{ const caps=RTCRtpSender.getCapabilities&&RTCRtpSender.getCapabilities("video"); if(!caps)return;
-    const h=caps.codecs.filter(c=>/h264/i.test(c.mimeType)), rest=caps.codecs.filter(c=>!/h264/i.test(c.mimeType)); if(!h.length)return;
+    /* H.264 High (profile 64…) comprime melhor que o Baseline: mesma internet, imagem mais nítida */
+    const nota=c=>/profile-level-id=64/i.test(c.sdpFmtpLine||"")?0:/profile-level-id=4d/i.test(c.sdpFmtpLine||"")?1:2;
+    const h=caps.codecs.filter(c=>/h264/i.test(c.mimeType)).sort((a,b)=>nota(a)-nota(b)), rest=caps.codecs.filter(c=>!/h264/i.test(c.mimeType)); if(!h.length)return;
     pc.getTransceivers().forEach(t=>{ if(t.sender&&t.sender.track&&t.sender.track.kind==="video"&&t.setCodecPreferences)t.setCodecPreferences([...h,...rest]); });
   }catch(e){console.warn(e);}
 }
 function hiBitrate(sdp){
   const vids=new Set(); sdp.replace(/a=rtpmap:(\d+) (H264|VP8|VP9|AV1)\//gi,(a,pt)=>{vids.add(pt);return a;});
-  return sdp.replace(/a=fmtp:(\d+) ([^\r\n]*)/g,(all,pt,par)=>vids.has(pt)&&!par.includes("x-google-")?`a=fmtp:${pt} ${par};x-google-start-bitrate=5000;x-google-min-bitrate=2000;x-google-max-bitrate=16000`:all);
+  return sdp.replace(/a=fmtp:(\d+) ([^\r\n]*)/g,(all,pt,par)=>vids.has(pt)&&!par.includes("x-google-")?`a=fmtp:${pt} ${par};x-google-start-bitrate=8000;x-google-min-bitrate=3000;x-google-max-bitrate=20000`:all);
 }
 const canShare=!!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia);
 /* que navegador/sistema é: o som da transmissão depende disso */
@@ -1713,7 +1781,7 @@ const liveStreams=()=>online.filter(p=>p.live&&p.key!==myKey).sort((a,b)=>String
 function sendRtc(m){ if(room) room.send({type:"broadcast",event:"rtc",payload:{...m,from:myKey}}).catch(()=>{}); }
 function stereo(sdp){
   const m=sdp.match(/a=rtpmap:(\d+) opus\/48000\/2/i); if(!m)return sdp;
-  return sdp.replace(new RegExp(`a=fmtp:${m[1]} ([^\\r\\n]*)`),(all,par)=>par.includes("stereo=1")?all:`a=fmtp:${m[1]} ${par};stereo=1;sprop-stereo=1;maxaveragebitrate=128000`);
+  return sdp.replace(new RegExp(`a=fmtp:${m[1]} ([^\\r\\n]*)`),(all,par)=>par.includes("stereo=1")?all:`a=fmtp:${m[1]} ${par};stereo=1;sprop-stereo=1;maxaveragebitrate=192000`);
 }
 
 /* quem transmite */
@@ -1763,14 +1831,15 @@ function closeViewer(key,silent){
   tuneSenders(); renderSelf();
 }
 function tuneSenders(){
-  /* por pessoa: 1080p até 9 Mbps (60 fps) ou 6 (30); 1440p até 16 ou 10. Com muita gente, divide o upload */
+  /* por pessoa: 1080p até 12 Mbps (60 fps) ou 8 (30); 1440p até 20 ou 13. Com muita gente, divide o upload.
+     A rede ainda ajusta sozinha para baixo se a internet não aguentar. */
   const n=Math.max(1,LIVE.viewers.size), cap=liveCap();
   const br=Math.round(Math.min(cap,Math.max(2.5e6,liveBudget()/n)));
   for(const v of LIVE.viewers.values())for(const sd of v.pc.getSenders()){
     if(!sd.track)continue;
     const par=sd.getParameters(); if(!par.encodings||!par.encodings.length)continue;
-    if(sd.track.kind==="video"){par.encodings[0].maxBitrate=br;par.encodings[0].maxFramerate=LIVE.fps;par.encodings[0].scaleResolutionDownBy=1;par.degradationPreference="maintain-resolution";}
-    else par.encodings[0].maxBitrate=128000;
+    if(sd.track.kind==="video"){Object.assign(par.encodings[0],{maxBitrate:br,maxFramerate:LIVE.fps,scaleResolutionDownBy:1,priority:"high",networkPriority:"high"});par.degradationPreference="maintain-resolution";}
+    else Object.assign(par.encodings[0],{maxBitrate:192000,priority:"high",networkPriority:"high"});
     sd.setParameters(par).catch(()=>{});
   }
 }
@@ -2004,6 +2073,7 @@ function placeCams(){
     el.querySelector(".cam-pop").setAttribute("aria-label",`Abrir a câmera de ${nm} numa janela flutuante`); el.querySelector(".cam-pop").title="Abrir numa janela flutuante";
     old.replaceWith(el); el.querySelector("video").play().catch(()=>{});
   });
+  if(CAM.strip)renderCamStrip();
 }
 
 /* janela flutuante das câmeras: todas, ou só a de uma pessoa */
@@ -2029,7 +2099,26 @@ async function openCamPip(only){
     renderCamPip();
   }catch(e){ console.error(e); toast("Não deu para abrir a janela flutuante das câmeras."); }
 }
+/* faixa de câmeras embaixo da live (sempre visível quando alguém está com a câmera ligada) */
+CAM.strip=new Map();
+function renderCamStrip(){
+  const list=activeCams(), box=$("#camsRow"), n=list.length;
+  $("#camsStrip").hidden=!n; $("#camPipBtn").hidden=!n; $("#camN").textContent=n||"";
+  $("#camPipBtn").title=`Abrir ${n===1?"a câmera":"as "+n+" câmeras"} numa janela flutuante`;
+  for(const [k,el] of CAM.strip) if(!list.some(c=>c.key===k)){ const v=el.querySelector("video"); if(v)v.srcObject=null; el.remove(); CAM.strip.delete(k); }
+  list.forEach((c,i)=>{
+    let el=CAM.strip.get(c.key);
+    if(!el){ el=document.createElement("button"); el.type="button"; el.className="cam-t"+(c.key===myKey?" mirror":"");
+      const v=document.createElement("video"); v.autoplay=true; v.muted=true; v.playsInline=true; el.appendChild(v);
+      el.appendChild(document.createElement("span")); el.onclick=()=>openCamPip(c.key); CAM.strip.set(c.key,el); }
+    el.querySelector("span").textContent=c.key===myKey?"Você":c.name; el.title=`Abrir a câmera de ${c.key===myKey?"você":c.name} numa janela flutuante`;
+    const v=el.querySelector("video"); if(v.srcObject!==c.st)v.srcObject=c.st; v.play().catch(()=>{});
+    if(box.children[i]!==el)box.insertBefore(el,box.children[i]||null);
+  });
+}
+$("#camsOpen").onclick=()=>openCamPip(null);
 function renderCamPip(){
+  renderCamStrip();
   const w=CAM.win; if(!w||w.closed)return;
   const g=w.document.getElementById("camsGrid"); if(!g)return;
   let list=activeCams(); if(CAM.only)list=list.filter(c=>c.key===CAM.only);
@@ -2095,6 +2184,17 @@ function mostrarReacao(i,nome,alvo,meu){
   layer.appendChild(el);
   el.addEventListener("animationend",()=>el.remove()); setTimeout(()=>el.remove(),4000);
 }
+
+/* barra do vídeo: reações e ajustes abrem num balão; fecha ao tocar fora ou com Esc */
+function abrePop(btn,pop,abrir){ pop.hidden=!abrir; btn.setAttribute("aria-expanded",String(abrir)); btn.classList.toggle("on",abrir); }
+const POPS=[["#reactBtn","#reactPop"],["#optBtn","#optPop"]];
+POPS.forEach(([b,p])=>{
+  $(b).onclick=e=>{ e.stopPropagation(); const abrir=$(p).hidden; POPS.forEach(([b2,p2])=>abrePop($(b2),$(p2),false)); abrePop($(b),$(p),abrir); };
+  $(p).addEventListener("click",e=>e.stopPropagation());
+});
+const fechaPops=()=>POPS.forEach(([b,p])=>abrePop($(b),$(p),false));
+document.addEventListener("click",fechaPops);
+document.addEventListener("keydown",e=>{ if(e.key==="Escape")fechaPops(); });
 
 /* ---------- desenhar na live ----------
    Quem assiste liga o lápis e risca em cima do vídeo. Os pontos vão pela sala, medidos em relação à
@@ -2270,16 +2370,15 @@ function renderSelf(){
   const box=$("#selfBlock");
   if(!LIVE.mySid){
     box.innerHTML=`<h2>Sua tela</h2>
-      ${canShare?`<span class="seg-lbl" id="lblRes">Resolução</span>
+      ${canShare?`<span class="seg-lbl" id="lblRes">Qualidade</span>
       <div class="seg" role="radiogroup" aria-labelledby="lblRes">
         <button type="button" role="radio" data-res="1440" aria-checked="${LIVE.res===1440}">1440p · 2K</button>
         <button type="button" role="radio" data-res="1080" aria-checked="${LIVE.res===1080}">1080p</button></div>
-      <span class="seg-lbl" id="lblFps">Fluidez</span>
-      <div class="seg" role="radiogroup" aria-labelledby="lblFps">
+      <div class="seg" role="radiogroup" aria-label="Fluidez">
         <button type="button" role="radio" data-fps="60" aria-checked="${LIVE.fps===60}">60 fps</button>
         <button type="button" role="radio" data-fps="30" aria-checked="${LIVE.fps===30}">30 fps</button></div>
       <button class="btn" id="goLive" style="width:100%">Transmitir minha tela</button>
-      <ol class="howto">${audioHowto()}${LIVE.res===1440?"<li>1440p só sai em 2K se o seu monitor for 1440p ou maior, e pede uns 16 Mbps de upload por pessoa assistindo.</li>":""}<li>Se travar para quem assiste, baixe para 30 fps ou uma resolução menor.</li></ol>`
+      <details class="howto-d"><summary>Como mandar o som do jogo</summary><ol class="howto">${audioHowto()}${LIVE.res===1440?"<li>1440p só sai em 2K se o seu monitor for 1440p ou maior, e pede uns 20 Mbps de upload por pessoa assistindo.</li>":""}<li>Se travar para quem assiste, baixe para 30 fps ou 1080p.</li></ol></details>`
       :`<p class="hint" style="margin:0">Transmitir só funciona no navegador do computador. Daqui você pode assistir.</p>`}`;
     $("#goLive")&&($("#goLive").onclick=startLive);
     box.querySelectorAll("[data-fps]").forEach(b=>b.onclick=()=>{LIVE.fps=+b.dataset.fps;try{localStorage.setItem("live-fps",String(LIVE.fps));}catch{}renderSelf();});
@@ -2299,7 +2398,7 @@ function renderSelf(){
 }
 function renderCards(){
   const ls=liveStreams(), box=$("#lcards");
-  if(!ls.length){box.innerHTML=`<p class="status" style="margin:0">Ninguém além de você está transmitindo.</p>`;return;}
+  $("#lcardsBlock").hidden=!ls.length; if(!ls.length){box.innerHTML="";return;}
   box.innerHTML=ls.map(p=>{
     const w=LIVE.watching.get(p.key), isMain=LIVE.main===p.key&&w;
     const f=friendOf(p.fid)||friends.find(x=>norm(x.name)===norm(p.name));
@@ -2340,10 +2439,10 @@ $("#pipBtn").onclick=async()=>{ const w=LIVE.watching.get(LIVE.main); try{ if(do
 
 /* tela cheia: a área inteira (vídeo + chat/cartela) */
 function toggleFs(){ const el=$("#liveWrap"); const pr=document.fullscreenElement?document.exitFullscreen():el.requestFullscreen?.(); pr?.catch?.(()=>toast("Seu navegador não abriu a tela cheia.")); }
-$("#fsBtn").onclick=toggleFs; $("#liveFs").onclick=toggleFs;
+$("#fsBtn").onclick=toggleFs;
 document.addEventListener("fullscreenchange",()=>{
   const fs=!!document.fullscreenElement;
-  $("#fsBtn").textContent=fs?"Sair da tela cheia":"Tela cheia"; $("#liveFs").textContent=fs?"Sair da tela cheia":"Tela cheia";
+  $("#fsBtn").title=fs?"Sair da tela cheia":"Tela cheia"; $("#fsBtn").setAttribute("aria-label",$("#fsBtn").title); $("#fsBtn").classList.toggle("on",fs);
   (document.fullscreenElement||document.body).appendChild($("#toast"));
 });
 
@@ -2455,6 +2554,7 @@ const CHANGELOG=[
   {data:"31/10/2026",itens:["Reações com foto na live: os Picarétezzi"]},
   {data:"31/10/2026",itens:["Desenhar na live: o risco aparece para todos que estão assistindo e some em 3 s, com cor e espessura, e dá para desligar"]},
   {data:"31/10/2026",itens:["Caixinha “Ver reações” para desligar os emojis e fotos dos outros na live"]},
+  {data:"31/10/2026",itens:["Visual mais limpo: controles da live em ícones, reações e ajustes num balão","Câmeras sempre embaixo da live, e botão das câmeras no menu com a contagem","Live com mais qualidade: mais bitrate, H.264 High e som em 192 kbps"]},
 ];
 const versionAt=i=>"v1."+String(i).padStart(2,"0");
 const VERSION=versionAt(CHANGELOG.length-1);
