@@ -607,6 +607,30 @@ body.cams{padding:8px;background:#151613;min-height:100vh}
 @keyframes react-sobe{0%{transform:translate(0,24px) scale(.5);opacity:0}12%{transform:translate(0,0) scale(1.2);opacity:1}24%{transform:translate(0,-12px) scale(1)}100%{transform:translate(var(--dx,0),-48vh) scale(.95);opacity:0}}
 @media (prefers-reduced-motion:reduce){.react-fly{animation:react-some 2.2s linear forwards}@keyframes react-some{0%,70%{opacity:1}100%{opacity:0}}}
 
+/* ---------- montar a própria cartela ---------- */
+.go-btns{display:flex;gap:8px;flex-wrap:wrap}
+@media (max-width:1100px){.lineup-block .go-btns{flex-direction:column}.lineup-block .go-btns .btn{width:100%}}
+.card.mont .cell{cursor:default;font-size:12px}
+.card.mont .cell.picked{cursor:pointer;background:var(--accent-soft);box-shadow:inset 0 0 0 1.5px var(--accent)}
+.card.mont .cell.picked:hover{background:color-mix(in srgb,var(--live) 18%,var(--bg));box-shadow:inset 0 0 0 1.5px var(--live)}
+.card.mont .cell.vazia{border:1.5px dashed var(--line);background:none;color:var(--muted);font:600 12px var(--body);opacity:.7}
+.mont-acts{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
+.mont-head{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.mont-head input{flex:1 1 200px;min-width:0}
+.mont-filtro{display:flex;gap:4px;background:var(--surface-2);padding:4px;border-radius:var(--r-md);flex-wrap:wrap}
+.mont-filtro button{border:0;background:none;border-radius:var(--r-sm);padding:6px 10px;font:600 12.5px var(--body);color:var(--muted);cursor:pointer}
+.mont-filtro button[aria-checked="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px var(--shadow)}
+.mont-list{list-style:none;margin:0;padding:4px;display:grid;gap:4px;max-height:min(46vh,420px);overflow:auto;background:var(--bg);border-radius:var(--r-md)}
+.mont-item{width:100%;display:flex;align-items:center;gap:10px;text-align:left;border:0;background:var(--surface);color:var(--ink);border-radius:var(--r-sm);padding:8px 10px;cursor:pointer;font:500 14px var(--body)}
+.mont-item:hover:not(:disabled){background:var(--surface-2)}
+.mont-item:disabled{opacity:.45;cursor:not-allowed}
+.mont-item.on{box-shadow:inset 0 0 0 1.5px var(--accent);background:var(--accent-soft)}
+.mont-item .ck{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font:700 12px var(--display);background:var(--surface-2);color:var(--muted)}
+.mont-item.on .ck{background:var(--accent);color:var(--accent-ink)}
+.mont-item .tx{display:grid;gap:3px;min-width:0}
+.mont-item .tx .tag{display:flex;align-items:center;gap:3px;flex-wrap:wrap;font:500 11.5px var(--body);color:var(--muted)}
+.mont-foot{justify-content:space-between;margin-top:14px}
+
 /* quem está ao vivo na lista da sala é clicável */
 .people li[data-live]{cursor:pointer}
 .people li[data-live]:hover{background:var(--surface-2)}
@@ -665,7 +689,7 @@ body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live
           <div class="lineup" id="lineup"></div>
           <div class="row go">
             <span class="meter" id="meter"></span>
-            <button class="btn" id="gerar">Sortear minha cartela</button>
+            <div class="go-btns"><button class="btn soft" id="montar">Montar minha cartela</button><button class="btn" id="gerar">Sortear minha cartela</button></div>
           </div>
         </div>
         <div id="cardArea"></div>
@@ -1133,16 +1157,24 @@ function eligible(){
 function renderMeter(){
   const {spec,gen}=eligible(); const tot=spec.length+gen.length;
   $("#meter").innerHTML=`<strong>${spec.length}</strong> da partida e <strong>${gen.length}</strong> genéricas. ${tot>=24?`<span class="ok">Dá para sortear.</span>`:`Faltam <strong>${24-tot}</strong> nanicadas.`}`;
-  $("#gerar").disabled=tot<24;
+  $("#gerar").disabled=tot<24; $("#montar").disabled=tot<24;
+  $("#meter").querySelector(".ok")&&($("#meter").querySelector(".ok").textContent="Dá para montar ou sortear.");
+  if(montando)renderCardMain();
+}
+/* transforma nanicadas escolhidas em casas da cartela (a do meio é LIVRE) */
+function cellsDe(pick){
+  const cells=pick.map(p=>{ const ids=p.hitF||[]; return {text:p.text,friendIds:ids,fnames:ids.map(friendName),champs:(p.hit||[]).join("/"),rot:Math.round(Math.random()*24-12)}; });
+  cells.splice(12,0,{free:true,text:"LIVRE"});
+  return cells;
 }
 $("#gerar").onclick=()=>{
+  montando=null;
   const {spec,gen}=eligible();
   const s=shuffle(spec), g=shuffle(gen);
   let pick=s.slice(0,16); pick=pick.concat(g.slice(0,24-pick.length));
   if(pick.length<24) pick=pick.concat(s.slice(16,16+24-pick.length));
   pick=shuffle(pick).slice(0,24);
-  const cells=pick.map(p=>{ const ids=p.hitF||[]; return {text:p.text,friendIds:ids,fnames:ids.map(friendName),champs:(p.hit||[]).join("/"),rot:Math.round(Math.random()*24-12)}; });
-  cells.splice(12,0,{free:true,text:"LIVRE"});
+  const cells=cellsDe(pick);
   card={cells,marked:cells.map(c=>!!c.free)};
   store.set("rift-card",card); renderCard(); trackMe(); toast("Cartela sorteada");
   $("#cardArea").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});
@@ -1162,8 +1194,69 @@ function cellTag(c){
   return `<span class="tag">${fl.slice(0,3).map(x=>avatar(x.f||{name:x.nm},"xs")).join("")}${esc([nm,c.champs].filter(Boolean).join(" / "))}</span>`;
 }
 function renderCard(){ renderCardMain(); renderMiniCards(); }
+/* ---------- montar a própria cartela ----------
+   Mostra só as nanicadas que valem para a escalação atual. A pessoa escolhe até 24;
+   a ordem de escolha é a posição na cartela (pulando o LIVRE do meio). */
+var montando=null;   /* {sel:[id], filtro:"todas"|"partida"|"gen", busca:""} */
+$("#montar").onclick=()=>{ montando={sel:[],filtro:"todas",busca:""}; renderCardMain();
+  $("#cardArea").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"}); };
+function montEleg(){ const {spec,gen}=eligible(); const m=new Map(); spec.forEach(p=>m.set(p.id,{...p,tipo:"partida"})); gen.forEach(p=>m.set(p.id,{...p,tipo:"gen"})); return m; }
+function montTag(p){ return cellTag({friendIds:p.hitF||[],fnames:(p.hitF||[]).map(friendName),champs:(p.hit||[]).join("/")}); }
+function renderBuilder(){
+  const area=$("#cardArea"), M=montEleg(), mt=montando;
+  mt.sel=mt.sel.filter(id=>M.has(id)).slice(0,24);
+  const old=area.querySelector(".mont-list"), scroll=old?old.scrollTop:0, foco=document.activeElement&&document.activeElement.id==="mBusca";
+  const n=mt.sel.length, slots=[]; for(let i=0,k=0;i<25;i++){ if(i===12){slots.push(null);continue;} slots.push(mt.sel[k++]||""); }
+  const lista=[...M.values()].filter(p=>(mt.filtro==="todas"||p.tipo===mt.filtro)&&(!mt.busca||norm(p.text+" "+(p.hit||[]).join(" ")+" "+(p.hitF||[]).map(friendName).join(" ")).includes(mt.busca)))
+    .sort((a,b)=>(a.tipo===b.tipo?0:a.tipo==="partida"?-1:1)||a.text.localeCompare(b.text,"pt-BR"));
+  const nP=[...M.values()].filter(p=>p.tipo==="partida").length, nG=M.size-nP;
+  area.innerHTML=`<div class="card-wrap builder">
+    <div class="card-head"><h2>Montar minha cartela</h2><span class="status"><b>${n}</b> de 24</span></div>
+    <p class="hint" style="margin:0 0 10px">Toque nas nanicadas da lista para colocar na cartela, na ordem em que escolher. Toque numa casa para tirar.</p>
+    <div class="letters" aria-hidden="true"><span>B</span><span>I</span><span>N</span><span>G</span><span>O</span></div>
+    <div class="card mont">${slots.map((id,i)=>id===null?`<div class="cell free">${STAR}<span>Livre</span></div>`
+      :id?`<button type="button" class="cell picked" data-tira="${esc(id)}" title="Tirar da cartela"><span class="t">${esc(M.get(id).text)}</span>${montTag(M.get(id))}</button>`
+      :`<div class="cell vazia" aria-hidden="true">${i<12?i+1:i}</div>`).join("")}</div>
+    <div class="mont-acts">
+      <button type="button" class="btn soft sm" id="mCompletar" ${n>=24||M.size<24?"disabled":""}>Completar sorteando</button>
+      <button type="button" class="btn soft sm" id="mEmbaralhar" ${n<2?"disabled":""}>Embaralhar posições</button>
+      <button type="button" class="btn soft sm" id="mLimpar" ${!n?"disabled":""}>Limpar</button>
+    </div>
+    <div class="mont-head">
+      <input id="mBusca" placeholder="Buscar nanicada" aria-label="Buscar nanicada" value="${esc(mt.busca)}" autocomplete="off">
+      <div class="mont-filtro" role="radiogroup" aria-label="Mostrar">
+        ${[["todas",`Todas (${M.size})`],["partida",`Da partida (${nP})`],["gen",`Genéricas (${nG})`]].map(([k,t])=>`<button type="button" role="radio" data-mf="${k}" aria-checked="${mt.filtro===k}">${t}</button>`).join("")}
+      </div>
+    </div>
+    <ul class="mont-list">${lista.length?lista.map(p=>{ const on=mt.sel.includes(p.id);
+      return `<li><button type="button" class="mont-item${on?" on":""}" data-pega="${esc(p.id)}" aria-pressed="${on}" ${!on&&n>=24?"disabled":""}><span class="ck" aria-hidden="true">${on?mt.sel.indexOf(p.id)+1:"+"}</span><span class="tx"><span>${esc(p.text)}</span>${p.tipo==="gen"?`<span class="tag">Genérica</span>`:montTag(p)}</span></button></li>`; }).join("")
+      :`<li class="status" style="padding:10px">Nenhuma nanicada com esse filtro.</li>`}</ul>
+    <div class="row mont-foot"><button type="button" class="btn soft" id="mCancelar">Cancelar</button><button type="button" class="btn" id="mPronto" ${n<24?"disabled":""}>${n<24?`Faltam ${24-n}`:"Usar esta cartela"}</button></div>
+  </div>`;
+  const ul=area.querySelector(".mont-list"); ul.scrollTop=scroll;
+  if(foco){const b=$("#mBusca"); b.focus(); b.setSelectionRange(b.value.length,b.value.length);}
+  area.querySelectorAll("[data-pega]").forEach(b=>b.onclick=()=>{ const id=b.dataset.pega, i=mt.sel.indexOf(id); if(i>=0)mt.sel.splice(i,1); else if(mt.sel.length<24)mt.sel.push(id); renderBuilder(); });
+  area.querySelectorAll("[data-tira]").forEach(b=>b.onclick=()=>{ mt.sel=mt.sel.filter(x=>x!==b.dataset.tira); renderBuilder(); });
+  area.querySelectorAll("[data-mf]").forEach(b=>b.onclick=()=>{ mt.filtro=b.dataset.mf; renderBuilder(); });
+  $("#mBusca").oninput=e=>{ mt.busca=norm(e.target.value); renderBuilder(); };
+  $("#mCompletar").onclick=()=>{ /* completa com as que faltam, dando preferência às da partida */
+    const resto=[...M.values()].filter(p=>!mt.sel.includes(p.id)); const sp=shuffle(resto.filter(p=>p.tipo==="partida")), ge=shuffle(resto.filter(p=>p.tipo==="gen"));
+    const falta=24-mt.sel.length, nSp=Math.max(0,Math.min(sp.length,16-mt.sel.filter(id=>M.get(id).tipo==="partida").length,falta));
+    let add=sp.slice(0,nSp); add=add.concat(ge.slice(0,falta-add.length)); if(add.length<falta)add=add.concat(sp.slice(nSp,nSp+falta-add.length));
+    mt.sel=mt.sel.concat(add.map(p=>p.id)).slice(0,24); renderBuilder(); };
+  $("#mEmbaralhar").onclick=()=>{ mt.sel=shuffle(mt.sel); renderBuilder(); };
+  $("#mLimpar").onclick=()=>{ mt.sel=[]; renderBuilder(); };
+  $("#mCancelar").onclick=()=>{ montando=null; renderCardMain(); };
+  $("#mPronto").onclick=()=>{
+    if(mt.sel.length<24)return;
+    const cells=cellsDe(mt.sel.map(id=>M.get(id)));
+    card={cells,marked:cells.map(c=>!!c.free)}; montando=null;
+    store.set("rift-card",card); renderCard(); trackMe(); toast("Cartela montada");
+  };
+}
 function renderCardMain(){
   const area=$("#cardArea");
+  if(montando)return renderBuilder();
   if(!card){area.innerHTML=`<div class="empty"><b>Sua cartela aparece aqui</b><span>Monte a escalação e toque em “Sortear minha cartela”. Cada pessoa na sala recebe uma diferente.</span></div>`;return;}
   const done=LINES.filter(l=>l.every(i=>card.marked[i]));
   const inLine=new Set(done.flat());
@@ -2213,6 +2306,7 @@ const CHANGELOG=[
   {data:"31/10/2026",itens:["Botão X para esconder o “Estou com fome” até o dia seguinte"]},
   {data:"31/10/2026",itens:["Menu recolhido mais largo, com barra de rolagem fina e sem cortar os rostos"]},
   {data:"31/10/2026",itens:["Reações com emoji na live: sobem na tela de quem está assistindo e de quem transmite"]},
+  {data:"31/10/2026",itens:["Montar a própria cartela escolhendo as nanicadas que valem para a escalação"]},
 ];
 const versionAt=i=>"v1."+String(i).padStart(2,"0");
 const VERSION=versionAt(CHANGELOG.length-1);
