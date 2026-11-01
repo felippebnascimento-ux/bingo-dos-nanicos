@@ -1,0 +1,9 @@
+# senhas iniciais dos nanicos: NUNCA subir
+criar-logins.sql
+# segredos
+.env
+.env.*
+*.key
+# lixo de sistema
+.DS_Store
+Thumbs.db

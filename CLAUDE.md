@@ -25,6 +25,8 @@ Este arquivo vale para qualquer pessoa ou IA (Claude, Copilot etc.) que mexa no 
 | `contas-e-ao-vivo.sql` | Logins por nanico, sala privada e chat. Também pode rodar de novo. |
 | `supabase.sql` | Estrutura original das tabelas, da primeira versão. |
 | `LEIA-ME.md` | Passo a passo antigo de publicação. |
+| `sql-antigos/` | Ajustes que já foram rodados uma vez (renomear nanicos, nanicadas em minúsculas). Ficam só como histórico; não precisa rodar de novo. |
+| `.gitignore` | Impede que o `criar-logins.sql` e arquivos de segredo subam por engano. |
 
 - **Hospedagem:** Vercel, que publica sozinha a cada push na branch principal.
 - **Banco, login e tempo real:** Supabase.
