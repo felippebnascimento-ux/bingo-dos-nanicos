@@ -716,6 +716,98 @@ body.cams{padding:8px;background:#151613;min-height:100vh}
 .howto-d summary:hover{color:var(--ink)}
 .howto-d .howto{margin-top:8px}
 
+/* ---------- truco gaudério ---------- */
+#view-truco{width:100%;max-width:1200px;margin:0 auto}
+.tr-lobby{display:grid;gap:18px;align-items:start}
+@media (min-width:900px){.tr-lobby{grid-template-columns:minmax(0,360px) minmax(0,1fr)}}
+.tr-nova{display:grid;gap:10px}
+.tr-nova .seg{margin:0}
+.tr-flor{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;margin:2px 2px 4px}
+.tr-flor input{accent-color:var(--accent);width:17px;height:17px;margin:0}
+.tr-mesas{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.tr-mesas li{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--r-md);background:var(--bg)}
+.tr-quem{display:flex;flex:none}.tr-quem .av+.av{margin-left:-6px;box-shadow:0 0 0 2px var(--bg)}
+.tr-info{flex:1;min-width:0;display:grid}.tr-info small{color:var(--muted);font-size:12.5px}
+.tr-vazio{margin:0}
+.tr-mesa{display:grid;gap:14px}
+.tr-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.tr-placar{display:flex;align-items:center;gap:10px;margin:0 auto}
+.tr-time{display:grid;justify-items:center;min-width:92px;padding:6px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
+.tr-time span{font-size:12px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tr-time b{font:800 28px/1.05 var(--display);font-variant-numeric:tabular-nums}
+.tr-time.nos{border-color:var(--accent)}.tr-time.nos b{color:var(--accent)}
+.tr-alvo{font-size:12px;color:var(--muted)}
+.tr-top-d{display:flex;align-items:center;gap:10px}
+.tr-valendo{font:700 12px var(--display);background:var(--live);color:#fff;padding:4px 9px;border-radius:99px}
+.tr-vazas{display:flex;gap:4px}
+.tr-pip{width:12px;height:12px;border-radius:50%;display:block;background:var(--muted)}
+.tr-pip.nos{background:var(--accent)}.tr-pip.eles{background:#7E8C9A}.tr-pip.parda{background:none;box-shadow:inset 0 0 0 2px var(--muted)}
+/* o pano da mesa */
+.tr-feltro{position:relative;display:grid;grid-template-columns:1fr minmax(0,1.4fr) 1fr;grid-template-rows:auto minmax(220px,1fr) auto;grid-template-areas:". norte ." "oeste centro leste" ". sul .";
+  gap:10px;padding:22px;min-height:440px;border-radius:32px;
+  background:radial-gradient(120% 90% at 50% 40%,#5A604F 0%,#41453B 55%,#33362E 100%);
+  box-shadow:inset 0 0 0 10px #2A2C26,inset 0 0 0 11px rgba(176,141,87,.55),inset 0 20px 60px rgba(0,0,0,.35),0 30px 60px -30px var(--shadow)}
+.tr-feltro::after{content:"";position:absolute;inset:22px;border-radius:22px;border:1.5px dashed rgba(176,141,87,.28);pointer-events:none}
+.tr-lugar{position:relative;display:grid;justify-items:center;gap:6px;align-content:center;z-index:1}
+.tr-lugar.norte{grid-area:norte}.tr-lugar.sul{grid-area:sul}.tr-lugar.leste{grid-area:leste}.tr-lugar.oeste{grid-area:oeste}
+.tr-id{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 5px;border-radius:99px;background:rgba(20,21,18,.55);color:#FAF9F6}
+.tr-id .av{width:38px;height:38px}
+.tr-id .nm{font-weight:700;font-size:14px}
+.tr-tag{font:700 10px var(--display);background:var(--accent);color:var(--accent-ink);padding:2px 7px;border-radius:99px}
+.tr-lugar.vez .tr-id{box-shadow:0 0 0 2px var(--accent),0 0 22px rgba(176,141,87,.45)}
+.tr-lugar.vazio{min-height:60px}
+.tr-lugar.vazio .status{color:#D9D5C8;opacity:.7}
+.tr-costas{display:flex;padding-left:12px}
+.tr-costas .tc.peq{margin-left:-14px}
+.tr-fala{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);white-space:nowrap;background:#FAF9F6;color:#2A2C26;font:800 14px var(--display);padding:7px 12px;border-radius:14px;box-shadow:0 8px 20px rgba(0,0,0,.35);animation:tr-fala .25s cubic-bezier(.3,1.6,.5,1);z-index:3}
+.tr-fala::after{content:"";position:absolute;top:100%;left:50%;margin-left:-6px;border:6px solid transparent;border-top-color:#FAF9F6}
+.tr-lugar.norte .tr-fala{bottom:auto;top:calc(100% + 6px)}.tr-lugar.norte .tr-fala::after{top:auto;bottom:100%;border-top-color:transparent;border-bottom-color:#FAF9F6}
+@keyframes tr-fala{from{transform:translateX(-50%) scale(.6);opacity:0}}
+.tr-centro{grid-area:centro;position:relative;display:grid;grid-template-columns:1fr auto 1fr;grid-template-rows:1fr auto 1fr;grid-template-areas:". norte ." "oeste meio leste" ". sul .";place-items:center;gap:6px}
+.tr-jogada.norte{grid-area:norte}.tr-jogada.sul{grid-area:sul}.tr-jogada.leste{grid-area:leste}.tr-jogada.oeste{grid-area:oeste}
+.tr-jogada.novo .tc{animation:tr-cai .22s ease-out}
+@keyframes tr-cai{from{transform:translateY(14px) scale(.9);opacity:0}}
+.tr-msg{grid-area:meio;display:grid;justify-items:center;gap:6px;text-align:center;color:#FAF9F6;background:rgba(20,21,18,.6);padding:16px 22px;border-radius:18px;z-index:2}
+.tr-msg b{font:800 18px var(--display)}.tr-msg span{color:#D9D5C8;font-size:13px}
+.tr-msg.mini{padding:10px 14px}.tr-msg.mini b{font-size:14px}
+.tr-msg.fim b{font-size:22px}
+/* cartas espanholas */
+.tc{position:relative;width:64px;aspect-ratio:2/3;display:grid;grid-template-rows:auto 1fr auto;padding:5px 6px;border-radius:9px;border:0;background:#FBF8F1;color:var(--nc);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.12),inset 0 0 0 4px #FBF8F1,inset 0 0 0 5px color-mix(in srgb,var(--nc) 45%,transparent),0 6px 14px rgba(0,0,0,.35);font-family:var(--display)}
+.tc .v{font-weight:800;font-size:15px;line-height:1;justify-self:start}
+.tc .v2{justify-self:end;transform:rotate(180deg)}
+.tc .ic{width:58%;height:auto;justify-self:center;align-self:center}
+.tc.peq{width:40px;padding:3px 4px;border-radius:6px}.tc.peq .v{font-size:10px}
+.tc.ganha{box-shadow:inset 0 0 0 1px rgba(0,0,0,.12),inset 0 0 0 4px #FBF8F1,inset 0 0 0 5px color-mix(in srgb,var(--nc) 45%,transparent),0 0 0 3px var(--accent),0 0 24px rgba(176,141,87,.6)}
+.tc.costas{width:40px;background:repeating-linear-gradient(45deg,#7A2E26 0 5px,#8E3A30 5px 10px);box-shadow:inset 0 0 0 3px #FBF8F1,0 3px 8px rgba(0,0,0,.35)}
+.tc.costas.mini{width:30px;border-radius:5px;margin-left:-14px}
+.tc.costas.mini:first-child{margin-left:0}
+.tr-eu{display:grid;gap:12px;justify-items:center}
+.tr-mao{display:flex;gap:12px;justify-content:center;min-height:120px;align-items:flex-end}
+.tr-mao .tc{width:96px;padding:7px 8px;border-radius:12px;cursor:default;transition:transform .15s}
+.tr-mao .tc .v{font-size:20px}
+.tr-mao.pode .tc{cursor:pointer}
+.tr-mao.pode .tc:hover,.tr-mao.pode .tc:focus-visible{transform:translateY(-12px)}
+.tr-mao .tc:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.tr-mao .tc.indo{opacity:.4;transform:translateY(-20px)}
+.tr-rodape{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center}
+.tr-sua{font:800 15px var(--display);color:var(--accent)}
+.tr-acoes{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.btn.tr-cant{background:var(--live);color:#fff}
+.tr-pergunta{display:grid;gap:10px;justify-items:center;padding:14px 18px;border-radius:18px;background:var(--surface);box-shadow:inset 0 0 0 2px var(--live);animation:pop .3s cubic-bezier(.3,1.6,.5,1)}
+.tr-pergunta b{font:800 17px var(--display)}
+.linkish.sure{color:var(--live)}
+.btn.sure{background:var(--live);color:#fff}
+.tr-log{list-style:none;margin:0;padding:0;display:grid;gap:2px;color:var(--muted);font-size:12.5px;justify-items:center}
+.tr-log li:last-child{color:var(--ink)}
+@media (max-width:700px){
+  .tr-feltro{padding:14px;gap:6px;min-height:360px;grid-template-columns:auto minmax(0,1fr) auto}
+  .tr-id{padding:3px 9px 3px 3px}.tr-id .av{width:30px;height:30px}.tr-id .nm{font-size:12px}
+  .tc{width:50px}.tr-mao .tc{width:78px}.tc.costas.mini{width:22px;margin-left:-11px}
+  .tr-time{min-width:72px;padding:4px 10px}.tr-time b{font-size:22px}
+}
+@media (prefers-reduced-motion:reduce){.tr-fala,.tr-jogada.novo .tc,.tr-pergunta{animation:none}.tr-mao .tc{transition:none}}
+
 /* quem está ao vivo na lista da sala é clicável */
 .people li[data-live]{cursor:pointer}
 .people li[data-live]:hover{background:var(--surface-2)}
@@ -743,6 +835,7 @@ body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live
       <button role="tab" aria-selected="false" data-tab="frases" title="Nanicadas"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-4 3v-3H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/></svg><span class="t">Nanicadas</span><span class="count" id="nFrases"></span></button>
       <button role="tab" aria-selected="false" data-tab="nanicos" title="Nanicos"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.6c2.6-.3 4.6 1.1 5 4.4"/></svg><span class="t">Nanicos</span><span class="count" id="nAmigos"></span></button>
       <button role="tab" aria-selected="false" data-tab="live" id="navLive" title="Ao vivo"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="2.2"/><path d="M8.2 8.2a5.4 5.4 0 0 0 0 7.6M15.8 8.2a5.4 5.4 0 0 1 0 7.6M5.3 5.3a9.5 9.5 0 0 0 0 13.4M18.7 5.3a9.5 9.5 0 0 1 0 13.4"/></svg><span class="t">Ao vivo</span><span class="count" id="nLive"></span></button>
+      <button role="tab" aria-selected="false" data-tab="truco" title="Truco"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="10" height="15" rx="2" transform="rotate(-12 8 13.5)"/><rect x="10" y="3" width="10" height="15" rx="2" transform="rotate(10 15 10.5)"/></svg><span class="t">Truco</span><span class="count" id="nTruco"></span></button>
       <button role="tab" aria-selected="false" data-tab="perfil" title="Perfil"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.6 7-5.6s6.2 2 7 5.6"/></svg><span class="t">Perfil</span></button>
     </nav>
 
@@ -817,6 +910,12 @@ body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live
           <h1>Os Nanicos</h1>
         </header>
         <div class="block nan-block"><div class="nanicos" id="listaAmigos"></div></div>
+      </section>
+
+      <!-- TRUCO -->
+      <section id="view-truco" class="inner" hidden>
+        <header class="hero"><h1>Truco gaudério</h1></header>
+        <div id="trucoBox"></div>
       </section>
 
       <!-- PERFIL -->
@@ -1035,7 +1134,8 @@ const api={
 /* ---------- abas ---------- */
 document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{
   document.querySelectorAll(".nav button").forEach(x=>x.setAttribute("aria-selected",x===b));
-  ["jogar","frases","nanicos","live","perfil"].forEach(v=>$("#view-"+v).hidden=v!==b.dataset.tab);
+  ["jogar","frases","nanicos","live","perfil","truco"].forEach(v=>$("#view-"+v).hidden=v!==b.dataset.tab);
+  if(b.dataset.tab==="truco")renderTruco();
   if(b.dataset.tab==="perfil")renderPerfil();
   if(b.dataset.tab==="live"){renderLive();if(railTab==="chat"){chatUnread=0;renderChat();}}
   closePickers();
@@ -2295,6 +2395,413 @@ function pintar(){
 addEventListener("resize",()=>pintar());
 document.addEventListener("fullscreenchange",()=>setTimeout(pintar,60));
 
+/* ---------- truco gaudério: regras ----------
+   Baralho espanhol de 40 cartas (sem 8, 9 e coringas). Naipes: e=espadas, b=bastos, c=copas, o=ouros.
+   Força: 1e (espadão) > 1b (bastião) > 7e > 7o > 3 > 2 > 1c/1o > 12 > 11 > 10 > 7c/7b > 6 > 5 > 4.
+   Envido: duas do mesmo naipe = 20 + soma (figuras valem 0); senão a maior carta. Flor: três do mesmo naipe = 20 + soma.
+   Truco 2, retruco 3, vale quatro 4; quem não quer dá o valor anterior. Mão sem truco vale 1.
+   Envido 2, real envido 3, falta envido = o que falta para quem está na frente ganhar. Não querer dá 1 (ou o que já estava aceito).
+   Flor vale 3 por flor; se os dois times têm, a maior leva tudo (sem contraflor). */
+const TR_NAIPES=["e","b","c","o"], TR_NUMS=[1,2,3,4,5,6,7,10,11,12];
+const trN=c=>parseInt(c,10), trS=c=>c.slice(-1);
+const trValido=c=>typeof c==="string"&&/^(1|2|3|4|5|6|7|10|11|12)[ebco]$/.test(c);
+function trBaralho(){ const d=[]; for(const s of TR_NAIPES)for(const n of TR_NUMS)d.push(n+s); return d; }
+function trEmbaralha(d,rnd=Math.random){ d=d.slice(); for(let i=d.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[d[i],d[j]]=[d[j],d[i]];} return d; }
+function trForca(c){ if(c==="1e")return 14; if(c==="1b")return 13; if(c==="7e")return 12; if(c==="7o")return 11;
+  return {3:10,2:9,1:8,12:7,11:6,10:5,7:4,6:3,5:2,4:1}[trN(c)]; }
+const trPip=c=>trN(c)<=7?trN(c):0;
+function trEnvido(cs){ let best=0; for(const c of cs)best=Math.max(best,trPip(c));
+  for(let i=0;i<cs.length;i++)for(let j=i+1;j<cs.length;j++)if(trS(cs[i])===trS(cs[j]))best=Math.max(best,20+trPip(cs[i])+trPip(cs[j]));
+  return best; }
+const trTemFlor=cs=>cs.length===3&&cs.every(c=>trS(c)===trS(cs[0]));
+const trFlor=cs=>20+cs.reduce((a,c)=>a+trPip(c),0);
+const TR_TRUCO={2:"Truco",3:"Retruco",4:"Vale quatro"};
+const TR_ENV={envido:"Envido",real:"Real envido",falta:"Falta envido"};
+
+/* quem ganha a mão pelas vazas (-1 = parda). null = ainda não decidiu */
+function trDecide(res,manoTeam){
+  if(res.length<2)return null;
+  const [a,b,c]=res;
+  if(a===-1&&b!==-1)return b;
+  if(a!==-1&&b===-1)return a;
+  if(a!==-1&&a===b)return a;
+  if(res.length<3)return null;
+  if(c!==-1)return c;
+  if(a!==-1)return a;
+  return manoTeam;
+}
+function trFalta(M){ return Math.max(1,M.alvo-Math.max(M.placar[0],M.placar[1])); }
+function trValorEnv(M,k){ return k==="envido"?2:k==="real"?3:trFalta(M); }
+/* ordem a partir do mano (para desempate) */
+function trOrdem(M){ const N=M.modo, o=[]; for(let i=0;i<N;i++)o.push((M.h.mano+i)%N); return o; }
+function trLog(M,txt){ M.log.push(txt); if(M.log.length>8)M.log.shift(); }
+function trFala(M,seat,txt){ M.falas[seat]={txt,at:Date.now()}; }
+const trTime=(M,team)=>M.modo===2?M.lugares[team].nome:`${M.lugares[team].nome} e ${M.lugares[team+2].nome}`;
+function trPontos(M,team,p,motivo){
+  M.placar[team]+=p; trLog(M,`${motivo}: +${p} para ${trTime(M,team)}`);
+  if(M.placar[team]>=M.alvo&&M.fase==="jogo"){ M.fase="fim"; M.vencedor=team; if(M.h)M.h.fim=M.h.fim||{team,pontos:0,motivo:"fim de jogo"}; }
+}
+
+/* começa uma mão nova (o anfitrião chama) */
+function trNovaMao(M,rnd){
+  const N=M.modo, d=trEmbaralha(trBaralho(),rnd);
+  M.dealer=M.h?(M.dealer+1)%N:(M.dealer??N-1);
+  const mano=(M.dealer+1)%N, maos={}, orig={};
+  for(let i=0;i<N;i++){ maos[i]=d.slice(i*3,i*3+3); orig[i]=maos[i].slice(); }
+  M.maoN=(M.maoN||0)+1; M.falas={};
+  M.h={n:M.maoN,mano,maos,orig,vazas:[{lider:mano,cartas:[],vence:null,por:null}],vez:mano,
+       truco:{valor:1,pend:null,dono:null},env:{st:"livre",apostas:[],de:null,res:null},flor:null,fim:null};
+  trLog(M,`Mão ${M.maoN}: ${M.lugares[mano].nome} é mão`);
+  if(M.comFlor){
+    const fl=[]; for(let i=0;i<N;i++)if(trTemFlor(orig[i]))fl.push(i);
+    if(fl.length){
+      M.h.env.st="off"; fl.forEach(i=>trFala(M,i,`Flor! (${trFlor(orig[i])})`));
+      const times=[...new Set(fl.map(i=>i%2))];
+      let team=times[0];
+      if(times.length>1){ const ord=trOrdem(M); let best=-1;
+        for(const i of ord)if(fl.includes(i)&&trFlor(orig[i])>best){best=trFlor(orig[i]);team=i%2;} }
+      M.h.flor={quem:fl,team};
+      trPontos(M,team,3*fl.length,fl.length>1&&times.length>1?"Flor contra flor":"Flor");
+    }
+  }
+}
+
+/* o que o lugar s pode fazer agora (o site mostra só esses botões) */
+function trOpcoes(M,s){
+  const o={jogar:false,truco:null,envido:[],quero:false,naoquero:false,mazo:false};
+  if(M.fase!=="jogo"||!M.h||M.h.fim)return o;
+  const h=M.h, t=s%2, tp=h.truco.pend, ep=h.env.st==="pend";
+  o.mazo=true;
+  if(ep){ if(h.env.de!==t){ o.quero=o.naoquero=true; const last=h.env.apostas[h.env.apostas.length-1], nE=h.env.apostas.filter(k=>k==="envido").length;
+      if(last==="envido"){ if(nE<2)o.envido.push("envido"); o.envido.push("real","falta"); } else if(last==="real")o.envido.push("falta"); }
+    return o; }
+  if(tp){ if(tp.de!==t){ o.quero=o.naoquero=true; if(tp.nivel<4)o.truco=tp.nivel+1;
+      if(tp.nivel===2&&h.env.st==="livre"&&h.vazas.length===1&&!h.vazas[0].cartas.some(x=>x.s===s))o.envido=["envido","real","falta"]; }
+    return o; }
+  if(h.vez===s){ o.jogar=true;
+    if(h.truco.valor<4&&(h.truco.dono===null||h.truco.dono===t))o.truco=h.truco.valor+1;
+    if(h.env.st==="livre"&&h.vazas.length===1&&h.truco.valor===1)o.envido=["envido","real","falta"]; }
+  return o;
+}
+
+function trFimMao(M,team,pontos,motivo){
+  const h=M.h; if(h.fim)return;
+  h.fim={team,pontos,motivo};
+  if(M.fase==="jogo")trPontos(M,team,pontos,motivo);
+}
+function trResolveEnvido(M){
+  const h=M.h, ord=trOrdem(M); let best=-1,quem=null;
+  const cant=[];
+  for(const i of ord){ const v=trEnvido(h.orig[i]); cant.push([i,v]); if(v>best){best=v;quem=i;} }
+  cant.forEach(([i,v])=>trFala(M,i,`${v} de envido`));
+  const pts=h.env.apostas.reduce((a,k)=>a+trValorEnv(M,k),0);
+  h.env.st="fim"; h.env.res={quem,pts:best};
+  trPontos(M,quem%2,pts,`${h.env.apostas.map(k=>TR_ENV[k]).join(" + ")} (${M.lugares[quem].nome} com ${best})`);
+}
+
+/* aplica uma ação; devolve texto de erro ou null */
+function trAcao(M,s,a,arg){
+  if(M.fase!=="jogo"||!M.h||M.h.fim)return "A mão não está em jogo.";
+  const h=M.h, t=s%2, op=trOpcoes(M,s), nome=M.lugares[s].nome;
+  if(a==="jogar"){
+    if(!op.jogar)return "Não é a sua vez.";
+    const i=h.maos[s].indexOf(arg); if(i<0)return "Carta inválida.";
+    h.maos[s].splice(i,1);
+    const v=h.vazas[h.vazas.length-1]; v.cartas.push({s,c:arg});
+    if(v.cartas.length<M.modo){ h.vez=(s+1)%M.modo; return null; }
+    /* fecha a vaza */
+    const max=Math.max(...v.cartas.map(x=>trForca(x.c))), top=v.cartas.filter(x=>trForca(x.c)===max);
+    const times=new Set(top.map(x=>x.s%2));
+    v.vence=times.size>1?-1:top[0].s%2; v.por=times.size>1?null:top[0].s;
+    trLog(M,v.vence===-1?`Vaza ${h.vazas.length}: parda`:`Vaza ${h.vazas.length}: ${M.lugares[v.por].nome}`);
+    const w=trDecide(h.vazas.map(x=>x.vence),h.mano%2);
+    if(w!==null){ trFimMao(M,w,h.truco.valor,h.truco.valor>1?TR_TRUCO[h.truco.valor]:"Mão"); return null; }
+    const lider=v.vence===-1?v.lider:v.por;
+    h.vazas.push({lider,cartas:[],vence:null,por:null}); h.vez=lider; return null;
+  }
+  if(a==="truco"){
+    if(!op.truco)return "Agora não dá para trucar.";
+    const tp=h.truco.pend;
+    if(tp&&tp.de!==t)h.truco.valor=tp.nivel;          /* aumentar = aceitar o anterior e subir */
+    h.truco.pend={nivel:op.truco,de:t,por:s}; trFala(M,s,TR_TRUCO[op.truco]+"!"); trLog(M,`${nome}: ${TR_TRUCO[op.truco]}!`); return null;
+  }
+  if(a==="envido"){
+    if(!op.envido.includes(arg))return "Agora não dá para cantar isso.";
+    h.env.apostas.push(arg); h.env.st="pend"; h.env.de=t; h.env.por=s;
+    trFala(M,s,TR_ENV[arg]+"!"); trLog(M,`${nome}: ${TR_ENV[arg]}!`); return null;
+  }
+  if(a==="quero"||a==="naoquero"){
+    if(!op.quero)return "Não tem nada para responder.";
+    trFala(M,s,a==="quero"?"Quero!":"Não quero"); trLog(M,`${nome}: ${a==="quero"?"Quero":"Não quero"}`);
+    if(h.env.st==="pend"){
+      if(a==="quero")trResolveEnvido(M);
+      else{ const ap=h.env.apostas, pts=ap.length===1?1:ap.slice(0,-1).reduce((x,k)=>x+trValorEnv(M,k),0); h.env.st="fim"; trPontos(M,h.env.de,pts,"Envido não querido"); }
+      return null;
+    }
+    const tp=h.truco.pend;
+    if(a==="quero"){ h.truco.valor=tp.nivel; h.truco.dono=t; h.truco.pend=null; return null; }
+    h.truco.pend=null; trFimMao(M,tp.de,tp.nivel-1,`${TR_TRUCO[tp.nivel]} não querido`); return null;
+  }
+  if(a==="mazo"){
+    if(!op.mazo)return "Agora não dá.";
+    if(h.env.st==="pend"&&h.env.de!==t){ const ap=h.env.apostas; trPontos(M,h.env.de,ap.length===1?1:ap.slice(0,-1).reduce((x,k)=>x+trValorEnv(M,k),0),"Envido não querido"); h.env.st="fim"; }
+    const tp=h.truco.pend, pts=tp&&tp.de!==t?tp.nivel-1:h.truco.valor;
+    trFala(M,s,"Fui ao mazo"); trFimMao(M,1-t,Math.max(1,pts),`${nome} foi ao mazo`); return null;
+  }
+  return "Ação desconhecida.";
+}
+
+/* ---------- truco: mesa online ----------
+   Quem abre a mesa é o anfitrião: o navegador dele embaralha, guarda as cartas e confere cada jogada.
+   Os outros mandam as jogadas para ele pela sala; ele devolve a mesa (sem as cartas de ninguém)
+   e manda a mão de cada um só para o dono. Se o anfitrião recarregar, a mesa volta do ponto onde parou. */
+const TRU={mesas:new Map(),minha:null,ver:null,mao:null,prox:null,falas:new Map(),hb:null,ultPub:"",hits:new Map()};
+const TR_ID=/^[a-z0-9]{6,20}$/;
+function trPublica(M){
+  const h=M.h;
+  return {id:M.id,host:M.host,modo:M.modo,alvo:M.alvo,comFlor:M.comFlor,placar:M.placar,fase:M.fase,vencedor:M.vencedor??null,
+    lugares:M.lugares,log:M.log,falas:M.falas,maoN:M.maoN||0,
+    h:h?{n:h.n,mano:h.mano,vez:h.vez,nc:Object.fromEntries(Object.entries(h.maos).map(([k,v])=>[k,v.length])),vazas:h.vazas,
+      truco:h.truco,env:{st:h.env.st,apostas:h.env.apostas,de:h.env.de,res:h.env.res},flor:h.flor,fim:h.fim,
+      /* no fim da mão, mostra as cartas que sobraram de todo mundo */
+      sobra:h.fim?h.maos:null}:null};
+}
+function trSalva(){ try{ if(TRU.minha)localStorage.setItem("truco-mesa",JSON.stringify({M:TRU.minha,at:Date.now()})); else localStorage.removeItem("truco-mesa"); }catch{} }
+function trPublicar(){
+  const M=TRU.minha; if(!M)return;
+  const pub=trPublica(M);
+  TRU.mesas.set(M.id,{pub,at:Date.now()});
+  if(room)room.send({type:"broadcast",event:"truco",payload:{t:"mesa",from:myKey,m:pub}}).catch(()=>{});
+  if(M.h)M.lugares.forEach((l,i)=>{ if(l&&l.key!==myKey&&room)room.send({type:"broadcast",event:"truco",payload:{t:"mao",from:myKey,to:l.key,id:M.id,n:M.h.n,cartas:M.h.maos[i]}}).catch(()=>{}); });
+  trSalva();
+  const js=JSON.stringify(pub); if(js!==TRU.ultPub){ TRU.ultPub=js; renderTruco(); }
+}
+function trHeartbeat(){ clearInterval(TRU.hb); TRU.hb=setInterval(()=>{ if(TRU.minha)trPublicar(); else{clearInterval(TRU.hb);TRU.hb=null;} },4000); }
+function trAbrirMesa(modo,alvo,comFlor){
+  const id=newId().replace(/-/g,"").slice(0,12);
+  const M={id,host:myKey,modo,alvo,comFlor,placar:[0,0],fase:"espera",vencedor:null,lugares:Array(modo).fill(null),log:[],falas:{},maoN:0,dealer:modo-1,h:null};
+  M.lugares[0]={fid:myFid,key:myKey,nome:myName};
+  TRU.minha=M; TRU.ver=id; trLog(M,`${myName} abriu a mesa`); trPublicar(); trHeartbeat();
+}
+function trFecharMesa(){
+  const M=TRU.minha; if(!M)return;
+  if(room)room.send({type:"broadcast",event:"truco",payload:{t:"fechar",from:myKey,id:M.id}}).catch(()=>{});
+  TRU.mesas.delete(M.id); TRU.minha=null; TRU.ver=null; TRU.mao=null; trSalva(); renderTruco();
+}
+/* o anfitrião recebe e confere tudo que os jogadores pedem */
+function trHost(fromKey,a,arg){
+  const M=TRU.minha; if(!M)return;
+  const p=fromKey===myKey?{fid:myFid,name:myName}:online.find(x=>x.key===fromKey); if(!p)return;
+  const f=friendOf(p.fid), nome=f?f.name:String(p.name||"").slice(0,30);
+  let seat=M.lugares.findIndex(l=>l&&l.key===fromKey);
+  if(seat<0&&p.fid){ const r=M.lugares.findIndex(l=>l&&l.fid===p.fid); if(r>=0){ M.lugares[r].key=fromKey; seat=r; } }   /* voltou depois de recarregar */
+  if(a==="sentar"){
+    const i=Number(arg);
+    if(seat>=0){ trPublicar(); return; }
+    if(M.fase!=="espera"||!Number.isInteger(i)||i<0||i>=M.modo||M.lugares[i])return;
+    M.lugares[i]={fid:p.fid||null,key:fromKey,nome}; trLog(M,`${nome} sentou`); trPublicar(); return;
+  }
+  if(a==="levantar"){ if(seat<0||M.fase!=="espera"||fromKey===M.host)return; M.lugares[seat]=null; trLog(M,`${nome} levantou`); trPublicar(); return; }
+  if(a==="comecar"||a==="revanche"){
+    if(fromKey!==M.host||M.lugares.some(l=>!l))return;
+    if(a==="comecar"&&M.fase!=="espera")return; if(a==="revanche"&&M.fase!=="fim")return;
+    M.fase="jogo"; M.placar=[0,0]; M.vencedor=null; M.h=null; M.maoN=0; M.log=[]; trNovaMao(M); trPublicar(); return;
+  }
+  if(seat<0)return;
+  if(trAcao(M,seat,a,arg))return;
+  if(M.h&&M.h.fim&&M.fase==="jogo"){
+    const n=M.h.n; clearTimeout(TRU.prox);
+    TRU.prox=setTimeout(()=>{ if(TRU.minha===M&&M.fase==="jogo"&&M.h&&M.h.n===n){ trNovaMao(M); trPublicar(); } },3800);
+  }
+  trPublicar();
+}
+function trEnviar(a,arg){
+  const pub=TRU.ver&&TRU.mesas.get(TRU.ver)?.pub; if(!pub)return;
+  if(TRU.minha&&pub.id===TRU.minha.id)return trHost(myKey,a,arg);
+  if(room)room.send({type:"broadcast",event:"truco",payload:{t:"acao",from:myKey,to:pub.host,id:pub.id,a,arg:arg??null}}).catch(()=>{});
+}
+function onTruco(m){
+  if(!m||typeof m!=="object"||typeof m.from!=="string"||m.from===myKey||!online.some(p=>p.key===m.from))return;
+  const agora=Date.now(), h=(TRU.hits.get(m.from)||[]).filter(t=>agora-t<2000); if(h.length>=40)return; h.push(agora); TRU.hits.set(m.from,h);
+  if(m.t==="mesa"){
+    const M=m.m; if(!M||typeof M!=="object"||!TR_ID.test(String(M.id))||M.host!==m.from||![2,4].includes(M.modo)||!Array.isArray(M.lugares)||M.lugares.length!==M.modo)return;
+    if(JSON.stringify(M).length>40000)return;
+    const antes=TRU.mesas.get(M.id), js=JSON.stringify(M), igual=antes&&antes.js===js; TRU.mesas.set(M.id,{pub:M,at:agora,js});
+    if(antes&&antes.pub.h&&M.h&&antes.pub.h.n!==M.h.n&&TRU.mao&&TRU.mao.id===M.id&&TRU.mao.n!==M.h.n)TRU.mao=null;
+    /* recarreguei a página no meio do jogo: pega o meu lugar de volta */
+    if(myFid&&M.lugares.some(l=>l&&l.fid===myFid&&l.key!==myKey)){ TRU.ver=TRU.ver||M.id; room&&room.send({type:"broadcast",event:"truco",payload:{t:"acao",from:myKey,to:M.host,id:M.id,a:"sentar",arg:0}}).catch(()=>{}); }
+    if(!igual&&(TRU.ver===M.id||!TRU.ver))renderTruco(); return;
+  }
+  if(m.t==="fechar"){ if(TRU.mesas.get(m.id)?.pub.host===m.from){ TRU.mesas.delete(m.id); if(TRU.ver===m.id){TRU.ver=null;TRU.mao=null;toast("A mesa de truco foi fechada.");} renderTruco(); } return; }
+  if(m.t==="mao"){ if(m.to!==myKey||!Array.isArray(m.cartas)||m.cartas.length>3||!m.cartas.every(trValido))return;
+    if(TRU.mesas.get(m.id)?.pub.host!==m.from)return;
+    TRU.mao={id:m.id,n:Number(m.n)||0,cartas:m.cartas.slice()}; if(TRU.ver===m.id)renderTruco(); return; }
+  if(m.t==="acao"){ if(m.to!==myKey||!TRU.minha||m.id!==TRU.minha.id)return;
+    const A=["sentar","levantar","jogar","truco","envido","quero","naoquero","mazo"]; if(!A.includes(m.a))return;
+    if(m.a==="jogar"&&!trValido(m.arg))return; if(m.a==="envido"&&!["envido","real","falta"].includes(m.arg))return;
+    trHost(m.from,m.a,m.arg); }
+}
+/* mesas cujo anfitrião sumiu saem da lista */
+setInterval(()=>{ const agora=Date.now(); let mudou=false;
+  for(const [id,x] of TRU.mesas){ if(TRU.minha&&id===TRU.minha.id)continue; if(agora-x.at>13000||!online.some(p=>p.key===x.pub.host)){ TRU.mesas.delete(id); mudou=true; if(TRU.ver===id){TRU.ver=null;TRU.mao=null;} } }
+  if(mudou)renderTruco(); },3000);
+/* o anfitrião recarregou: a mesa volta (até 20 min depois) */
+function trRestaura(){
+  try{ const d=JSON.parse(localStorage.getItem("truco-mesa")||"null"); if(!d||!d.M||Date.now()-d.at>20*60000)return;
+    const M=d.M; M.host=myKey; M.lugares.forEach(l=>{ if(l&&l.fid===myFid)l.key=myKey; });
+    TRU.minha=M; TRU.ver=M.id; trPublicar(); trHeartbeat();
+    if(M.h&&M.h.fim&&M.fase==="jogo")setTimeout(()=>{ if(TRU.minha===M&&M.h.fim){trNovaMao(M);trPublicar();} },2500);
+  }catch{}
+}
+
+/* ---------- truco: tela ---------- */
+const TR_COR={e:"#3E6FB0",b:"#4E7D3A",c:"#C0392B",o:"#C9952B"};
+const TR_NAIPE_NOME={e:"espada",b:"basto",c:"copa",o:"ouro"};
+const TR_ICONE={
+  e:'<path d="M12 2l2.2 3.2V15h-4.4V5.2z" fill="currentColor"/><path d="M7 15.5h10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M12 16v5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>',
+  b:'<path d="M10.2 3.5c1.6-1.4 4.4-.6 4.3 1.6l-.7 13.6c-.1 2.4-4.2 2.4-4.3 0L8.9 6.3c0-1.2.4-2.1 1.3-2.8z" fill="currentColor"/><circle cx="11" cy="8" r="1" fill="#fff" opacity=".5"/><circle cx="12.8" cy="12" r="1" fill="#fff" opacity=".5"/>',
+  c:'<path d="M5.5 4h13v3.2a6.5 6.5 0 0 1-13 0z" fill="currentColor"/><path d="M12 13.5v4.5" stroke="currentColor" stroke-width="2.4"/><path d="M7.5 20.5h9" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>',
+  o:'<circle cx="12" cy="12" r="8.5" fill="currentColor"/><circle cx="12" cy="12" r="5" fill="none" stroke="#fff" stroke-width="1.4" opacity=".6"/><circle cx="12" cy="12" r="1.6" fill="#fff" opacity=".6"/>'};
+function trNomeCarta(c){ const n=trN(c),s=trS(c);
+  if(c==="1e")return "Espadão (1 de espada)"; if(c==="1b")return "Bastião (1 de basto)"; if(c==="7e")return "7 de espada"; if(c==="7o")return "7 de ouro";
+  return `${n} de ${TR_NAIPE_NOME[s]}`; }
+function trCarta(c,{botao=false,peq=false,ganha=false}={}){
+  const s=trS(c), tag=botao?"button":"span";
+  return `<${tag} ${botao?`type="button" data-c="${c}"`:""} class="tc${peq?" peq":""}${ganha?" ganha":""}" style="--nc:${TR_COR[s]}" title="${trNomeCarta(c)}" aria-label="${trNomeCarta(c)}">
+    <b class="v">${trN(c)}</b><svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${TR_ICONE[s]}</svg><b class="v v2">${trN(c)}</b></${tag}>`;
+}
+const trCostas=(n,peq=true)=>Array.from({length:n},()=>`<span class="tc costas${peq?" mini":""}" aria-hidden="true"></span>`).join("");
+
+let trOpt={modo:2,alvo:24,flor:true};
+try{ const o=JSON.parse(localStorage.getItem("truco-opt")||"{}"); if([2,4].includes(o.modo))trOpt.modo=o.modo; if([12,24,30].includes(o.alvo))trOpt.alvo=o.alvo; if(o.flor===false)trOpt.flor=false; }catch{}
+const trSalvaOpt=()=>{ try{localStorage.setItem("truco-opt",JSON.stringify(trOpt));}catch{} };
+
+function renderTruco(){
+  const box=$("#trucoBox"); if(!box)return;
+  const nEsp=[...TRU.mesas.values()].filter(x=>x.pub.fase==="espera"&&x.pub.lugares.some(l=>!l)).length; $("#nTruco").textContent=nEsp?`● ${nEsp}`:""; $("#nTruco").classList.toggle("on",nEsp>0);
+  if($("#view-truco").hidden&&!(TRU.ver))return;
+  const x=TRU.ver&&TRU.mesas.get(TRU.ver);
+  if(!x){ TRU.ver=null; return trLobby(box); }
+  trMesaUI(box,x.pub);
+}
+function trLobby(box){
+  const lista=[...TRU.mesas.values()].map(x=>x.pub).sort((a,b)=>(a.fase==="espera"?0:1)-(b.fase==="espera"?0:1));
+  box.innerHTML=`<div class="tr-lobby">
+    <div class="block tr-nova">
+      <h2>Abrir uma mesa</h2>
+      <div class="seg" role="radiogroup" aria-label="Quantos jogam">${[[2,"1 contra 1"],[4,"2 contra 2"]].map(([v,t])=>`<button type="button" role="radio" data-m="${v}" aria-checked="${trOpt.modo===v}">${t}</button>`).join("")}</div>
+      <div class="seg three" role="radiogroup" aria-label="Pontos para ganhar">${[12,24,30].map(v=>`<button type="button" role="radio" data-a="${v}" aria-checked="${trOpt.alvo===v}">Até ${v}</button>`).join("")}</div>
+      <label class="tr-flor"><input type="checkbox" id="trFlor" ${trOpt.flor?"checked":""}>Jogar com flor</label>
+      <button class="btn" id="trAbrir" type="button">Abrir mesa</button>
+    </div>
+    <div class="block tr-lista">
+      <h2>Mesas</h2>
+      ${lista.length?`<ul class="tr-mesas">${lista.map(m=>{
+        const sent=m.lugares.filter(Boolean).length, minha=m.lugares.some(l=>l&&(l.key===myKey||l.fid===myFid));
+        const livre=m.fase==="espera"&&sent<m.modo;
+        return `<li><div class="tr-quem">${m.lugares.map(l=>l?avatar(friendOf(l.fid)||{name:l.nome},"xs"):`<span class="av xs none" aria-hidden="true"></span>`).join("")}</div>
+          <div class="tr-info"><b>Mesa do ${esc(m.lugares[0]?.nome||"?")}</b><small>${m.modo===2?"1 contra 1":"2 contra 2"}, até ${m.alvo}${m.comFlor?", com flor":""}. ${m.fase==="espera"?(livre?`Falta${m.modo-sent>1?"m":""} ${m.modo-sent}`:"Completa"):m.fase==="jogo"?`Jogando, ${m.placar[0]} a ${m.placar[1]}`:"Partida encerrada"}</small></div>
+          <button class="btn sm${minha||livre?"":" soft"}" type="button" data-ver="${esc(m.id)}">${minha?"Voltar":livre?"Sentar":"Assistir"}</button></li>`; }).join("")}</ul>`
+      :`<p class="status tr-vazio">Nenhuma mesa aberta. Abra uma e chame a galera.</p>`}
+    </div>
+  </div>`;
+  box.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{trOpt.modo=+b.dataset.m;trSalvaOpt();renderTruco();});
+  box.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{trOpt.alvo=+b.dataset.a;trSalvaOpt();renderTruco();});
+  $("#trFlor").onchange=e=>{trOpt.flor=e.target.checked;trSalvaOpt();};
+  $("#trAbrir").onclick=()=>{ if(!myName)return; if(TRU.minha)return toast("Você já tem uma mesa aberta."); trAbrirMesa(trOpt.modo,trOpt.alvo,trOpt.flor); };
+  box.querySelectorAll("[data-ver]").forEach(b=>b.onclick=()=>{
+    const m=TRU.mesas.get(b.dataset.ver)?.pub; if(!m)return; TRU.ver=m.id;
+    if(m.fase==="espera"&&!m.lugares.some(l=>l&&l.key===myKey)){ const i=m.lugares.findIndex(l=>!l); if(i>=0)trEnviar("sentar",i); }
+    renderTruco(); });
+}
+/* falas (Truco!, Quero!, 31 de envido…) ficam 3,5 s no balão de quem falou */
+function trFalasVivas(pub){
+  const agora=Date.now(), out={};
+  for(const [s,f] of Object.entries(pub.falas||{})){ if(!f||typeof f.txt!=="string")continue;
+    const k=`${pub.id}:${s}:${f.at}:${f.txt}`; if(!TRU.falas.has(k))TRU.falas.set(k,agora);
+    if(agora-TRU.falas.get(k)<3500){ out[s]=f.txt.slice(0,40); clearTimeout(TRU.tFala); TRU.tFala=setTimeout(renderTruco,3600); } }
+  if(TRU.falas.size>200)TRU.falas.clear();
+  return out;
+}
+function trMesaUI(box,m){
+  const N=m.modo, eu=m.lugares.findIndex(l=>l&&l.key===myKey), base=eu>=0?eu:0, h=m.h;
+  const pos=i=>{ const r=(i-base+N)%N; return N===2?(r===0?"sul":"norte"):["sul","leste","norte","oeste"][r]; };
+  const meuTime=eu>=0?eu%2:0, falas=trFalasVivas(m);
+  const nomeT=t=>N===2?(m.lugares[t]?.nome||"?"):`${m.lugares[t]?.nome||"?"} e ${m.lugares[t+2]?.nome||"?"}`;
+  const rotulo=t=>eu>=0?(t===meuTime?"Nós":"Eles"):nomeT(t);
+  const op=eu>=0&&h?trOpcoes(m,eu):null;
+  let minhas=[];
+  if(eu>=0&&h){ if(TRU.minha&&TRU.minha.id===m.id)minhas=TRU.minha.h.maos[eu].slice(); else if(TRU.mao&&TRU.mao.id===m.id&&TRU.mao.n===h.n)minhas=TRU.mao.cartas; }
+  const vaza=h?h.vazas[h.vazas.length-1]:null, ultimaFechada=h&&h.fim?h.vazas[h.vazas.length-1]:null;
+  const naMesa=h?(vaza.cartas.length?vaza:(h.vazas.length>1?h.vazas[h.vazas.length-2]:vaza)):null;
+  const lugar=i=>{ const l=m.lugares[i], p=pos(i);
+    if(!l)return `<div class="tr-lugar ${p} vazio">${m.fase==="espera"&&eu<0?`<button class="btn sm" type="button" data-sentar="${i}">Sentar aqui</button>`:`<span class="status">Lugar livre</span>`}</div>`;
+    const f=friendOf(l.fid), vez=h&&!h.fim&&h.vez===i&&!h.truco.pend&&h.env.st!=="pend", nc=h?(h.nc[i]??0):0;
+    const sobra=h&&h.fim&&h.sobra&&i!==eu?(h.sobra[i]||[]).filter(trValido):[];
+    return `<div class="tr-lugar ${p}${vez?" vez":""}${i===eu?" eu":""}">
+      ${falas[i]?`<span class="tr-fala">${esc(falas[i])}</span>`:""}
+      <div class="tr-id">${avatar(f||{name:l.nome})}<span class="nm">${esc(i===eu?"Você":l.nome)}</span>${h&&h.mano===i?`<span class="tr-tag" title="Mão: começa a rodada e ganha os empates">mão</span>`:""}</div>
+      ${i!==eu&&h?`<div class="tr-costas">${sobra.length?sobra.map(c=>trCarta(c,{peq:true})).join(""):trCostas(nc)}</div>`:""}
+    </div>`; };
+  const centro=()=>{
+    if(m.fase==="espera")return `<div class="tr-msg"><b>Esperando a turma</b><span>${m.lugares.filter(Boolean).length} de ${N} sentados</span>
+      ${TRU.minha&&TRU.minha.id===m.id?(m.lugares.every(Boolean)?`<button class="btn" type="button" id="trComecar">Começar</button>`:""):""}</div>`;
+    if(m.fase==="fim")return `<div class="tr-msg fim"><b>${esc(rotulo(m.vencedor))} ${eu>=0?(m.vencedor===meuTime?"ganhamos!":"ganharam."):"ganharam."}</b><span>${m.placar[m.vencedor]} a ${m.placar[1-m.vencedor]}</span>
+      ${TRU.minha&&TRU.minha.id===m.id?`<button class="btn" type="button" id="trRevanche">Jogar de novo</button>`:`<span class="status">O ${esc(m.lugares[0]?.nome||"anfitrião")} pode começar outra.</span>`}</div>`;
+    TRU.vistas=TRU.vistas||new Set();
+    const cartas=(naMesa?naMesa.cartas:[]).map(x=>{ const k=`${m.id}:${h.n}:${x.c}`, novo=!TRU.vistas.has(k); TRU.vistas.add(k);
+      return `<div class="tr-jogada ${pos(x.s)}${novo?" novo":""}">${trCarta(x.c,{ganha:naMesa.vence!==null&&naMesa.por===x.s})}</div>`; }).join("");
+    if(TRU.vistas.size>400)TRU.vistas.clear();
+    const fim=h.fim?`<div class="tr-msg mini"><b>${esc(h.fim.motivo)}</b><span>+${h.fim.pontos} para ${esc(rotulo(h.fim.team))}</span></div>`:"";
+    return cartas+fim;
+  };
+  const vazasRes=h?h.vazas.filter(v=>v.vence!==null).map(v=>`<i class="tr-pip ${v.vence===-1?"parda":v.vence===meuTime?"nos":"eles"}" title="${v.vence===-1?"Parda":esc(rotulo(v.vence))}"></i>`).join(""):"";
+  /* pergunta para o meu time */
+  let pergunta="";
+  if(op&&(op.quero)){ const ep=h.env.st==="pend", quem=ep?h.env.por:h.truco.pend.por, oque=ep?h.env.apostas.map(k=>TR_ENV[k]).join(" + "):TR_TRUCO[h.truco.pend.nivel];
+    pergunta=`<div class="tr-pergunta" role="alert"><b>${esc(m.lugares[quem]?.nome||"")} pediu ${esc(oque)}</b>
+      <div class="tr-acoes">
+        <button class="btn" type="button" data-a="quero">Quero</button>
+        <button class="btn soft" type="button" data-a="naoquero">Não quero</button>
+        ${op.truco&&!ep?`<button class="btn tr-cant" type="button" data-a="truco">${TR_TRUCO[op.truco]}!</button>`:""}
+        ${op.envido.map(k=>`<button class="btn tr-cant" type="button" data-a="envido" data-k="${k}">${TR_ENV[k]}!</button>`).join("")}
+      </div></div>`; }
+  const acoes=op&&!op.quero&&op.jogar?`<div class="tr-acoes">
+      ${op.truco?`<button class="btn tr-cant" type="button" data-a="truco">${TR_TRUCO[op.truco]}!</button>`:""}
+      ${op.envido.map(k=>`<button class="btn soft" type="button" data-a="envido" data-k="${k}">${TR_ENV[k]}</button>`).join("")}
+    </div>`:"";
+  const esperando=h&&!h.fim&&eu>=0&&!op.jogar&&!op.quero?`<span class="status">${h.truco.pend||h.env.st==="pend"?"Esperando a resposta…":`Vez de ${esc(m.lugares[h.vez]?.nome||"")}`}</span>`:"";
+  box.innerHTML=`<div class="tr-mesa">
+    <div class="tr-top">
+      <button class="btn soft sm" type="button" id="trVoltar">Mesas</button>
+      <div class="tr-placar">${(eu>=0&&meuTime===1?[1,0]:[0,1]).map(t=>`<div class="tr-time${eu>=0&&t===meuTime?" nos":""}"><span>${esc(rotulo(t))}</span><b>${m.placar[t]}</b></div>`).join(`<span class="tr-alvo">até ${m.alvo}</span>`)}</div>
+      <div class="tr-top-d">${h&&m.fase==="jogo"&&h.truco.valor>1?`<span class="tr-valendo">Valendo ${h.truco.valor}</span>`:""}<span class="tr-vazas">${vazasRes}</span>
+        ${TRU.minha&&TRU.minha.id===m.id?`<button class="btn soft sm" type="button" id="trFechar">Fechar mesa</button>`:eu>=0&&m.fase==="espera"?`<button class="btn soft sm" type="button" id="trLevantar">Levantar</button>`:""}</div>
+    </div>
+    <div class="tr-feltro n${N}">
+      ${m.lugares.map((_,i)=>lugar(i)).join("")}
+      <div class="tr-centro">${centro()}</div>
+    </div>
+    ${eu>=0&&h&&m.fase==="jogo"?`<div class="tr-eu">
+      ${pergunta}
+      <div class="tr-mao${op&&op.jogar&&!h.fim?" pode":""}">${minhas.map(c=>trCarta(c,{botao:true})).join("")||(h.fim?"":`<span class="status">Carregando suas cartas…</span>`)}</div>
+      <div class="tr-rodape">${op&&op.jogar&&!h.fim?`<span class="tr-sua">Sua vez</span>`:esperando}${acoes}${op&&op.mazo?`<button class="linkish" type="button" data-a="mazo">Ir ao mazo</button>`:""}</div>
+    </div>`:""}
+    <ol class="tr-log">${(m.log||[]).slice(-4).map(t=>`<li>${esc(String(t).slice(0,120))}</li>`).join("")}</ol>
+  </div>`;
+  box.querySelectorAll("[data-sentar]").forEach(b=>b.onclick=()=>trEnviar("sentar",+b.dataset.sentar));
+  box.querySelectorAll(".tr-mao.pode [data-c]").forEach(b=>b.onclick=()=>{ b.classList.add("indo"); trEnviar("jogar",b.dataset.c); });
+  box.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{ const a=b.dataset.a;
+    if(a==="mazo"&&!b.classList.contains("sure")){ b.classList.add("sure"); b.textContent="Confirmar: ir ao mazo"; setTimeout(()=>{b.classList.remove("sure");b.textContent="Ir ao mazo";},3000); return; }
+    trEnviar(a,b.dataset.k); });
+  $("#trVoltar").onclick=()=>{ TRU.ver=null; renderTruco(); };
+  $("#trComecar")&&($("#trComecar").onclick=()=>trEnviar("comecar"));
+  $("#trRevanche")&&($("#trRevanche").onclick=()=>trHost(myKey,"revanche"));
+  $("#trFechar")&&($("#trFechar").onclick=b=>{ const e=$("#trFechar"); if(!e.classList.contains("sure")){e.classList.add("sure");e.textContent="Confirmar: fechar";setTimeout(()=>{e.classList.remove("sure");e.textContent="Fechar mesa";},3000);return;} trFecharMesa(); });
+  $("#trLevantar")&&($("#trLevantar").onclick=()=>{ trEnviar("levantar"); TRU.ver=null; renderTruco(); });
+}
+
+
 /* tela */
 function vidFor(w){
   if(!w.video){const v=document.createElement("video");v.autoplay=true;v.playsInline=true;v.muted=true;if(w.stream)v.srcObject=w.stream;w.video=v;}
@@ -2555,6 +3062,7 @@ const CHANGELOG=[
   {data:"31/10/2026",itens:["Desenhar na live: o risco aparece para todos que estão assistindo e some em 3 s, com cor e espessura, e dá para desligar"]},
   {data:"31/10/2026",itens:["Caixinha “Ver reações” para desligar os emojis e fotos dos outros na live"]},
   {data:"31/10/2026",itens:["Visual mais limpo: controles da live em ícones, reações e ajustes num balão","Câmeras sempre embaixo da live, e botão das câmeras no menu com a contagem","Live com mais qualidade: mais bitrate, H.264 High e som em 192 kbps"]},
+  {data:"31/10/2026",itens:["Aba Truco gaudério: mesas de 1 contra 1 e 2 contra 2, com envido, flor, truco, retruco e vale quatro"]},
 ];
 const versionAt=i=>"v1."+String(i).padStart(2,"0");
 const VERSION=versionAt(CHANGELOG.length-1);
@@ -2627,12 +3135,13 @@ function joinRoom(priv){
     .on("broadcast",{event:"rtc"},({payload})=>onRtc(payload))
     .on("broadcast",{event:"reacao"},({payload})=>onReacao(payload))
     .on("broadcast",{event:"risco"},({payload})=>onRisco(payload))
+    .on("broadcast",{event:"truco"},({payload})=>onTruco(payload))
     .on("postgres_changes",{event:"*",schema:"public",table:"friends"},()=>later("f",loadFriends))
     .on("postgres_changes",{event:"*",schema:"public",table:"phrases"},()=>later("p",loadPhrases))
     .on("postgres_changes",{event:"*",schema:"public",table:"game"},()=>later("g",loadGame))
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"chat_messages"},pl=>addChat(pl&&pl.new))
     .subscribe(st=>{
-      if(st==="SUBSCRIBED"){$("#conn").textContent="Sincronizado";trackMe();}
+      if(st==="SUBSCRIBED"){$("#conn").textContent="Sincronizado";trackMe();if(!TRU.restaurado){TRU.restaurado=true;trRestaura();}}
       else if(st==="CHANNEL_ERROR"||st==="TIMED_OUT")$("#conn").textContent="Sem atualização ao vivo. Recarregue a página.";
     });
 }
