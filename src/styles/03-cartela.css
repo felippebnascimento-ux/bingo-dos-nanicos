@@ -1,0 +1,27 @@
+/* ---------- cartela ---------- */
+.card-wrap{background:var(--surface);border:1px solid var(--line);border-radius:28px;padding:clamp(14px,3vw,26px);box-shadow:0 24px 60px -30px var(--shadow)}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.card-head h2{font:800 22px var(--display);margin:0;letter-spacing:-.02em}
+.letters{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:6px}
+.letters span{text-align:center;font:800 clamp(18px,3.4vw,26px) var(--display);color:var(--accent-text)}
+.card{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.cell{position:relative;isolation:isolate;aspect-ratio:1;max-width:100%;background:var(--bg);border:0;border-radius:var(--r-md);font:600 13px/1.2 var(--body);padding:6px 5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;text-align:center;cursor:pointer;overflow:hidden;overflow-wrap:anywhere;transition:background .15s}
+.cell:hover{background:var(--surface-2)}
+.cell .t{position:relative;z-index:1;max-width:88%}
+.cell .tag{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:3px;flex-wrap:wrap;font:500 10px/1.15 var(--body);color:var(--muted)}
+/* carimbo de bingo */
+.cell::before{content:"";position:absolute;z-index:0;inset:5%;border-radius:50%;background:var(--mint);opacity:0;box-shadow:inset 0 0 0 4px rgba(255,255,255,.16), inset 0 -6px 14px rgba(0,0,0,.08);transform:translate(var(--dx,0px),var(--dy,0px)) scale(.4) rotate(var(--rot,0deg));transition:opacity .18s, transform .22s cubic-bezier(.3,1.6,.5,1)}
+.cell.on::before{opacity:.92;transform:translate(var(--dx,0px),var(--dy,0px)) scale(1) rotate(var(--rot,0deg))}
+.cell.on{color:var(--stamp-ink)}
+.cell.on .tag{color:var(--stamp-ink);opacity:.85}
+.cell.line::before{background:var(--accent)}
+.cell.line.on{color:var(--accent-ink)}
+.cell.line.on .tag{color:var(--accent-ink);opacity:.8}
+.cell.free{background:var(--sun-soft);color:var(--sun);font:800 13px var(--display);cursor:default;gap:2px}
+.cell.free svg{width:42%;height:auto}
+@media (max-width:520px){.pacts{flex-direction:column;align-items:stretch}.card,.letters{gap:4px}.cell{font-size:10.5px;padding:3px 2px;border-radius:9px}.cell .tag{font-size:8px}.cell .av.xs{width:14px;height:14px;font-size:6px}}
+.banner{display:flex;align-items:center;justify-content:center;gap:10px;font:800 22px var(--display);color:var(--accent-ink);background:var(--accent);border-radius:var(--r-md);padding:12px;margin-bottom:14px;letter-spacing:-.01em;animation:pop .4s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{from{transform:scale(.85);opacity:0}}
+.empty{display:grid;justify-items:center;gap:8px;text-align:center;color:var(--muted);padding:40px 16px;border:2px dashed var(--line);border-radius:28px}
+.empty b{font:700 16px var(--display);color:var(--ink)}
+

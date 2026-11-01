@@ -1,0 +1,18 @@
+/* ---------- reações com emoji na live ---------- */
+.reacts{display:flex;gap:3px;flex-wrap:wrap}
+.rbtn{border:0;background:rgba(250,249,246,.12);border-radius:99px;width:34px;height:34px;font-size:18px;line-height:1;padding:0;cursor:pointer;display:grid;place-items:center;transition:transform .1s,background .1s}
+.rbtn:hover{transform:scale(1.18);background:rgba(250,249,246,.26)}
+.rbtn:active{transform:scale(.9)}
+.rbtn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.react-layer{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:3}
+.react-layer.fixed{position:fixed;inset:auto auto 0 0;width:min(420px,45vw);height:70vh;z-index:60}
+.react-fly{position:absolute;bottom:16%;display:grid;justify-items:center;animation:react-sobe 2.8s ease-out forwards;will-change:transform,opacity}
+.react-fly b{font-size:40px;line-height:1;filter:drop-shadow(0 2px 5px rgba(0,0,0,.55))}
+.rbtn.foto{width:34px;padding:0;overflow:hidden;border-radius:10px;background:none;box-shadow:0 0 0 1.5px rgba(250,249,246,.35)}
+.rbtn.foto img{width:100%;height:100%;object-fit:cover;display:block}
+.react-fly.foto img{width:clamp(90px,14vw,150px);height:auto;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.5);display:block}
+.react-fly.foto{animation-duration:3.4s}
+.react-fly small{font:700 11px var(--body);color:#fff;background:rgba(0,0,0,.6);padding:1px 7px;border-radius:99px;margin-top:3px;white-space:nowrap}
+@keyframes react-sobe{0%{transform:translate(0,24px) scale(.5);opacity:0}12%{transform:translate(0,0) scale(1.2);opacity:1}24%{transform:translate(0,-12px) scale(1)}100%{transform:translate(var(--dx,0),-48vh) scale(.95);opacity:0}}
+@media (prefers-reduced-motion:reduce){.react-fly{animation:react-some 2.2s linear forwards}@keyframes react-some{0%,70%{opacity:1}100%{opacity:0}}}
+

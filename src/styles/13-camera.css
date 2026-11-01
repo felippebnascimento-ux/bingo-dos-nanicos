@@ -1,0 +1,30 @@
+/* ---------- câmera: substitui o personagem na lista da sala ---------- */
+.cam-row{display:flex;gap:6px;width:100%}
+.cam-btn{flex:1;min-width:0}
+.cam-btn[aria-pressed="true"]{background:var(--live);color:#fff}
+.cam-pip{flex:none;width:46px;padding:0}
+.av.cam{position:relative;background:#111;padding:0}
+.av.cam video{width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;pointer-events:none}
+.av.cam.mirror video{transform:scaleX(-1)}
+.cam-pop{position:absolute;left:0;right:0;bottom:0;height:44%;border:0;padding:0;margin:0;background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center;cursor:pointer;opacity:0;transition:opacity .12s}
+.cam-pop svg{width:12px;height:12px}
+.people li:hover .cam-pop,.cam-pop:focus-visible{opacity:1}
+.cam-pop:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+@media (hover:none){.cam-pop{opacity:.85}}
+@media (min-width:861px){
+  body.side-min .cam-row{flex-direction:column;align-items:center;width:auto}
+  body.side-min .cam-btn{width:46px;height:46px;padding:0;border-radius:50%;flex:none}
+  body.side-min .cam-btn .t{display:none}
+  body.side-min .cam-pip{width:46px;height:46px;border-radius:50%}
+}
+@media (max-width:860px){.cam-row .cam-pip{flex:0 0 auto;padding:10px 16px}}
+body.cams{padding:8px;background:#151613;min-height:100vh}
+.cams-grid{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));align-content:start}
+.cams-grid.one{grid-template-columns:1fr}
+.cam-tile{position:relative;aspect-ratio:1;border-radius:14px;overflow:hidden;background:#000}
+.cams-grid.one .cam-tile{aspect-ratio:auto;height:calc(100vh - 16px)}
+.cam-tile video{width:100%;height:100%;object-fit:cover;display:block}
+.cam-tile.mirror video{transform:scaleX(-1)}
+.cam-tile span{position:absolute;left:8px;bottom:8px;color:#fff;font:700 13px var(--body);text-shadow:0 1px 3px rgba(0,0,0,.9)}
+.cams-empty{color:#D9D5C8;font:500 14px var(--body);text-align:center;padding:30px 10px}
+

@@ -7,3 +7,13 @@ criar-logins.sql
 # lixo de sistema
 .DS_Store
 Thumbs.db
+
+# dependências e build (Next.js)
+/node_modules
+/.next/
+/out/
+/coverage
+*.tsbuildinfo
+next-env.d.ts
+.vercel
+npm-debug.log*

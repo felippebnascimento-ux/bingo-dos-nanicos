@@ -1,0 +1,27 @@
+/* ---------- limpeza: barra do vídeo só com ícones ---------- */
+.stage-bar{gap:8px;padding:34px 12px 10px;flex-wrap:nowrap}
+.stage-bar .who{font-size:14px;min-width:0}
+.stage-bar .q{font-size:11.5px;opacity:.65;white-space:nowrap}
+.sb-tools{display:flex;align-items:center;gap:4px;flex:none}
+.ib{position:relative;display:inline-grid;place-items:center;width:38px;height:38px;border:0;border-radius:12px;background:transparent;color:#FAF9F6;cursor:pointer;transition:background .12s}
+.ib:hover,.ib.on,.ib[aria-pressed="true"]{background:rgba(250,249,246,.16)}
+.ib[aria-pressed="true"]{color:var(--accent)}
+.ib:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.ib svg{width:20px;height:20px}
+.ib .fs-out{display:none}.ib.on .fs-in{display:none}.ib.on .fs-out{display:inline}
+.ib.vol{width:auto;padding:0 9px;gap:6px;grid-auto-flow:column}
+.ib.vol input{width:0;opacity:0;transition:width .15s,opacity .15s;padding:0;border:0;background:none;accent-color:var(--accent);margin:0}
+.ib.vol:hover input,.ib.vol:focus-within input{width:84px;opacity:1}
+@media (hover:none){.ib.vol input{width:70px;opacity:1}}
+.pop-wrap{position:relative}
+.pop{position:absolute;right:-6px;bottom:calc(100% + 10px);background:rgba(24,25,22,.94);backdrop-filter:blur(8px);border:1px solid rgba(250,249,246,.12);border-radius:14px;padding:8px;box-shadow:0 12px 30px rgba(0,0,0,.45);z-index:6}
+.pop[hidden]{display:none}
+.pop .reacts{display:grid;grid-template-columns:repeat(5,38px);gap:4px}
+.pop .rbtn{width:38px;height:38px;font-size:20px;background:transparent}
+.pop .rbtn:hover{background:rgba(250,249,246,.14)}
+.pop .rbtn.foto{width:38px;border-radius:10px}
+.draw-pop{display:flex;gap:10px;align-items:center;white-space:nowrap;right:-48px;background:rgba(24,25,22,.94)}
+.opt-pop{display:grid;gap:10px;min-width:210px;padding:12px 14px;color:#FAF9F6}
+.opt-pop label{display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer;white-space:nowrap}
+.opt-pop input{accent-color:var(--accent);width:16px;height:16px;margin:0}
+@media (max-width:640px){.stage-bar .q{display:none}.ib{width:34px;height:34px}.stage-bar{padding:28px 8px 8px}.stage-bar .who{font-size:13px}}
