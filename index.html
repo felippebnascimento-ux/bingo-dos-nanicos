@@ -378,7 +378,7 @@ button.nanico:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px
 :root{--side-w:320px}
 .app{grid-template-columns:var(--side-w) minmax(0,1fr)}
 .wm{left:var(--side-w)}
-body.side-min{--side-w:96px}
+body.side-min{--side-w:112px}
 @media (max-width:860px){.app{grid-template-columns:minmax(0,1fr)}.wm{left:0}}
 /* alça de recolher: escondida no meio da borda direita do menu, aparece ao passar o mouse (aberto ou recolhido) */
 .side{z-index:6}
@@ -400,7 +400,10 @@ body.side-min .side-toggle{transform:translateY(-50%) scaleX(-1)}
   body.side-min .side{padding:14px 10px 18px;align-items:center;gap:14px}
   body.side-min .brand{display:none}
   body.side-min .brand-mini{display:block;width:46px;height:46px;flex:none}
-  body.side-min .room{flex:1;min-height:0;overflow:auto;width:100%}
+  body.side-min .room{flex:1;min-height:0;overflow-x:hidden;overflow-y:auto;width:calc(100% + 16px);margin:0 -8px;scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--muted) 55%,transparent) transparent;scrollbar-gutter:stable both-edges}
+  body.side-min .room::-webkit-scrollbar{width:6px}
+  body.side-min .room::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--muted) 55%,transparent);border-radius:99px}
+  body.side-min .room::-webkit-scrollbar-track{background:transparent}
   body.side-min .room h3{display:none}
   body.side-min .people{max-height:none;justify-items:center;gap:10px;overflow:visible;padding:6px 0}
   body.side-min .people li{padding:0;background:none;border-radius:50%}
@@ -409,7 +412,7 @@ body.side-min .side-toggle{transform:translateY(-50%) scaleX(-1)}
   body.side-min .people li.me .av,body.side-min .people li.me .u{outline:2px solid var(--accent);outline-offset:2px}
   body.side-min .people li.live::after{content:"";position:absolute;right:-1px;top:-1px;width:15px;height:15px;border-radius:50%;background:var(--live);box-shadow:0 0 0 2.5px var(--surface)}
   body.side-min .nav{width:100%}
-  body.side-min .nav button{justify-content:center;padding:11px 0}
+  body.side-min .nav button{justify-content:center;padding:8px 0}
   body.side-min .nav .t,body.side-min .nav .count:not(.on){display:none}
   body.side-min .nav .count.on{position:absolute;top:2px;right:4px;font-size:10px}
   body.side-min .side-foot{display:none}
@@ -488,11 +491,17 @@ body.pip .mcell{font-size:11.5px}
 .off-why{font-size:12px;font-style:italic;white-space:nowrap}
 
 /* ---------- easter egg: das 18h às 22h ---------- */
-.fome{position:fixed;z-index:40;right:max(20px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));display:inline-flex;align-items:center;gap:8px;padding:13px 20px 13px 16px;border-radius:99px;background:var(--live);color:#fff;font:800 15px var(--display);letter-spacing:-.01em;text-decoration:none;box-shadow:0 10px 26px -6px color-mix(in srgb,var(--live) 70%,transparent),0 0 0 4px color-mix(in srgb,var(--live) 22%,transparent);transform-origin:70% 100%;animation:fome-pula 3.2s ease-in-out infinite}
+.fome-wrap{position:fixed;z-index:40;right:max(20px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+.fome-wrap[hidden]{display:none}
+.fome{position:relative;display:inline-flex;align-items:center;gap:8px;padding:13px 20px 13px 16px;border-radius:99px;background:var(--live);color:#fff;font:800 15px var(--display);letter-spacing:-.01em;text-decoration:none;box-shadow:0 10px 26px -6px color-mix(in srgb,var(--live) 70%,transparent),0 0 0 4px color-mix(in srgb,var(--live) 22%,transparent);transform-origin:70% 100%;animation:fome-pula 3.2s ease-in-out infinite}
 .fome:hover{filter:brightness(1.08);animation-play-state:paused}
 .fome:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
 @keyframes fome-pula{0%,78%,100%{transform:none}82%{transform:translateY(-6px) rotate(-6deg)}86%{transform:translateY(0) rotate(5deg)}90%{transform:translateY(-3px) rotate(-3deg)}94%{transform:none}}
-@media (max-width:860px){.fome{bottom:calc(16px + env(safe-area-inset-bottom,0px));right:16px;padding:11px 16px 11px 13px;font-size:14px}}
+@media (max-width:860px){.fome-wrap{bottom:calc(16px + env(safe-area-inset-bottom,0px));right:16px}.fome{padding:11px 16px 11px 13px;font-size:14px}}
+.fome-x{position:absolute;top:-9px;right:-7px;z-index:1;width:24px;height:24px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;background:var(--ink);color:var(--surface);cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.35);opacity:.9}
+.fome-x:hover{opacity:1;transform:scale(1.08)}
+.fome-x:focus-visible{outline:2.5px solid var(--live);outline-offset:2px}
+.fome-x svg{width:12px;height:12px}
 
 /* controles do vídeo somem sozinhos (aparecem ao mexer o mouse) */
 .stage-bar{transition:opacity .25s}
@@ -818,10 +827,13 @@ body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live
   </form>
 </div>
 
-<a class="fome" id="fome" href="https://heim.ratskeller.com.br" target="_blank" rel="noopener" hidden>
+<div class="fome-wrap" id="fome" hidden>
+<a class="fome" href="https://heim.ratskeller.com.br" target="_blank" rel="noopener">
   <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11h16a8 8 0 0 1-16 0z"/><path d="M5 11c0-3.5 3.1-6 7-6s7 2.5 7 6"/><path d="M3 15h18M9 7.5v.01M12 6.5v.01M15 7.5v.01"/></svg>
   Estou com fome
 </a>
+<button class="fome-x" id="fomeX" type="button" aria-label="Tirar o botão Estou com fome por hoje" title="Tirar por hoje"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+</div>
 <datalist id="champs"></datalist>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -2146,6 +2158,8 @@ const CHANGELOG=[
   {data:"31/10/2026",itens:["Perfil mostra o nick de cada um embaixo do nome"]},
   {data:"31/10/2026",itens:["Escalação automática acerta a lane de cada um pelo campeão e pelos feitiços"]},
   {data:"31/10/2026",itens:["Rostos e câmeras maiores na lista da sala, com o menu aberto ou recolhido"]},
+  {data:"31/10/2026",itens:["Botão X para esconder o “Estou com fome” até o dia seguinte"]},
+  {data:"31/10/2026",itens:["Menu recolhido mais largo, com barra de rolagem fina e sem cortar os rostos"]},
 ];
 const versionAt=i=>"v1."+String(i).padStart(2,"0");
 const VERSION=versionAt(CHANGELOG.length-1);
@@ -2162,7 +2176,10 @@ $("#logGate").addEventListener("click",e=>{if(e.target.id==="logGate")closeLog()
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#logGate").hidden)closeLog();});
 
 /* easter egg: "Estou com fome" aparece das 18h às 22h (horário de quem está vendo) */
-function checkFome(){ const h=new Date().getHours(); $("#fome").hidden=!(h>=18&&h<22); }
+/* o X esconde o botão até o dia seguinte (fica salvo no navegador) */
+const hojeStr=()=>{const d=new Date();return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;};
+function checkFome(){ const h=new Date().getHours(); let fechado=false; try{fechado=localStorage.getItem("fome-fechado")===hojeStr();}catch{} $("#fome").hidden=!(h>=18&&h<22)||fechado; }
+$("#fomeX").onclick=()=>{ try{localStorage.setItem("fome-fechado",hojeStr());}catch{} $("#fome").hidden=true; };
 checkFome(); setInterval(checkFome,60000);
 
 $("#sideToggle").onclick=()=>setSideMin(!document.body.classList.contains("side-min"));
