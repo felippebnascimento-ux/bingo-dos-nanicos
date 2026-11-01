@@ -635,6 +635,25 @@ body.cams{padding:8px;background:#151613;min-height:100vh}
 .mont-item .tx .tag{display:flex;align-items:center;gap:3px;flex-wrap:wrap;font:500 11.5px var(--body);color:var(--muted)}
 .mont-foot{justify-content:space-between;margin-top:14px}
 
+/* ---------- desenhar na live ---------- */
+.draw-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;touch-action:none}
+.stage-bar,.unmute{z-index:4}
+.stage.drawing .draw-canvas{pointer-events:auto;cursor:crosshair}
+.stage.drawing.idle{cursor:crosshair}
+.draw-tools{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
+.draw-btn{display:inline-flex;align-items:center;gap:6px}
+.draw-btn[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.draw-opts{display:inline-flex;align-items:center;gap:8px;background:rgba(0,0,0,.35);padding:4px 8px;border-radius:99px}
+.draw-opts[hidden]{display:none}
+.draw-cores,.draw-esps{display:inline-flex;gap:4px;align-items:center}
+.draw-cor{width:20px;height:20px;border-radius:50%;border:2px solid rgba(255,255,255,.55);padding:0;cursor:pointer}
+.draw-cor[aria-checked="true"]{border-color:#fff;box-shadow:0 0 0 2px rgba(0,0,0,.5),0 0 0 4px #fff}
+.draw-esp{width:26px;height:26px;border-radius:50%;border:0;background:rgba(250,249,246,.14);display:grid;place-items:center;cursor:pointer;padding:0}
+.draw-esp i{display:block;border-radius:50%;background:#fff}
+.draw-esp[aria-checked="true"]{background:rgba(250,249,246,.4)}
+.draw-ver{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.draw-ver input{accent-color:var(--accent);width:15px;height:15px;margin:0;cursor:pointer}
+
 /* quem está ao vivo na lista da sala é clicável */
 .people li[data-live]{cursor:pointer}
 .people li[data-live]:hover{background:var(--surface-2)}
@@ -771,6 +790,7 @@ body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live
               <div class="stage-slot" id="stageSlot"></div>
               <div class="stage-empty" id="stageEmpty"></div>
               <button class="btn unmute" id="unmute" hidden>Ativar som</button>
+              <canvas class="draw-canvas" id="drawCanvas" aria-hidden="true"></canvas>
               <div class="react-layer" id="reactLayer" aria-hidden="true"></div>
               <div class="stage-bar" id="stageBar" hidden>
                 <span class="who" id="stageWho"></span>
@@ -779,6 +799,14 @@ body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live
                 <span class="reacts" id="reacts" role="group" aria-label="Reagir na live"></span>
                 <label class="vol" for="vol">Volume <input type="range" id="vol" min="0" max="1" step="0.05" value="1"></label>
                 <button class="sbtn" id="pipBtn" type="button">Janela flutuante</button>
+                <span class="draw-tools">
+                  <button class="sbtn draw-btn" id="drawBtn" type="button" aria-pressed="false" title="Desenhar na tela (todo mundo que está assistindo vê)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11a2.1 2.1 0 0 0-3-3L5 16z"/><path d="M14 6l3 3"/></svg>Desenhar</button>
+                  <span class="draw-opts" id="drawOpts" hidden>
+                    <span class="draw-cores" id="drawCores" role="radiogroup" aria-label="Cor do desenho"></span>
+                    <span class="draw-esps" id="drawEsps" role="radiogroup" aria-label="Espessura"></span>
+                  </span>
+                  <label class="draw-ver"><input type="checkbox" id="drawVer" checked>Ver desenhos</label>
+                </span>
                 <button class="sbtn" id="fsBtn" type="button">Tela cheia</button>
               </div>
             </div>
@@ -2062,6 +2090,105 @@ function mostrarReacao(i,nome,alvo){
   el.addEventListener("animationend",()=>el.remove()); setTimeout(()=>el.remove(),4000);
 }
 
+/* ---------- desenhar na live ----------
+   Quem assiste liga o lápis e risca em cima do vídeo. Os pontos vão pela sala, medidos em relação à
+   imagem do vídeo (0 a 1), então o risco cai no mesmo lugar para todo mundo, qualquer que seja o
+   tamanho da tela. Cada risco some ~3 s depois do último ponto. */
+const DCORES=["#ff3b30","#ffd60a","#34c759","#0a84ff","#ffffff","#ff2d95"], DNOMES=["vermelho","amarelo","verde","azul","branco","rosa"];
+const DESP=[3,6,12], DESP_NOMES=["fina","média","grossa"];            /* espessura por 1000 px de vídeo */
+const DESENHO={on:false,ver:true,cor:0,esp:1,traco:null,lote:[],t:0,riscos:new Map(),raf:0,hits:new Map()};
+try{ const d=JSON.parse(localStorage.getItem("desenho")||"{}");
+  if(Number.isInteger(d.cor)&&d.cor>=0&&d.cor<DCORES.length)DESENHO.cor=d.cor;
+  if(Number.isInteger(d.esp)&&d.esp>=0&&d.esp<DESP.length)DESENHO.esp=d.esp;
+  if(d.ver===false)DESENHO.ver=false; }catch{}
+const salvaDesenho=()=>{ try{localStorage.setItem("desenho",JSON.stringify({cor:DESENHO.cor,esp:DESENHO.esp,ver:DESENHO.ver}));}catch{} };
+function drawUi(){
+  $("#drawCores").innerHTML=DCORES.map((c,i)=>`<button type="button" class="draw-cor" role="radio" data-c="${i}" aria-checked="${DESENHO.cor===i}" aria-label="${DNOMES[i]}" style="background:${c}"></button>`).join("");
+  $("#drawEsps").innerHTML=DESP.map((w,i)=>`<button type="button" class="draw-esp" role="radio" data-e="${i}" aria-checked="${DESENHO.esp===i}" aria-label="${DESP_NOMES[i]}" title="${DESP_NOMES[i]}"><i style="width:${4+i*4}px;height:${4+i*4}px"></i></button>`).join("");
+  $("#drawCores").querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{DESENHO.cor=+b.dataset.c;salvaDesenho();drawUi();});
+  $("#drawEsps").querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{DESENHO.esp=+b.dataset.e;salvaDesenho();drawUi();});
+  $("#drawBtn").setAttribute("aria-pressed",String(DESENHO.on)); $("#drawOpts").hidden=!DESENHO.on;
+  $("#stage").classList.toggle("drawing",DESENHO.on); $("#drawVer").checked=DESENHO.ver;
+}
+$("#drawBtn").onclick=()=>{ DESENHO.on=!DESENHO.on; if(DESENHO.on&&!DESENHO.ver){DESENHO.ver=true;salvaDesenho();} drawUi(); };
+$("#drawVer").onchange=e=>{ DESENHO.ver=e.target.checked; salvaDesenho(); if(!DESENHO.ver){DESENHO.on=false; for(const [k,r] of DESENHO.riscos) if(!r.meu)DESENHO.riscos.delete(k);} drawUi(); pintar(); };
+drawUi();
+/* onde a imagem do vídeo está dentro do palco (o vídeo fica centralizado, com faixas pretas) */
+function areaVideo(){
+  const st=$("#stage").getBoundingClientRect(), w=LIVE.main&&LIVE.watching.get(LIVE.main), v=w&&w.video;
+  const vw=v&&v.videoWidth||16, vh=v&&v.videoHeight||9, k=Math.min(st.width/vw,st.height/vh);
+  return {x:(st.width-vw*k)/2,y:(st.height-vh*k)/2,w:vw*k,h:vh*k,sw:st.width,sh:st.height};
+}
+const cv=$("#drawCanvas");
+function pontoDe(e){ const r=cv.getBoundingClientRect(), a=areaVideo(); return [Math.round(((e.clientX-r.left-a.x)/a.w)*1000)/1000,Math.round(((e.clientY-r.top-a.y)/a.h)*1000)/1000]; }
+function enviaLote(fim){
+  const t=DESENHO.traco; if(!t||!room||(!DESENHO.lote.length&&!fim))return;
+  const pts=DESENHO.lote.splice(0,60);
+  room.send({type:"broadcast",event:"risco",payload:{alvo:t.alvo,id:t.id,c:t.c,w:t.w,pts,fim:!!fim,from:myKey}}).catch(()=>{});
+}
+cv.addEventListener("pointerdown",e=>{
+  if(!DESENHO.on||!LIVE.main)return; e.preventDefault(); cv.setPointerCapture(e.pointerId);
+  const id=newId().replace(/-/g,"").slice(0,16), p=pontoDe(e);
+  DESENHO.traco={id,alvo:LIVE.main,c:DESENHO.cor,w:DESENHO.esp}; DESENHO.lote=[p];
+  DESENHO.riscos.set(myKey+":"+id,{alvo:LIVE.main,c:DESENHO.cor,w:DESENHO.esp,pts:[p],nome:myName,ult:Date.now(),meu:true});
+  pintar();
+});
+cv.addEventListener("pointermove",e=>{
+  const t=DESENHO.traco; if(!t)return;
+  const r=DESENHO.riscos.get(myKey+":"+t.id); if(!r)return;
+  const p=pontoDe(e), q=r.pts[r.pts.length-1]; if(Math.abs(p[0]-q[0])+Math.abs(p[1]-q[1])<.003)return;
+  if(r.pts.length>=1500)return;
+  r.pts.push(p); r.ult=Date.now(); DESENHO.lote.push(p);
+  if(Date.now()-DESENHO.t>60){DESENHO.t=Date.now();enviaLote(false);}
+  pintar();
+});
+const fimTraco=()=>{ if(!DESENHO.traco)return; enviaLote(true); DESENHO.traco=null; DESENHO.lote=[]; };
+cv.addEventListener("pointerup",fimTraco); cv.addEventListener("pointercancel",fimTraco); cv.addEventListener("lostpointercapture",fimTraco);
+function onRisco(m){
+  if(!DESENHO.ver||!m||typeof m!=="object"||typeof m.from!=="string"||m.from===myKey||typeof m.alvo!=="string")return;
+  if(typeof m.id!=="string"||!/^[a-z0-9]{4,40}$/i.test(m.id))return;
+  const c=Number(m.c), w=Number(m.w); if(!Number.isInteger(c)||c<0||c>=DCORES.length||!Number.isInteger(w)||w<0||w>=DESP.length)return;
+  if(!Array.isArray(m.pts)||m.pts.length>60)return;
+  const pts=m.pts.filter(p=>Array.isArray(p)&&p.length===2&&p.every(n=>typeof n==="number"&&n>=-.1&&n<=1.1));
+  const p=online.find(x=>x.key===m.from); if(!p)return;
+  const agora=Date.now(), h=(DESENHO.hits.get(m.from)||[]).filter(t=>agora-t<2000); if(h.length>=60)return;   /* anti-flood */
+  h.push(agora); DESENHO.hits.set(m.from,h);
+  if(m.alvo!==LIVE.main)return;
+  const k=m.from+":"+m.id; let r=DESENHO.riscos.get(k);
+  if(!r){ if(DESENHO.riscos.size>80)return; const f=friendOf(p.fid); r={alvo:m.alvo,c,w,pts:[],nome:f?f.name:p.name,ult:agora}; DESENHO.riscos.set(k,r); }
+  if(r.pts.length+pts.length<=1500)r.pts.push(...pts);
+  r.ult=agora; pintar();
+}
+/* desenha tudo e vai apagando: cada risco dura ~3 s depois do último ponto (some nos últimos 0,6 s) */
+function pintar(){
+  if(DESENHO.raf)return;
+  DESENHO.raf=requestAnimationFrame(()=>{
+    DESENHO.raf=0;
+    const dpr=Math.min(2,window.devicePixelRatio||1), a=areaVideo();
+    const W=Math.round(a.sw*dpr), H=Math.round(a.sh*dpr); if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}
+    const g=cv.getContext("2d"); g.clearRect(0,0,W,H);
+    const agora=Date.now(); let vivos=0;
+    for(const [k,r] of DESENHO.riscos){
+      const idade=agora-r.ult; if(idade>3000||r.alvo!==LIVE.main||(!DESENHO.ver&&!r.meu)){DESENHO.riscos.delete(k);continue;}
+      if(!r.pts.length)continue; vivos++;
+      g.globalAlpha=idade<2400?1:1-(idade-2400)/600;
+      const X=p=>(a.x+p[0]*a.w)*dpr, Y=p=>(a.y+p[1]*a.h)*dpr;
+      g.lineCap="round"; g.lineJoin="round"; g.lineWidth=Math.max(1.5,DESP[r.w]*a.w/1000)*dpr;
+      g.strokeStyle=DCORES[r.c]; g.shadowColor="rgba(0,0,0,.55)"; g.shadowBlur=3*dpr;
+      g.beginPath(); g.moveTo(X(r.pts[0]),Y(r.pts[0]));
+      if(r.pts.length===1)g.lineTo(X(r.pts[0])+.1,Y(r.pts[0]));
+      for(let i=1;i<r.pts.length;i++)g.lineTo(X(r.pts[i]),Y(r.pts[i]));
+      g.stroke();
+      if(!r.meu){ g.shadowBlur=0; g.font=`700 ${11*dpr}px Onest, sans-serif`; const tx=X(r.pts[0])+8*dpr, ty=Y(r.pts[0])-8*dpr, tw=g.measureText(r.nome).width;
+        g.fillStyle="rgba(0,0,0,.6)"; g.fillRect(tx-4*dpr,ty-11*dpr,tw+8*dpr,15*dpr); g.fillStyle="#fff"; g.fillText(r.nome,tx,ty); }
+    }
+    g.globalAlpha=1;
+    if(vivos||DESENHO.traco)pintar();
+  });
+}
+addEventListener("resize",()=>pintar());
+document.addEventListener("fullscreenchange",()=>setTimeout(pintar,60));
+
 /* tela */
 function vidFor(w){
   if(!w.video){const v=document.createElement("video");v.autoplay=true;v.playsInline=true;v.muted=true;if(w.stream)v.srcObject=w.stream;w.video=v;}
@@ -2320,6 +2447,7 @@ const CHANGELOG=[
   {data:"31/10/2026",itens:["Montar a própria cartela escolhendo as nanicadas que valem para a escalação"]},
   {data:"31/10/2026",itens:["Arte nova do Gamer, Grito, Veião e Pin, e foto nova da turma"]},
   {data:"31/10/2026",itens:["Reações com foto na live: os Picarétezzi"]},
+  {data:"31/10/2026",itens:["Desenhar na live: o risco aparece para todos que estão assistindo e some em 3 s, com cor e espessura, e dá para desligar"]},
 ];
 const versionAt=i=>"v1."+String(i).padStart(2,"0");
 const VERSION=versionAt(CHANGELOG.length-1);
@@ -2391,6 +2519,7 @@ function joinRoom(priv){
     })
     .on("broadcast",{event:"rtc"},({payload})=>onRtc(payload))
     .on("broadcast",{event:"reacao"},({payload})=>onReacao(payload))
+    .on("broadcast",{event:"risco"},({payload})=>onRisco(payload))
     .on("postgres_changes",{event:"*",schema:"public",table:"friends"},()=>later("f",loadFriends))
     .on("postgres_changes",{event:"*",schema:"public",table:"phrases"},()=>later("p",loadPhrases))
     .on("postgres_changes",{event:"*",schema:"public",table:"game"},()=>later("g",loadGame))
