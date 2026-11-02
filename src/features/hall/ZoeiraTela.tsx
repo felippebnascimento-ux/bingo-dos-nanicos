@@ -80,7 +80,7 @@ export function MenuBoneco({ b, vb }: { b: Boneco; vb: Caixa2D }) {
     caixa.current?.querySelector<HTMLButtonElement>("button")?.focus();
     const fora = (e: PointerEvent) => {
       const alvo = e.target as Element | null;
-      if (!caixa.current?.contains(alvo) && !alvo?.closest?.(".boneco-toque")) abrirMenu(null);
+      if (!caixa.current?.contains(alvo) && !alvo?.closest?.(".boneco-toque, .perfil-cartao")) abrirMenu(null);
     };
     const esc = (e: KeyboardEvent) => e.key === "Escape" && abrirMenu(null);
     document.addEventListener("pointerdown", fora);

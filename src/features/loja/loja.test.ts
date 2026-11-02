@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { balanco, doGrupo, equipados, equipavel, lerItem, podeComprar, progressoCompra, textoConsumo, type ItemLoja } from "./loja";
+import { balanco, doGrupo, equipados, equipavel, lerItem, podeComprar, progressoCompra, restanteEfeito, textoConsumo, type ItemLoja } from "./loja";
 
 const it_ = (id: string, espaco: ItemLoja["espaco"], preco: number, ordem = 0): ItemLoja => ({ id, nome: id, descricao: "", espaco, preco, dados: {}, ordem });
 const ITENS = [it_("cadeira-trono", "cadeira", 1500, 2), it_("cadeira-gamer", "cadeira", 600, 1), it_("cigarro", "consumivel", 15), it_("escudo", "escudo", 400), it_("titulo-tilt", "titulo", 300)];
@@ -40,7 +40,16 @@ describe("loja", () => {
     expect(balanco("fumar", 1000)).toBe(0);
     expect(Math.abs(balanco("tremer", 100))).toBeLessThanOrEqual(3);
     expect(balanco("tonto", 1000)).toBe(0);
-    expect(balanco("tonto", 99999)).toBe(0);
+    expect(balanco("tonto", 99_999_999)).toBe(0);
+    /* o efeito repete: a tremedeira volta no ciclo seguinte e para depois do fim */
+    expect(Math.abs(balanco("tremer", 14_000 + 100))).toBeGreaterThan(0);
+    expect(balanco("tremer", 180_000 + 100)).toBe(0);
+  });
+
+  it("tempo que falta do efeito", () => {
+    expect(restanteEfeito("beber", 0)).toBe("2:00");
+    expect(restanteEfeito("beber", 115_500)).toBe("0:05");
+    expect(restanteEfeito("beber", 120_000)).toBe("");
   });
 
   it("texto do aviso", () => {

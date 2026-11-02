@@ -19,6 +19,7 @@ import { friendOf, getApp, setApp, useApp } from "@/lib/store";
 import type { Friend } from "@/lib/tipos";
 import { AtributosFicha } from "./AtributosFicha";
 import { NoSitio } from "./NoSitio";
+import { EmblemasFicha } from "@/features/emblemas/EmblemasFicha";
 import { Quarto, type EquipQuarto } from "./Quarto";
 
 /** Como deixar as horas da Steam visíveis (usado aqui e no Perfil). */
@@ -126,6 +127,7 @@ function FichaAberta({ f }: { f: Friend }) {
             </button>
           </div>
           <NoSitio fid={f.id} eu={eu} />
+          <EmblemasFicha fid={f.id} />
           <Links f={f} />
           <AtributosFicha f={f} eu={eu} />
           {eu && (

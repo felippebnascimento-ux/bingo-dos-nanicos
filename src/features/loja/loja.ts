@@ -91,16 +91,31 @@ export function podeComprar(it: ItemLoja, tenho: number, saldo: number | null): 
 }
 
 /** Quanto dura a animação de cada consumível no Sítio. */
+/** Um ciclo da animação (um gole, um trago, uma tremedeira); ela se repete enquanto o efeito dura. */
 export const DURA_ANIM: Readonly<Record<Anim, number>> = { fumar: 6000, charuto: 7000, beber: 4500, tremer: 5000, tonto: 7000 };
+/** Quanto o efeito dura no boneco (ms): o cigarrinho dura 3 min, o charuto 5, a bebida 2 a 4. */
+export const DURA_EFEITO: Readonly<Record<Anim, number>> = { fumar: 180_000, charuto: 300_000, beber: 120_000, tremer: 180_000, tonto: 240_000 };
+/** Entre um ciclo e outro do tremer e do tonto, o boneco fica parado um pouco (a tremedeira vem e vai). */
+const PAUSA: Partial<Record<Anim, number>> = { tremer: 9000, tonto: 6000 };
 
-/** Balanço do boneco (graus) durante a animação: tremer é rápido e curto, tonto é largo e lento. */
+/** Balanço do boneco (graus) durante o efeito: tremer é rápido e curto, tonto é largo e lento; repete até acabar. */
 export function balanco(anim: Anim, t: number) {
-  if (anim === "tremer" && t < DURA_ANIM.tremer) return Math.sin(t / 22) * 3;
-  if (anim === "tonto" && t > 1800 && t < DURA_ANIM.tonto) {
-    const k = (t - 1800) / (DURA_ANIM.tonto - 1800);
+  if (t < 0 || t >= DURA_EFEITO[anim]) return 0;
+  const ciclo = DURA_ANIM[anim] + (PAUSA[anim] ?? 0);
+  const c = t % ciclo;
+  if (anim === "tremer" && c < DURA_ANIM.tremer) return Math.sin(c / 22) * 3;
+  if (anim === "tonto" && c > 1800 && c < DURA_ANIM.tonto) {
+    const k = (c - 1800) / (DURA_ANIM.tonto - 1800);
     return Math.sin(k * Math.PI * 5) * 10 * (1 - k);
   }
   return 0;
+}
+
+/** "2:05" que falta do efeito (vazio quando acabou). */
+export function restanteEfeito(anim: Anim, t: number) {
+  const s = Math.ceil((DURA_EFEITO[anim] - t) / 1000);
+  if (s <= 0) return "";
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
 /** Texto do aviso no canto do Sítio ("Pitoco acendeu um cigarrinho"). */

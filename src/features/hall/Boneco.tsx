@@ -1,5 +1,5 @@
 /* Um boneco no hall: o quadro da spritesheet (ou o rosto num pino) e a placa com o nome.
-   Tocar no boneco de outra pessoa abre o menu (ver ficha, chinelada, torta) e não anda; o meu não abre nada.
+   Tocar num boneco abre o cartão do perfil no canto (e, no de outra pessoa, o menu de chinelada e torta); não anda.
    `rot` é o cambaleio de quem levou uma chinelada (graus). */
 import { memo, type CSSProperties } from "react";
 import { Avatar } from "@/components/ui/Avatar";
@@ -40,14 +40,14 @@ export const Boneco = memo(function Boneco({ b, f, eu, z, vb, rot = 0, enfeite }
     <div className={"boneco" + (eu ? " eu" : "") + (rot ? " balanca" : "") + (enfeite ? " chapeu-" + enfeite : "")} style={caixa}>
       <span className="boneco-nome">{b.name}</span>
       {enfeite && <Chapeu tipo={enfeite} />}
-      {eu || !f.id ? (
+      {!f.id ? (
         corpo
       ) : (
         <button
           type="button"
           className="boneco-toque"
-          aria-label={`${b.name}, abrir opções`}
-          aria-haspopup="menu"
+          aria-label={eu ? "Você: abrir o seu perfil" : `${b.name}, abrir opções`}
+          aria-haspopup={eu ? undefined : "menu"}
           onClick={(e) => {
             e.stopPropagation();
             abrirMenu(b.key);

@@ -69,8 +69,9 @@
 .consumo.bebe{width:2.1%}
 .consumo-item{display:block;transform-origin:50% 80%;filter:drop-shadow(0 1px 1px var(--shadow))}
 .consumo-item svg{display:block;width:100%;height:auto}
-.consumo.bebe .consumo-item{animation:gole var(--dura,4500ms) ease-in-out both}
-.consumo.fuma .consumo-item{animation:trago var(--dura,6000ms) ease-in-out both}
+/* o gole e o trago se repetem enquanto o efeito dura */
+.consumo.bebe .consumo-item{animation:gole var(--dura,4500ms) ease-in-out infinite}
+.consumo.fuma .consumo-item{animation:trago var(--dura,6000ms) ease-in-out infinite}
 @keyframes gole{
   0%{opacity:0;transform:translate(60%,190%) rotate(0)}
   8%{opacity:1;transform:translate(60%,190%) rotate(0)}

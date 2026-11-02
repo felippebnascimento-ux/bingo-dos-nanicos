@@ -432,3 +432,10 @@
 .hall-placa-churrasco{border-color:var(--live)}
 .hall-placa-churrasco.pegou{cursor:default;opacity:.85;border-color:var(--accent)}
 .hall-placa-churrasco:disabled:hover{background:color-mix(in srgb,var(--accent-ink) 90%,transparent)}
+
+/* contador do meu efeito (cigarrinho, latinha…), embaixo no meio do Sítio */
+.hall-efeito{left:50%;bottom:16px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:6px 14px 6px 8px;border-radius:99px;font-size:13px;white-space:nowrap}
+.hall-efeito b{font:700 14px var(--display);font-variant-numeric:tabular-nums}
+.hall-efeito-item{display:block;width:14px}
+.hall-efeito-item svg{display:block;width:100%;height:auto;max-height:28px}
+@media (max-width:760px){.hall-efeito{transform:none;align-self:center}}

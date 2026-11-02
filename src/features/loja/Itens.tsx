@@ -6,8 +6,9 @@
  */
 import type { Boneco } from "@/features/hall/bonecos";
 import { tela, type Caixa2D } from "@/features/hall/hall";
+import { useApp } from "@/lib/store";
 import type { ItemLoja } from "./loja";
-import { DURA_ANIM } from "./loja";
+import { DURA_ANIM, restanteEfeito } from "./loja";
 import { useConsumo } from "./consumoSala";
 import { useEquipados, useLoja } from "./lojaDados";
 
@@ -117,6 +118,34 @@ export function ConsumoCamada({ bonecos, vb }: { bonecos: Boneco[]; vb: Caixa2D 
     </div>
   );
 }
+
+/** O efeito que um nanico está sob agora ("Latinha gelada · 1:42"), ou nada. */
+export function useEfeitoDe(fid: string | null | undefined) {
+  const c = useConsumo((s) => s.ativos.find((x) => x.fid === fid));
+  const agora = useConsumo((s) => s.agora);
+  const itens = useLoja((s) => s.itens);
+  if (!c) return null;
+  const falta = restanteEfeito(c.anim, Math.max(agora, c.inicio) - c.inicio);
+  if (!falta) return null;
+  return { id: c.item, nome: itens?.find((i) => i.id === c.item)?.nome ?? "Efeito", falta };
+}
+
+/** Contador do MEU efeito, embaixo no meio do Sítio. */
+export function EfeitoCanto() {
+  const myFid = useApp((s) => s.myFid);
+  const e = useEfeitoDe(myFid);
+  if (!e) return null;
+  return (
+    <div className="hall-canto hall-efeito" role="status" aria-label={`Seu efeito: ${e.nome}, faltam ${e.falta}`}>
+      <span className="hall-efeito-item" aria-hidden="true">
+        <DesenhoItem id={e.id} />
+      </span>
+      <span>{e.nome}</span>
+      <b>{e.falta}</b>
+    </div>
+  );
+}
+
 
 /** Título comprado na loja, embaixo do nome ("Rei do tilt"). */
 export function TituloNanico({ userId }: { userId: string | null | undefined }) {

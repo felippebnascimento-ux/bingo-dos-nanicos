@@ -17,9 +17,10 @@ import { iniciarGanhos } from "./ganhos";
 import { cambalear } from "./zoeira";
 import { iniciarZoeira, useZoeira } from "./zoeiraSala";
 import { MenuBoneco, Revidar, ZoeiraCamada } from "./ZoeiraTela";
+import { PerfilCartao } from "./PerfilCartao";
 import { BotaoQuadro, QuadroTrofeus } from "./QuadroTrofeus";
 import { iniciarEventos } from "./eventosSala";
-import { ConsumoCamada } from "@/features/loja/Itens";
+import { ConsumoCamada, EfeitoCanto } from "@/features/loja/Itens";
 import { balanco } from "@/features/loja/loja";
 import { iniciarConsumo, useConsumo } from "@/features/loja/consumoSala";
 import { ChurrascoCamada, FaixaEvento, LuzHappy, PlacaChurrasco } from "./EventosTela";
@@ -226,6 +227,12 @@ export function HallView({ hidden }: { hidden: boolean }) {
         <BotaoCelular className="hall-canto hall-celular" />
         <Dica />
         <Revidar />
+        <EfeitoCanto />
+        {(() => {
+          /* o cartão do perfil de quem eu toquei (inclusive eu), no canto de baixo à direita */
+          const b = menu ? bonecos.find((x) => x.key === menu) : null;
+          return b ? <PerfilCartao key={b.key} b={b} /> : null;
+        })()}
       </div>
       <p className="hall-aviso" aria-live="polite">
         {aviso}

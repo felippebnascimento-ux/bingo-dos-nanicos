@@ -48,7 +48,7 @@ const semSql = (e: { code?: string; message?: string }) => e.code === "PGRST202"
 
 let ligado = false;
 
-async function chamar(fn: "bater_ponto" | "pulso" | "minha_carteira") {
+async function chamar(fn: "bater_ponto" | "minha_carteira") {
   const { data, error } = await sb().rpc(fn);
   if (error) throw error;
   return data as Record<string, unknown>;
@@ -79,7 +79,10 @@ export async function iniciarCarteira() {
 async function pulsar() {
   try {
     const antes = useCarteira.getState().carteira?.saldo;
-    const c = lerCarteira(await chamar("pulso"));
+    /* o pulso conta também o minuto de tela compartilhada (emblema "Transmissor"; não dá moedas) */
+    const { data, error } = await sb().rpc("pulso", { p_tela: !!getApp().myLiveSid });
+    if (error) throw error;
+    const c = lerCarteira(data as Record<string, unknown>);
     useCarteira.setState({ carteira: c });
     if (c && c.saldo !== antes) carregarExtrato();
   } catch {

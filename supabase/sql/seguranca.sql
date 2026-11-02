@@ -2723,7 +2723,161 @@ alter table public.riot_contas add column if not exists riot_id_smurf text;
 alter table public.riot_contas add column if not exists puuid_smurf text;
 alter table public.riot_contas add column if not exists atualizado_smurf timestamptz;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica e as 3 funções das apostas
+-- 27) respeitos e emblemas: 3 respeitos por dia para dar, e emblemas conquistados, calculados pelo banco -----------------
+-- Respeito: cada nanico dá até 3 por dia (Brasília), no máximo 1 para a mesma pessoa no dia, nunca para si mesmo.
+-- É público (todo mundo vê quem deu para quem) e chega pelo tempo real. Não dá moedas.
+create table if not exists public.respeitos (
+  id   bigint generated always as identity primary key,
+  de   uuid not null references public.friends(id) on delete cascade,
+  para uuid not null references public.friends(id) on delete cascade,
+  dia  date not null,
+  em   timestamptz not null default now(),
+  unique (de, para, dia),
+  check (de <> para)
+);
+create index if not exists respeitos_para on public.respeitos (para);
+create index if not exists respeitos_de_dia on public.respeitos (de, dia);
+alter table public.respeitos enable row level security;
+revoke all on public.respeitos from public, anon, authenticated;
+grant select on public.respeitos to authenticated;
+drop policy if exists respeitos_ler on public.respeitos;
+create policy respeitos_ler on public.respeitos for select to authenticated using (public.eh_nanico());
+
+create or replace function public.dar_respeito(p_para uuid) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_fid  uuid;
+  v_hoje date := public.hoje_br();
+  v_nome text;
+  v_n    int;
+begin
+  select id into v_fid from public.friends where user_id = auth.uid() limit 1;
+  if v_fid is null then raise exception 'Só nanicos dão respeito.' using errcode = 'P0001'; end if;
+  select name into v_nome from public.friends where id = p_para;
+  if v_nome is null then raise exception 'Nanico não encontrado.' using errcode = 'P0001'; end if;
+  if p_para = v_fid then raise exception 'Respeito é para os outros.' using errcode = 'P0001'; end if;
+  perform pg_advisory_xact_lock(hashtext('respeito:' || v_fid::text));
+  select count(*) into v_n from public.respeitos where de = v_fid and dia = v_hoje;
+  if v_n >= 3 then raise exception 'Você já deu os 3 respeitos de hoje. Amanhã tem mais.' using errcode = 'P0001'; end if;
+  insert into public.respeitos (de, para, dia) values (v_fid, p_para, v_hoje) on conflict (de, para, dia) do nothing;
+  if not found then raise exception 'Você já deu respeito para o % hoje.', v_nome using errcode = 'P0001'; end if;
+  return jsonb_build_object('restantes', 2 - v_n, 'recebidos', (select count(*) from public.respeitos where para = p_para));
+end $$;
+revoke all on function public.dar_respeito(uuid) from public, anon;
+grant execute on function public.dar_respeito(uuid) to authenticated;
+
+-- quantos respeitos ainda posso dar hoje
+create or replace function public.meus_respeitos() returns int
+language sql stable security definer set search_path = public as $$
+  select greatest(0, 3 - count(*))::int from public.respeitos r join public.friends f on f.id = r.de
+   where f.user_id = auth.uid() and r.dia = public.hoje_br();
+$$;
+revoke all on function public.meus_respeitos() from public, anon;
+grant execute on function public.meus_respeitos() to authenticated;
+
+-- tempo de tela compartilhada e de chapéu/coroa na cabeça, contados pelo pulso (um minuto por vez, como o tempo online)
+alter table public.online_diario add column if not exists tela_min int not null default 0;
+alter table public.online_diario add column if not exists chapeu_min int not null default 0;
+
+-- o pulso agora recebe se a pessoa está transmitindo a tela (só conta minuto para o emblema; não dá moedas)
+-- e confere no banco se ela está com chapéu ou coroa (mais rico agora, ou 1º do Feeder/Carregou o piano da última semana)
+drop function if exists public.pulso();
+create or replace function public.pulso(p_tela boolean default false) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid   uuid := auth.uid();
+  v_hoje  date := public.hoje_br();
+  v_happy boolean := extract(hour from public.agora_br()) >= 22;   -- todo dia, sábado também (o churrasco termina às 23h)
+  v_min   int;
+  v_hmin  int;
+  v_hgan  int;
+  v_ult   timestamptz;
+  v_norm  int;
+  v_fid   uuid;
+  v_chapeu boolean;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos ganham moedas.' using errcode = 'P0001'; end if;
+  perform public.limitar('pulso', 6, interval '1 minute', 'Calma: muitos pulsos seguidos.');
+  insert into public.online_diario (user_id, dia) values (v_uid, v_hoje) on conflict (user_id, dia) do nothing;
+  select minutos, happy_min, happy_ganho, ultimo_pulso into v_min, v_hmin, v_hgan, v_ult from public.online_diario
+   where user_id = v_uid and dia = v_hoje for update;
+  if v_ult is null or now() - v_ult > interval '150 seconds' then
+    update public.online_diario set ultimo_pulso = now() where user_id = v_uid and dia = v_hoje;
+  elsif now() - v_ult >= interval '55 seconds' then
+    v_min := v_min + 1;
+    if v_happy then v_hmin := v_hmin + 1; end if;
+    v_norm := v_min - v_hmin;   -- minutos fora do happy hour
+    -- sem teto por dia (decisão do João, 02/11/2026): +1 a cada 6 minutos, e a cada 3 no happy hour
+    if v_happy then
+      if v_hmin % 3 = 0 then
+        v_hgan := v_hgan + 1;
+        perform public.creditar(v_uid, 1, 'online', v_hoje::text);
+      end if;
+    elsif v_norm % 6 = 0 then
+      perform public.creditar(v_uid, 1, 'online', v_hoje::text);
+    end if;
+    select id into v_fid from public.friends where user_id = v_uid limit 1;
+    v_chapeu := (select user_id from public.carteiras order by saldo desc limit 1) = v_uid
+      or exists (select 1 from public.trofeus_semana t
+                  where t.semana = (select max(semana) from public.trofeus_semana)
+                    and t.trofeu in ('feeder', 'piano') and t.posicao = 1 and t.friend_id = v_fid);
+    update public.online_diario
+       set minutos = v_min, happy_min = v_hmin, happy_ganho = v_hgan, ultimo_pulso = now(),
+           tela_min = tela_min + case when coalesce(p_tela, false) then 1 else 0 end,
+           chapeu_min = chapeu_min + case when v_chapeu then 1 else 0 end
+     where user_id = v_uid and dia = v_hoje;
+  end if;
+  return public.minha_carteira();
+end $$;
+revoke all on function public.pulso(boolean) from public, anon;
+grant execute on function public.pulso(boolean) to authenticated;
+
+-- emblemas de um nanico: [{id, nivel 1–3, valor}] só dos que já conquistou. Tudo contado aqui, nada vem do site.
+-- Cada emblema tem 3 níveis (bronze, prata e ouro); os números ficam espelhados em src/features/emblemas/emblemas.ts.
+create or replace function public.emblemas_de(p_para uuid) returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  v_uid  uuid;
+  v_out  jsonb := '[]'::jsonb;
+  r      record;
+  v_tier text;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos veem os emblemas.' using errcode = 'P0001'; end if;
+  select user_id into v_uid from public.friends where id = p_para;
+  select upper(coalesce(dados->>'tier', '')) into v_tier from public.jogos_stats where friend_id = p_para and fonte = 'lol';
+  for r in
+    select * from (values
+      ('online',    (select coalesce(sum(minutos), 0) / 60 from public.online_diario where user_id = v_uid), 10, 50, 200),
+      ('sequencia', (select coalesce(max(seq), 0) from public.bonus_diario where user_id = v_uid), 7, 30, 100),
+      ('tela',      (select coalesce(sum(tela_min), 0) / 60 from public.online_diario where user_id = v_uid), 1, 10, 50),
+      ('coroa',     (select coalesce(sum(chapeu_min), 0) / 60 from public.online_diario where user_id = v_uid), 1, 24, 100),
+      ('respeito',  (select count(*)::int from public.respeitos where para = p_para), 10, 50, 200),
+      ('elo',       case when v_tier in ('GOLD') then 1 when v_tier in ('PLATINUM', 'EMERALD') then 2
+                         when v_tier in ('DIAMOND', 'MASTER', 'GRANDMASTER', 'CHALLENGER') then 3 else 0 end, 1, 2, 3),
+      ('cs',        (select coalesce((dados->>'cs2_horas')::int, 0) from public.jogos_stats where friend_id = p_para and fonte = 'steam'), 100, 500, 1000),
+      ('trofeu',    (select count(*)::int from public.trofeus_semana where friend_id = p_para and posicao = 1 and trofeu <> 'feeder'), 1, 5, 20),
+      ('truco',     (select count(*)::int from public.extrato where user_id = v_uid and motivo = 'truco' and valor > 0), 5, 25, 100),
+      ('bingo',     (select count(*)::int from public.bingo_premios where user_id = v_uid and linhas > 0), 1, 10, 50),
+      ('cassino',   (select count(*)::int from public.cassino_apostas where user_id = v_uid), 50, 500, 2000),
+      ('cronista',  (select count(*)::int from public.phrases where created_by = v_uid), 5, 25, 100)
+    ) as e(id, valor, n1, n2, n3)
+  loop
+    if coalesce(r.valor, 0) >= r.n1 then
+      v_out := v_out || jsonb_build_object('id', r.id, 'valor', r.valor,
+                                           'nivel', case when r.valor >= r.n3 then 3 when r.valor >= r.n2 then 2 else 1 end);
+    end if;
+  end loop;
+  return v_out;
+end $$;
+revoke all on function public.emblemas_de(uuid) from public, anon;
+grant execute on function public.emblemas_de(uuid) to authenticated;
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.respeitos; exception when duplicate_object then null; end;
+end $$;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas e as 3 de respeitos e emblemas
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -2776,4 +2930,7 @@ select tablename::text, 'rede' from pg_tables
 union all
 select proname::text, 'apostas' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('apostas_abrir', 'apostar_partida', 'apostas_liquidar')
+union all
+select proname::text, 'emblemas' from pg_proc
+ where pronamespace = 'public'::regnamespace and proname in ('dar_respeito', 'meus_respeitos', 'emblemas_de')
 order by 2, 1;
