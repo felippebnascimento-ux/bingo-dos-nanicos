@@ -272,9 +272,22 @@ const medidores = new Map<string, { fonte: MediaStreamAudioSourceNode; an: Analy
 const ultimaFala = new Map<string, number>();
 let relogio: ReturnType<typeof setInterval> | undefined;
 
+/**
+ * O medidor só analisa, não toca nada: `sinkId: none` cria o AudioContext sem abrir a saída de som.
+ * Abrir mais uma saída reconfigura o áudio do computador e dá um soluço na música de quem entra na voz.
+ * Navegador que não conhece a opção cria do jeito comum.
+ */
+function novoContexto() {
+  try {
+    return new AudioContext({ sinkId: { type: "none" } } as AudioContextOptions);
+  } catch {
+    return new AudioContext();
+  }
+}
+
 function medir(key: string, st: MediaStream) {
   try {
-    ctx ??= new AudioContext();
+    ctx ??= novoContexto();
     if (ctx.state === "suspended") ctx.resume().catch(() => {});
     esquecer(key);
     const fonte = ctx.createMediaStreamSource(st);
