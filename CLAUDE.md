@@ -52,7 +52,7 @@ src/
                        sala de LoL (ou sem a tabela de salas); no computador, Ao vivo e Perfil saem do menu (abrem pelos
                        canais de voz e pela linha "eu" embaixo) e continuam na barra de abas do celular
     shell/             Sidebar (parte de cima rola: marca, navegação, canais; embaixo, fixos: voz, câmera, eu com as
-                       moedas e rodapé), Canais.tsx (canais de voz e de texto como no Discord, categorias recolhíveis,
+                       moedas, a engrenagem das Configurações e o rodapé com conexão, versão e Log), Canais.tsx (canais de voz e de texto como no Discord, categorias recolhíveis,
                        e o VozPainel) e People.tsx (Membros: a barra da direita com os 14 nanicos, online e offline,
                        câmera no círculo; `usePessoasNaSala()` também serve o Sítio; `useNanicosOnline()` é a lista
                        um por nanico com o meu estado, usada pelos canais e pelos membros)
@@ -97,6 +97,10 @@ src/
                        reacoes.ts, desenho.ts, estado.ts (store + preferências), pip.ts;
                        telas: LiveView, Palco, Painel, Cameras, Video, Voos, Rosto, CamNaSala, CamBotoes e
                        CamadaReacoesMinha (reações que chegam na minha transmissão, fora das abas)
+    config/            janela de Configurações (engrenagem embaixo do menu; `configAberto` no store): midia.ts
+                       (microfone, saída, câmera, eco e ruído escolhidos, lista de aparelhos; voz.ts e camera.ts
+                       leem daqui e trocam o aparelho na hora com `replaceTrack`) e ConfigView.tsx (ConfigJanela:
+                       aparelhos, teste do microfone, trocar senha e sair)
     chat/              chat.ts (um chat por sala: "geral" no lobby e o id da sala dentro dela; não lidas por canal),
                        ChatPainel (o da minha sala no Ao vivo, ou um `canal`) e ChatView (aba `chat`, fora do menu:
                        o canal de texto escolhido no menu)
@@ -310,7 +314,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 - **Mudanças no banco:** chegam por `postgres_changes` em `friends`, `phrases`, `game`, `chat_messages`, `carteiras` e `rodizio`. A chinelada e a torta vêm do tempo real de `zoeiras` (pagas, gravadas por `zoar()`), e o sorteio da roleta do rodízio vem do tempo real de `rodizio` (todo mundo anima até o mesmo `girado_em`), **nunca de broadcast**. Os ganhos de moedas de todo mundo no Sítio vêm do tempo real de `carteiras` (gravado por `creditar()`), **nunca de broadcast**.
 
 ### Navegador (`localStorage`, só conveniência de cada pessoa)
-- **Chaves:** `rift-lineup`, `rift-card`, `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `truco-mesa`, `log-visto`, `fome-fechado`, `hall-pos` (último piso no hall), `hall-sala-min` (lista "Na sala agora" do Sítio recolhida), `sala-atual` (última sala; o site sempre abre no lobby), `canais-voz-min` e `canais-texto-min` (categorias de canais recolhidas; no celular começam recolhidas) e `membros-min` (lista de membros só com os rostos; abaixo de 1200 px fica assim sempre).
+- **Chaves:** `rift-lineup`, `rift-card`, `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `truco-mesa`, `log-visto`, `fome-fechado`, `hall-pos` (último piso no hall), `hall-sala-min` (lista "Na sala agora" do Sítio recolhida), `sala-atual` (última sala; o site sempre abre no lobby), `canais-voz-min` e `canais-texto-min` (categorias de canais recolhidas; no celular começam recolhidas) `membros-min` (lista de membros só com os rostos; abaixo de 1200 px fica assim sempre) e `midia` (microfone, saída de som, câmera, eco e ruído escolhidos nas Configurações).
 - **As do site antigo continuam iguais**, então ninguém perde a cartela na troca.
 - **`sessionStorage`:** `log-auto` (o Log de novidades já abriu sozinho nesta sessão do navegador).
 - Nada importante pode morar só aqui.

@@ -46,6 +46,8 @@ export type AppState = {
   onlineSala: Presence[];
   /** janela de escolher a sala aberta */
   salasAberto: boolean;
+  /** janela de Configurações aberta */
+  configAberto: boolean;
   /** id da minha transmissão de tela (vai na presença) */
   myLiveSid: string | null;
   /** id da minha câmera (vai na presença) */
@@ -104,6 +106,7 @@ export const useApp = create<AppState>()(() => ({
   minhaSala: null,
   onlineSala: [],
   salasAberto: false,
+  configAberto: false,
   myLiveSid: null,
   myCamSid: null,
   myVozSid: null,

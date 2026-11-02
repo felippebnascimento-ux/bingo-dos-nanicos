@@ -1,11 +1,10 @@
 "use client";
 import { useEffect, type ComponentType } from "react";
-import { IcAoVivo, IcCassino, IcInicio, IcJogar, IcSitio, IcNanicadas, IcNanicos, IcPerfil, IcTruco, IcVoltar } from "@/components/ui/icones";
+import { IcAjustes, IcAoVivo, IcCassino, IcInicio, IcJogar, IcSitio, IcNanicadas, IcNanicos, IcPerfil, IcTruco, IcVoltar } from "@/components/ui/icones";
 import { fecharSeletores } from "@/components/ui/FriendPicker";
 import { Avatar } from "@/components/ui/Avatar";
 import { CamBotoes } from "@/features/live/CamBotoes";
 import { CarteiraChip } from "@/features/moedas/Moedas";
-import { logout } from "@/lib/dados";
 import { VERSION } from "@/lib/dados/changelog";
 import { temNovidade } from "@/lib/dados/novidades";
 import { CREW, MARCA } from "@/lib/dados/nanicos";
@@ -79,13 +78,14 @@ function Nav() {
   );
 }
 
-/** Eu, embaixo do menu: rosto, nome e onde estou (abre o Perfil), com as moedas ao lado. */
+/** Eu, embaixo do menu: rosto, nome e onde estou (abre o Perfil), as moedas e a engrenagem das Configurações. */
 function EuPainel() {
   const eu = useApp((s) => friendOf(s.myFid, s.friends));
   const myName = useApp((s) => s.myName);
   const sala = useApp((s) => nomeDaSala(s.minhaSala, s.salas));
   const temSalas = useApp((s) => s.salas.length > 0);
   const naAba = useApp((s) => s.aba === "perfil");
+  const naConfig = useApp((s) => s.configAberto);
   if (!myName) return null;
   return (
     <div className="eu-painel">
@@ -97,6 +97,9 @@ function EuPainel() {
         </span>
       </button>
       <CarteiraChip />
+      <button type="button" className={"eu-cfg" + (naConfig ? " on" : "")} aria-label="Configurações" title="Configurações" aria-expanded={naConfig} onClick={() => setApp({ configAberto: true })}>
+        <IcAjustes />
+      </button>
     </div>
   );
 }
@@ -151,15 +154,8 @@ export function Sidebar() {
         {/* a câmera é da voz: o botão aparece na voz (ou com a câmera ligada, para dar para desligar) */}
         {mostraCam && <CamBotoes />}
         <EuPainel />
+        {/* trocar senha e sair ficam nas Configurações */}
         <div className="side-foot">
-          <div className="links">
-            <button className="linkish" id="trocarSenha" onClick={() => setApp({ pwAberto: true })}>
-              Trocar senha
-            </button>
-            <button className="linkish" id="sair" onClick={logout}>
-              Sair
-            </button>
-          </div>
           <div className="foot-row">
             <span className="conn" id="conn">{conn}</span>
             <span className="ver" id="ver">{VERSION}</span>

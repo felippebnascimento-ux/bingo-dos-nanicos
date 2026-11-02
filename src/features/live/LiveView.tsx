@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { IcVoltar } from "@/components/ui/icones";
+import { IcVoltar, IcVolume } from "@/components/ui/icones";
+import { nomeDaSala } from "@/features/salas/trocar";
 import { setApp, useApp } from "@/lib/store";
 import { local } from "@/lib/util";
 import { FaixaCameras, JanelaCameras } from "./Cameras";
@@ -58,15 +59,28 @@ export function LiveView({ hidden }: { hidden: boolean }) {
   const tPainel = railMin ? "Abrir painel" : "Recolher painel";
   /* a live e as câmeras são de dentro da sala: no lobby, só o convite */
   const noLobby = useApp((s) => s.salas.length > 0 && !s.minhaSala);
+  /* dentro de uma sala, o título é o nome dela (o canal de voz onde estou) */
+  const sala = useApp((s) => nomeDaSala(s.minhaSala, s.salas));
+  const naVoz = useApp((s) => !!s.myVozSid);
 
   return (
     <section id="view-live" className="inner" hidden={hidden}>
       <header className="hero hero-live">
-        <h1>Ao vivo</h1>
+        {sala ? (
+          <>
+            <small className="sala-kicker">
+              <IcVolume tam={16} />
+              {naVoz ? "Na voz" : "Na sala, fora da voz"} · Ao vivo
+            </small>
+            <h1>{sala}</h1>
+          </>
+        ) : (
+          <h1>Ao vivo</h1>
+        )}
       </header>
       {noLobby && (
         <div className="block convite-sala">
-          <p>Entre numa sala para transmitir a tela, ligar a câmera e conversar com quem está nela.</p>
+          <p>Entre num canal de voz, no menu, para falar, transmitir a tela e ver as câmeras de quem está nele.</p>
           <button type="button" className="btn" onClick={() => setApp({ salasAberto: true })}>
             Escolher a sala
           </button>

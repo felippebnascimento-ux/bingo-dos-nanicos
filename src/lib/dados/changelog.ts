@@ -11,7 +11,7 @@ export const CHANGELOG: EntradaLog[] = [
   { data: "24/10/2026", itens: ["Banco de frases compartilhado pelo grupo", "Escalação da partida igual para todos", "Cartela 5x5 sorteada para cada pessoa"] },
   { data: "24/10/2026", itens: ["Frase ligada a mais de um campeão", { t: "Fotos dos amigos no seletor", off: "trocado pela arte de cada nanico na v1.05" }, "Lista de amigos em ordem alfabética", { t: "Opção de renomear amigos", off: "removido na v1.02" }] },
   { data: "25/10/2026", itens: ["Site próprio, sem precisar de conta do Claude", { t: "Público só cadastra frases e troca fotos", off: "trocado pelo login de cada nanico na v1.07" }] },
-  { data: "25/10/2026", itens: ["Novo visual: Bingo dos Nanicos", { t: "Lista de quem está na sala agora", off: "trocada pela lista de membros à direita na v1.53" }, { t: "Nome salvo no navegador", off: "trocado pelo login de cada nanico na v1.07" }] },
+  { data: "25/10/2026", itens: ["Novo visual: Bingo dos Nanicos", { t: "Lista de quem está na sala agora", off: "trocada pela lista de membros à direita na v1.52" }, { t: "Nome salvo no navegador", off: "trocado pelo login de cada nanico na v1.07" }] },
   { data: "25/10/2026", itens: ["Frases viram Nanicadas, sempre em minúsculas", { t: "Filtro por vários nanicos ao mesmo tempo", off: "voltou a ser uma pessoa por vez na v1.19" }, "Opção Random na escalação", "Telas largas aproveitam o espaço em colunas"] },
   { data: "25/10/2026", itens: ["Arte de cada nanico: rosto em todo o site e corpo inteiro na aba Nanicos", "Marca d'água do grupo e ícone da bola de bingo", "Seletor de nanico abre onde cabe na tela"] },
   { data: "30/10/2026", itens: [{ t: "Botão para entrar no Google Meet do grupo", off: "removido na v1.21: agora tem câmera e transmissão no site" }] },
@@ -94,6 +94,9 @@ export const CHANGELOG: EntradaLog[] = [
       "Lista de membros à direita, com quem está online e quem está offline, onde cada um está e a câmera no rosto",
       "Embaixo do menu ficam fixos a voz, a câmera, o seu perfil e as suas moedas",
       "A câmera agora é da voz: só quem está no mesmo canal de voz se vê, e ela continua ligada quando você troca de canal",
+      "Configurações na engrenagem embaixo do menu: escolha o microfone, a saída de som e a câmera, ligue ou desligue o cancelamento de eco e a supressão de ruído e teste o microfone",
+      "Trocar senha e Sair agora ficam nas Configurações",
+      "No Ao vivo, o nome da sala onde você está aparece em destaque",
     ],
   },
 ];

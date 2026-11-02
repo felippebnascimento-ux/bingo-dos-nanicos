@@ -10,6 +10,7 @@ import { newId } from "@/lib/util";
 import { avisar } from "./estado";
 import { ajustarSender, canCam, novaConexao, sendRtc, type MsgRtc } from "./rtc";
 import { naVoz } from "./voz";
+import { restricoesCam, useMidia } from "@/features/config/midia";
 import { abrirJanelaPip, canPip, type JanelaPip } from "./pip";
 
 type Saida = { pc: RTCPeerConnection; queue: RTCIceCandidateInit[]; at: number };
@@ -36,13 +37,44 @@ export const CAM = {
   only: null as string | null,
 };
 
+/** Vídeo pequeno da câmera (a escolhida nas Configurações, se ainda existir). */
+const videoCam = (): MediaTrackConstraints => ({
+  width: { ideal: 480 },
+  height: { ideal: 480 },
+  frameRate: { ideal: 24, max: 24 },
+  facingMode: "user",
+  ...restricoesCam(),
+});
+
+let prefsLigadas = false;
+/** Trocou a câmera nas Configurações com ela ligada: troca a imagem na hora, para todo mundo que vê. */
+function ligarPrefs() {
+  if (prefsLigadas) return;
+  prefsLigadas = true;
+  useMidia.subscribe(async (s, p) => {
+    if (s.cam === p.cam || !CAM.stream) return;
+    try {
+      const novo = await navigator.mediaDevices.getUserMedia({ video: videoCam(), audio: false });
+      const faixa = novo.getVideoTracks()[0];
+      if (!CAM.stream || !faixa) return novo.getTracks().forEach((t) => t.stop());
+      faixa.addEventListener("ended", () => stopCam());
+      for (const o of CAM.out.values())
+        for (const sd of o.pc.getSenders()) if (sd.track?.kind === "video") await sd.replaceTrack(faixa).catch(() => {});
+      CAM.stream.getTracks().forEach((t) => t.stop());
+      CAM.stream = novo;
+      avisar();
+    } catch (e) {
+      console.warn(e);
+      toast("Não deu para trocar a câmera. Confira se ela está ligada.");
+    }
+  });
+}
+
 export async function startCam() {
   if (!canCam) return toast("Seu navegador não liberou a câmera.");
   try {
-    const st = await navigator.mediaDevices.getUserMedia({
-      video: { width: { ideal: 480 }, height: { ideal: 480 }, frameRate: { ideal: 24, max: 24 }, facingMode: "user" },
-      audio: false,
-    });
+    const st = await navigator.mediaDevices.getUserMedia({ video: videoCam(), audio: false });
+    ligarPrefs();
     const t = st.getVideoTracks()[0];
     if (t) t.addEventListener("ended", () => stopCam());
     CAM.stream = st;

@@ -6,6 +6,7 @@
  * Em cada par, a chave menor oferece (`euOfereco`), então os dois nunca oferecem juntos.
  */
 import { create } from "zustand";
+import { aplicarSaida, restricoesMic, useMidia } from "@/features/config/midia";
 import { toast } from "@/lib/toast";
 import { getApp, MY_KEY, setApp } from "@/lib/store";
 import { newId } from "@/lib/util";
@@ -43,16 +44,14 @@ export async function entrarVoz() {
   if (!getApp().minhaSala) return toast("Entre numa sala para falar.");
   if (!canCam) return toast("Seu navegador não liberou o microfone.");
   try {
-    const st = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-      video: false,
-    });
+    const st = await navigator.mediaDevices.getUserMedia({ audio: restricoesMic(), video: false });
     /* trocou de sala (ou saiu) enquanto o navegador pedia o microfone */
     if (!getApp().minhaSala || VOZ.sid) {
       st.getTracks().forEach((t) => t.stop());
       return;
     }
     st.getAudioTracks()[0]?.addEventListener("ended", () => sairVoz());
+    ligarPrefs();
     VOZ.stream = st;
     VOZ.sid = newId();
     VOZ.mudoAntes = false;
@@ -85,6 +84,41 @@ export function sairVoz() {
   setApp({ myVozSid: null, vozMudo: false, vozSurdo: false });
 }
 
+/* ---------- configurações (aba Configurações) ---------- */
+let prefsLigadas = false;
+/** Mudou o microfone, o eco ou o ruído: troca o áudio na hora; mudou a saída: muda onde a voz toca. */
+function ligarPrefs() {
+  if (prefsLigadas) return;
+  prefsLigadas = true;
+  useMidia.subscribe((s, p) => {
+    if (s.mic !== p.mic || s.eco !== p.eco || s.ruido !== p.ruido) trocarMicrofone();
+    if (s.saida !== p.saida) for (const par of VOZ.pares.values()) aplicarSaida(par.audio);
+  });
+}
+
+/** Troca o microfone sem sair da voz: pega o novo e substitui o áudio em todas as conexões. */
+async function trocarMicrofone() {
+  if (!VOZ.sid || !VOZ.stream) return;
+  try {
+    const novo = await navigator.mediaDevices.getUserMedia({ audio: restricoesMic(), video: false });
+    const faixa = novo.getAudioTracks()[0];
+    if (!VOZ.sid || !faixa) {
+      novo.getTracks().forEach((t) => t.stop());
+      return;
+    }
+    faixa.enabled = !getApp().vozMudo;
+    faixa.addEventListener("ended", () => sairVoz());
+    for (const par of VOZ.pares.values())
+      for (const sd of par.pc.getSenders()) if (sd.track?.kind === "audio") await sd.replaceTrack(faixa).catch(() => {});
+    VOZ.stream.getTracks().forEach((t) => t.stop());
+    VOZ.stream = novo;
+    medir(MY_KEY, novo);
+  } catch (e) {
+    console.warn(e);
+    toast("Não deu para trocar o microfone. Confira se ele está ligado.");
+  }
+}
+
 /** Liga e desliga o meu microfone (a conexão continua; vai silêncio). Desmutar também volta a ouvir. */
 export function alternarMudo() {
   if (!VOZ.sid) return;
@@ -113,6 +147,7 @@ function novoPar(key: string, sid: string, ofereci: boolean, tries = 0): Par {
   const audio = new Audio();
   audio.autoplay = true;
   audio.muted = getApp().vozSurdo;
+  aplicarSaida(audio);
   const par: Par = { key, sid, pc, queue: [], audio, ofereci, tries };
   pc.ontrack = (e) => {
     const st = (e.streams && e.streams[0]) || new MediaStream([e.track]);
