@@ -1,19 +1,22 @@
 "use client";
 /*
- * Tela de Início (abre depois do login): a barra de cima (marca, moedas e perfil), a saudação e um
- * cartão grande por lugar do site, cada um com uma capa e uma linha "ao vivo". Os cartões só leem
- * o que já está no store e nos módulos: nenhuma consulta nova ao banco.
+ * Tela de Início (abre depois do login), em três faixas: "Seu dia" (moedas, posição, sequência e missões),
+ * "Acontecendo agora" (partida, transmissão, mesa de truco; some quando não tem nada) e os lugares do site,
+ * com o ranking de moedas ao lado. Tudo lê o que já está no store e nos módulos (o ranking usa a mesma
+ * leitura das carteiras do painel do ranking).
  */
 import { useMemo, type ReactNode } from "react";
 import { Avatar } from "@/components/ui/Avatar";
+import { IcCoroa } from "@/components/ui/icones";
+import { useMissoes } from "@/features/missoes/missoesDados";
 import { Fundo } from "@/features/hall/Sala";
 import { riotEmJogo, useRiot } from "@/features/jogar/riot";
 import { useTruco } from "@/features/truco/mesa";
 import { useCarteira } from "@/lib/carteira";
-import { abrirCarteira, useMinhaPosicao } from "@/features/moedas/Ranking";
+import { abrirCarteira, useMinhaPosicao, useRanking } from "@/features/moedas/Ranking";
 import { bonecoOf } from "@/lib/dados/nanicos";
 import { LANES } from "@/lib/dados/campeoes";
-import { bonusDoDia, diasSeguidos, formatarMoedas } from "@/lib/moedas";
+import { bonusDoDia, diasSeguidos, formatarMoedas, ordinal } from "@/lib/moedas";
 import { umPorNanico } from "@/lib/presenca";
 import { friendDaPresenca, friendOf, MY_KEY, salaLol, setApp, useApp } from "@/lib/store";
 import type { Aba } from "@/lib/tipos";
@@ -55,6 +58,44 @@ function Rostos({ ids }: { ids: (string | null)[] }) {
 
 const ir = (aba: Aba) => () => setApp({ aba });
 
+/** Ranking de moedas no Início: os 5 primeiros e, se eu estiver mais para baixo, a minha linha. */
+function RankingInicio() {
+  const lista = useRanking();
+  const friends = useApp((s) => s.friends);
+  const myUid = useApp((s) => s.myUid);
+  if (!lista) return null;
+  const top = lista.filter((l) => l.saldo !== null).slice(0, 5);
+  const eu = lista.find((l) => !!myUid && l.userId === myUid);
+  const linhas = eu && !top.includes(eu) ? [...top, eu] : top;
+  return (
+    <section className="block inicio-ranking" aria-labelledby="inicioRanking">
+      <h2 id="inicioRanking">Ranking de moedas</h2>
+      <ol className="ranking">
+        {linhas.map((l) => {
+          const f = friendOf(l.fid, friends);
+          const souEu = !!myUid && l.userId === myUid;
+          return (
+            <li key={l.fid} className={souEu ? "eu" : undefined}>
+              <button type="button" onClick={() => setApp({ fichaAberta: l.fid })} aria-label={`${l.pos ? ordinal(l.pos) + " lugar, " : ""}${l.nome}, ${formatarMoedas(l.saldo ?? 0)} moedas. Abrir a ficha`}>
+                <span className="ranking-pos">{l.pos ? ordinal(l.pos) : "—"}</span>
+                <span className="ranking-rosto">
+                  {l.pos === 1 && <IcCoroa className="ranking-coroa" tam={18} />}
+                  {f ? <Avatar f={f} size="xs" /> : <span className="av xs">{l.nome[0]}</span>}
+                </span>
+                <span className="ranking-nome">{souEu ? "Você" : l.nome}</span>
+                <b>{formatarMoedas(l.saldo ?? 0)}</b>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+      <button type="button" className="btn soft sm" onClick={abrirCarteira}>
+        Ver ranking completo
+      </button>
+    </section>
+  );
+}
+
 export function InicioView({ hidden }: { hidden: boolean }) {
   const online = useApp((s) => s.online);
   const friends = useApp((s) => s.friends);
@@ -68,6 +109,7 @@ export function InicioView({ hidden }: { hidden: boolean }) {
   const posicao = useMinhaPosicao();
   const mesas = useTruco((s) => s.mesas);
   const jogos = useRiot((s) => s.jogos);
+  const missoes = useMissoes((s) => s.missoes);
 
   const gente = umPorNanico(online, MY_KEY);
   const naoTenhoPresenca = myName && !gente.some((p) => p.key === MY_KEY);
@@ -128,15 +170,77 @@ export function InicioView({ hidden }: { hidden: boolean }) {
 
       <div className="inicio-oi">
         <h1>E aí, {myName || "nanico"}</h1>
-        {carteira && carteira.seq > 0 && (
-          <span className="hint">
-            {diasSeguidos(carteira.seq)}
-            {carteira.pegouHoje && ` · bônus de hoje: +${bonusDoDia(carteira.seq)} moedas`}
-          </span>
-        )}
       </div>
 
-      <div className="inicio-cartoes">
+      {carteira && (
+        <div className="inicio-dia" aria-label="Seu dia">
+          <button type="button" className="dia-item" onClick={abrirCarteira}>
+            <small>Moedas</small>
+            <b>{formatarMoedas(carteira.saldo)}</b>
+            <span>{posicao || "ver ranking"}</span>
+          </button>
+          <button type="button" className="dia-item" onClick={() => setApp({ aba: "perfil" })}>
+            <small>Sequência</small>
+            <b>{carteira.seq || 0}</b>
+            <span>{carteira.seq ? diasSeguidos(carteira.seq) : "começa hoje"}</span>
+          </button>
+          <button type="button" className="dia-item" onClick={() => setApp({ aba: "perfil" })}>
+            <small>Bônus de hoje</small>
+            <b>{carteira.pegouHoje ? `+${bonusDoDia(carteira.seq)}` : "—"}</b>
+            <span>{carteira.pegouHoje ? "já está na carteira" : "volte amanhã também"}</span>
+          </button>
+          {missoes.length > 0 && (
+            <button type="button" className="dia-item" onClick={ir("hall")}>
+              <small>Missões do dia</small>
+              <b>
+                {missoes.filter((m) => m.feita).length} de {missoes.length}
+              </b>
+              <span>{missoes.find((m) => !m.feita)?.texto ?? "todas feitas"}</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {(algumEmPartida || aoVivo || abertas.length > 0) && (
+        <section className="inicio-agora" aria-labelledby="inicioAgora">
+          <h2 id="inicioAgora">Acontecendo agora</h2>
+          <ul>
+            {algumEmPartida && (
+              <li>
+                <span className="ingame-pill">EM PARTIDA</span>
+                <span className="agora-txt">{jogos.length > 1 ? `${jogos.length} partidas com nanicos` : "Tem nanico jogando: aposte nos 5 primeiros minutos"}</span>
+                <button type="button" className="btn sm" onClick={temJogar ? ir("jogar") : () => setApp({ salasAberto: true })}>
+                  {temJogar ? "Ver e apostar" : "Entrar numa sala"}
+                </button>
+              </li>
+            )}
+            {aoVivo && (
+              <li>
+                <span className="live-pill">AO VIVO</span>
+                <span className="agora-txt">{nomeLive} está transmitindo</span>
+                <button type="button" className="btn sm" onClick={ir("live")}>
+                  Assistir
+                </button>
+              </li>
+            )}
+            {abertas.length > 0 && (
+              <li>
+                <span className="agora-selo">TRUCO</span>
+                <span className="agora-txt">
+                  {abertas.length === 1 ? "Uma mesa esperando" : `${abertas.length} mesas esperando`}
+                  {falta ? ` · falta ${falta}` : ""}
+                </span>
+                <button type="button" className="btn sm" onClick={ir("truco")}>
+                  Sentar
+                </button>
+              </li>
+            )}
+          </ul>
+        </section>
+      )}
+
+      <div className="inicio-corpo">
+        <div className="inicio-cartoes">
         <Cartao
           classe="c-sitio"
           titulo="Sítio"
@@ -233,6 +337,8 @@ export function InicioView({ hidden }: { hidden: boolean }) {
             </span>
           }
         />
+        </div>
+        <RankingInicio />
       </div>
       <p className="hint inicio-rodape">Ao entrar no site, o seu boneco já aparece no Sítio para todo mundo, mesmo que você fique aqui no Início.</p>
     </section>

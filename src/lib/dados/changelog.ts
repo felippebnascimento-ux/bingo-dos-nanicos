@@ -186,6 +186,14 @@ export const CHANGELOG: EntradaLog[] = [
     data: "02/11/2026",
     itens: ["Tempo no site sem limite de moedas por dia: 1 a cada 6 minutos (no happy hour, 1 a cada 3)"],
   },
+  {
+    data: "02/11/2026",
+    itens: [
+      "Menu arrumado em grupos (Lugares, Turma e Moedas), com ícones diferentes para o Início e o Sítio",
+      "Ranking, Loja e Troféus direto no menu",
+      "Início novo: o seu dia (moedas, sequência, bônus e missões), o que está acontecendo agora e o ranking de moedas",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

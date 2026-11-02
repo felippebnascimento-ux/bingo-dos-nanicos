@@ -77,12 +77,25 @@ export const IcCoroa = (p: P) => (
     <path d="M4 19.5h16" />
   </Base>
 );
-/** Casinha (Início). */
+/** Painel (Início): uma tela com o resumo do dia; a casinha é do Sítio. */
 export const IcInicio = (p: P) => (
   <Base {...p}>
-    <path d="M4 11l8-7 8 7" />
-    <path d="M6 10v10h12V10" />
-    <path d="M10 20v-5h4v5" />
+    <rect x="3.5" y="4" width="17" height="16" rx="2.5" />
+    <path d="M3.5 9.5h17M10 9.5V20" />
+  </Base>
+);
+/** Pódio (Ranking de moedas). */
+export const IcRanking = (p: P) => (
+  <Base {...p}>
+    <path d="M9 20V9h6v11M3.5 20v-6H9M15 20v-8h5.5v8M2.5 20h19" />
+    <path d="M12 3.5l.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2-1.45-1.4 2-.3z" />
+  </Base>
+);
+/** Sacola (Loja). */
+export const IcLoja = (p: P) => (
+  <Base {...p}>
+    <path d="M5 8h14l-1 12H6z" />
+    <path d="M9 10V7a3 3 0 0 1 6 0v3" />
   </Base>
 );
 /** Ficha de cassino (aba Cassino). */

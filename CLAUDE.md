@@ -53,7 +53,8 @@ src/
                        Sítio somem os membros (`sem-membros`). Troféus e Chat ficam fora do menu; Jogar só aparece numa
                        sala de LoL (ou sem a tabela de salas); no computador, Ao vivo e Perfil saem do menu (abrem pelos
                        canais de voz e pela linha "eu" embaixo) e continuam na barra de abas do celular
-    shell/             Sidebar (parte de cima rola: marca, navegação, canais; embaixo, fixos: voz, câmera, eu com as
+    shell/             Sidebar (parte de cima rola: marca, navegação em grupos `GRUPOS` com títulos (Lugares, Turma e
+                       Moedas: Ranking, Loja, Troféus; no celular a barra de baixo fica sem títulos e sem as Moedas), canais; embaixo, fixos: voz, câmera, eu com as
                        moedas, a engrenagem das Configurações e o rodapé com conexão, versão e Log), Canais.tsx (canais de voz como no Discord, com quem está, quem transmite e as mensagens novas do chat da sala, e o #geral em
                        "Canais de texto"; categorias recolhíveis,
                        e o VozPainel) e People.tsx (Membros: a barra da direita com os 14 nanicos, online e offline,
@@ -63,8 +64,9 @@ src/
     ui/                Avatar, FriendPicker, Toast, ícones, useSure (segundo toque)
     Fome.tsx           easter egg das 18h às 22h
   features/            uma pasta por aba / assunto
-    inicio/            InicioView: tela de início (aba `inicio`, a primeira depois do login): barra de cima, saudação
-                       e um cartão por lugar com capa e linha ao vivo (só lê o store, nenhuma consulta nova)
+    inicio/            InicioView: tela de início (aba `inicio`, a primeira depois do login): barra de cima, saudação,
+                       "Seu dia" (moedas, sequência, bônus, missões), "Acontecendo agora" (partida, live, truco; some
+                       vazia), um cartão por lugar e o ranking de moedas ao lado (no celular, em cima dos cartões)
     moedas/            Moedas.tsx: selinho do saldo no menu (CarteiraChip) e quadro do Perfil (MoedasBloco);
                        Ranking.tsx: painel da carteira (abas Ranking e Meu extrato), aberto pela carteira do Sítio e
                        pelo chip do Início (`abrirCarteira`), e `useMinhaPosicao()` ("3º lugar")

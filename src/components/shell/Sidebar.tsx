@@ -1,10 +1,12 @@
 "use client";
 import { useEffect, type ComponentType } from "react";
-import { IcAjustes, IcAoVivo, IcCassino, IcInicio, IcJogar, IcMidias, IcSitio, IcNanicadas, IcNanicos, IcPerfil, IcTruco, IcVoltar } from "@/components/ui/icones";
+import { IcAjustes, IcAoVivo, IcCassino, IcInicio, IcJogar, IcLoja, IcMidias, IcRanking, IcSitio, IcNanicadas, IcNanicos, IcPerfil, IcTaca, IcTruco, IcVoltar } from "@/components/ui/icones";
 import { fecharSeletores } from "@/components/ui/FriendPicker";
 import { Avatar } from "@/components/ui/Avatar";
 import { CamBotoes } from "@/features/live/CamBotoes";
 import { CarteiraChip } from "@/features/moedas/Moedas";
+import { abrirCarteira } from "@/features/moedas/Ranking";
+import { useCarteira } from "@/lib/carteira";
 import { VERSION } from "@/lib/dados/changelog";
 import { temNovidade } from "@/lib/dados/novidades";
 import { CREW, MARCA } from "@/lib/dados/nanicos";
@@ -15,17 +17,38 @@ import { nomeDaSala } from "@/features/salas/trocar";
 import { BotaoCelular } from "@/features/celular/Celular";
 import { Canais, VozPainel } from "./Canais";
 
-const ABAS: { aba: Aba; t: string; Ic: ComponentType }[] = [
-  { aba: "inicio", t: "Início", Ic: IcInicio },
-  { aba: "hall", t: "Sítio", Ic: IcSitio },
-  { aba: "jogar", t: "Jogar", Ic: IcJogar },
-  { aba: "frases", t: "Nanicadas", Ic: IcNanicadas },
-  { aba: "nanicos", t: "Nanicos", Ic: IcNanicos },
-  { aba: "live", t: "Ao vivo", Ic: IcAoVivo },
-  { aba: "truco", t: "Truco", Ic: IcTruco },
-  { aba: "cassino", t: "Cassino", Ic: IcCassino },
-  { aba: "midias", t: "Mídias", Ic: IcMidias },
-  { aba: "perfil", t: "Perfil", Ic: IcPerfil },
+type ItemMenu = { aba: Aba; t: string; Ic: ComponentType };
+/* o menu em grupos: os lugares para ir, a turma e as moedas. No celular vira a barra de baixo, sem os
+   títulos e sem o grupo das moedas (o Início mostra o ranking e a Loja) */
+const GRUPOS: { titulo: string | null; moedas?: boolean; itens: ItemMenu[] }[] = [
+  { titulo: null, itens: [{ aba: "inicio", t: "Início", Ic: IcInicio }] },
+  {
+    titulo: "Lugares",
+    itens: [
+      { aba: "hall", t: "Sítio", Ic: IcSitio },
+      { aba: "jogar", t: "Jogar", Ic: IcJogar },
+      { aba: "live", t: "Ao vivo", Ic: IcAoVivo },
+      { aba: "truco", t: "Truco", Ic: IcTruco },
+      { aba: "cassino", t: "Cassino", Ic: IcCassino },
+    ],
+  },
+  {
+    titulo: "Turma",
+    itens: [
+      { aba: "frases", t: "Nanicadas", Ic: IcNanicadas },
+      { aba: "nanicos", t: "Nanicos", Ic: IcNanicos },
+      { aba: "midias", t: "Mídias", Ic: IcMidias },
+      { aba: "perfil", t: "Perfil", Ic: IcPerfil },
+    ],
+  },
+  {
+    titulo: "Moedas",
+    moedas: true,
+    itens: [
+      { aba: "loja", t: "Loja", Ic: IcLoja },
+      { aba: "trofeus", t: "Troféus", Ic: IcTaca },
+    ],
+  },
 ];
 
 export function setSideMin(on: boolean) {
@@ -45,6 +68,8 @@ function Nav() {
   /* a aba Jogar (escalação e bingo) só existe nas salas de LoL; sem o SQL das salas, sempre aparece */
   const temJogar = useApp((s) => !s.salas.length || !!salaLol(s));
   const temSalas = useApp((s) => s.salas.length > 0);
+  /* sem o SQL das moedas, o grupo das moedas some */
+  const temMoedas = useCarteira((s) => !!s.carteira);
 
   const contagem = (a: Aba) => {
     if (a === "frases") return <span className="count" id="nFrases">{nFrases || ""}</span>;
@@ -54,28 +79,49 @@ function Nav() {
     return null;
   };
 
+  const item = ({ aba: a, t, Ic }: ItemMenu, extra = "") => (
+    <button
+      key={a}
+      role="tab"
+      aria-selected={aba === a}
+      data-tab={a}
+      id={a === "live" ? "navLive" : undefined}
+      /* com salas, o Ao vivo se abre pelos canais de voz; o item fica só na barra de abas do celular */
+      className={[a === "live" && unread ? "unread" : "", a === "live" && temSalas ? "so-celular" : "", extra].join(" ").trim() || undefined}
+      title={t}
+      onClick={() => {
+        setApp({ aba: a });
+        fecharSeletores();
+      }}
+    >
+      {a === "perfil" && eu ? <Avatar f={eu} size="xs" className="nav-rosto" /> : <Ic />}
+      <span className="t">{t}</span>
+      {contagem(a)}
+    </button>
+  );
+
   return (
     <nav className="nav" role="tablist" aria-label="Seções">
-      {ABAS.filter((x) => x.aba !== "jogar" || temJogar).map(({ aba: a, t, Ic }) => (
-        <button
-          key={a}
-          role="tab"
-          aria-selected={aba === a}
-          data-tab={a}
-          id={a === "live" ? "navLive" : undefined}
-          /* com salas, o Ao vivo se abre pelos canais de voz; o item fica só na barra de abas do celular */
-          className={[a === "live" && unread ? "unread" : "", a === "live" && temSalas ? "so-celular" : ""].join(" ").trim() || undefined}
-          title={t}
-          onClick={() => {
-            setApp({ aba: a });
-            fecharSeletores();
-          }}
-        >
-          {a === "perfil" && eu ? <Avatar f={eu} size="xs" className="nav-rosto" /> : <Ic />}
-          <span className="t">{t}</span>
-          {contagem(a)}
-        </button>
-      ))}
+      {GRUPOS.map((g) => {
+        if (g.moedas && !temMoedas) return null;
+        const itens = g.itens.filter((x) => x.aba !== "jogar" || temJogar);
+        return [
+          g.titulo && (
+            <span key={"g-" + g.titulo} className={"nav-grupo" + (g.moedas ? " so-computador" : "")} aria-hidden="true">
+              {g.titulo}
+            </span>
+          ),
+          ...(g.moedas
+            ? [
+                <button key="ranking" type="button" className="so-computador" title="Ranking" onClick={abrirCarteira}>
+                  <IcRanking />
+                  <span className="t">Ranking</span>
+                </button>,
+                ...itens.map((x) => item(x, "so-computador")),
+              ]
+            : itens.map((x) => item(x))),
+        ];
+      })}
       <BotaoCelular className="no-menu" />
     </nav>
   );

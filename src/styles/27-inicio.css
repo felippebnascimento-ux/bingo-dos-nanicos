@@ -77,3 +77,32 @@ button.brand{border:0;background:none;padding:0 2px;width:100%;text-align:left;f
 .capa-baloes span:nth-child(2){justify-self:end;border-radius:12px 12px 3px 12px}
 
 .inicio-rodape{margin:0;justify-self:center;max-width:60ch;text-align:center}
+
+/* "Seu dia": moedas, sequência, bônus e missões numa linha de quadradinhos que abrem cada coisa */
+.inicio-dia{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:860px){.inicio-dia{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}
+.dia-item{display:grid;gap:2px;justify-items:start;min-width:0;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);color:var(--ink);text-align:left;cursor:pointer}
+.dia-item:hover{border-color:var(--accent)}
+.dia-item small{font:600 12px var(--body);color:var(--muted)}
+.dia-item b{font:800 22px/1.1 var(--display);font-variant-numeric:tabular-nums}
+.dia-item span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:var(--muted)}
+.dia-item:first-child span{color:var(--accent-text);font-weight:600}
+
+/* "Acontecendo agora": só aparece quando tem partida, transmissão ou mesa de truco esperando */
+.inicio-agora{display:grid;gap:8px}
+.inicio-agora h2,.inicio-ranking h2{margin:0;font:800 15px var(--display)}
+.inicio-agora ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.inicio-agora li{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-left:4px solid var(--live);border-radius:var(--r-md);background:var(--surface)}
+.agora-txt{flex:1;min-width:0;font-size:14px}
+.agora-selo{font:700 10px var(--display);letter-spacing:.04em;color:var(--stamp-ink);background:var(--mint);padding:3px 7px;border-radius:99px;white-space:nowrap;flex:none}
+@media (max-width:520px){.inicio-agora li{flex-wrap:wrap}.inicio-agora li .btn{margin-left:auto}}
+
+/* os lugares com o ranking ao lado (no celular, o ranking vem embaixo) */
+.inicio-corpo{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
+@media (max-width:1000px){.inicio-corpo{grid-template-columns:minmax(0,1fr)}}
+.inicio-corpo .cartao-capa{aspect-ratio:2 / 1}
+.inicio-ranking{display:grid;gap:10px;margin:0}
+.inicio-ranking .btn{justify-self:start}
+@media (max-width:1240px){.inicio-corpo .inicio-cartoes{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:620px){.inicio-corpo .inicio-cartoes{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:1000px){.inicio-corpo .inicio-ranking{order:-1}}
