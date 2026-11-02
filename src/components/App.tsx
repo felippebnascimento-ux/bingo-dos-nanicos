@@ -10,6 +10,7 @@ import { PainelCarteira } from "@/features/moedas/Ranking";
 import { SalasJanela } from "@/features/salas/Salas";
 import { HallView } from "@/features/hall/HallView";
 import { InicioView } from "@/features/inicio/InicioView";
+import { TrofeusView } from "@/features/trofeus/TrofeusView";
 import { JogarView } from "@/features/jogar/JogarView";
 import { NanicadasView } from "@/features/nanicadas/NanicadasView";
 import { NanicosView } from "@/features/nanicos/NanicosView";
@@ -48,6 +49,7 @@ export default function App() {
           <div className="inner">
             <InicioView hidden={aba !== "inicio"} />
             <HallView hidden={aba !== "hall"} />
+            <TrofeusView hidden={aba !== "trofeus"} />
             <JogarView hidden={aba !== "jogar"} />
             <NanicadasView hidden={aba !== "frases"} />
             <NanicosView hidden={aba !== "nanicos"} />

@@ -65,7 +65,12 @@ src/
                        (tocar abre a ficha), Cantos.tsx ("Na sala agora", ganhos, carteira, dica), ganhos.ts
                        (ganhos de moedas de todo mundo pelo tempo real das carteiras), HallView; zoeira:
                        zoeira.ts (arco do voo e cambaleio; puro e testado), zoeiraSala.ts (chama zoar(), recebe
-                       a tabela zoeiras, anima) e ZoeiraTela.tsx (menu do boneco, voo, PLAFT!, revidar)
+                       a tabela zoeiras, anima) e ZoeiraTela.tsx (menu do boneco, voo, PLAFT!, revidar);
+                       QuadroTrofeus.tsx (quadro na parede da esquerda, abre a aba Troféus) e Chapeu.tsx
+                       (chapéu de burro, coroa dourada e coroa de moedas na cabeça do boneco)
+    trofeus/           aba Troféus (aba `trofeus`, fora do menu; abre pelo quadro do Sítio): trofeus.ts (os 6
+                       troféus, pódio, números, enfeites; puro e testado), trofeusDados.ts (lê o pódio e pede o
+                       cálculo à riot-semana) e TrofeusView (cartões, seletor de semana, hall da fama)
     jogar/             JogarView (escalação, cartela, montar cartela), MiniCartela (painel do Ao vivo e
                        cartela flutuante), riot.ts (consulta a função riot-ao-vivo), partida.ts (lanes, puro),
                        RiotBox, CellTag; roleta do rodízio: rodizio.ts (fatias, ângulo, "seguidas"; puro e
@@ -106,12 +111,14 @@ src/
     tipos.ts           Friend, Phrase, Card, Presence…
     dados/             campeoes.ts (CHAMPS, LANES, LANE_CAMP), nanicos.ts (NAN_MAP, artOf, bonecoOf), changelog.ts,
                        novidades.ts (o que mostrar no Log depois de uma atualização; puro e testado)
-  styles/              CSS global, numerado: 01-base.css … 26-cassino.css (no celular, as abas ficam numa barra embaixo)
+  styles/              CSS global, numerado: 01-base.css … 28-trofeus.css (no celular, as abas ficam numa barra embaixo)
 public/arte/           artes dos nanicos (rosto e corpo), bonecos do hall, foto da turma, reações dos Picarétezzi
 planejamento/          PLANO.md (próximas fases e decisões), prompts/ (um por fase), demos e arte pronta
 supabase/
   functions/riot-ao-vivo/index.ts   Edge Function (Deno): partida ao vivo. Fora do build do Next.
   functions/ficha-jogos/index.ts    Edge Function (Deno): números da ficha (Riot e Steam), guardados por 6 h
+  functions/riot-semana/           Edge Function (Deno): troféus da semana; calculo.ts é a regra pura (testada no
+                                   site, em src/features/trofeus/calculo.test.ts)
   sql/                 seguranca.sql, contas-e-ao-vivo.sql, supabase.sql e antigos/
 legacy/                site antigo (index.html) e o passo a passo antigo (LEIA-ME.md)
 vercel.json            cabeçalhos de segurança (CSP etc.) e framework
@@ -244,6 +251,8 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 | `riot_contas`, `riot_ao_vivo`, `riot_meta` | cache da API da Riot | só a Edge Function |
 | `rodizio` | roleta do rodízio, uma linha por sala de LoL (`fila`, `rodada`, `ja_entraram`, `sorteado`, `girado_em`, `giro`, `trocas`, `no_time`) | ninguém direto: só `rodizio_fila`, `rodizio_girar` (o banco sorteia com `random()`), `rodizio_colocar` (troca a rota na `game` e passa pelo `escalacao_protecao`) e `rodizio_desistir` (seção 19) |
 | `zoeiras` | chinelada, torta e revide no Sítio (`de`, `para` = friend ids, `tipo`, `em`; apaga com 30 dias) | ninguém direto: só `zoar(nanico, tipo)` (cobra 5/25 com `creditar`, revide grátis em 30 s, limites) e `placar_zoeira(nanico)` (seção 20); nanicos leem as das últimas 24 h |
+| `trofeus_semana` | pódio de cada troféu por semana (`semana` = segunda, `trofeu`, `posicao` 1–3, `friend_id`, `valor`, `partidas`) | nanicos leem; só a função `riot-semana` grava |
+| `riot_semana_meta`, `riot_semana_partidas` | trava e progresso do cálculo da semana (`estado` calculando/parcial/pronta) e as partidas já lidas (só os números dos nanicos) | só a função `riot-semana` (o site lê `estado`) |
 | `jogos_stats` | números da ficha por nanico e fonte (`lol`: elo, vitórias, KDA, main; `steam`: horas) | nanicos leem; só a função `ficha-jogos` grava |
 | `riot_partidas_vistas` | partidas do LoL já lidas (KDA das últimas 20 sem buscar tudo de novo) | só a função `ficha-jogos` |
 | `atributos_votos` | votos anônimos (`de`, `para`, `atributo`, `nota` 0–10) | **ninguém lê nem grava direto**: só pelas funções abaixo |
@@ -349,6 +358,7 @@ Mais de uma pessoa (e mais de uma IA) mexe no site. **Toda tarefa começa assim,
 - **Origens:** a função só aceita chamadas das origens listadas em `ORIGENS`, que incluem a Vercel e `localhost:8810/8811`.
 - **Chave da Riot:** fica em **Edge Functions → Secrets → `RIOT_API_KEY`**. Não copie para lugar nenhum.
 - **Chave da Steam:** fica em **Edge Functions → Secrets → `STEAM_API_KEY`** (tirada em steamcommunity.com/dev/apikey). Sem ela, a ficha mostra só os números do LoL.
+- **Edge Function `riot-semana`** (usa o segredo `RIOT_API_KEY`): o site chama ao entrar quando a semana anterior (segunda a domingo, Brasília) não está pronta. Só uma pessoa calcula por vez (`semana_vez`); cada chamada faz no máximo 40 consultas à Riot com pausa e guarda o progresso, e a próxima continua (o site tenta de novo a cada 2,5 min). No fim grava `trofeus_semana` e paga com `trofeus_pagar` (+50 Carregou o piano, +20 Viciado; o `ref` com a semana evita pagar duas vezes). `hall_da_fama()` conta os 1º lugares. O "Mais rico" não tem tabela: é o maior saldo de `carteiras`, ao vivo.
 - **Edge Function `ficha-jogos`:** busca cada fonte de um nanico no máximo uma vez a cada 6 h (usa no máximo 25 chamadas à Riot por vez). As origens aceitas são as mesmas da `riot-ao-vivo`.
 
 ### Pendências conhecidas

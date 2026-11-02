@@ -8,10 +8,12 @@ import type { Rosto } from "@/lib/tipos";
 import type { Boneco as B } from "./bonecos";
 import { ANCORA, CEL_H, CEL_W, quadroSprite, tela, type Caixa2D } from "./hall";
 import { abrirMenu } from "./zoeiraSala";
+import { Chapeu } from "./Chapeu";
+import type { Enfeite } from "@/features/trofeus/trofeus";
 
 const pct = (v: number) => `${v * 100}%`;
 
-export const Boneco = memo(function Boneco({ b, f, eu, z, vb, rot = 0 }: { b: B; f: Rosto; eu: boolean; z: number; vb: Caixa2D; rot?: number }) {
+export const Boneco = memo(function Boneco({ b, f, eu, z, vb, rot = 0, enfeite }: { b: B; f: Rosto; eu: boolean; z: number; vb: Caixa2D; rot?: number; enfeite?: Enfeite }) {
   const [x, y] = tela(b.i + 0.5, b.j + 0.5);
   const folha = bonecoOf(f);
   const q = quadroSprite(b.sentido, b.quadro);
@@ -35,8 +37,9 @@ export const Boneco = memo(function Boneco({ b, f, eu, z, vb, rot = 0 }: { b: B;
     </span>
   );
   return (
-    <div className={"boneco" + (eu ? " eu" : "") + (rot ? " balanca" : "")} style={caixa}>
+    <div className={"boneco" + (eu ? " eu" : "") + (rot ? " balanca" : "") + (enfeite ? " chapeu-" + enfeite : "")} style={caixa}>
       <span className="boneco-nome">{b.name}</span>
+      {enfeite && <Chapeu tipo={enfeite} />}
       {eu || !f.id ? (
         corpo
       ) : (

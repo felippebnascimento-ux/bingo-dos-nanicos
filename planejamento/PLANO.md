@@ -219,7 +219,7 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | 18 | `18-chinelada-torta.md` | `chinelada-torta` | 2, 14 | feito (02/11/2026); SQL da seção 20 aplicado |
 | 19 | `19-emotes-boneco.md` | `emotes-boneco` | 14 (e os quadros dos emotes, que a sessão de planejamento gera antes) | a fazer |
 | 20 | `20-mesa-de-som.md` | `mesa-de-som` | 14 | a fazer |
-| 21 | `21-trofeus-da-semana.md` | `trofeus-da-semana` | 14 | a fazer |
+| 21 | `21-trofeus-da-semana.md` | `trofeus-da-semana` | 14 | feito (02/11/2026); SQL da seção 22 aplicado e função `riot-semana` publicada |
 | 22 | `22-bolao-da-partida.md` | `bolao-da-partida` | 10 | a fazer |
 | 23 | `23-missoes-do-dia.md` | `missoes-do-dia` | 2 (cada missão liga quando a fase dela existir) | a fazer |
 | 25 | `25-eventos-com-horario.md` | `eventos-com-horario` | 2, 14 | a fazer |

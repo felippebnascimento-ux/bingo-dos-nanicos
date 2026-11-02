@@ -129,7 +129,7 @@ describe("sala nova (14×11)", () => {
   });
 
   it("cada móvel que abre algo tem a placa dentro da sala", () => {
-    expect(CLICAVEIS.map((c) => c.id)).toEqual(["salas", "tv", "truco", "loja"]);
+    expect(CLICAVEIS.map((c) => c.id)).toEqual(["salas", "tv", "trofeus", "truco", "loja"]);
     for (const c of CLICAVEIS) {
       expect(c.rotulo.i).toBeGreaterThanOrEqual(0);
       expect(c.rotulo.j).toBeLessThanOrEqual(NJ);

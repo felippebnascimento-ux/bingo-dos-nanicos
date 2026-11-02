@@ -242,7 +242,7 @@ create table if not exists public.extrato (
   id      bigint generated always as identity primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
   valor   int not null,
-  motivo  text not null check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira')),
+  motivo  text not null check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu')),
   ref     text,
   em      timestamptz not null default now()
 );
@@ -1172,7 +1172,7 @@ grant execute on function public.rodizio_desistir(text) to authenticated;
 --     tempo real da tabela, nunca por broadcast. O alvo não perde nada.
 alter table public.extrato drop constraint if exists extrato_motivo_check;
 alter table public.extrato add constraint extrato_motivo_check
-  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira'));
+  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu'));
 
 create table if not exists public.zoeiras (
   id   bigint generated always as identity primary key,
@@ -1252,7 +1252,106 @@ end $$;
 revoke all on function public.placar_zoeira(uuid) from public, anon;
 grant execute on function public.placar_zoeira(uuid) to authenticated;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio e as 2 da zoeira
+-- 22) troféus da semana: Feeder, Turista, Carregou o piano, Viciado e Sumido ---------------------
+--     Toda segunda a função riot-semana calcula a semana anterior (segunda a domingo, horário de
+--     Brasília) com as partidas da Riot e grava o pódio aqui. Só uma pessoa dispara o cálculo
+--     (semana_vez) e o pagamento acontece uma vez só (trofeus_pagar confere o extrato).
+alter table public.extrato drop constraint if exists extrato_motivo_check;
+alter table public.extrato add constraint extrato_motivo_check
+  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu'));
+
+create table if not exists public.trofeus_semana (
+  semana    date not null,
+  trofeu    text not null check (trofeu in ('feeder', 'turista', 'piano', 'viciado', 'sumido')),
+  posicao   int not null check (posicao between 1 and 3),
+  friend_id uuid not null references public.friends(id) on delete cascade,
+  valor     numeric not null,
+  partidas  int not null default 0,
+  primary key (semana, trofeu, posicao)
+);
+create table if not exists public.riot_semana_meta (
+  semana      date primary key,
+  estado      text not null check (estado in ('calculando', 'parcial', 'pronta')),
+  comecou_em  timestamptz not null default now(),
+  terminou_em timestamptz,
+  progresso   jsonb not null default '{}'::jsonb,
+  erro        text
+);
+-- partidas da semana já lidas (só os números dos nanicos, nada de terceiros), para continuar de onde parou
+create table if not exists public.riot_semana_partidas (
+  semana   date not null,
+  match_id text not null,
+  dados    jsonb not null,
+  primary key (semana, match_id)
+);
+alter table public.trofeus_semana       enable row level security;
+alter table public.riot_semana_meta     enable row level security;
+alter table public.riot_semana_partidas enable row level security;
+revoke all on public.trofeus_semana, public.riot_semana_meta, public.riot_semana_partidas from public, anon, authenticated;
+grant select on public.trofeus_semana to authenticated;
+grant select (semana, estado, terminou_em) on public.riot_semana_meta to authenticated;
+drop policy if exists "nanicos veem os trofeus" on public.trofeus_semana;
+create policy "nanicos veem os trofeus" on public.trofeus_semana for select to authenticated using (public.eh_nanico());
+drop policy if exists "nanicos veem a semana" on public.riot_semana_meta;
+create policy "nanicos veem a semana" on public.riot_semana_meta for select to authenticated using (public.eh_nanico());
+
+-- a vez de calcular a semana: true para UMA chamada; se travar mais de 10 min "calculando", outra pode pegar
+create or replace function public.semana_vez(p_semana date) returns boolean
+language plpgsql security definer set search_path = public as $$
+declare
+  v boolean;
+begin
+  insert into public.riot_semana_meta (semana, estado) values (p_semana, 'calculando')
+  on conflict (semana) do update set estado = 'calculando', comecou_em = now()
+   where riot_semana_meta.estado = 'parcial'
+      or (riot_semana_meta.estado = 'calculando' and riot_semana_meta.comecou_em < now() - interval '10 minutes')
+  returning true into v;
+  return coalesce(v, false);
+end $$;
+revoke all on function public.semana_vez(date) from public, anon, authenticated;
+
+-- paga os troféus da semana (+50 Carregou o piano, +20 Viciado) uma vez só: o ref com a semana evita repetir
+create or replace function public.trofeus_pagar(p_semana date) returns int
+language plpgsql security definer set search_path = public as $$
+declare
+  r record;
+  v_ref text;
+  v_n int := 0;
+begin
+  for r in select t.trofeu, f.user_id from public.trofeus_semana t join public.friends f on f.id = t.friend_id
+            where t.semana = p_semana and t.posicao = 1 and t.trofeu in ('piano', 'viciado') and f.user_id is not null loop
+    v_ref := p_semana::text || ':' || r.trofeu;
+    if not exists (select 1 from public.extrato where user_id = r.user_id and motivo = 'trofeu' and ref = v_ref) then
+      perform public.creditar(r.user_id, case r.trofeu when 'piano' then 50 else 20 end, 'trofeu', v_ref);
+      v_n := v_n + 1;
+    end if;
+  end loop;
+  return v_n;
+end $$;
+revoke all on function public.trofeus_pagar(date) from public, anon, authenticated;
+
+-- hall da fama: quantas vezes cada nanico ficou em 1º em cada troféu ({id do nanico: {troféu: vezes}})
+create or replace function public.hall_da_fama() returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos veem os troféus.' using errcode = 'P0001'; end if;
+  return (select coalesce(jsonb_object_agg(fid, contagem), '{}'::jsonb)
+            from (select friend_id::text as fid, jsonb_object_agg(trofeu, n) as contagem
+                    from (select friend_id, trofeu, count(*)::int as n from public.trofeus_semana where posicao = 1
+                           group by friend_id, trofeu) c
+                   group by friend_id) x);
+end $$;
+revoke all on function public.hall_da_fama() from public, anon;
+grant execute on function public.hall_da_fama() to authenticated;
+
+do $$ begin
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    grant all on public.trofeus_semana, public.riot_semana_meta, public.riot_semana_partidas to service_role;
+    grant execute on function public.semana_vez(date), public.trofeus_pagar(date) to service_role;
+  end if;
+end $$;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira e as 3 dos troféus
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -1278,4 +1377,7 @@ select proname::text, 'rodizio' from pg_proc
 union all
 select proname::text, 'zoeira' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('zoar', 'placar_zoeira')
+union all
+select proname::text, 'trofeus' from pg_proc
+ where pronamespace = 'public'::regnamespace and proname in ('semana_vez', 'trofeus_pagar', 'hall_da_fama')
 order by 2, 1;

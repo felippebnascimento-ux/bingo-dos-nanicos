@@ -94,13 +94,9 @@ function enfeites(): Forma[] {
   naParede(L, "dir", JA - 0.42, JA - 0.14, JZ0 - 6, JZ1 + 16, "cortina", "cortinal");
   naParede(L, "dir", JB + 0.14, JB + 0.42, JZ0 - 6, JZ1 + 16, "cortina", "cortinal");
 
-  /* parede da esquerda: suporte da TV, prateleira com plantinha, porta de vidro e janelas velhas */
+  /* parede da esquerda: suporte da TV, porta de vidro e janelas velhas (entre a TV e a porta fica o
+     quadro dos troféus, numa camada própria: QuadroTrofeus.tsx) */
   naParede(L, "esq", 2.0, 2.12, 58, 90, "suporte");
-  naParede(L, "esq", 3.5, 4.3, 96, 100, "janela");
-  const [vx, vy] = p(0, 3.9, 100);
-  L.push({ t: "r", x: vx - 7, y: vy - 14, w: 14, h: 14, f: "vaso", rx: 2 });
-  L.push({ t: "c", cx: vx - 5, cy: vy - 20, r: 8, f: "folha1" });
-  L.push({ t: "c", cx: vx + 5, cy: vy - 22, r: 8, f: "folha0" });
   naParede(L, "esq", 5.4, 7.6, 0, 140, "madeira", "madeiral", 3);
   naParede(L, "esq", 5.5, 7.5, 4, 136, "vidro");
   naParede(L, "esq", 5.5, 7.5, 4, 60, "grama");

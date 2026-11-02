@@ -13,6 +13,7 @@ import { juntarVisto, lerVisto, temNovidade, ULTIMA } from "./dados/novidades";
 import { carregarChat } from "@/features/chat/chat";
 import { iniciarCarteira } from "./carteira";
 import { iniciarHall } from "@/features/hall/bonecos";
+import { iniciarTrofeus } from "@/features/trofeus/trofeusDados";
 import { iniciarRiot } from "@/features/jogar/riot";
 import { pararTudoAoVivo } from "@/features/live/live";
 
@@ -252,6 +253,8 @@ export function enterApp() {
   /* o boneco aparece no Sítio para todo mundo mesmo sem abrir a aba */
   iniciarHall();
   setTimeout(iniciarRiot, 1500);
+  /* troféus da semana: lê e, se a semana passada não estiver pronta, pede o cálculo */
+  setTimeout(iniciarTrofeus, 3000);
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) {
       later("f", loadFriends);

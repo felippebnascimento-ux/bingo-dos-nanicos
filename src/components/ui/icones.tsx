@@ -25,6 +25,44 @@ export const IcVoltar = (p: P) => (
     <path d="M15 6l-6 6 6 6" />
   </Base>
 );
+/** Troféus: prato vazio (Feeder), mapa (Turista), piano, controle (Viciado), interrogação (Sumido) e taça. */
+export const IcPrato = (p: P) => (
+  <Base {...p}>
+    <ellipse cx="12" cy="13" rx="9" ry="5" />
+    <ellipse cx="12" cy="12.5" rx="5" ry="2.5" />
+    <path d="M8 4l1.5 3M16 4l-1.5 3" />
+  </Base>
+);
+export const IcMapa = (p: P) => (
+  <Base {...p}>
+    <path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z" />
+    <path d="M9 4v14M15 6v14" />
+  </Base>
+);
+export const IcPiano = (p: P) => (
+  <Base {...p}>
+    <rect x="3" y="6" width="18" height="12" rx="2" />
+    <path d="M8 6v7M12 6v7M16 6v7" />
+  </Base>
+);
+export const IcControle = (p: P) => (
+  <Base {...p}>
+    <path d="M7 8h10a4 4 0 0 1 4 4l-1 4a2 2 0 0 1-3.4 1l-1.6-2h-6l-1.6 2A2 2 0 0 1 4 16l-1-4a4 4 0 0 1 4-4z" />
+    <path d="M8 11v3M6.5 12.5h3M15.5 12h.01M17.5 13.5h.01" />
+  </Base>
+);
+export const IcPergunta = (p: P) => (
+  <Base {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01" />
+  </Base>
+);
+export const IcTaca = (p: P) => (
+  <Base {...p}>
+    <path d="M8 4h8v5a4 4 0 0 1-8 0z" />
+    <path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8M9 17h6" />
+  </Base>
+);
 /** Chama (dias seguidos no Sítio). */
 export const IcChama = (p: P) => (
   <Base {...p}>

@@ -61,5 +61,5 @@ export type Presence = {
 /** Sala tipo lan house (tabela `salas`, criada só pelo admin). */
 export type Sala = { id: string; nome: string; jogo: "lol" | "cs" | "outro"; discord: string | null; ordem: number };
 
-export type Aba = "inicio" | "hall" | "cassino" | "jogar" | "frases" | "nanicos" | "live" | "truco" | "perfil";
+export type Aba = "inicio" | "trofeus" | "hall" | "cassino" | "jogar" | "frases" | "nanicos" | "live" | "truco" | "perfil";
 export type RailTab = "telas" | "chat" | "cartela";

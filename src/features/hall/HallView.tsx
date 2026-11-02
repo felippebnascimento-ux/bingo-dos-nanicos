@@ -16,6 +16,10 @@ import { iniciarGanhos } from "./ganhos";
 import { cambalear } from "./zoeira";
 import { iniciarZoeira, useZoeira } from "./zoeiraSala";
 import { MenuBoneco, Revidar, ZoeiraCamada } from "./ZoeiraTela";
+import { BotaoQuadro, QuadroTrofeus } from "./QuadroTrofeus";
+import { useRanking } from "@/features/moedas/Ranking";
+import { enfeites } from "@/features/trofeus/trofeus";
+import { useTrofeus } from "@/features/trofeus/trofeusDados";
 import { caixaDoBoneco, caixaDoMovel, CLICAVEIS, MOVEIS, ordemZ, pisoLivreNaTela, pisoNaTela, VB_ESTREITO, VB_LARGO, type Caixa2D, type Clicavel, type Piso } from "./hall";
 import { Destaque, emPorcento, Fundo, MovelCamada, tvCaixa } from "./Sala";
 
@@ -54,10 +58,16 @@ export function HallView({ hidden }: { hidden: boolean }) {
   const naMesa = useTruco((s) => s.mesas.reduce((n, m) => n + m.lugares.filter(Boolean).length, 0));
   const vb = useVB();
   const temSalas = useApp((s) => s.salas.length > 0);
+  const temTrofeus = useTrofeus((s) => !!s.linhas?.length);
   const [destaque, setDestaque] = useState<Piso | null>(null);
   const [pisca, setPisca] = useState(0);
 
   const menu = useZoeira((s) => s.menu);
+  const trofeus = useTrofeus((s) => s.linhas);
+  const ranking = useRanking();
+  /* chapéu de burro, coroa dourada e a coroa de moedas do mais rico (troca na hora em que alguém passa) */
+  const maisRico = ranking?.[0]?.saldo != null ? ranking[0].fid : null;
+  const enfeite = useMemo(() => enfeites(trofeus ?? [], trofeus?.[0]?.semana ?? null, maisRico), [trofeus, maisRico]);
   const pancada = useZoeira((s) => s.pancada);
   const agora = useZoeira((s) => s.agora);
 
@@ -105,6 +115,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
     if (c === "salas") setApp({ salasAberto: true });
     else if (c === "tv") setApp({ aba: "live" });
     else if (c === "truco") setApp({ aba: "truco" });
+    else if (c === "trofeus") setApp({ aba: "trofeus" });
     else toast("A loja abre em breve");
   };
   const tv = tvCaixa(vb);
@@ -128,6 +139,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
           onPointerDown={tocou}
         >
           <Fundo aoVivo={aoVivo} vb={vb} />
+          <QuadroTrofeus vb={vb} />
           <Destaque piso={destaque} vb={vb} pisca={pisca} />
           {MOVEIS.map((m, k) => (
             <MovelCamada key={m.id} id={m.id} z={z[k]} vb={vb} />
@@ -141,6 +153,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
               z={z[MOVEIS.length + k]}
               vb={vb}
               rot={b.fid && pancada[b.fid] ? cambalear(agora - pancada[b.fid]) : 0}
+              enfeite={b.fid ? enfeite[b.fid] : undefined}
             />
           ))}
           <ZoeiraCamada bonecos={bonecos} vb={vb} />
@@ -155,9 +168,10 @@ export function HallView({ hidden }: { hidden: boolean }) {
               abrir("tv");
             }}
           />
-          {CLICAVEIS.filter((c) => c.id !== "salas" || temSalas).map((c) => {
+          <BotaoQuadro vb={vb} />
+          {CLICAVEIS.filter((c) => (c.id !== "salas" || temSalas) && (c.id !== "trofeus" || temTrofeus)).map((c) => {
             const pos = emPorcento(vb, c.rotulo.i, c.rotulo.j, c.rotulo.z);
-            const rotulo = c.id === "tv" ? "Ao vivo" : c.id === "truco" ? "Truco" : c.id === "salas" ? "Salas" : "Loja";
+            const rotulo = c.id === "tv" ? "Ao vivo" : c.id === "truco" ? "Truco" : c.id === "salas" ? "Salas" : c.id === "trofeus" ? "Troféus" : "Loja";
             return (
               <button
                 key={c.id}

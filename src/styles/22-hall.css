@@ -388,3 +388,22 @@
 .hall-revidar{position:absolute;left:50%;top:16px;z-index:960;transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:8px 8px 8px 14px;border-radius:99px;background:color-mix(in srgb,var(--accent-ink) 90%,transparent);color:var(--stamp-ink);font-size:13px;box-shadow:0 6px 18px var(--shadow);max-width:calc(100% - 24px)}
 .hall-revidar b{color:var(--accent)}
 @media (max-width:760px){.hall-revidar{position:static;transform:none;margin:8px auto 0;justify-content:center;border-radius:var(--r-md)}}
+
+/* ---------- troféus da semana: o quadro na parede e os enfeites de cabeça (fase 21) ---------- */
+.hall-quadro{z-index:1}
+.quadro-papel{fill:var(--stamp-ink)}
+.quadro-titulo{font:800 6px var(--display);fill:var(--accent-text);letter-spacing:.02em}
+.quadro-linha{font:600 7px var(--body);fill:var(--accent-ink)}
+.quadro-rotulo{fill:var(--live);font-weight:800}
+.boneco-chapeu{position:absolute;left:50%;top:-3%;width:42%;transform:translateX(-50%);pointer-events:none;filter:drop-shadow(0 1px 1px var(--shadow))}
+.boneco-chapeu.burro{top:-14%;width:36%}
+/* com enfeite, a placa do nome sobe para não ficar embaixo dele */
+.boneco.chapeu-burro .boneco-nome{bottom:114%}
+.boneco.chapeu-coroa .boneco-nome,.boneco.chapeu-moedas .boneco-nome{bottom:106%}
+.ch-burro{fill:var(--stamp-ink);stroke:var(--accent-ink);stroke-width:1.5}
+.ch-aba{fill:none;stroke:var(--live);stroke-width:2.5}
+.ch-texto{font:800 6px var(--display);fill:var(--live)}
+.ch-ouro{fill:var(--accent);stroke:var(--accent-text);stroke-width:1.2;stroke-linejoin:round}
+.ch-pedra{fill:var(--live)}
+.ch-moeda{fill:var(--accent);stroke:var(--accent-text);stroke-width:1.2}
+.ch-cifrao{font:800 7px var(--display);fill:var(--accent-ink)}
