@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
-import { friendOf, MY_KEY, useApp } from "@/lib/store";
+import { friendOf, useApp } from "@/lib/store";
 import { local } from "@/lib/util";
 import { abrirMesa, useTruco, verMesa } from "./mesa";
 
@@ -23,6 +23,7 @@ export function Lobby() {
   const mesas = useTruco((s) => s.mesas);
   const friends = useApp((s) => s.friends);
   const myFid = useApp((s) => s.myFid);
+  const myUid = useApp((s) => s.myUid);
   const [opt, setOptState] = useState(lerOpt);
   const setOpt = (p: Partial<Opt>) => {
     const o = { ...opt, ...p };
@@ -53,7 +54,7 @@ export function Lobby() {
           <input type="checkbox" id="trFlor" checked={opt.flor} onChange={(e) => setOpt({ flor: e.target.checked })} />
           Jogar com flor
         </label>
-        <button className="btn" id="trAbrir" type="button" onClick={() => abrirMesa(opt.modo, opt.alvo, opt.flor)}>
+        <button className="btn" id="trAbrir" type="button" onClick={() => void abrirMesa(opt.modo, opt.alvo, opt.flor)}>
           Abrir mesa
         </button>
       </div>
@@ -63,7 +64,7 @@ export function Lobby() {
           <ul className="tr-mesas">
             {lista.map((m) => {
               const sent = m.lugares.filter(Boolean).length;
-              const minha = m.lugares.some((l) => l && (l.key === MY_KEY || (!!myFid && l.fid === myFid)));
+              const minha = m.lugares.some((l) => l && (l.key === myUid || (!!myFid && l.fid === myFid)));
               const livre = m.fase === "espera" && sent < m.modo;
               const falta = m.modo - sent;
               const estado =

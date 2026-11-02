@@ -128,6 +128,14 @@ export const CHANGELOG: EntradaLog[] = [
       "A geladeira do Sítio agora abre a Loja",
     ],
   },
+  {
+    data: "02/11/2026",
+    itens: [
+      "Truco à prova de espiada: as cartas ficam no servidor, e a vitória vale moedas",
+      "Ganhou a partida de truco: +15 moedas (até 3 vitórias pagas por dia)",
+      "Recarregou a página no meio do truco? Seu lugar e suas cartas continuam lá",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

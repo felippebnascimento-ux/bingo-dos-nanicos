@@ -207,7 +207,7 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | 6 | `06-cassino-roleta.md` | `cassino-roleta` | 2 | **feita** e no oficial (SQL da seção 11 aplicado) |
 | 7 | `07-cassino-jogos.md` | `cassino-jogos` | 6 | **feita** e no oficial (SQL da seção 11b aplicado) |
 | 8 | `08-bingo-servidor.md` | `bingo-servidor` | 2, 5 | a fazer |
-| 9 | `09-truco-servidor.md` | `truco-servidor` | 2 | a fazer |
+| 9 | `09-truco-servidor.md` | `truco-servidor` | 2 | feito (02/11/2026); função `truco-mesa` publicada (cópia do engine gerada por `npm run sincronizar:truco`), SQL da seção 13 aplicado; o evento `truco` saiu do broadcast |
 | 10 | `10-apostas-ao-vivo.md` | `apostas-ao-vivo` | 6 | a fazer |
 | 11 | `11-loja-quarto.md` | `loja-quarto` | 2, 3 | feito (02/11/2026, antes da fila a pedido do João); SQL da seção 15 aplicado; acrescentei os consumíveis (cigarrinho, latinha, chimarrão, energético, caipirinha, charuto) com animação no Sítio |
 | 12 | `12-midias-links.md` | `midias-links` | 5 | a fazer |

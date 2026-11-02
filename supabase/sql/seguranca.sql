@@ -1659,7 +1659,160 @@ end $$;
 revoke all on function public.bater_ponto() from public, anon;
 grant execute on function public.bater_ponto() to authenticated;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos e as 4 da loja
+-- 13) truco no servidor: a função truco-mesa embaralha, guarda as mãos e confere cada jogada ----------------
+-- truco_mesas: só o que todos podem ver (a mesa pública, sem as cartas de ninguém).
+-- truco_estado: a mesa completa, com o baralho e as mãos. Ninguém lê, nem pelo tempo real; só as funções abaixo.
+-- truco_maos: as três cartas de cada lugar; cada um lê só a sua (o RLS filtra também o tempo real).
+create table if not exists public.truco_mesas (
+  id            text primary key check (id ~ '^[a-z0-9]{6,20}$'),
+  criada_por    uuid not null references auth.users(id) on delete cascade,
+  opcoes        jsonb not null default '{}',
+  publico       jsonb not null,
+  fase          text not null check (fase in ('espera', 'jogo', 'fim')),
+  atualizada_em timestamptz not null default now()
+);
+alter table public.truco_mesas enable row level security;
+revoke all on public.truco_mesas from public, anon, authenticated;
+grant select on public.truco_mesas to authenticated;
+drop policy if exists truco_mesas_ler on public.truco_mesas;
+create policy truco_mesas_ler on public.truco_mesas for select to authenticated using (public.eh_nanico());
+
+create table if not exists public.truco_estado (
+  mesa_id text primary key references public.truco_mesas(id) on delete cascade,
+  estado  jsonb not null,
+  versao  int not null default 0
+);
+alter table public.truco_estado enable row level security;
+revoke all on public.truco_estado from public, anon, authenticated;
+
+create table if not exists public.truco_maos (
+  mesa_id text not null references public.truco_mesas(id) on delete cascade,
+  lugar   int not null check (lugar between 0 and 3),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  cartas  jsonb not null default '[]',
+  mao_n   int not null default 0,
+  primary key (mesa_id, lugar)
+);
+alter table public.truco_maos enable row level security;
+revoke all on public.truco_maos from public, anon, authenticated;
+grant select on public.truco_maos to authenticated;
+drop policy if exists truco_maos_minha on public.truco_maos;
+create policy truco_maos_minha on public.truco_maos for select to authenticated using (user_id = auth.uid());
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.truco_mesas; exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.truco_maos;  exception when duplicate_object then null; end;
+end $$;
+
+-- até 30 ações a cada 10 s por pessoa (a função chama antes de cada ação; limitar() não serve, ela usa auth.uid())
+create or replace function public.truco_vez(p_user uuid)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  v_n int;
+begin
+  delete from public.limites where user_id = p_user and acao = 'truco' and at < now() - interval '1 day';
+  select count(*) into v_n from public.limites where user_id = p_user and acao = 'truco' and at > now() - interval '10 seconds';
+  if v_n >= 30 then raise exception 'Calma: muitas jogadas seguidas.' using errcode = 'P0001'; end if;
+  insert into public.limites (user_id, acao) values (p_user, 'truco');
+end $$;
+
+-- a mesa completa e a versão (para gravar só se ninguém mexeu no meio)
+create or replace function public.truco_carregar(p_mesa text)
+returns jsonb language sql stable security definer set search_path = public as $$
+  select jsonb_build_object('estado', estado, 'versao', versao) from public.truco_estado where mesa_id = p_mesa
+$$;
+
+-- grava tudo de uma vez: a mesa completa, a pública e as mãos. p_versao = -1 abre uma mesa nova.
+-- Devolve false se alguém gravou antes (a função carrega de novo e tenta outra vez).
+create or replace function public.truco_salvar(p_mesa text, p_versao int, p_estado jsonb, p_publico jsonb, p_fase text, p_maos jsonb, p_user uuid, p_opcoes jsonb default '{}')
+returns boolean language plpgsql security definer set search_path = public as $$
+begin
+  if p_versao = -1 then
+    -- mesas esquecidas somem; as minhas que não estão em jogo também (uma mesa por pessoa)
+    delete from public.truco_mesas where atualizada_em < now() - interval '3 hours';
+    delete from public.truco_mesas where criada_por = p_user and fase <> 'jogo';
+    if exists (select 1 from public.truco_mesas where criada_por = p_user) then
+      raise exception 'Você já tem uma mesa em jogo.' using errcode = 'P0001';
+    end if;
+    insert into public.truco_mesas (id, criada_por, opcoes, publico, fase) values (p_mesa, p_user, p_opcoes, p_publico, p_fase);
+    insert into public.truco_estado (mesa_id, estado, versao) values (p_mesa, p_estado, 0);
+  else
+    update public.truco_estado set estado = p_estado, versao = versao + 1 where mesa_id = p_mesa and versao = p_versao;
+    if not found then return false; end if;
+    update public.truco_mesas set publico = p_publico, fase = p_fase, atualizada_em = now() where id = p_mesa;
+  end if;
+  -- as mãos: só regrava a que mudou (cada mudança vira um aviso do tempo real só para o dono)
+  delete from public.truco_maos m where m.mesa_id = p_mesa
+     and not exists (select 1 from jsonb_array_elements(p_maos) x where (x->>'lugar')::int = m.lugar and (x->>'user_id')::uuid = m.user_id);
+  insert into public.truco_maos (mesa_id, lugar, user_id, cartas, mao_n)
+  select p_mesa, (x->>'lugar')::int, (x->>'user_id')::uuid, x->'cartas', (x->>'mao_n')::int from jsonb_array_elements(p_maos) x
+  on conflict (mesa_id, lugar) do update set user_id = excluded.user_id, cartas = excluded.cartas, mao_n = excluded.mao_n
+   where truco_maos.cartas is distinct from excluded.cartas or truco_maos.mao_n <> excluded.mao_n or truco_maos.user_id <> excluded.user_id;
+  return true;
+end $$;
+
+create or replace function public.truco_fechar(p_mesa text, p_user uuid)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  delete from public.truco_mesas where id = p_mesa and criada_por = p_user;
+  if not found then raise exception 'Só quem abriu fecha a mesa.' using errcode = 'P0001'; end if;
+end $$;
+
+-- prêmio: +15 a cada vencedor, só com todos os lugares ocupados por nanicos diferentes, no máximo 3 vitórias pagas
+-- por dia (de Brasília) e uma vez só por partida (o ref é "mesa:partida"). Devolve quem recebeu.
+create or replace function public.truco_premiar(p_mesa text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  v_e     jsonb;
+  v_m     jsonb;
+  v_modo  int;
+  v_venc  int;
+  v_ref   text;
+  v_uid   uuid;
+  v_users uuid[] := '{}';
+  v_pagos uuid[] := '{}';
+  i       int;
+begin
+  select estado into v_e from public.truco_estado where mesa_id = p_mesa for update;
+  v_m := v_e->'M';
+  if v_m is null or v_m->>'fase' <> 'fim' or v_m->'vencedor' is null or jsonb_typeof(v_m->'vencedor') <> 'number' then
+    return '[]'::jsonb;
+  end if;
+  v_modo := (v_m->>'modo')::int;
+  v_venc := (v_m->>'vencedor')::int;
+  for i in 0..v_modo - 1 loop
+    v_uid := null;
+    select f.user_id into v_uid from public.friends f
+     where f.id::text = v_m->'lugares'->i->>'fid' and f.user_id::text = v_m->'lugares'->i->>'key';
+    if v_uid is null or v_uid = any(v_users) then return '[]'::jsonb; end if;
+    v_users := v_users || v_uid;
+  end loop;
+  v_ref := p_mesa || ':' || coalesce(v_e->>'partida', '1');
+  for i in 0..v_modo - 1 loop
+    continue when i % 2 <> v_venc;
+    v_uid := v_users[i + 1];
+    continue when exists (select 1 from public.extrato where user_id = v_uid and motivo = 'truco' and ref = v_ref);
+    continue when (select count(*) from public.extrato where user_id = v_uid and motivo = 'truco' and valor > 0
+                    and (em at time zone 'America/Sao_Paulo')::date = public.hoje_br()) >= 3;
+    perform public.creditar(v_uid, 15, 'truco', v_ref);
+    v_pagos := v_pagos || v_uid;
+  end loop;
+  return to_jsonb(v_pagos);
+end $$;
+
+revoke all on function public.truco_vez(uuid) from public, anon, authenticated;
+revoke all on function public.truco_carregar(text) from public, anon, authenticated;
+revoke all on function public.truco_salvar(text, int, jsonb, jsonb, text, jsonb, uuid, jsonb) from public, anon, authenticated;
+revoke all on function public.truco_fechar(text, uuid) from public, anon, authenticated;
+revoke all on function public.truco_premiar(text) from public, anon, authenticated;
+grant execute on function public.truco_vez(uuid) to service_role;
+grant execute on function public.truco_carregar(text) to service_role;
+grant execute on function public.truco_salvar(text, int, jsonb, jsonb, text, jsonb, uuid, jsonb) to service_role;
+grant execute on function public.truco_fechar(text, uuid) to service_role;
+grant execute on function public.truco_premiar(text) to service_role;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja e as 5 do truco
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -1694,4 +1847,7 @@ select proname::text, 'eventos' from pg_proc
 union all
 select proname::text, 'loja' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('comprar', 'equipar', 'usar_item', 'quarto_de')
+union all
+select proname::text, 'truco' from pg_proc
+ where pronamespace = 'public'::regnamespace and proname in ('truco_vez', 'truco_carregar', 'truco_salvar', 'truco_fechar', 'truco_premiar')
 order by 2, 1;

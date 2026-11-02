@@ -1,25 +1,22 @@
 /*
- * Truco: mesa online.
- * Quem abre a mesa é o anfitrião: o navegador dele embaralha, guarda as cartas e confere cada jogada.
- * Os outros mandam as jogadas para ele pela sala; ele devolve a mesa (sem as cartas de ninguém)
- * e manda a mão de cada um só para o dono. Se o anfitrião recarregar, a mesa volta do ponto onde parou.
+ * Truco: mesa online, com o servidor de juiz.
+ * Quem embaralha, guarda as cartas e confere cada jogada é a função truco-mesa (Supabase). O site só pede
+ * ("jogar 7e", "sentar no lugar 1") e recebe pelo tempo real do banco a mesa pública (truco_mesas) e a
+ * minha mão (truco_maos, que o RLS só entrega ao dono). Ninguém mais tem a mão dos outros no navegador.
  *
  * O estado fica aqui (TRU, como no site antigo). A tela lê a store `useTruco`, que este módulo
  * atualiza em `avisa()`; o contador do menu é `trucoAbertas` no `useApp`.
  */
 import { create } from "zustand";
-import { aoConectar, aoReceber, enviar, estaNaSala, limitePorPessoa, salaConectada } from "@/lib/sala";
-import { friendOf, getApp, MY_KEY, setApp } from "@/lib/store";
+import { aoConectar, aoMudarTabela } from "@/lib/sala";
+import { errMsg, sb } from "@/lib/supabase";
+import { getApp, setApp } from "@/lib/store";
 import { toast } from "@/lib/toast";
-import { local, newId } from "@/lib/util";
-import {
-  TR_APOSTAS, trAcao, trLog, trNovaMao, trNovaMesa, trPublica, trValido,
-  type Aposta, type Carta, type MaoBase, type Mesa, type MesaPub, type Vaza,
-} from "./engine";
+import { trValido, type Carta, type MaoBase, type MesaPub, type Vaza } from "./engine";
 import { TR_ID, TR_MAX_JSON, trLimpaPub } from "./valida";
 
-/** Minhas cartas, como chegaram do anfitrião (`n` = número da mão). */
-export type MinhaMao = { id: string; n: number; cartas: Carta[] };
+/** Minhas cartas, como chegaram do banco (`n` = número da mão, `lugar` = onde estou sentado). */
+export type MinhaMao = { id: string; n: number; lugar: number; cartas: Carta[] };
 
 /** O que a tela precisa (só cópias: nada aqui é mexido depois). */
 export type TrucoUI = {
@@ -27,7 +24,7 @@ export type TrucoUI = {
   /** mesa aberta na tela (null = lobby) */
   ver: string | null;
   mao: MinhaMao | null;
-  /** id da mesa que eu abri (sou o anfitrião) */
+  /** id da mesa que eu abri */
   minhaId: string | null;
   /** falas vivas (3,5 s) da mesa aberta, por lugar */
   falas: Record<number, string>;
@@ -40,27 +37,34 @@ export const useTruco = create<TrucoUI>()(() => ({ mesas: [], ver: null, mao: nu
 type Entrada = { pub: MesaPub; at: number; js: string };
 const TRU = {
   mesas: new Map<string, Entrada>(),
-  minha: null as Mesa | null,
   ver: null as string | null,
-  mao: null as MinhaMao | null,
-  prox: undefined as ReturnType<typeof setTimeout> | undefined,
-  hb: undefined as ReturnType<typeof setInterval> | undefined,
+  /** minhas mãos por mesa (posso estar sentado em mais de uma) */
+  maos: new Map<string, MinhaMao>(),
   tFala: undefined as ReturnType<typeof setTimeout> | undefined,
-  ultPub: "",
+  /** pedido de mão nova já agendado (mesa:n) */
+  prox: new Map<string, ReturnType<typeof setTimeout>>(),
   /** quando vi cada fala pela primeira vez (o balão dura 3,5 s a partir daí) */
   falas: new Map<string, number>(),
   /** cartas que já apareceram na mesa (só as novas animam) */
   vistas: new Set<string>(),
 };
 
-const ACOES = ["sentar", "levantar", "jogar", "truco", "envido", "quero", "naoquero", "mazo"] as const;
 const FALA_MS = 3500;
+/** depois do fim da mão, cada um pede a próxima (a função espera 3 s e vale só o primeiro pedido) */
+const PROX_MAO_MS = 3800;
+/** mesa parada há mais que isso some da lista (a função apaga as de 3 h) */
+const VELHA_MS = 3 * 3600_000;
+const PARADA_MS = 30 * 60_000;
 
 /** A vaza que aparece no meio da mesa: a atual ou, se ainda está vazia, a última que fechou. */
 export function trNaMesa(h: MaoBase): Vaza {
   const v = h.vazas[h.vazas.length - 1];
   return v.cartas.length || h.vazas.length < 2 ? v : h.vazas[h.vazas.length - 2];
 }
+
+/** Meu lugar na mesa (pela conta), ou -1. */
+export const meuLugar = (m: { lugares: MesaPub["lugares"] }, uid: string | null) =>
+  uid ? m.lugares.findIndex((l) => !!l && l.key === uid) : -1;
 
 /* ---------- avisar a tela ---------- */
 function falasVivas(pub: MesaPub): Record<number, string> {
@@ -94,287 +98,182 @@ function novasNaMesa(pub: MesaPub): string[] {
 }
 
 function avisa() {
-  const lista = [...TRU.mesas.values()].map((x) => x.pub);
+  /* mesa esperando gente ou já encerrada some da lista depois de 30 min parada */
+  const agora = Date.now();
+  const lista = [...TRU.mesas.values()].filter((x) => x.pub.fase === "jogo" || agora - x.at < PARADA_MS).map((x) => x.pub);
   const nEsp = lista.filter((m) => m.fase === "espera" && m.lugares.some((l) => !l)).length;
   if (getApp().trucoAbertas !== nEsp) setApp({ trucoAbertas: nEsp });
-  if (TRU.ver && !TRU.mesas.has(TRU.ver)) {
-    TRU.ver = null;
-    TRU.mao = null;
-  }
+  if (TRU.ver && !lista.some((m) => m.id === TRU.ver)) TRU.ver = null;
   const pub = TRU.ver ? TRU.mesas.get(TRU.ver)!.pub : null;
+  const uid = getApp().myUid;
   useTruco.setState({
     mesas: lista,
     ver: TRU.ver,
-    mao: TRU.mao,
-    minhaId: TRU.minha?.id ?? null,
+    mao: TRU.ver ? (TRU.maos.get(TRU.ver) ?? null) : null,
+    minhaId: lista.find((m) => !!uid && m.host === uid)?.id ?? null,
     falas: pub ? falasVivas(pub) : {},
     novas: pub ? novasNaMesa(pub) : [],
   });
 }
 
-/* ---------- anfitrião ---------- */
-function trSalva() {
-  if (TRU.minha) local.setJson("truco-mesa", { M: TRU.minha, at: Date.now() });
-  else local.set("truco-mesa", null);
+/* ---------- a próxima mão ---------- */
+/* a mão acabou e eu estou sentado: peço a próxima depois da pausa (todos pedem; o servidor ignora os repetidos) */
+function agendarProxima(pub: MesaPub) {
+  const h = pub.h, eu = meuLugar(pub, getApp().myUid);
+  if (!h || !h.fim || pub.fase !== "jogo" || eu < 0) return;
+  const k = `${pub.id}:${h.n}`;
+  if (TRU.prox.has(k)) return;
+  if (TRU.prox.size > 20) TRU.prox.clear();
+  TRU.prox.set(
+    k,
+    setTimeout(() => {
+      const atual = TRU.mesas.get(pub.id)?.pub;
+      if (atual?.h && atual.h.n === h.n && atual.h.fim && atual.fase === "jogo")
+        void chamar({ acao: "nova_mao", mesa: pub.id, n: h.n }, true);
+    }, PROX_MAO_MS + eu * 300),
+  );
 }
 
-function trPublicar() {
-  const M = TRU.minha;
-  if (!M) return;
-  const pub = trPublica(M), js = JSON.stringify(pub);
-  TRU.mesas.set(M.id, { pub, at: Date.now(), js });
-  enviar("truco", { t: "mesa", m: pub });
-  if (M.h) {
-    const h = M.h;
-    M.lugares.forEach((l, i) => {
-      if (!l) return;
-      if (l.key === MY_KEY) TRU.mao = { id: M.id, n: h.n, cartas: h.maos[i].slice() };
-      else enviar("truco", { t: "mao", to: l.key, id: M.id, n: h.n, cartas: h.maos[i] });
-    });
-  }
-  trSalva();
-  if (js !== TRU.ultPub) {
-    TRU.ultPub = js;
-    avisa();
-  }
-}
-
-/* a mesa é republicada a cada 4 s: quem chega vê, e quem não vê mais some da lista dos outros */
-function trHeartbeat() {
-  clearInterval(TRU.hb);
-  TRU.hb = setInterval(() => {
-    if (TRU.minha) trPublicar();
-    else clearInterval(TRU.hb);
-  }, 4000);
-}
-
-function proximaMao(M: Mesa, ms: number) {
-  const n = M.h?.n;
-  clearTimeout(TRU.prox);
-  TRU.prox = setTimeout(() => {
-    if (TRU.minha === M && M.fase === "jogo" && M.h && M.h.n === n && M.h.fim) {
-      trNovaMao(M);
-      trPublicar();
-    }
-  }, ms);
-}
-
-/** O anfitrião recebe e confere tudo que os jogadores pedem. */
-function trHost(fromKey: string, a: string, arg?: unknown) {
-  const M = TRU.minha;
-  if (!M) return;
-  const s = getApp();
-  const p = fromKey === MY_KEY ? { fid: s.myFid, name: s.myName } : s.online.find((x) => x.key === fromKey);
-  if (!p) return;
-  const nome = friendOf(p.fid)?.name || String(p.name || "").slice(0, 30);
-  let seat = M.lugares.findIndex((l) => l && l.key === fromKey);
-  if (seat < 0 && p.fid) {
-    /* voltou depois de recarregar: o lugar é dele pelo nanico */
-    const r = M.lugares.findIndex((l) => l && l.fid === p.fid);
-    if (r >= 0) {
-      M.lugares[r]!.key = fromKey;
-      seat = r;
-    }
-  }
-  if (a === "sentar") {
-    const i = Number(arg);
-    if (seat >= 0) return trPublicar();
-    if (M.fase !== "espera" || !Number.isInteger(i) || i < 0 || i >= M.modo || M.lugares[i]) return;
-    M.lugares[i] = { fid: p.fid || null, key: fromKey, nome };
-    trLog(M, `${nome} sentou`);
-    return trPublicar();
-  }
-  if (a === "levantar") {
-    if (seat < 0 || M.fase !== "espera" || fromKey === M.host) return;
-    M.lugares[seat] = null;
-    trLog(M, `${nome} levantou`);
-    return trPublicar();
-  }
-  if (a === "comecar" || a === "revanche") {
-    if (fromKey !== M.host || M.lugares.some((l) => !l)) return;
-    if (a === "comecar" && M.fase !== "espera") return;
-    if (a === "revanche" && M.fase !== "fim") return;
-    M.fase = "jogo";
-    M.placar = [0, 0];
-    M.vencedor = null;
-    M.h = null;
-    M.maoN = 0;
-    M.log = [];
-    trNovaMao(M);
-    return trPublicar();
-  }
-  if (seat < 0) return;
-  if (trAcao(M, seat, a, arg)) return;
-  if (M.h && M.h.fim && M.fase === "jogo") proximaMao(M, 3800);
-  trPublicar();
-}
-
-/* o anfitrião recarregou: a mesa volta (até 20 min depois) */
-let restaurou = false;
-function trRestaura() {
-  try {
-    const d = local.json<{ M: Mesa; at: number }>("truco-mesa");
-    if (!d || !d.M || typeof d.at !== "number" || Date.now() - d.at > 20 * 60000) return;
-    const M = d.M, { myFid } = getApp();
-    if (!TR_ID.test(String(M.id)) || !Array.isArray(M.lugares)) return;
-    M.host = MY_KEY;
-    M.lugares.forEach((l) => {
-      if (l && l.fid === myFid) l.key = MY_KEY;
-    });
-    /* confere como se tivesse vindo da sala: armazenamento estragado não derruba a tela */
-    if (!trLimpaPub(trPublica(M), MY_KEY)) return;
-    if (M.h && (!M.h.maos || !M.h.orig)) return;
-    TRU.minha = M;
-    TRU.ver = M.id;
-    trPublicar();
-    trHeartbeat();
-    if (M.h && M.h.fim && M.fase === "jogo") proximaMao(M, 2500);
-  } catch {
-    /* mesa salva ilegível: ignora */
-  }
-}
-
-/* ---------- mensagens da sala ---------- */
-const limite = limitePorPessoa(40, 2000);
-
-function onTruco(m: Record<string, unknown>) {
-  const from = m.from;
-  if (typeof from !== "string" || from === MY_KEY || !estaNaSala(from) || !limite(from)) return;
-  const agora = Date.now();
-
-  if (m.t === "mesa") {
-    let js: string;
-    try {
-      js = JSON.stringify(m.m);
-    } catch {
-      return;
-    }
-    if (!js || js.length > TR_MAX_JSON) return;
-    const M = trLimpaPub(m.m, from);
-    if (!M || (TRU.minha && M.id === TRU.minha.id)) return;
-    const antes = TRU.mesas.get(M.id), igual = !!antes && antes.js === js;
-    TRU.mesas.set(M.id, { pub: M, at: agora, js });
-    if (antes?.pub.h && M.h && antes.pub.h.n !== M.h.n && TRU.mao?.id === M.id && TRU.mao.n !== M.h.n) TRU.mao = null;
-    /* recarreguei a página no meio do jogo: pega o meu lugar de volta */
-    const { myFid } = getApp();
-    if (myFid && M.lugares.some((l) => l && l.fid === myFid && l.key !== MY_KEY)) {
-      TRU.ver = TRU.ver || M.id;
-      enviar("truco", { t: "acao", to: M.host, id: M.id, a: "sentar", arg: 0 });
-    }
-    if (!igual) avisa();
-    return;
-  }
-
-  if (m.t === "fechar") {
-    if (typeof m.id !== "string" || TRU.mesas.get(m.id)?.pub.host !== from) return;
-    TRU.mesas.delete(m.id);
-    if (TRU.ver === m.id) {
+/* ---------- o que vem do banco ---------- */
+function onMesa(row: Record<string, unknown> | null, ev: string) {
+  const id = typeof row?.id === "string" ? row.id : "";
+  if (!TR_ID.test(id)) return;
+  if (ev === "DELETE") {
+    if (!TRU.mesas.delete(id)) return;
+    TRU.maos.delete(id);
+    if (TRU.ver === id) {
       TRU.ver = null;
-      TRU.mao = null;
       toast("A mesa de truco foi fechada.");
     }
     avisa();
     return;
   }
-
-  if (m.t === "mao") {
-    if (m.to !== MY_KEY || typeof m.id !== "string") return;
-    if (!Array.isArray(m.cartas) || m.cartas.length > 3 || !m.cartas.every(trValido)) return;
-    if (TRU.mesas.get(m.id)?.pub.host !== from) return;
-    const n = typeof m.n === "number" && Number.isInteger(m.n) ? m.n : 0;
-    const igual = TRU.mao?.id === m.id && TRU.mao.n === n && TRU.mao.cartas.join() === m.cartas.join();
-    TRU.mao = { id: m.id, n, cartas: m.cartas.slice() };
-    if (!igual) avisa();
-    return;
-  }
-
-  if (m.t === "acao") {
-    if (m.to !== MY_KEY || !TRU.minha || m.id !== TRU.minha.id) return;
-    const a = m.a as (typeof ACOES)[number];
-    if (!ACOES.includes(a)) return;
-    if (a === "jogar" && !trValido(m.arg)) return;
-    if (a === "envido" && !TR_APOSTAS.includes(m.arg as Aposta)) return;
-    if (a === "sentar" && !(typeof m.arg === "number" && Number.isInteger(m.arg))) return;
-    trHost(from, a, m.arg);
-  }
+  guardarMesa(row?.publico, Date.parse(String(row?.atualizada_em ?? "")) || Date.now());
+  avisa();
 }
 
-/* mesas cujo anfitrião sumiu saem da lista */
-function limpaVelhas() {
-  const agora = Date.now(), { online } = getApp();
-  let mudou = false;
-  for (const [id, x] of TRU.mesas) {
-    if (TRU.minha && id === TRU.minha.id) continue;
-    if (agora - x.at > 13000 || !online.some((p) => p.key === x.pub.host)) {
-      TRU.mesas.delete(id);
-      mudou = true;
-    }
+function guardarMesa(raw: unknown, at: number) {
+  let js: string;
+  try {
+    js = JSON.stringify(raw);
+  } catch {
+    return;
   }
-  if (mudou) avisa();
+  if (!js || js.length > TR_MAX_JSON || !raw || typeof raw !== "object") return;
+  /* veio do banco (só a função grava), mas confere o formato mesmo assim: a tela nunca quebra */
+  const M = trLimpaPub(raw, String((raw as { host?: unknown }).host ?? ""));
+  if (!M) return;
+  const antes = TRU.mesas.get(M.id);
+  if (antes && antes.at > at) return; /* chegou fora de ordem */
+  TRU.mesas.set(M.id, { pub: M, at, js });
+  agendarProxima(M);
+}
+
+function onMao(row: Record<string, unknown> | null, ev: string) {
+  const id = typeof row?.mesa_id === "string" ? row.mesa_id : "";
+  if (!TR_ID.test(id)) return;
+  if (ev === "DELETE") {
+    /* o DELETE chega para todos (só com a chave): só apaga se era o meu lugar */
+    if (TRU.maos.get(id)?.lugar === row?.lugar) {
+      TRU.maos.delete(id);
+      avisa();
+    }
+    return;
+  }
+  if (guardarMao(row)) avisa();
+}
+
+function guardarMao(row: Record<string, unknown> | null): boolean {
+  const id = String(row?.mesa_id ?? ""), uid = getApp().myUid;
+  if (!row || !uid || row.user_id !== uid) return false;
+  const c = row.cartas, n = row.mao_n, lugar = row.lugar;
+  if (!Array.isArray(c) || c.length > 3 || !c.every(trValido)) return false;
+  if (typeof n !== "number" || !Number.isInteger(n) || typeof lugar !== "number" || !Number.isInteger(lugar)) return false;
+  TRU.maos.set(id, { id, n, lugar, cartas: c.slice() });
+  return true;
+}
+
+/** Lê tudo de novo (ao entrar e quando a sala reconecta, para não perder nada que mudou no meio). */
+async function carregar() {
+  const desde = new Date(Date.now() - VELHA_MS).toISOString();
+  const [m, h] = await Promise.all([
+    sb().from("truco_mesas").select("id,publico,atualizada_em").gt("atualizada_em", desde).limit(30),
+    sb().from("truco_maos").select("mesa_id,lugar,user_id,cartas,mao_n"),
+  ]);
+  if (m.error || h.error) {
+    /* SQL do truco ainda não rodou: fica sem mesas */
+    console.warn("truco indisponível", errMsg(m.error || h.error, "sem resposta"));
+    return;
+  }
+  TRU.mesas.clear();
+  for (const r of m.data ?? []) guardarMesa(r.publico, Date.parse(r.atualizada_em) || Date.now());
+  TRU.maos.clear();
+  for (const r of h.data ?? []) guardarMao(r as Record<string, unknown>);
+  avisa();
+}
+
+/* ---------- chamar a função ---------- */
+let ocupado = false;
+/** id da mesa que a função acabou de abrir para mim */
+let novaId: string | null = null;
+/** Manda um pedido ao juiz. Devolve true se ele aceitou; se recusar, mostra o motivo. */
+async function chamar(body: Record<string, unknown>, quieto = false): Promise<boolean> {
+  try {
+    const { data, error } = await sb().functions.invoke("truco-mesa", { body });
+    if (error) throw error;
+    if (typeof data?.erro === "string") {
+      if (!quieto) toast(data.erro.slice(0, 120));
+      return false;
+    }
+    if (typeof data?.id === "string" && TR_ID.test(data.id)) novaId = data.id;
+    return true;
+  } catch (e) {
+    console.warn("truco", e);
+    if (!quieto) toast("Não deu para falar com a mesa. Tente de novo.");
+    return false;
+  }
 }
 
 /**
- * Liga o truco na sala (a aba chama uma vez ao montar). Devolve a função que desliga.
- * A mesa do anfitrião sobrevive a desligar e ligar de novo (só o relógio para).
+ * Liga o truco (a aba chama uma vez ao montar). Devolve a função que desliga.
  */
 export function ligarTruco() {
-  const off = [
-    aoReceber("truco", onTruco),
-    aoConectar(() => {
-      if (restaurou) return;
-      restaurou = true;
-      trRestaura();
-    }),
-  ];
-  if (!restaurou && salaConectada()) {
-    restaurou = true;
-    trRestaura();
-  }
-  const limpa = setInterval(limpaVelhas, 3000);
-  if (TRU.minha) trHeartbeat();
-  avisa();
+  const off = [aoMudarTabela("truco_mesas", onMesa), aoMudarTabela("truco_maos", onMao), aoConectar(() => void carregar())];
+  void carregar();
   return () => {
     off.forEach((f) => f());
-    clearInterval(limpa);
-    clearInterval(TRU.hb);
     clearTimeout(TRU.tFala);
   };
 }
 
 /* ---------- o que a tela chama ---------- */
 
-/** Manda uma ação para o anfitrião (ou aplica direto, se a mesa é minha). */
-export function trEnviar(a: string, arg?: unknown) {
-  const pub = TRU.ver ? TRU.mesas.get(TRU.ver)?.pub : null;
-  if (!pub) return;
-  if (TRU.minha && pub.id === TRU.minha.id) return trHost(MY_KEY, a, arg);
-  enviar("truco", { t: "acao", to: pub.host, id: pub.id, a, arg: arg ?? null });
+/** Pede uma ação na mesa aberta (jogar, truco, envido, quero, não quero, mazo, sentar, começar). */
+export function trEnviar(a: string, arg?: unknown): Promise<boolean> {
+  const id = TRU.ver;
+  if (!id) return Promise.resolve(false);
+  if (a === "sentar") return chamar({ acao: "sentar", mesa: id, lugar: arg });
+  if (a === "comecar") return chamar({ acao: "comecar", mesa: id });
+  return chamar({ acao: a, mesa: id, arg: arg ?? null });
 }
 
-export function abrirMesa(modo: 2 | 4, alvo: number, comFlor: boolean) {
-  const { myName, myFid } = getApp();
-  if (!myName) return;
-  if (TRU.minha) return toast("Você já tem uma mesa aberta.");
-  const id = newId().replace(/-/g, "").slice(0, 12);
-  TRU.minha = trNovaMesa(id, { fid: myFid, key: MY_KEY, nome: myName }, modo, alvo, comFlor);
-  TRU.ver = id;
-  trPublicar();
-  trHeartbeat();
+export async function abrirMesa(modo: 2 | 4, alvo: number, comFlor: boolean) {
+  if (ocupado) return;
+  ocupado = true;
+  novaId = null;
+  if ((await chamar({ acao: "abrir", modo, alvo, flor: comFlor })) && novaId) {
+    /* não espera o tempo real: lê a mesa nova e já abre na tela */
+    const { data } = await sb().from("truco_mesas").select("publico,atualizada_em").eq("id", novaId).maybeSingle();
+    if (data) guardarMesa(data.publico, Date.parse(data.atualizada_em) || Date.now());
+    if (TRU.mesas.has(novaId)) TRU.ver = novaId;
+    avisa();
+  }
+  ocupado = false;
 }
 
 export function fecharMesa() {
-  const M = TRU.minha;
-  if (!M) return;
-  enviar("truco", { t: "fechar", id: M.id });
-  clearInterval(TRU.hb);
-  clearTimeout(TRU.prox);
-  TRU.mesas.delete(M.id);
-  TRU.minha = null;
-  TRU.ver = null;
-  TRU.mao = null;
-  TRU.ultPub = "";
-  trSalva();
-  avisa();
+  const id = useTruco.getState().minhaId;
+  if (id) void chamar({ acao: "fechar", mesa: id });
 }
 
 /** Abre a mesa na tela; se está esperando gente e eu não sentei, já senta no primeiro lugar livre. */
@@ -382,9 +281,9 @@ export function verMesa(id: string) {
   const m = TRU.mesas.get(id)?.pub;
   if (!m) return;
   TRU.ver = m.id;
-  if (m.fase === "espera" && !m.lugares.some((l) => l && l.key === MY_KEY)) {
+  if (m.fase === "espera" && meuLugar(m, getApp().myUid) < 0) {
     const i = m.lugares.findIndex((l) => !l);
-    if (i >= 0) trEnviar("sentar", i);
+    if (i >= 0) void trEnviar("sentar", i);
   }
   avisa();
 }
@@ -395,9 +294,10 @@ export function voltarAoLobby() {
 }
 
 export function levantar() {
-  trEnviar("levantar");
+  const id = TRU.ver;
+  if (id) void chamar({ acao: "sair", mesa: id });
   voltarAoLobby();
 }
 
-/** Só o anfitrião: começa outra partida depois do fim. */
-export const revanche = () => trHost(MY_KEY, "revanche");
+/** Só quem abriu: começa outra partida depois do fim. */
+export const revanche = () => void trEnviar("comecar");

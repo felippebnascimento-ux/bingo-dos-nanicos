@@ -2,12 +2,12 @@
 import { Fragment, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { useSure } from "@/components/ui/useSure";
-import { friendOf, MY_KEY, useApp } from "@/lib/store";
+import { friendOf, useApp } from "@/lib/store";
 import { TR_ENV, TR_TRUCO, trOpcoes, trValido, type Carta as TCarta, type MesaPub } from "./engine";
 import { Carta, Costas } from "./Carta";
-import { fecharMesa, levantar, revanche, trEnviar, trNaMesa, useTruco, voltarAoLobby } from "./mesa";
+import { fecharMesa, levantar, meuLugar, revanche, trEnviar, trNaMesa, useTruco, voltarAoLobby } from "./mesa";
 
-/** As minhas cartas. A que eu cliquei sobe ("indo") até o anfitrião devolver a mão nova. */
+/** As minhas cartas. A que eu cliquei sobe na hora ("indo") até o servidor devolver a mão nova; se ele recusar, desce. */
 function MinhaMao({ cartas, pode }: { cartas: TCarta[]; pode: boolean }) {
   const [indo, setIndo] = useState<string | null>(null);
   return (
@@ -22,7 +22,9 @@ function MinhaMao({ cartas, pode }: { cartas: TCarta[]; pode: boolean }) {
             pode
               ? () => {
                   setIndo(c);
-                  trEnviar("jogar", c);
+                  void trEnviar("jogar", c).then((ok) => {
+                    if (!ok) setIndo(null);
+                  });
                 }
               : undefined
           }
@@ -35,6 +37,7 @@ function MinhaMao({ cartas, pode }: { cartas: TCarta[]; pode: boolean }) {
 /** A mesa aberta: lugares em volta do pano, cartas no meio, minha mão e as ações embaixo. */
 export function MesaTela({ m }: { m: MesaPub }) {
   const friends = useApp((s) => s.friends);
+  const myUid = useApp((s) => s.myUid);
   const mao = useTruco((s) => s.mao);
   const minhaId = useTruco((s) => s.minhaId);
   const falas = useTruco((s) => s.falas);
@@ -43,7 +46,7 @@ export function MesaTela({ m }: { m: MesaPub }) {
   const fechar = useSure(3000);
 
   const N = m.modo, h = m.h, souHost = minhaId === m.id;
-  const eu = m.lugares.findIndex((l) => l && l.key === MY_KEY), base = eu >= 0 ? eu : 0;
+  const eu = meuLugar(m, myUid), base = eu >= 0 ? eu : 0;
   /* eu sempre embaixo (sul); quem assiste vê do lugar 0 */
   const pos = (i: number) => {
     const r = (i - base + N) % N;

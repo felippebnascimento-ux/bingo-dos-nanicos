@@ -19,7 +19,7 @@ export type Aposta = "envido" | "real" | "falta";
 export type Fase = "espera" | "jogo" | "fim";
 export type AcaoJogo = "jogar" | "truco" | "envido" | "quero" | "naoquero" | "mazo";
 
-/** Quem está sentado: `key` é a aba do navegador na sala (MY_KEY), `fid` o nanico. */
+/** Quem está sentado: `key` é a conta (user_id), `fid` o nanico. */
 export type Lugar = { fid: string | null; key: string; nome: string };
 export type Jogada = { s: number; c: Carta };
 /** Uma rodada de cartas. `vence`: time que ganhou, -1 = parda, null = em andamento. `por`: lugar da carta vencedora. */
@@ -52,7 +52,7 @@ export type MaoBase = {
   flor: { quem: number[]; team: number } | null;
   fim: FimMao | null;
 };
-/** Mão completa (só o anfitrião tem): `maos` são as cartas na mão de cada lugar, `orig` as três que recebeu. */
+/** Mão completa (só o servidor tem): `maos` são as cartas na mão de cada lugar, `orig` as três que recebeu. */
 export type Mao = MaoBase & { maos: Record<number, Carta[]>; orig: Record<number, Carta[]> };
 
 type MesaBase<H> = {
@@ -70,12 +70,12 @@ type MesaBase<H> = {
   maoN: number;
   h: H | null;
 };
-/** Mesa completa (fica só no navegador do anfitrião). */
+/** Mesa completa (fica só no servidor, em truco_estado). */
 export type Mesa = MesaBase<Mao> & { dealer: number };
 
 /** Mão como os outros veem: quantas cartas cada um tem (`nc`) e, no fim, as que sobraram (`sobra`). */
 export type MaoPub = MaoBase & { nc: Record<number, number>; sobra: Record<number, Carta[]> | null };
-/** Mesa como vai para a sala (sem as cartas de ninguém). */
+/** Mesa como todos veem (truco_mesas, sem as cartas de ninguém). */
 export type MesaPub = MesaBase<MaoPub>;
 
 export type Opcoes = {

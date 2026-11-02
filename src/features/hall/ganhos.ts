@@ -7,6 +7,7 @@ import { create } from "zustand";
 import { ajustarSaldo } from "@/lib/carteira";
 import { aoMudarTabela } from "@/lib/sala";
 import { getApp } from "@/lib/store";
+import { toast } from "@/lib/toast";
 
 export type Ganho = { userId: string; valor: number; motivo: string; em: number; saldo: number };
 export type Aviso = {
@@ -78,6 +79,7 @@ function onCarteira(row: Record<string, unknown> | null) {
   const s = getApp();
   const eu = g.userId === s.myUid;
   if (eu) ajustarSaldo(g.saldo);
+  if (eu && g.motivo === "truco" && g.valor > 0) toast(`+${g.valor} moedas: vitória no truco`);
   /* gastos (valor negativo) não aparecem para os outros */
   if (g.valor <= 0) return;
   const f = s.friends.find((x) => x.user_id === g.userId);
