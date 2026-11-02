@@ -5,7 +5,7 @@
  */
 import { memo } from "react";
 import { fimDoEvento, happyAgora, horaBr, textoFalta } from "@/lib/eventos";
-import { tela, type Caixa2D } from "./hall";
+import { CHURRASQUEIRA, tela, type Caixa2D } from "./hall";
 import { emPorcento, viewBox } from "./Sala";
 import { pegarEspetinho, useEventos } from "./eventosSala";
 
@@ -34,11 +34,12 @@ export function LuzHappy() {
   return happy ? <div className="hall-luz-happy" aria-hidden="true" /> : null;
 }
 
-/* a boca da churrasqueira fica na frente dela (j = 1,1), de i = 7,35 a 8,85 */
-const J = 1.1;
+/* a boca da churrasqueira fica na frente dela (j = j + d), de i + 0,35 a i + 1,85 */
+const J = CHURRASQUEIRA.j + CHURRASQUEIRA.d;
+const I0 = CHURRASQUEIRA.i;
 const pt = (i: number, z: number) => tela(i, J, z).join(",");
-const BRASAS = [7.45, 7.7, 7.95, 8.2, 8.45, 8.65].map((i, k) => ({ i, k, z: 23 + (k % 2) * 2 }));
-const FUMACA = [7.75, 8.1, 8.45];
+const BRASAS = [0.45, 0.7, 0.95, 1.2, 1.45, 1.65].map((d, k) => ({ i: I0 + d, k, z: 23 + (k % 2) * 2 }));
+const FUMACA = [0.75, 1.1, 1.45].map((d) => I0 + d);
 
 /** Brasa (piscando devagar) e fumaça (subindo e sumindo) na churrasqueira; mesma camada da churrasqueira. */
 export const ChurrascoCamada = memo(function ChurrascoCamada({ vb, z }: { vb: Caixa2D; z: number }) {
@@ -46,7 +47,7 @@ export const ChurrascoCamada = memo(function ChurrascoCamada({ vb, z }: { vb: Ca
   if (!aceso) return null;
   return (
     <svg className="hall-camada hall-churrasco" viewBox={viewBox(vb)} aria-hidden="true" style={{ zIndex: z }}>
-      <polygon points={[pt(7.38, 22), pt(8.82, 22), pt(8.82, 29), pt(7.38, 29)].join(" ")} className="brasa-fundo" />
+      <polygon points={[pt(I0 + 0.38, 22), pt(I0 + 1.82, 22), pt(I0 + 1.82, 29), pt(I0 + 0.38, 29)].join(" ")} className="brasa-fundo" />
       {BRASAS.map((b) => (
         <polygon
           key={b.k}
@@ -69,7 +70,7 @@ export function PlacaChurrasco({ vb }: { vb: Caixa2D }) {
   const pegou = useEventos((s) => !!s.agora && s.pegouDia === horaBr(new Date(s.agora)).dia);
   const ocupado = useEventos((s) => s.ocupado);
   if (!aceso) return null;
-  const pos = emPorcento(vb, 8.1, J, 100);
+  const pos = emPorcento(vb, I0 + 1.1, J, 100);
   return (
     <button
       type="button"

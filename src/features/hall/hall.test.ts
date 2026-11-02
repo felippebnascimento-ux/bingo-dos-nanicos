@@ -28,9 +28,9 @@ const vizinhos = (a: Piso, b: Piso) => Math.abs(a.i - b.i) + Math.abs(a.j - b.j)
 
 describe("piso", () => {
   it("os móveis ocupam os pisos certos", () => {
-    for (const k of ["7,0", "8,0", "0,9", "0,10", "10,4", "11,4", "11,3", "12,4", "5,8", "7,9", "8,9", "10,8", "12,9", "1,2", "13,0", "13,1"])
+    for (const k of ["11,0", "12,0", "13,1", "13,2", "13,3", "4,3", "9,3", "2,6", "3,7", "9,6", "10,8", "0,6", "0,9", "12,7", "13,9", "2,10", "4,10"])
       expect(BLOQUEADOS.has(k), k).toBe(true);
-    expect(livre(10, 5)).toBe(true); /* na frente da mesa verde dá para ficar */
+    expect(livre(10, 5)).toBe(true); /* entre a mesa comprida e a mesa do lado dá para ficar */
     expect(livre(6, 5)).toBe(true); /* o meio fica livre para os bonecos */
     expect(livre(NI, 0)).toBe(false);
     expect(livre(0, -1)).toBe(false);
@@ -54,11 +54,11 @@ describe("piso", () => {
 
 describe("caminho", () => {
   it("contorna a mesa comprida", () => {
-    /* a mesa ocupa i 5–7 e j 8–9: de (4, 9) a (8, 10) não dá para passar por cima */
-    const c = caminho({ i: 4, j: 9 }, { i: 8, j: 10 });
-    expect(c[0]).toEqual({ i: 4, j: 9 });
-    expect(c.at(-1)).toEqual({ i: 8, j: 10 });
-    expect(c).toHaveLength(6);
+    /* a mesa ocupa i 4–10 na fileira j = 3: de (6, 2) a (6, 4) dá a volta pela ponta de i = 3 */
+    const c = caminho({ i: 6, j: 2 }, { i: 6, j: 4 });
+    expect(c[0]).toEqual({ i: 6, j: 2 });
+    expect(c.at(-1)).toEqual({ i: 6, j: 4 });
+    expect(c).toHaveLength(9);
     for (let k = 1; k < c.length; k++) {
       expect(vizinhos(c[k - 1], c[k])).toBe(true);
       expect(livre(c[k].i, c[k].j)).toBe(true);
@@ -66,7 +66,7 @@ describe("caminho", () => {
   });
 
   it("não vai para piso ocupado nem para fora", () => {
-    expect(caminho({ i: 0, j: 0 }, { i: 7, j: 0 })).toEqual([]);
+    expect(caminho({ i: 0, j: 0 }, { i: 11, j: 0 })).toEqual([]);
     expect(caminho({ i: 0, j: 0 }, { i: 20, j: 0 })).toEqual([]);
   });
 
@@ -94,7 +94,7 @@ describe("sentido", () => {
 describe("posValida", () => {
   it("só aceita {i, j} inteiros em piso livre", () => {
     expect(posValida({ i: 4, j: 4 })).toBe(true);
-    for (const lixo of [null, undefined, "4,4", 7, [], {}, { i: "4", j: 4 }, { i: 4.5, j: 4 }, { i: -1, j: 0 }, { i: 99, j: 1 }, { i: 7, j: 0 }, { i: NaN, j: 0 }])
+    for (const lixo of [null, undefined, "4,4", 7, [], {}, { i: "4", j: 4 }, { i: 4.5, j: 4 }, { i: -1, j: 0 }, { i: 99, j: 1 }, { i: 11, j: 0 }, { i: NaN, j: 0 }])
       expect(posValida(lixo), JSON.stringify(lixo)).toBe(false);
   });
 });
@@ -107,24 +107,24 @@ describe("ordemZ", () => {
   };
 
   it("o boneco passa atrás e na frente da mesa", () => {
-    expect(ordem({ i: 6, j: 7 })).toBe("atras");
-    expect(ordem({ i: 4, j: 9 })).toBe("atras");
-    expect(ordem({ i: 5, j: 10 })).toBe("frente");
-    expect(ordem({ i: 8, j: 8 })).toBe("frente");
+    expect(ordem({ i: 6, j: 2 })).toBe("atras");
+    expect(ordem({ i: 2, j: 2 })).toBe("atras");
+    expect(ordem({ i: 6, j: 5 })).toBe("frente");
+    expect(ordem({ i: 11, j: 4 })).toBe("frente");
   });
 });
 
 describe("sala nova (14×11)", () => {
   it("posição antiga que agora cai num móvel não vale (a pessoa volta para a entrada)", () => {
-    /* (7, 8) era livre na sala antiga e agora é a mesa comprida */
-    expect(posValida({ i: 7, j: 8 })).toBe(false);
+    /* (7, 3) era livre antes da planta nova e agora é a mesa comprida */
+    expect(posValida({ i: 7, j: 3 })).toBe(false);
     expect(posValida({ i: 12, j: 9 })).toBe(false);
   });
 
   it("pisoLivreNaTela só devolve piso sem móvel", () => {
     const [x, y] = tela(6.5, 5.5);
     expect(pisoLivreNaTela(x, y)).toEqual({ i: 6, j: 5 });
-    const [mx, my] = tela(6.5, 8.5);
+    const [mx, my] = tela(6.5, 3.5);
     expect(pisoLivreNaTela(mx, my)).toBeNull();
   });
 

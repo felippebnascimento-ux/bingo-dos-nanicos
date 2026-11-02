@@ -70,7 +70,8 @@ src/
                        pelo chip do Início (`abrirCarteira`), e `useMinhaPosicao()` ("3º lugar")
     hall/              aba Sítio, sala de 14×11: hall.ts (grade, móveis, CLICAVEIS, caminho, ordem
                        de desenho; puro e testado), bonecos.ts (movimento, evento `hall`, presença), Sala.tsx
-                       (cômodo em SVG com janelão e portão, um móvel por camada, destaque do piso), Boneco.tsx
+                       (cômodo em SVG com janelão e porta do banheiro, um móvel por camada, destaque do piso; a disposição segue a
+                       planta do grupo de 02/11/2026: entrada pelo vão da frente, sem o portão K-FOFO), Boneco.tsx
                        (tocar abre a ficha), Cantos.tsx ("Na sala agora", ganhos, carteira, dica), ganhos.ts
                        (ganhos de moedas de todo mundo pelo tempo real das carteiras), HallView; zoeira:
                        zoeira.ts (arco do voo e cambaleio; puro e testado), zoeiraSala.ts (chama zoar(), recebe

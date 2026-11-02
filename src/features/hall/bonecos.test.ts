@@ -37,7 +37,7 @@ describe("evento hall vindo da sala", () => {
   });
 
   it("ignora destino fora da grade, ocupado ou que não é {i, j}", () => {
-    for (const para of [{ i: 99, j: 0 }, { i: 7, j: 0 }, "4,5", { i: "5", j: 4 }, null, { i: 4.5, j: 4 }]) recebe.hall({ from: "k2", para });
+    for (const para of [{ i: 99, j: 0 }, { i: 11, j: 0 }, "4,5", { i: "5", j: 4 }, null, { i: 4.5, j: 4 }]) recebe.hall({ from: "k2", para });
     expect(ondeEsta("k2")).toEqual({ i: 4, j: 4 });
   });
 

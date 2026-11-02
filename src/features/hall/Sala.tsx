@@ -1,6 +1,6 @@
 /*
- * O cômodo do hall desenhado em SVG: paredes de tijolinho, janelão com árvores, portão aberto para a rua,
- * piso de lajota e os móveis. Geometria copiada de planejamento/demo/hall-v2.html
+ * O cômodo do hall desenhado em SVG: paredes de tijolinho, porta do banheiro, janelão com árvores, piso de
+ * lajota e os móveis, na disposição da planta do grupo (02/11/2026). Geometria do planejamento/demo/hall-v2.html
  * (`p()` = `tela`, `caixa()`, `naParede()`).
  * As cores são classes `f-<nome>` (preenchimento) e `s-<nome>` (traço), definidas em 22-hall.css.
  * Cada móvel é uma camada própria, para o boneco passar atrás e na frente dele.
@@ -59,10 +59,9 @@ function tijolos(lado: "dir" | "esq", n: number): Forma[] {
 const TIJ_ESQ = tijolos("esq", NJ);
 const TIJ_DIR = tijolos("dir", NI);
 
-/* janelão na parede do fundo (a da direita) e o vão do portão K-FOFO */
-const JA = 1.0, JB = 4.4, JZ0 = 52, JZ1 = 178;
+/* janelão no meio da parede do fundo (a da direita) */
+const JA = 4.45, JB = 8.95, JZ0 = 52, JZ1 = 178;
 const VAO_JANELA = naParedeP("dir", JA, JB, JZ0, JZ1);
-const VAO_PORTAO = naParedeP("dir", 11.1, 13.6, 0, 138);
 
 function paredes(): Forma[] {
   const L: Forma[] = [];
@@ -70,7 +69,7 @@ function paredes(): Forma[] {
     const n = lado === "dir" ? NI : NJ;
     /* faixa cinza (viga pintada), pilares e rodapé */
     naParede(L, lado, 0, n, 150, 162, lado === "dir" ? "viga" : "viga2", "vigal");
-    for (const a of lado === "dir" ? [4.9, 10.6] : [4.6, 8.7]) naParede(L, lado, a, a + 0.32, 0, WH, lado === "dir" ? "viga" : "viga2", "vigal");
+    for (const a of lado === "dir" ? [2.45, 9.5] : [4.6, 8.7]) naParede(L, lado, a, a + 0.32, 0, WH, lado === "dir" ? "viga" : "viga2", "vigal");
     naParede(L, lado, 0, n, 0, 6, lado === "dir" ? "rodape" : "rodape2");
     /* beiral de madeira (forro inclinado) com a viga de tronco em cima */
     naParede(L, lado, 0, n, WH, WH + 34, lado === "dir" ? "beiral" : "beiral2", "beiralb");
@@ -97,11 +96,11 @@ function enfeites(): Forma[] {
   /* parede da esquerda: suporte da TV, porta de vidro e janelas velhas (entre a TV e a porta fica o
      quadro dos troféus, numa camada própria: QuadroTrofeus.tsx) */
   naParede(L, "esq", 2.0, 2.12, 58, 90, "suporte");
-  naParede(L, "esq", 5.4, 7.6, 0, 140, "madeira", "madeiral", 3);
-  naParede(L, "esq", 5.5, 7.5, 4, 136, "vidro");
-  naParede(L, "esq", 5.5, 7.5, 4, 60, "grama");
-  naParede(L, "esq", 6.0, 6.7, 60, 128, "grama2");
-  naParede(L, "esq", 6.48, 6.52, 4, 136, "madeira");
+  naParede(L, "esq", 4.95, 6.25, 0, 140, "madeira", "madeiral", 3);
+  naParede(L, "esq", 5.05, 6.15, 4, 136, "vidro");
+  naParede(L, "esq", 5.05, 6.15, 4, 60, "grama");
+  naParede(L, "esq", 5.3, 5.85, 60, 128, "grama2");
+  naParede(L, "esq", 5.58, 5.62, 4, 136, "madeira");
   const janela = (lado: "dir" | "esq", a: number, b: number, z0: number, z1: number) => {
     naParede(L, lado, a, b, z0, z1, undefined, "janela", 4);
     naParede(L, lado, (a + b) / 2 - 0.02, (a + b) / 2 + 0.02, z0, z1, "janela");
@@ -110,28 +109,30 @@ function enfeites(): Forma[] {
   janela("esq", 1.3, 2.1, 172, 208);
   janela("esq", 2.5, 3.2, 172, 208);
 
-  /* parede da direita: relógio, quadros e a placa K-FOFO em cima do portão */
-  const [rx, ry] = p(6.0, 0, 140);
+  /* parede da direita: a porta do banheiro (no canto), a placa K-FOFO e o relógio perto da churrasqueira */
+  naParede(L, "dir", 0.55, 2.25, 0, 140, "madeira", "madeiral", 3);
+  naParede(L, "dir", 0.65, 2.15, 4, 136, "tabua", "beiralb", 2);
+  for (let a = 0.85; a < 2.1; a += 0.3) naParede(L, "dir", a, a + 0.02, 4, 136, "beiralb");
+  const [mx, my] = p(1.95, 0, 66);
+  L.push({ t: "c", cx: mx, cy: my, r: 4, f: "relogiol" });
+  naParede(L, "dir", 1.0, 1.8, 104, 120, "placa", "placal", 2);
+  const [bx, by] = p(1.4, 0, 112);
+  L.push({ t: "txt", x: bx, y: by + 4, rot: 26.6, txt: "BANHEIRO", f: "placat" });
+  naParede(L, "dir", 2.85, 3.95, 144, 160, "placa", "placal", 2);
+  const [sx, sy] = p(3.4, 0, 151);
+  L.push({ t: "txt", x: sx, y: sy + 4, rot: 26.6, txt: "K-FOFO 2018", f: "placat" });
+  const [rx, ry] = p(10.15, 0, 140);
   L.push({ t: "e", cx: rx, cy: ry + 9, rx: 15, ry: 17, f: "relogio", s: "relogiol", sw: 3 });
   L.push({ t: "l", a: [rx, ry + 9], b: [rx + 1, ry - 2], s: "relogiol", sw: 2 });
   L.push({ t: "l", a: [rx, ry + 9], b: [rx + 8, ry + 11], s: "relogiol", sw: 2 });
-  for (const [a, b] of [[5.4, 6.5], [11.4, 12.4]]) {
-    naParede(L, "dir", a, b, 176, 210, undefined, "janela", 4);
-    naParede(L, "dir", (a + b) / 2 - 0.02, (a + b) / 2 + 0.02, 176, 210, "janela");
-  }
-  /* folha do portão, aberta para dentro e encostada (de tábuas) */
-  poly(L, [p(13.6, 0), p(13.6, 1.35), p(13.6, 1.35, 136), p(13.6, 0, 136)], "tabua", "beiralb", 2);
-  for (let b = 0.18; b < 1.35; b += 0.2) poly(L, [p(13.6, b), p(13.6, b + 0.02), p(13.6, b + 0.02, 136), p(13.6, b, 136)], "beiralb");
-  naParede(L, "dir", 11.8, 12.9, 144, 160, "placa", "placal", 2);
-  const [sx, sy] = p(12.35, 0, 151);
-  L.push({ t: "txt", x: sx, y: sy + 4, rot: 26.6, txt: "K-FOFO 2018", f: "placat" });
 
   /* piso de lajota, a luz do janelão no chão e o tapete listrado perto da porta de vidro */
   for (let i = 0; i < NI; i++)
     for (let j = 0; j < NJ; j++) poly(L, [p(i, j), p(i + 1, j), p(i + 1, j + 1), p(i, j + 1)], (i + j) % 2 ? "piso0" : "piso1", "pisol");
   poly(L, [p(JA + 0.6, 0), p(JB + 0.9, 0), p(JB + 2.2, 3.2), p(JA + 1.6, 3.2)], "solchao");
-  poly(L, [p(1.2, 5.2), p(3.4, 5.2), p(3.4, 8.2), p(1.2, 8.2)], "tapete", "tapetel");
-  for (let k = 0; k < 6; k++) poly(L, [p(1.2, 5.4 + k * 0.5), p(3.4, 5.4 + k * 0.5), p(3.4, 5.6 + k * 0.5), p(1.2, 5.6 + k * 0.5)], "tapete2");
+  /* tapete listrado embaixo da mesa de jogos */
+  poly(L, [p(1.9, 5.8), p(5.1, 5.8), p(5.1, 8.9), p(1.9, 8.9)], "tapete", "tapetel");
+  for (let k = 0; k < 6; k++) poly(L, [p(1.9, 6.0 + k * 0.5), p(5.1, 6.0 + k * 0.5), p(5.1, 6.2 + k * 0.5), p(1.9, 6.2 + k * 0.5)], "tapete2");
   return L;
 }
 
@@ -159,40 +160,11 @@ function paisagem(): Forma[] {
   return L;
 }
 
-/** O que se vê pelo portão aberto: céu, rua, calçada, grama, um carro branco parado e a árvore grande. */
-function rua(): Forma[] {
-  const L: Forma[] = [];
-  const [x0, y0] = p(11.1, 0, 138);
-  const [x1, y1] = p(13.6, 0, 0);
-  L.push({ t: "r", x: x0 - 10, y: y0 - 60, w: x1 - x0 + 20, h: y1 - y0 + 90, f: "url-ceu" });
-  poly(L, [[x0 - 10, y0 + 70], [x1 + 10, y0 + 40], [x1 + 10, y1 + 10], [x0 - 10, y1 + 10]], "asfalto");
-  poly(L, [[x0 - 10, y0 + 92], [x1 + 10, y0 + 62], [x1 + 10, y1 + 10], [x0 - 10, y1 + 10]], "calcada");
-  poly(L, [[x0 - 10, y0 + 104], [x1 + 10, y0 + 74], [x1 + 10, y1 + 10], [x0 - 10, y1 + 10]], "gramarua");
-  L.push({ t: "r", x: x0 + 12, y: y0 + 50, w: 58, h: 20, f: "carro", s: "carrol", rx: 5 });
-  L.push({ t: "r", x: x0 + 24, y: y0 + 38, w: 32, h: 14, f: "carrovidro", rx: 4 });
-  L.push({ t: "c", cx: x0 + 24, cy: y0 + 71, r: 6, f: "roda" });
-  L.push({ t: "c", cx: x0 + 60, cy: y0 + 71, r: 6, f: "roda" });
-  L.push({ t: "r", x: x1 - 34, y: y0 + 40, w: 9, h: 70, f: "tronco3" });
-  for (const [dx, dy, r, c] of [[-30, 30, 30, "folha2"], [-10, 15, 26, "folha5"], [-50, 20, 22, "folha6"], [-28, 0, 20, "folha7"]] as const)
-    L.push({ t: "c", cx: x1 + dx, cy: y0 + dy, r, f: c });
-  return L;
-}
-
 const PAREDES = paredes();
 const ENFEITES = enfeites();
 const PAISAGEM = paisagem();
-const RUA = rua();
 
 /* ---------- móveis ---------- */
-function colchao(L: Forma[], m: Movel) {
-  caixa(L, m.i, m.j, m.w, m.d, 9, "colch0", "colch1", "colch2", 0, "colchl");
-  for (let a = m.i + 0.3; a < m.i + m.w; a += 0.45)
-    for (let b = m.j + 0.25; b < m.j + m.d; b += 0.4) {
-      const [x, y] = p(a, b, 9);
-      L.push({ t: "e", cx: x, cy: y, rx: 4, ry: 2, f: "colch1" });
-    }
-}
-
 function mesa(L: Forma[], m: Movel, h: number, toalha: string, borda: string, borda2: string) {
   const { i, j, w, d } = m;
   for (const [a, b] of [[i + 0.1, j + 0.1], [i + w - 0.2, j + 0.1], [i + 0.1, j + d - 0.2], [i + w - 0.2, j + d - 0.2]])
@@ -200,53 +172,82 @@ function mesa(L: Forma[], m: Movel, h: number, toalha: string, borda: string, bo
   caixa(L, i, j, w, d, 4, toalha, borda, borda2, h - 4);
 }
 
-/** Cadeira de plástico branca; o encosto fica do lado de `vira`. */
-function cadeira(L: Forma[], m: Movel, vira: "i" | "j") {
-  const { i, j } = m;
-  for (const [a, b] of [[i, j], [i + 0.5, j], [i, j + 0.5], [i + 0.5, j + 0.5]]) caixa(L, a, b, 0.08, 0.08, 22, "cad0", "cad1", "cad2", 0, "cadl");
-  caixa(L, i, j, 0.58, 0.58, 3, "cad0", "cad3", "cad2", 22, "cadl");
-  if (vira === "j") caixa(L, i, j, 0.58, 0.08, 26, "cad0", "cad3", "cad2", 25, "cadl");
-  else caixa(L, i, j, 0.08, 0.58, 26, "cad0", "cad3", "cad2", 25, "cadl");
+/** Sofá ou poltrona de tecido azul: assento, encosto do lado `encosto` e braços nas outras pontas. */
+function sofa(L: Forma[], m: Movel, encosto: "i0" | "i1" | "j1") {
+  const { i, j, w, d } = m;
+  const E = 0.3, B = 0.22;
+  const cx = (a: number, b: number, ww: number, dd: number, h: number, z = 0) => caixa(L, a, b, ww, dd, h, "colch0", "colch1", "colch2", z, "colchl");
+  if (encosto === "j1") {
+    cx(i, j + d - E, w, E, 36);
+    cx(i, j, B, d - E, 24);
+    cx(i + B, j, w - 2 * B, d - E, 15);
+    cx(i + w - B, j, B, d - E, 24);
+  } else {
+    const a0 = encosto === "i0" ? i + E : i;
+    if (encosto === "i0") cx(i, j, E, d, 36);
+    cx(a0, j, w - E, B, 24);
+    cx(a0, j + B, w - E, d - 2 * B, 15);
+    cx(a0, j + d - B, w - E, B, 24);
+    if (encosto === "i1") cx(i + w - E, j, E, d, 36);
+  }
 }
+
+/** Ponto de um círculo deitado no piso (centro ci, cj, raio r, altura z). */
+const roda = (ci: number, cj: number, r: number, z: number, n = 28): Pt[] =>
+  Array.from({ length: n }, (_, k) => p(ci + r * Math.cos((2 * Math.PI * k) / n), cj + r * Math.sin((2 * Math.PI * k) / n), z));
 
 const DESENHO: Record<string, (L: Forma[], m: Movel) => void> = {
   churrasqueira: (L, m) => {
-    caixa(L, m.i, m.j, m.w, m.d, 88, "churr0", "churr1", "churr2");
-    poly(L, [p(7.35, 1.1, 22), p(8.85, 1.1, 22), p(8.85, 1.1, 70), p(7.35, 1.1, 70)], "boca", "tvl");
-    for (let k = 0; k < 4; k++) poly(L, [p(7.4, 1.1, 30 + k * 9), p(8.8, 1.1, 30 + k * 9), p(8.8, 1.1, 32 + k * 9), p(7.4, 1.1, 32 + k * 9)], "grelha");
-    caixa(L, 7.3, 0, 1.6, 0.7, 60, "churr1", "churr1", "churr2", 88);
-    caixa(L, 7.6, 0, 1.0, 0.45, WH - 148, "churr3", "churr3", "churr4", 148);
+    const { i, j, w, d } = m;
+    caixa(L, i, j, w, d, 88, "churr0", "churr1", "churr2");
+    const f = j + d;
+    poly(L, [p(i + 0.35, f, 22), p(i + 1.85, f, 22), p(i + 1.85, f, 70), p(i + 0.35, f, 70)], "boca", "tvl");
+    for (let k = 0; k < 4; k++) poly(L, [p(i + 0.4, f, 30 + k * 9), p(i + 1.8, f, 30 + k * 9), p(i + 1.8, f, 32 + k * 9), p(i + 0.4, f, 32 + k * 9)], "grelha");
+    caixa(L, i + 0.3, 0, 1.6, 0.7, 60, "churr1", "churr1", "churr2", 88);
+    caixa(L, i + 0.6, 0, 1.0, 0.45, WH - 148, "churr3", "churr3", "churr4", 148);
+  },
+  /* balcão da cozinha: armário de madeira, tampo, pia e fogão de duas bocas */
+  cozinha: (L, m) => {
+    const { i, j, w, d } = m;
+    caixa(L, i, j, w, d, 40, "bege0", "madeira", "madeira", 0, "madeiral");
+    for (let b = j + 0.45; b < j + d; b += 0.45) poly(L, [p(i, b, 4), p(i, b, 36)], undefined, "madeiral");
+    caixa(L, i, j, w, d, 3, "bege2", "bege1", "bege1", 40);
+    poly(L, [p(i + 0.2, j + 0.15, 43), p(i + 0.75, j + 0.15, 43), p(i + 0.75, j + 0.75, 43), p(i + 0.2, j + 0.75, 43)], "gel1", "gell");
+    caixa(L, i + 0.7, j + 0.4, 0.06, 0.06, 14, "gel2", "gel2", "gel2", 43, "gell");
+    for (const b of [j + 1.05, j + 1.45]) poly(L, roda(i + 0.48, b, 0.14, 43, 14), "perna0");
   },
   geladeira: (L, m) => {
     caixa(L, m.i, m.j, m.w, m.d, 96, "gel0", "gel1", "gel2", 0, "gell");
     poly(L, [p(m.i, m.j + m.d, 62), p(m.i + m.w, m.j + m.d, 62)], undefined, "gell");
-    const [x, y] = p(0.9, 9.3, 70);
+    const [x, y] = p(m.i + 0.15, m.j + m.d, 70);
     L.push({ t: "r", x: x - 2, y: y - 6, w: 4, h: 22, f: "puxador", rx: 2 });
-  },
-  freezer: (L, m) => caixa(L, m.i, m.j, m.w, m.d, 60, "gel0", "gel1", "gel2", 0, "gell"),
-  "colchao-fundo": colchao,
-  "colchao-frente": colchao,
-  "cadeira-verde": (L, m) => cadeira(L, m, "j"),
-  "cadeira-canto": (L, m) => cadeira(L, m, "i"),
-  "cadeira-frente": (L, m) => cadeira(L, m, "j"),
-  "mesa-verde": (L, m) => {
-    mesa(L, m, 32, "verde0", "verde1", "verde2");
-    for (const [i, j, r] of [[10.8, 4.0, -14], [11.2, 4.3, 8], [11.5, 4.0, 22]]) {
-      const [x, y] = p(i, j, 32);
-      L.push({ t: "r", x: x - 6, y: y - 4, w: 12, h: 9, f: "carta", s: "cartal", rx: 1.5, rot: r });
-    }
-    const [x, y] = p(10.7, 4.6, 32);
-    L.push({ t: "r", x: x - 3, y: y - 13, w: 6, h: 13, f: "grama2", rx: 2 });
   },
   "mesa-comprida": (L, m) => {
     mesa(L, m, 30, "bege0", "bege1", "bege2");
-    for (let a = 4.9; a < 8.0; a += 0.5) {
-      const [x, y] = p(a, 8.85, 30);
+    for (let a = m.i + 0.4; a < m.i + m.w - 0.2; a += 0.6) {
+      const [x, y] = p(a, m.j + 0.55, 30);
       L.push({ t: "e", cx: x, cy: y, rx: 3, ry: 3, f: "ponto" });
     }
   },
-  /* a folha do portão já é desenhada com as paredes; aqui ela só bloqueia o piso */
-  portao: () => {},
+  "mesa-lado": (L, m) => mesa(L, m, 30, "bege0", "bege1", "bege2"),
+  /* mesa de jogos redonda com pano verde e as cartas do truco */
+  "mesa-jogos": (L, m) => {
+    const ci = m.i + m.w / 2, cj = m.j + m.d / 2, r = m.w / 2;
+    caixa(L, ci - 0.12, cj - 0.12, 0.24, 0.24, 28, "perna0", "perna1", "perna2");
+    poly(L, roda(ci, cj, 0.55, 0), "perna1");
+    poly(L, roda(ci, cj, r, 28), "verde1", "verde1");
+    poly(L, roda(ci, cj, r, 32), "verde0", "verde1");
+    for (const [a, b, rot] of [[-0.3, -0.1, -14], [0.1, 0.2, 8], [0.35, -0.2, 22]]) {
+      const [x, y] = p(ci + a, cj + b, 32);
+      L.push({ t: "r", x: x - 6, y: y - 4, w: 12, h: 9, f: "carta", s: "cartal", rx: 1.5, rot });
+    }
+    const [x, y] = p(ci - 0.4, cj + 0.45, 32);
+    L.push({ t: "r", x: x - 3, y: y - 13, w: 6, h: 13, f: "grama2", rx: 2 });
+  },
+  "sofa-parede": (L, m) => sofa(L, m, "i0"),
+  "sofa-canto": (L, m) => sofa(L, m, "i1"),
+  "poltrona-1": (L, m) => sofa(L, m, "j1"),
+  "poltrona-2": (L, m) => sofa(L, m, "j1"),
 };
 
 const MOVEL_FORMAS: Record<string, Forma[]> = Object.fromEntries(
@@ -309,7 +310,7 @@ function Tv({ aoVivo }: { aoVivo: boolean }) {
   return <Formas lista={L} />;
 }
 
-/** Paredes, janelão, portão, piso, tapete e o que fica pendurado (sempre atrás de tudo). */
+/** Paredes, janelão, porta do banheiro, piso, tapete e o que fica pendurado (sempre atrás de tudo). */
 export const Fundo = memo(function Fundo({ aoVivo, vb }: { aoVivo: boolean; vb: Caixa2D }) {
   return (
     <svg className="hall-camada hall-fundo" viewBox={viewBox(vb)} aria-hidden="true">
@@ -322,9 +323,6 @@ export const Fundo = memo(function Fundo({ aoVivo, vb }: { aoVivo: boolean; vb: 
         <clipPath id="hall-clip-janela">
           <polygon points={pts(VAO_JANELA)} />
         </clipPath>
-        <clipPath id="hall-clip-portao">
-          <polygon points={pts(VAO_PORTAO)} />
-        </clipPath>
       </defs>
       <g className="parede-esq">
         <Formas lista={TIJ_ESQ} />
@@ -333,10 +331,6 @@ export const Fundo = memo(function Fundo({ aoVivo, vb }: { aoVivo: boolean; vb: 
       <Formas lista={PAREDES} />
       <g clipPath="url(#hall-clip-janela)">
         <Formas lista={PAISAGEM} />
-      </g>
-      <polygon points={pts(naParedeP("dir", 11.0, 13.7, 0, 142))} className="f-beiralb s-placal" strokeWidth={2} />
-      <g clipPath="url(#hall-clip-portao)">
-        <Formas lista={RUA} />
       </g>
       <Formas lista={ENFEITES} />
       <Tv aoVivo={aoVivo} />

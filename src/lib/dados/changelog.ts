@@ -174,6 +174,14 @@ export const CHANGELOG: EntradaLog[] = [
       "Nova missão do dia: apostar numa partida ao vivo",
     ],
   },
+  {
+    data: "02/11/2026",
+    itens: [
+      "Sítio arrumado do jeito do grupo: mesa grande, mesa de jogos redonda, sofás, poltronas, cozinha, banheiro e a churrasqueira no canto",
+      "Quem chega ao Sítio entra pela porta da frente",
+      "O Truco abre pela mesa de jogos e a Loja pela geladeira da cozinha",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

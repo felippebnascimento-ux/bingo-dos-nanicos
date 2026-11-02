@@ -2,7 +2,7 @@
 /*
  * Aba Sítio (tela inicial): o hall do Sítio do Mitz com o boneco de quem está no site.
  * Clique ou toque no chão para andar; pelo teclado, as setas andam um piso. A TV abre o Ao vivo,
- * a mesa verde abre o Truco e a geladeira é a Loja. Nos cantos: quem está na sala, os ganhos de
+ * a mesa de jogos abre o Truco e a geladeira da cozinha é a Loja. Nos cantos: quem está na sala, os ganhos de
  * moedas de todo mundo e a sua carteira.
  */
 import { useEffect, useMemo, useState, useSyncExternalStore, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
