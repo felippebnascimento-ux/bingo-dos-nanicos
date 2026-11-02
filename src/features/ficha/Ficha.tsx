@@ -1,7 +1,7 @@
 "use client";
 /*
  * Ficha do nanico (abre ao tocar num nanico na aba Nanicos): o boneco no quarto, à esquerda,
- * e os números reais do LoL e da Steam, à direita. Fecha com Esc ou no X; o foco fica preso dentro.
+ * e os números reais do LoL e da Steam e os atributos votados, à direita. Fecha com Esc ou no X; o foco fica preso dentro.
  */
 import { useEffect, useRef, type KeyboardEvent as KE } from "react";
 import { Avatar } from "@/components/ui/Avatar";
@@ -10,10 +10,11 @@ import { verNanicadas } from "@/features/nanicos/NanicosView";
 import { opggNick, opggOf } from "@/features/perfil/opgg";
 import { steamNome, steamOf } from "@/features/perfil/steam";
 import { artOf, bonecoOf } from "@/lib/dados/nanicos";
-import { friendOf, setApp, useApp } from "@/lib/store";
+import { friendOf, getApp, setApp, useApp } from "@/lib/store";
 import type { Friend } from "@/lib/tipos";
 import { carregarFicha, useFicha } from "./estado";
 import { eloTexto, haQuanto, horasTexto, kdaTexto, taxaVitoria, type NumerosFicha } from "./numeros";
+import { AtributosFicha } from "./AtributosFicha";
 import { Quarto } from "./Quarto";
 
 /** Como deixar as horas da Steam visíveis (usado aqui e no Perfil). */
@@ -94,7 +95,6 @@ function Numeros({ f, num, carregando, falhou }: { f: Friend; num: NumerosFicha 
           {main && <span className="ficha-main">Main: {main}</span>}
         </div>
       )}
-      {/* "Segundo os nanicos" (atributos votados) entra aqui na fase 4 */}
     </section>
   );
 }
@@ -125,7 +125,7 @@ function FichaAberta({ f }: { f: Friend }) {
   const tecla = (e: KE<HTMLDivElement>) => {
     if (e.key === "Escape") return fechar();
     if (e.key !== "Tab" || !caixa.current) return;
-    const foco = [...caixa.current.querySelectorAll<HTMLElement>("a[href], button, summary")];
+    const foco = [...caixa.current.querySelectorAll<HTMLElement>("a[href], button:not([disabled]), summary, input")];
     if (!foco.length) return;
     const [primeiro, ultimo] = [foco[0], foco[foco.length - 1]];
     if (e.shiftKey && document.activeElement === primeiro) {
@@ -153,6 +153,7 @@ function FichaAberta({ f }: { f: Friend }) {
             </button>
           </div>
           <Numeros f={f} num={num} carregando={carregando} falhou={falhou} />
+          <AtributosFicha f={f} eu={f.id === getApp().myFid} />
           <button
             className="linkish"
             type="button"
