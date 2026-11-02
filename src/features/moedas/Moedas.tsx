@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { IcMoeda } from "@/components/ui/icones";
 import { carregarExtrato, useCarteira } from "@/lib/carteira";
-import { bonusDoDia, diasSeguidos, formatarMoedas, MIN_TETO, MOTIVOS } from "@/lib/moedas";
+import { bonusDoDia, diasSeguidos, formatarMoedas, MOTIVOS, textoTempo } from "@/lib/moedas";
 import { setApp, useApp } from "@/lib/store";
 
 /** Selinho do menu. Tocar abre o Perfil, onde fica o extrato. Some se as moedas estiverem desligadas. */
@@ -36,7 +36,6 @@ export function MoedasBloco() {
     if (naAba && saldo !== undefined) carregarExtrato();
   }, [naAba, saldo]);
   if (!c) return null;
-  const minutos = Math.min(c.minutosHoje, MIN_TETO);
   return (
     <div className="block moedas-block">
       <h2>Moedas</h2>
@@ -56,20 +55,14 @@ export function MoedasBloco() {
         </div>
         <div>
           <dt>Tempo no site hoje</dt>
-          <dd>
-            {minutos}/{MIN_TETO} min
-          </dd>
+          <dd>{textoTempo(c.minutosHoje)}</dd>
         </div>
       </dl>
-      <div className="moedas-barra" role="progressbar" aria-label="Minutos no site hoje" aria-valuemin={0} aria-valuemax={MIN_TETO} aria-valuenow={minutos}>
-        <span style={{ width: `${(minutos / MIN_TETO) * 100}%` }} />
-      </div>
       <details className="moedas-como">
         <summary>Como ganhar moedas</summary>
         <p>
           Todo dia que você entra ganha um bônus, maior a cada dia seguido (até 60 por dia), com prêmio de +100 no 7º dia e +500 no 30º. Com o site
-          aberto, ganha 1 moeda a cada 6 minutos, até 40 por dia. No happy hour, das 22h à meia-noite, é 1 a cada 3 minutos, e o dia
-          pode chegar a 60. No sábado, das 18h às 23h, tem espetinho surpresa na churrasqueira do Sítio. Faltou um dia, a sequência recomeça.
+          aberto, ganha 1 moeda a cada 6 minutos, sem limite por dia. No happy hour, das 22h à meia-noite, é 1 a cada 3 minutos. No sábado, das 18h às 23h, tem espetinho surpresa na churrasqueira do Sítio. Faltou um dia, a sequência recomeça.
         </p>
       </details>
       {extrato.length > 0 && (

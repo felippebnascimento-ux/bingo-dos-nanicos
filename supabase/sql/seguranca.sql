@@ -1396,13 +1396,13 @@ begin
     v_min := v_min + 1;
     if v_happy then v_hmin := v_hmin + 1; end if;
     v_norm := v_min - v_hmin;   -- minutos fora do happy hour
+    -- sem teto por dia (decisão do João, 02/11/2026): +1 a cada 6 minutos, e a cada 3 no happy hour
     if v_happy then
-      -- o normal pagou no máximo 40; o happy hour completa até 60
-      if v_hmin % 3 = 0 and least(40, v_norm / 6) + v_hgan < 60 then
+      if v_hmin % 3 = 0 then
         v_hgan := v_hgan + 1;
         perform public.creditar(v_uid, 1, 'online', v_hoje::text);
       end if;
-    elsif v_norm % 6 = 0 and v_norm <= 240 then
+    elsif v_norm % 6 = 0 then
       perform public.creditar(v_uid, 1, 'online', v_hoje::text);
     end if;
     update public.online_diario set minutos = v_min, happy_min = v_hmin, happy_ganho = v_hgan, ultimo_pulso = now()

@@ -5,9 +5,8 @@
 export const SALDO_INICIAL = 200;
 export const BONUS_BASE = 30;
 export const MULT_MAX = 2;
+/** 1 moeda a cada 6 minutos com o site aberto, sem teto por dia (desde 02/11/2026) */
 export const MIN_POR_MOEDA = 6;
-export const TETO_ONLINE = 40;
-export const MIN_TETO = MIN_POR_MOEDA * TETO_ONLINE;
 
 /** Multiplicador do bônus no dia `seq` da sequência: +0,1 por dia, até ×2 (dia 11). */
 export const multiplicador = (seq: number) => Math.min(1 + 0.1 * (Math.max(1, seq) - 1), MULT_MAX);

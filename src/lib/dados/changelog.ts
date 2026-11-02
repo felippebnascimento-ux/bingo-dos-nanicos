@@ -182,6 +182,10 @@ export const CHANGELOG: EntradaLog[] = [
       "O Truco abre pela mesa de jogos e a Loja pela geladeira da cozinha",
     ],
   },
+  {
+    data: "02/11/2026",
+    itens: ["Tempo no site sem limite de moedas por dia: 1 a cada 6 minutos (no happy hour, 1 a cada 3)"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

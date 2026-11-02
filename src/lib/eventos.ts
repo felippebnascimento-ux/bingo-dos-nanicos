@@ -8,9 +8,8 @@ export type Evento = "happy" | "churrasco";
 export const HAPPY_INI = 22;
 export const CHURRASCO_INI = 18;
 export const CHURRASCO_FIM = 23;
-/** no happy hour: 1 moeda a cada 3 minutos, e o teto do dia sobe de 40 até 60 */
+/** no happy hour: 1 moeda a cada 3 minutos (sem teto por dia desde 02/11/2026) */
 export const MIN_POR_MOEDA_HAPPY = 3;
-export const TETO_HAPPY = 60;
 
 const FMT = new Intl.DateTimeFormat("en-US", {
   timeZone: "America/Sao_Paulo",

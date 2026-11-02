@@ -1,10 +1,10 @@
-# Fase 16: Rua do Sítio (sair pelo portão K-FOFO)
+# Fase 16: Rua do Sítio (sair pelo vão da frente do hall)
 
-**Branch:** `rua-do-sitio` · **Depende de:** fase 14 (hall v2 com o portão aberto) · **Banco:** nenhum SQL
+**Branch:** `rua-do-sitio` · **Depende de:** fase 14 (hall v2) e o hall rearrumado pela planta do grupo (commit c941ae2) · **Banco:** nenhum SQL
 
 ## Objetivo (para quem usa)
 O modelo está em `planejamento/demo/rua.html` e `rua.png`. Abra os dois antes de começar.
-- **Sair:** no hall, o portão K-FOFO ganha a placa "Rua". Clicar nela, ou andar até o piso do portão, leva o seu boneco para fora. Na rua, a placa "Voltar ao Sítio" no portão faz o caminho inverso.
+- **Sair:** o hall não tem mais o portão K-FOFO (a placa ficou só de enfeite na parede). A saída é o **vão da entrada, na frente do hall** (os pisos `ENTRADA` de `hall.ts`: `i` 5–7, `j` 9–10). Ele ganha a placa "Rua". Clicar nela, ou andar até a borda da frente do vão (`j = 10`), leva o seu boneco para fora. Na rua, a placa "Voltar ao Sítio" no portão do muro faz o caminho inverso e devolve o boneco no vão da entrada.
 - **Lá fora:**
   - grama com uma trilha de pedras saindo do portão;
   - calçada com um poste e uma lixeira;
@@ -28,7 +28,7 @@ Siga as "Regras de toda sessão" de `planejamento/PLANO.md`. Leia:
 
 ### 1) Regra pura: cenários
 - **`src/features/hall/cenas.ts`:** cada cenário (`"hall"` e `"rua"`) tem `NI`, `NJ`, `X0`, `Y0`, `VB`, `MOVEIS`, `BLOQUEADOS` e `PORTAS`. O `hall.ts` passa a receber o cenário em vez de usar constantes soltas. **Mantenha os testes atuais passando.**
-- **`PORTAS`:** liga o piso de saída de um cenário ao piso de chegada do outro (portão do hall ↔ portão da rua).
+- **`PORTAS`:** liga o piso de saída de um cenário ao piso de chegada do outro (vão da entrada do hall, `j = 10` ↔ portão do muro da rua).
 - **Rua:** o asfalto (`j < 3`) é bloqueado (os carros ficam lá), e também a árvore (só o tronco e as raízes), os bancos, o poste e a lixeira.
 - **`posValida(v, cena)`**, com testes para:
   - caminho até a porta;
@@ -45,7 +45,7 @@ Siga as "Regras de toda sessão" de `planejamento/PLANO.md`. Leia:
 - **Cores:** variáveis `--hall-*` novas (`--hall-grama`, `--hall-asfalto`, `--hall-calcada`, `--hall-ceu-1`/`--hall-ceu-2`, as cores de cada carro…), com versão escura.
 - **Céu:** um degradê em CSS no fundo do palco (`.hall-palco.rua`), com as nuvens e as árvores distantes no próprio SVG, atrás de tudo.
 - **`HallView`:** mostra o cenário em que **você** está. A troca tem um fade curto, que não acontece com `prefers-reduced-motion`.
-- **Rótulos:** só "Voltar ao Sítio", no portão.
+- **Rótulos:** "Rua" no vão da entrada do hall e "Voltar ao Sítio" no portão da rua. Quem chega ao site continua aparecendo nos pisos `ENTRADA`, como hoje; só sai para a rua quem pisa em `j = 10` ou clica na placa.
 - **Teclado:** as setas andam no cenário atual.
 
 ## Não faça
@@ -63,4 +63,4 @@ Siga as "Regras de toda sessão" de `planejamento/PLANO.md`. Leia:
 - [ ] O `CLAUDE.md` (cenários, campo `cena` na presença, evento `hall` novo, formato da `hall-pos`) e o `CHANGELOG` foram atualizados.
 
 ## Entrada do CHANGELOG
-`"Rua do Sítio: saia pelo portão K-FOFO, passeie na grama debaixo da árvore e veja os carros da galera"`
+`"Rua do Sítio: saia pela frente do hall, passeie na grama debaixo da árvore e veja os carros da galera"`
