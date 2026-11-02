@@ -4,7 +4,8 @@
  * - "Canais de voz": uma linha por sala, com quem está nela embaixo (anel aceso em quem está falando)
  *   e quem está transmitindo. Clicar entra na sala e na voz e abre o Ao vivo; clicar no AO VIVO de alguém
  *   faz o mesmo e já abre a tela da pessoa.
- * - "Canais de texto": #geral e o chat de cada sala, com as não lidas e quem está olhando agora.
+ *   O chat de cada sala é o chat do canal de voz: fica no painel do Ao vivo, e o canal mostra as mensagens novas dele.
+ * - "Canais de texto": só o #geral (o único chat de todo mundo), com as não lidas e quem está olhando agora.
  * Cada categoria recolhe (fica só o canal onde eu estou). E o painel da voz conectada (microfone, fone, desligar).
  */
 import { useState, type ReactNode } from "react";
@@ -72,12 +73,16 @@ function PessoaCanal({ p, falando }: { p: PresencaNanico; falando: boolean }) {
   );
 }
 
-/** Clicar num canal de voz: entra na sala (se precisar) e na voz, e abre o Ao vivo (as transmissões da sala). */
+/**
+ * Clicar num canal de voz: entra na sala (se precisar) e na voz, e abre o Ao vivo (as transmissões da sala).
+ * Com mensagem nova no chat da sala, abre direto no chat.
+ */
 function clicarVoz(id: string) {
   const s = getApp();
   if (s.minhaSala !== id) entrarSala(id);
   if (!getApp().myVozSid) entrarVoz();
-  setApp({ aba: "live" });
+  const novas = s.minhaSala === id && (useChat.getState().naoLidas[id] ?? 0) > 0;
+  setApp(novas ? { aba: "live", railTab: "chat" } : { aba: "live" });
 }
 
 /**
@@ -115,7 +120,8 @@ export function Canais() {
   if (!salas.length) return null;
 
   const fala = (p: PresencaNanico) => p.chaves.some((k) => falando.includes(k));
-  const canaisTexto = [{ id: "geral", nome: "geral" }, ...salas.map((s) => ({ id: s.id, nome: s.nome.toLowerCase().replace(/\s+/g, "-") }))];
+  /* o chat de cada sala é o do canal de voz (no Ao vivo); de texto, só o geral */
+  const canaisTexto = [{ id: "geral", nome: "geral" }];
 
   return (
     <section className="canais" aria-label="Canais">
@@ -140,6 +146,12 @@ export function Canais() {
                     <span className="nm">{s.nome}</span>
                     {nela.some((p) => p.live) && <span className="canal-live" title="Alguém transmitindo" aria-label="Alguém transmitindo" />}
                     {nela.length > 0 && <span className="canal-n">{nela.length}</span>}
+                    {/* mensagens novas no chat do canal (só o da minha sala: o das outras só dá para ler entrando) */}
+                    {minha && (naoLidas[s.id] ?? 0) > 0 && (
+                      <span className="canal-novas" aria-label={`${naoLidas[s.id]} no chat da sala`}>
+                        {naoLidas[s.id] > 99 ? "99+" : naoLidas[s.id]}
+                      </span>
+                    )}
                   </button>
                   {nela.length > 0 && (
                     <ul className="canal-pessoas">

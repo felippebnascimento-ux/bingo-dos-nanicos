@@ -117,7 +117,7 @@ export const useApp = create<AppState>()(() => ({
   aba: "inicio",
   sideMin: false,
   membrosMin: false,
-  railTab: "telas",
+  railTab: "chat",
   chatUnread: 0,
   trucoAbertas: 0,
   nanicadasFiltro: null,

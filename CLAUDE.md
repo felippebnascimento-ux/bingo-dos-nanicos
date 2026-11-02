@@ -53,7 +53,8 @@ src/
                        sala de LoL (ou sem a tabela de salas); no computador, Ao vivo e Perfil saem do menu (abrem pelos
                        canais de voz e pela linha "eu" embaixo) e continuam na barra de abas do celular
     shell/             Sidebar (parte de cima rola: marca, navegação, canais; embaixo, fixos: voz, câmera, eu com as
-                       moedas, a engrenagem das Configurações e o rodapé com conexão, versão e Log), Canais.tsx (canais de voz e de texto como no Discord, categorias recolhíveis,
+                       moedas, a engrenagem das Configurações e o rodapé com conexão, versão e Log), Canais.tsx (canais de voz como no Discord, com quem está, quem transmite e as mensagens novas do chat da sala, e o #geral em
+                       "Canais de texto"; categorias recolhíveis,
                        e o VozPainel) e People.tsx (Membros: a barra da direita com os 14 nanicos, online e offline,
                        câmera no círculo; `usePessoasNaSala()` também serve o Sítio; `useNanicosOnline()` é a lista
                        um por nanico com o meu estado, usada pelos canais e pelos membros)
@@ -104,7 +105,7 @@ src/
                        leem daqui e trocam o aparelho na hora com `replaceTrack`) e ConfigView.tsx (ConfigJanela:
                        aparelhos, teste do microfone, trocar senha e sair)
     chat/              chat.ts (um chat por sala: "geral" no lobby e o id da sala dentro dela; não lidas por canal),
-                       ChatPainel (o da minha sala no Ao vivo, ou um `canal`) e ChatView (aba `chat`, fora do menu:
+                       ChatPainel (o da minha sala, que é o chat do canal de voz, na primeira aba do painel do Ao vivo; ou um `canal`) e ChatView (aba `chat`, fora do menu:
                        o canal de texto escolhido no menu)
     cassino/           aba Cassino (moedas fictícias): regras.ts (roleta, limbo, dado, caça-níquel, conferir() e
                        refazer() com HMAC-SHA256; puro e testado), estado.ts (dados do banco), Jogos.tsx (limbo,

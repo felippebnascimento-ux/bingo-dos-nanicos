@@ -90,7 +90,7 @@ export const CHANGELOG: EntradaLog[] = [
       "Voz nas salas: clique numa sala em \"Canais de voz\" para entrar, falar com quem está nela e ver as transmissões; o botão vermelho desliga e sai da sala",
       "Clique no AO VIVO de alguém em outra sala para entrar no canal e já assistir à tela",
       "O rosto de quem está falando acende na lista",
-      "Canais de texto no menu: o #geral e o chat de cada sala, com as mensagens novas e quem está lendo agora",
+      { t: "Canais de texto no menu: o #geral e o chat de cada sala, com as mensagens novas e quem está lendo agora", off: "o chat de cada sala foi para dentro do canal de voz na v1.54" },
       "Lista de membros à direita, com quem está online e quem está offline, onde cada um está e a câmera no rosto",
       "Embaixo do menu ficam fixos a voz, a câmera, o seu perfil e as suas moedas",
       "A câmera agora é da voz: só quem está no mesmo canal de voz se vê, e ela continua ligada quando você troca de canal",
@@ -105,6 +105,14 @@ export const CHANGELOG: EntradaLog[] = [
       "Supressão de ruído bem mais forte na voz: uma inteligência artificial corta teclado, ventilador e barulho de fundo",
       "No teste do microfone, dá para se ouvir de fone e comparar com a supressão ligada e desligada",
       "Quem tem o site aberto em mais de um lugar não some mais da sala nem pula para o lobby",
+    ],
+  },
+  {
+    data: "02/11/2026",
+    itens: [
+      "O chat de cada sala agora é o chat do canal de voz: fica no Ao vivo, ao lado das transmissões, e abre primeiro",
+      "O canal de voz onde você está mostra as mensagens novas do chat dele; clicar abre direto no chat",
+      "Em Canais de texto fica só o #geral, o chat de todo mundo",
     ],
   },
 ];

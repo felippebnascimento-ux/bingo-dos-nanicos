@@ -1,7 +1,7 @@
 "use client";
 /*
  * Aba Chat (fora do menu): o canal de texto escolhido em "Canais de texto" na barra lateral.
- * "geral" é o chat de todo mundo; os outros são os chats das salas (dá para ler e escrever em qualquer um).
+ * Hoje é só o #geral, o chat de todo mundo; o chat de cada sala fica no Ao vivo (é o chat do canal de voz).
  */
 import { IcHash } from "@/components/ui/icones";
 import { nomeDaSala } from "@/features/salas/trocar";

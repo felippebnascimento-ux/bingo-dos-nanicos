@@ -1,6 +1,7 @@
 "use client";
 import { Avatar } from "@/components/ui/Avatar";
 import { ChatPainel } from "@/features/chat/ChatPainel";
+import { nomeDaSala } from "@/features/salas/trocar";
 import { MiniCartela } from "@/features/jogar/MiniCartela";
 import { friendDaPresenca, setApp, useApp } from "@/lib/store";
 import type { RailTab } from "@/lib/tipos";
@@ -236,15 +237,16 @@ function Transmitindo() {
 }
 
 const ABAS: { rt: RailTab; t: string }[] = [
-  { rt: "telas", t: "Telas" },
   { rt: "chat", t: "Chat" },
+  { rt: "telas", t: "Telas" },
   { rt: "cartela", t: "Cartela" },
 ];
 
-/** Painel da direita do Ao vivo: Telas / Chat / Cartela. */
+/** Painel da direita do Ao vivo: Chat (o chat do canal de voz, a sala) / Telas / Cartela. */
 export function Painel() {
   const railTab = useApp((s) => s.railTab);
   const unread = useApp((s) => s.chatUnread);
+  const sala = useApp((s) => nomeDaSala(s.minhaSala, s.salas));
   const setRail = (t: RailTab) => {
     setApp(t === "chat" ? { railTab: t, chatUnread: 0 } : { railTab: t });
     local.set("rail-tab", t);
@@ -271,7 +273,7 @@ export function Painel() {
         <Transmitindo />
       </div>
       <div className="rail-pane" data-pane="chat" hidden={railTab !== "chat"}>
-        <ChatPainel />
+        <ChatPainel placeholder={sala ? `Mensagem para a ${sala}` : undefined} />
       </div>
       <div className="rail-pane" data-pane="cartela" hidden={railTab !== "cartela"}>
         <div className="block" id="miniCardBlock">
