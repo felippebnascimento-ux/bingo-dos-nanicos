@@ -53,21 +53,56 @@
 .tr-msg b{font:800 18px var(--display)}.tr-msg span{color:#D9D5C8;font-size:13px}
 .tr-msg.mini{padding:10px 14px}.tr-msg.mini b{font-size:14px}
 .tr-msg.fim b{font-size:22px}
-/* cartas espanholas */
-.tc{position:relative;width:64px;aspect-ratio:2/3;display:grid;grid-template-rows:auto 1fr auto;padding:5px 6px;border-radius:9px;border:0;background:#FBF8F1;color:var(--nc);
-  box-shadow:inset 0 0 0 1px rgba(0,0,0,.12),inset 0 0 0 4px #FBF8F1,inset 0 0 0 5px color-mix(in srgb,var(--nc) 45%,transparent),0 6px 14px rgba(0,0,0,.35);font-family:var(--display)}
-.tc .v{font-weight:800;font-size:15px;line-height:1;justify-self:start}
-.tc .v2{justify-self:end;transform:rotate(180deg)}
-.tc .ic{width:58%;height:auto;justify-self:center;align-self:center}
-.tc.peq{width:40px;padding:3px 4px;border-radius:6px}.tc.peq .v{font-size:10px}
-.tc.ganha{box-shadow:inset 0 0 0 1px rgba(0,0,0,.12),inset 0 0 0 4px #FBF8F1,inset 0 0 0 5px color-mix(in srgb,var(--nc) 45%,transparent),0 0 0 3px var(--accent),0 0 24px rgba(176,141,87,.6)}
+/* cartas espanholas: o desenho é um SVG próprio (Baralho.tsx) com as cores --carta-* (exceção como o hall:
+   é uma ilustração; a carta é de papel, então fica clara também no tema escuro, só um pouco mais apagada) */
+.tc{
+  --carta-papel:#FBF8F1; --carta-traco:#3A2E22; --carta-ouro:#D9A62E; --carta-ouro2:#F2D27A; --carta-vermelho:#B4442F;
+  --carta-azul:#4F7FBF; --carta-verde:#4E8A3E; --carta-madeira:#7A5230; --carta-pele:#F1C9A1; --carta-barba:#8A6A4A;
+  --carta-cavalo:#F3EEE2; --carta-tinta:#2B2420;
+  --carta-o:#C08A1E; --carta-c:#B4442F; --carta-e:#3E6FB0; --carta-b:#3F7A34;
+  position:relative;display:block;width:64px;aspect-ratio:2/3;padding:0;border-radius:9px;border:0;background:none;
+  box-shadow:0 6px 14px rgba(0,0,0,.35)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tc{--carta-papel:#ECE7DB;--carta-cavalo:#E4DED0}}
+:root[data-theme="dark"] .tc{--carta-papel:#ECE7DB;--carta-cavalo:#E4DED0}
+.tc-face{display:block;width:100%;height:100%;stroke-linejoin:round;stroke-linecap:round}
+.tc .cf-papel{fill:var(--carta-papel);stroke:rgba(0,0,0,.18);stroke-width:1}
+.tc .cf-traco{stroke:var(--carta-traco);stroke-width:.55}
+.tc .cf-vazio{fill:none}
+.tc .cf-fio{stroke:var(--carta-papel);stroke-width:.5;opacity:.7}
+.tc .cf-crina{stroke-width:1.4}
+.tc .cf-traco-ouro{stroke:var(--carta-ouro);stroke-width:2.2;fill:none}
+.tc .cf-ouro{fill:var(--carta-ouro)}
+.tc .cf-ouro2{fill:var(--carta-ouro2)}
+.tc .cf-vermelho{fill:var(--carta-vermelho)}
+.tc .cf-azul{fill:var(--carta-azul)}
+.tc .cf-verde{fill:var(--carta-verde)}
+.tc .cf-madeira{fill:var(--carta-madeira)}
+.tc .cf-pele{fill:var(--carta-pele)}
+.tc .cf-barba{fill:var(--carta-barba)}
+.tc .cf-cavalo{fill:var(--carta-cavalo)}
+.tc .cf-tinta{fill:var(--carta-tinta)}
+.tc .cf-roupa-o{fill:var(--carta-o)}
+.tc .cf-roupa-c{fill:var(--carta-c)}
+.tc .cf-roupa-e{fill:var(--carta-e)}
+.tc .cf-roupa-b{fill:var(--carta-b)}
+.tc [class^="cf-moldura-"]{fill:none;stroke-width:1.1}
+.tc .cf-moldura-o{stroke:var(--carta-o)}
+.tc .cf-moldura-c{stroke:var(--carta-c)}
+.tc .cf-moldura-e{stroke:var(--carta-e)}
+.tc .cf-moldura-b{stroke:var(--carta-b)}
+.tc .cf-num{font:800 10px var(--display)}
+.tc .cf-num-o{fill:var(--carta-o)}
+.tc .cf-num-c{fill:var(--carta-c)}
+.tc .cf-num-e{fill:var(--carta-e)}
+.tc .cf-num-b{fill:var(--carta-b)}
+.tc.peq{width:40px;border-radius:6px}
+.tc.ganha{box-shadow:0 0 0 3px var(--accent),0 0 24px rgba(176,141,87,.6)}
 .tc.costas{width:40px;background:repeating-linear-gradient(45deg,#7A2E26 0 5px,#8E3A30 5px 10px);box-shadow:inset 0 0 0 3px #FBF8F1,0 3px 8px rgba(0,0,0,.35)}
 .tc.costas.mini{width:30px;border-radius:5px;margin-left:-14px}
 .tc.costas.mini:first-child{margin-left:0}
 .tr-eu{display:grid;gap:12px;justify-items:center}
 .tr-mao{display:flex;gap:12px;justify-content:center;min-height:120px;align-items:flex-end}
-.tr-mao .tc{width:96px;padding:7px 8px;border-radius:12px;cursor:default;transition:transform .15s}
-.tr-mao .tc .v{font-size:20px}
+.tr-mao .tc{width:96px;border-radius:12px;cursor:default;transition:transform .15s}
 .tr-mao.pode .tc{cursor:pointer}
 .tr-mao.pode .tc:hover,.tr-mao.pode .tc:focus-visible{transform:translateY(-12px)}
 .tr-mao .tc:focus-visible{outline:3px solid var(--accent);outline-offset:3px}

@@ -194,6 +194,10 @@ export const CHANGELOG: EntradaLog[] = [
       "Início novo: o seu dia (moedas, sequência, bônus e missões), o que está acontecendo agora e o ranking de moedas",
     ],
   },
+  {
+    data: "02/11/2026",
+    itens: ["Truco com baralho espanhol desenhado: ouros, copas, espadas e bastos de verdade, com sota, cavalo e rei"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

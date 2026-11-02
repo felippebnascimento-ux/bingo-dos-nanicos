@@ -144,7 +144,8 @@ src/
                        aberta pela porta do Sítio)
     truco/             engine.ts (regras, puro e testado; a função truco-mesa usa uma cópia), valida.ts (confere a
                        mesa pública), mesa.ts (pede cada ação à função truco-mesa e recebe a mesa e a minha mão pelo
-                       tempo real), TrucoView, Lobby, MesaTela, Carta
+                       tempo real), TrucoView, Lobby, MesaTela, Carta e Baralho.tsx (o desenho próprio do
+                       baralho espanhol em SVG: naipes, figuras e a moldura com as pintas)
   lib/
     config.ts          URL e chave pública do Supabase
     supabase.ts        cliente (sb()), q(), errMsg()
@@ -260,6 +261,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 - **Sempre** use as variáveis (`var(--accent)` etc.), nunca hex solto, para o tema claro e escuro continuarem funcionando. Alguns hex vieram do site antigo (`#fff` e `#FAF9F6` sobre fundo escuro, o palco e as câmeras em `07`, `13` e `19`, o feltro e as cartas do truco em `20`). Não acrescente outros; quem mexer naquele trecho troca por variável.
 - Novas cores só se entrarem na paleta acima.
 - **Exceção: o quarto da ficha** (`24-ficha.css`) segue a mesma regra do hall, com as variáveis `--quarto-*` e as classes `q-<nome>` (valem também nas prévias da loja, `.loja-previa` e `.mochila-previa`).
+- **Exceção: as cartas do truco** (`20-truco.css`): o baralho desenhado usa as variáveis `--carta-*` (definidas em `.tc`; o papel fica claro também no tema escuro, só mais apagado) e as classes `cf-<nome>`.
 - **Exceção: os desenhos dos itens da loja** (`30-loja.css`): cigarro, latas, cuia, copo e fumaça usam as variáveis `--loja-*` (com tema escuro) e as classes `l-<nome>`.
 - **Exceção: o cômodo do hall** (`22-hall.css`). Ele é uma ilustração com cores próprias (tijolo, madeira, lajota), definidas como variáveis `--hall-*` em `.hall`, cada uma com uma versão mais escura no tema escuro. O SVG usa as classes `f-<nome>` (preenchimento) e `s-<nome>` (traço). A interface em volta (placas com nome, TV, botões) continua com a paleta acima.
 
