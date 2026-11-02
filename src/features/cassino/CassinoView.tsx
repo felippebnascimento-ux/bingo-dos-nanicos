@@ -4,26 +4,21 @@
  * e caça-níquel. O banco sorteia; aqui só escolhemos a aposta, animamos até o resultado que
  * o banco mandou e mostramos como conferir que nada foi trocado.
  */
-import { useEffect, useRef, useState } from "react";
-import { ajustarSaldo, useCarteira } from "@/lib/carteira";
+import { useEffect, useState } from "react";
+import { useCarteira } from "@/lib/carteira";
 import { formatarMoedas } from "@/lib/moedas";
 import { sb } from "@/lib/supabase";
 import { toast } from "@/lib/toast";
 import { carregar, msgDe, useCassino, type Aposta, type Jogo, type Revelada } from "./estado";
-import { CacaNiquel, Fichas, Limbo, MaiorMenor } from "./Jogos";
-import { RodaRoleta, type Giro } from "./RodaRoleta";
-import { corDa, hashDaSemente, refazer, resultadoGuardado, rtpSlot, vantagemDaCasa, type TipoAposta } from "./regras";
+import { CacaNiquel, Limbo, MaiorMenor } from "./Jogos";
+import { RoletaMesa } from "./RoletaMesa";
+import { corDa, hashDaSemente, nomeLugar, refazer, resultadoGuardado, rtpSlot, vantagemDaCasa, type TipoAposta } from "./regras";
 
-const NUMEROS = Array.from({ length: 36 }, (_, k) => k + 1);
-const FORA: { tipo: TipoAposta; valor: number; nome: string }[] = [
-  { tipo: "cor", valor: 0, nome: "Vermelho" },
-  { tipo: "cor", valor: 1, nome: "Preto" },
-  { tipo: "paridade", valor: 0, nome: "Par" },
-  { tipo: "paridade", valor: 1, nome: "Ímpar" },
-  { tipo: "metade", valor: 0, nome: "1–18" },
-  { tipo: "metade", valor: 1, nome: "19–36" },
-];
-const nomeAposta = (t: TipoAposta, v: number) => (t === "numero" ? `no ${v}` : `no ${FORA.find((f) => f.tipo === t && f.valor === v)?.nome}`);
+/** Uma ficha antiga (uma aposta só) ou a mesa inteira: "25 no Número 32" ou "120 em 3 lugares". */
+function apostaDaRoleta(total: number, e: Record<string, unknown>) {
+  if (Array.isArray(e.fichas)) return e.fichas.length === 1 ? `${total} em ${nomeLugar((e.fichas[0] as { tipo: TipoAposta }).tipo, Number((e.fichas[0] as { valor: unknown }).valor))}` : `${total} em ${e.fichas.length} lugares`;
+  return `${total} em ${nomeLugar(e.tipo as TipoAposta, Number(e.valor))}`;
+}
 const JOGOS: { id: Jogo; nome: string }[] = [
   { id: "roleta", nome: "Roleta" },
   { id: "limbo", nome: "Limbo" },
@@ -35,7 +30,7 @@ const NOME_JOGO: Record<Jogo, string> = { roleta: "Roleta", limbo: "Limbo", dado
 /** Uma linha do histórico: o que apostou e o que saiu, em poucas palavras. */
 function descreve(a: Aposta): { aposta: string; saiu: string; cor?: string } {
   const e = a.escolha, r = a.resultado;
-  if (a.jogo === "roleta") return { aposta: `${a.aposta} ${nomeAposta(e.tipo as TipoAposta, Number(e.valor))}`, saiu: String(r.casa), cor: corDa(Number(r.casa)) };
+  if (a.jogo === "roleta") return { aposta: apostaDaRoleta(a.aposta, e), saiu: String(r.casa), cor: corDa(Number(r.casa)) };
   if (a.jogo === "limbo") return { aposta: `${a.aposta} no ${String(e.alvo).replace(".", ",")}×`, saiu: `${Number(r.valor).toFixed(2).replace(".", ",")}×` };
   if (a.jogo === "dado") return { aposta: `${a.aposta} ${e.lado === "abaixo" ? "abaixo" : "acima"} de ${e.n}`, saiu: String(r.numero) };
   return { aposta: `${a.aposta} no caça-níquel`, saiu: Array.isArray(r.simbolos) ? `${r.simbolos.length} rolos` : "" };
@@ -45,12 +40,6 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
   const saldo = useCarteira((s) => s.carteira?.saldo);
   const { ligado, estado, historico, reveladas, feed, rolos, pagamentos } = useCassino();
   const [jogo, setJogo] = useState<Jogo>("roleta");
-  const [escolha, setEscolha] = useState<{ tipo: TipoAposta; valor: number }>({ tipo: "cor", valor: 0 });
-  const [ficha, setFicha] = useState<number>(10);
-  const [giro, setGiro] = useState<Giro | null>(null);
-  const [girando, setGirando] = useState(false);
-  /* o que o banco respondeu, para mostrar depois que a bolinha parar */
-  const resposta = useRef<{ casa: number; pagou: number; saldo: number } | null>(null);
   /* null = ainda não mexeu: mostra a semente do cliente atual */
   const [clienteEditado, setCliente] = useState<string | null>(null);
   const cliente = clienteEditado ?? estado?.cliente ?? "";
@@ -60,31 +49,6 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
   useEffect(() => {
     if (abriu) carregar();
   }, [abriu]);
-
-  /* o banco sorteia primeiro; a roda gira até a casa que ele mandou e só então mostra o resultado */
-  const girar = async () => {
-    if (girando) return;
-    setGirando(true);
-    try {
-      const { data, error } = await sb().rpc("apostar_roleta", { p_aposta: ficha, p_tipo: escolha.tipo, p_valor: escolha.valor });
-      if (error) throw error;
-      const r = data as { casa: number; pagou: number; saldo: number };
-      resposta.current = r;
-      setGiro({ id: Date.now(), casa: r.casa });
-    } catch (e) {
-      toast(msgDe(e, "Não deu para girar. Confira a internet."));
-      setGirando(false);
-    }
-  };
-  const fimDoGiro = (casa: number) => {
-    const r = resposta.current;
-    resposta.current = null;
-    setGirando(false);
-    if (!r || r.casa !== casa) return;
-    ajustarSaldo(r.saldo);
-    toast(r.pagou > 0 ? `Deu ${r.casa}! Você ganhou ${formatarMoedas(r.pagou)} moedas` : `Deu ${r.casa}. Perdeu ${ficha} moedas`);
-    carregar();
-  };
 
   const trocarSemente = async () => {
     try {
@@ -139,46 +103,9 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
             {jogo === "limbo" && <Limbo />}
             {jogo === "dado" && <MaiorMenor />}
             {jogo === "slot" && <CacaNiquel />}
-            <div className="block roleta" hidden={jogo !== "roleta"}>
-              <RodaRoleta
-                giro={giro}
-                onFim={fimDoGiro}
-                ultimos={historico.filter((a) => a.jogo === "roleta").map((a) => Number(a.resultado.casa))}
-              />
-              <div className="roleta-mesa" role="group" aria-label="Escolha a aposta">
-                <button type="button" className={"casa verde" + (escolha.tipo === "numero" && escolha.valor === 0 ? " on" : "")} onClick={() => setEscolha({ tipo: "numero", valor: 0 })}>
-                  0
-                </button>
-                {NUMEROS.map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    className={"casa " + corDa(n) + (escolha.tipo === "numero" && escolha.valor === n ? " on" : "")}
-                    aria-pressed={escolha.tipo === "numero" && escolha.valor === n}
-                    onClick={() => setEscolha({ tipo: "numero", valor: n })}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
-              <div className="roleta-fora">
-                {FORA.map((f) => (
-                  <button
-                    key={f.nome}
-                    type="button"
-                    className={"btn soft sm" + (escolha.tipo === f.tipo && escolha.valor === f.valor ? " on" : "")}
-                    aria-pressed={escolha.tipo === f.tipo && escolha.valor === f.valor}
-                    onClick={() => setEscolha({ tipo: f.tipo, valor: f.valor })}
-                  >
-                    {f.nome}
-                  </button>
-                ))}
-              </div>
-              <Fichas ficha={ficha} setFicha={setFicha} />
-              <button type="button" className="btn roleta-girar" disabled={girando} onClick={girar}>
-                {girando ? "Girando…" : `Girar: ${ficha} moedas ${nomeAposta(escolha.tipo, escolha.valor)}`}
-              </button>
-              <p className="hint">Número paga 35 vezes; cor, par/ímpar e metade pagam 1 vez. O 0 perde nas apostas de fora.</p>
+            {/* a roleta fica sempre montada (a roda não pode sumir no meio do giro) */}
+            <div className="rm-caixa" hidden={jogo !== "roleta"}>
+              <RoletaMesa />
             </div>
             <div className="cassino-lado">
               <details className="block cassino-justo">

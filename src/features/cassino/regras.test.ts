@@ -1,6 +1,6 @@
 import { createHash, createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { casaDaRoleta, conferir, corDa, hashDaSemente, pagamentoRoleta, rtpRoleta, vantagemDaCasa, type TipoAposta } from "./regras";
+import { casaDaRoleta, conferir, corDa, detalhesDaCasa, dobrarMesa, hashDaSemente, mesaValida, nomeLugar, pagamentoRoleta, porFicha, rtpRoleta, totalMesa, vantagemDaCasa, type TipoAposta } from "./regras";
 
 describe("roleta europeia", () => {
   it("o RTP é exatamente 36/37 para todo tipo de aposta", () => {
@@ -88,5 +88,33 @@ describe("limbo, maior ou menor e caça-níquel", async () => {
     expect(await r.refazer("limbo", 6, semente, "x", ROLOS)).toBe(r.valorLimbo(uDe(6)).toFixed(2));
     expect(await r.refazer("slot", 7, semente, "x", ROLOS)).toBe([7, 8, 9].map((n) => r.simboloSlot(uDe(n), ROLOS)).join(","));
     expect(r.resultadoGuardado("slot", { simbolos: ["n1", "bola", "moeda"] })).toBe("n1,bola,moeda");
+  });
+});
+
+describe("roleta de mesa", () => {
+  it("dúzia e coluna pagam 3× e a casa leva 2,7% em todas", () => {
+    expect(pagamentoRoleta("duzia", 2, 32, 10)).toBe(30);
+    expect(pagamentoRoleta("duzia", 0, 0, 10)).toBe(0);
+    expect(pagamentoRoleta("coluna", 1, 32, 10)).toBe(30); /* 32 está na coluna do 2 */
+    expect(pagamentoRoleta("coluna", 2, 36, 10)).toBe(30);
+    for (const [t, v] of [["duzia", 0], ["duzia", 2], ["coluna", 0], ["coluna", 1]] as [TipoAposta, number][]) expect(rtpRoleta(t, v)).toBeCloseTo(36 / 37);
+  });
+
+  it("monta a mesa: soma no mesmo lugar, dobra e confere os limites", () => {
+    let m = porFicha([], "numero", 32, 25);
+    m = porFicha(m, "numero", 32, 25);
+    m = porFicha(m, "cor", 0, 50);
+    expect(m).toEqual([{ tipo: "numero", valor: 32, aposta: 50 }, { tipo: "cor", valor: 0, aposta: 50 }]);
+    expect(porFicha(m, "numero", 32, 100)[0].aposta).toBe(100);
+    expect(totalMesa(dobrarMesa(m))).toBe(200);
+    expect(mesaValida([])).toMatch(/pelo menos/);
+    expect(mesaValida(Array.from({ length: 11 }, (_, k) => ({ tipo: "numero" as const, valor: k, aposta: 100 })))).toMatch(/1.000/);
+    expect(mesaValida(m)).toBeNull();
+  });
+
+  it("descreve a casa e os lugares", () => {
+    expect(detalhesDaCasa(32)).toBe("Par · 19–36 · 3ª dúzia · 2ª coluna");
+    expect(nomeLugar("duzia", 2)).toBe("3ª dúzia");
+    expect(nomeLugar("cor", 0)).toBe("Vermelho");
   });
 });

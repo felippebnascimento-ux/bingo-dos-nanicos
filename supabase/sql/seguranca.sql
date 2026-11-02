@@ -2877,7 +2877,90 @@ begin
   begin alter publication supabase_realtime add table public.respeitos; exception when duplicate_object then null; end;
 end $$;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas e as 3 de respeitos e emblemas
+-- 28) roleta de mesa: várias fichas na mesma rodada (número, cor, par/ímpar, metade, dúzia e coluna) ------------------
+-- Um sorteio só (cassino_numero, o mesmo motor justo), todas as fichas pagas de uma vez. Cada ficha de 5 a 100, até 30
+-- fichas e 1.000 moedas por rodada. Dúzia e coluna pagam 2 para 1 (3× com a aposta); número 36×; o resto 2×.
+-- Fica guardada como uma aposta 'roleta' com escolha {fichas: [...]}, então a conferência continua igual (resultado.casa).
+alter table public.cassino_apostas drop constraint if exists cassino_apostas_aposta_check;
+alter table public.cassino_apostas add constraint cassino_apostas_aposta_check check (aposta between 5 and 1000);
+
+create or replace function public.apostar_roleta_mesa(p_fichas jsonb) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid   uuid := auth.uid();
+  v_verm  int[] := array[1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+  f       jsonb;
+  v_tipo  text;
+  v_valor int;
+  v_ap    int;
+  v_total int := 0;
+  r       record;
+  v_casa  int;
+  v_cor   text;
+  v_ganha boolean;
+  v_pg    int;
+  v_paga  int := 0;
+  v_saldo int;
+  v_lista jsonb := '[]'::jsonb;
+  v_escolha jsonb := '[]'::jsonb;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
+  if p_fichas is null or jsonb_typeof(p_fichas) <> 'array' or jsonb_array_length(p_fichas) = 0 then
+    raise exception 'Ponha pelo menos uma ficha na mesa.' using errcode = 'P0001';
+  end if;
+  if jsonb_array_length(p_fichas) > 30 then raise exception 'No máximo 30 fichas por rodada.' using errcode = 'P0001'; end if;
+  -- confere cada ficha antes de cobrar
+  for f in select * from jsonb_array_elements(p_fichas) loop
+    v_tipo := f->>'tipo';
+    if jsonb_typeof(f->'valor') <> 'number' or jsonb_typeof(f->'aposta') <> 'number' then
+      raise exception 'Aposta inválida.' using errcode = 'P0001';
+    end if;
+    v_valor := (f->>'valor')::int;
+    v_ap := (f->>'aposta')::int;
+    if v_ap not between 5 and 100 then raise exception 'Cada ficha vai de 5 a 100 moedas.' using errcode = 'P0001'; end if;
+    if v_tipo is null or v_tipo not in ('numero', 'cor', 'paridade', 'metade', 'duzia', 'coluna')
+       or (v_tipo = 'numero' and v_valor not between 0 and 36)
+       or (v_tipo in ('cor', 'paridade', 'metade') and v_valor not in (0, 1))
+       or (v_tipo in ('duzia', 'coluna') and v_valor not in (0, 1, 2)) then
+      raise exception 'Aposta inválida.' using errcode = 'P0001';
+    end if;
+    v_total := v_total + v_ap;
+  end loop;
+  if v_total > 1000 then raise exception 'No máximo 1.000 moedas por rodada.' using errcode = 'P0001'; end if;
+  perform public.limitar('cassino', 30, interval '1 minute', 'Calma: muitas apostas seguidas. Espere um pouco.');
+  perform public.creditar(v_uid, -v_total, 'cassino', 'roleta');
+  select * into r from public.cassino_numero(v_uid);
+  v_casa := floor(r.u * 37)::int;
+  v_cor := case when v_casa = 0 then 'verde' when v_casa = any (v_verm) then 'vermelho' else 'preto' end;
+  for f in select * from jsonb_array_elements(p_fichas) loop
+    v_tipo := f->>'tipo';
+    v_valor := (f->>'valor')::int;
+    v_ap := (f->>'aposta')::int;
+    v_ganha := case v_tipo
+      when 'numero'   then v_casa = v_valor
+      when 'cor'      then v_casa <> 0 and (v_cor = 'vermelho') = (v_valor = 0)
+      when 'paridade' then v_casa <> 0 and v_casa % 2 = v_valor
+      when 'metade'   then v_casa <> 0 and (v_casa <= 18) = (v_valor = 0)
+      when 'duzia'    then v_casa <> 0 and (v_casa - 1) / 12 = v_valor
+      when 'coluna'   then v_casa <> 0 and (v_casa - 1) % 3 = v_valor
+    end;
+    v_pg := case when not v_ganha then 0 when v_tipo = 'numero' then v_ap * 36 when v_tipo in ('duzia', 'coluna') then v_ap * 3 else v_ap * 2 end;
+    v_paga := v_paga + v_pg;
+    v_lista := v_lista || jsonb_build_object('tipo', v_tipo, 'valor', v_valor, 'aposta', v_ap, 'pagou', v_pg);
+    v_escolha := v_escolha || jsonb_build_object('tipo', v_tipo, 'valor', v_valor, 'aposta', v_ap);
+  end loop;
+  if v_paga > 0 then v_saldo := public.creditar(v_uid, v_paga, 'cassino', 'roleta');
+  else select saldo into v_saldo from public.carteiras where user_id = v_uid; end if;
+  insert into public.cassino_apostas (user_id, jogo, aposta, escolha, resultado, pagou, hash, nonce)
+    values (v_uid, 'roleta', v_total, jsonb_build_object('fichas', v_escolha),
+            jsonb_build_object('casa', v_casa, 'cor', v_cor), v_paga, r.hash, r.nonce);
+  return jsonb_build_object('casa', v_casa, 'cor', v_cor, 'pagou', v_paga, 'saldo', v_saldo, 'fichas', v_lista,
+                            'hash', r.hash, 'nonce', r.nonce);
+end $$;
+revoke all on function public.apostar_roleta_mesa(jsonb) from public, anon;
+grant execute on function public.apostar_roleta_mesa(jsonb) to authenticated;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas e a roleta de mesa
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -2933,4 +3016,7 @@ select proname::text, 'apostas' from pg_proc
 union all
 select proname::text, 'emblemas' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('dar_respeito', 'meus_respeitos', 'emblemas_de')
+union all
+select proname::text, 'roleta' from pg_proc
+ where pronamespace = 'public'::regnamespace and proname in ('apostar_roleta_mesa')
 order by 2, 1;

@@ -4,7 +4,7 @@
  * Quem sorteia de verdade é o banco (apostar_roleta); o navegador nunca decide resultado.
  */
 
-export type TipoAposta = "numero" | "cor" | "paridade" | "metade";
+export type TipoAposta = "numero" | "cor" | "paridade" | "metade" | "duzia" | "coluna";
 export type Cor = "vermelho" | "preto" | "verde";
 
 export const APOSTA_MIN = 5;
@@ -16,16 +16,58 @@ export const VERMELHAS: ReadonlySet<number> = new Set([1, 3, 5, 7, 9, 12, 14, 16
 
 export const corDa = (casa: number): Cor => (casa === 0 ? "verde" : VERMELHAS.has(casa) ? "vermelho" : "preto");
 
-/** Quanto volta para a pessoa (aposta incluída): 36× no número certo, 2× nas outras; o 0 perde cor, paridade e metade. */
+/** A ficha cobre a casa? Dúzia 0/1/2 = 1–12/13–24/25–36; coluna 0/1/2 = a do 1, a do 2 e a do 3 (2:1). */
+export function cobre(tipo: TipoAposta, valor: number, casa: number): boolean {
+  if (tipo === "numero") return casa === valor;
+  if (casa === 0) return false;
+  if (tipo === "cor") return (corDa(casa) === "vermelho") === (valor === 0);
+  if (tipo === "paridade") return casa % 2 === valor;
+  if (tipo === "metade") return (casa <= 18) === (valor === 0);
+  if (tipo === "duzia") return Math.floor((casa - 1) / 12) === valor;
+  return (casa - 1) % 3 === valor;
+}
+
+/** Quanto volta para a pessoa (aposta incluída): 36× no número, 3× na dúzia e na coluna, 2× nas outras; o 0 perde as de fora. */
 export function pagamentoRoleta(tipo: TipoAposta, valor: number, casa: number, aposta: number): number {
-  let ganha = false;
-  if (tipo === "numero") ganha = casa === valor;
-  else if (casa !== 0) {
-    if (tipo === "cor") ganha = (corDa(casa) === "vermelho") === (valor === 0);
-    if (tipo === "paridade") ganha = casa % 2 === valor;
-    if (tipo === "metade") ganha = (casa <= 18) === (valor === 0);
-  }
-  return ganha ? aposta * (tipo === "numero" ? 36 : 2) : 0;
+  if (!cobre(tipo, valor, casa)) return 0;
+  return aposta * (tipo === "numero" ? 36 : tipo === "duzia" || tipo === "coluna" ? 3 : 2);
+}
+
+/* ---------- mesa: várias fichas na mesma rodada (apostar_roleta_mesa) ---------- */
+export type Ficha = { tipo: TipoAposta; valor: number; aposta: number };
+export const MESA_MAX = 1000;
+export const MESA_FICHAS_MAX = 30;
+
+/** Põe uma ficha num lugar da mesa: soma com o que já tinha ali (cada lugar até 100). */
+export function porFicha(mesa: readonly Ficha[], tipo: TipoAposta, valor: number, aposta: number): Ficha[] {
+  const i = mesa.findIndex((f) => f.tipo === tipo && f.valor === valor);
+  if (i < 0) return [...mesa, { tipo, valor, aposta: Math.min(APOSTA_MAX, aposta) }];
+  return mesa.map((f, k) => (k === i ? { ...f, aposta: Math.min(APOSTA_MAX, f.aposta + aposta) } : f));
+}
+export const totalMesa = (mesa: readonly Ficha[]) => mesa.reduce((s, f) => s + f.aposta, 0);
+/** Dobra todas as fichas (cada lugar até 100). */
+export const dobrarMesa = (mesa: readonly Ficha[]) => mesa.map((f) => ({ ...f, aposta: Math.min(APOSTA_MAX, f.aposta * 2) }));
+/** Dá para girar? (o banco confere de novo) */
+export function mesaValida(mesa: readonly Ficha[]): string | null {
+  if (!mesa.length) return "Ponha pelo menos uma ficha na mesa.";
+  if (mesa.length > MESA_FICHAS_MAX) return "No máximo 30 fichas por rodada.";
+  if (totalMesa(mesa) > MESA_MAX) return "No máximo 1.000 moedas por rodada.";
+  return null;
+}
+
+/** Nome curto de um lugar da mesa ("Número 32", "Vermelho", "3ª dúzia", "2ª coluna"). */
+export function nomeLugar(tipo: TipoAposta, valor: number): string {
+  if (tipo === "numero") return `Número ${valor}`;
+  if (tipo === "cor") return valor === 0 ? "Vermelho" : "Preto";
+  if (tipo === "paridade") return valor === 0 ? "Par" : "Ímpar";
+  if (tipo === "metade") return valor === 0 ? "1–18" : "19–36";
+  return `${valor + 1}ª ${tipo === "duzia" ? "dúzia" : "coluna"}`;
+}
+
+/** "Par · 19–36 · 3ª dúzia · 2ª coluna" de uma casa (o 0 não entra em nada de fora). */
+export function detalhesDaCasa(casa: number): string {
+  if (casa === 0) return "Zero: as apostas de fora perdem";
+  return [casa % 2 === 0 ? "Par" : "Ímpar", casa <= 18 ? "1–18" : "19–36", `${Math.floor((casa - 1) / 12) + 1}ª dúzia`, `${((casa - 1) % 3) + 1}ª coluna`].join(" · ");
 }
 
 /** Quanto volta, em média, de cada moeda apostada (RTP), contando as 37 casas. */

@@ -30,8 +30,6 @@ function setor(r0: number, r1: number, a0: number, a1: number) {
   return `M${x0} ${y0}A${r1} ${r1} 0 0 1 ${x1} ${y1}L${x2} ${y2}A${r0} ${r0} 0 0 0 ${x3} ${y3}Z`;
 }
 
-const NOME_COR: Record<Cor, string> = { vermelho: "VERMELHO", preto: "PRETO", verde: "VERDE" };
-
 /** Números de 0 a 1 do navegador, só para variar o visual do giro (o resultado vem do banco). */
 function aleatorio() {
   const b = new Uint32Array(1);
@@ -135,11 +133,8 @@ function Roda({ id }: { id: string }) {
 
 export type Giro = { id: number; casa: number };
 
-/**
- * A roleta. Quando chega um `giro` novo (id diferente), a roda gira até a `casa` dele e chama `onFim`.
- * `ultimos`: as últimas casas (as minhas apostas), mostradas como bolinhas coloridas.
- */
-export function RodaRoleta({ giro, onFim, ultimos }: { giro: Giro | null; onFim?: (casa: number, cor: Cor) => void; ultimos: number[] }) {
+/** A roda. Quando chega um `giro` novo (id diferente), ela gira até a `casa` dele e chama `onFim`. */
+export function RodaRoleta({ giro, onFim }: { giro: Giro | null; onFim?: (casa: number, cor: Cor) => void }) {
   const id = useId().replace(/:/g, "");
   const rodaRef = useRef<SVGGElement>(null);
   const bolaRef = useRef<SVGGElement>(null);
@@ -210,7 +205,10 @@ export function RodaRoleta({ giro, onFim, ultimos }: { giro: Giro | null; onFim?
       quadro = requestAnimationFrame(passo);
     };
     quadro = requestAnimationFrame(passo);
+    /* aba escondida não desenha quadros: o resultado aparece mesmo assim, no tempo do giro */
+    const reserva = setTimeout(terminar, p.total + 1500);
     return () => {
+      clearTimeout(reserva);
       cancelAnimationFrame(quadro);
       /* saiu no meio (trocou de aba): termina na hora, com o resultado certo */
       if (!acabou) terminar();
@@ -280,26 +278,6 @@ export function RodaRoleta({ giro, onFim, ultimos }: { giro: Giro | null; onFim?
           {mudo ? <IcSemSom /> : <IcVolume />}
         </button>
       </div>
-      <p className={"rr-resultado" + (cor ? " " + cor : "")} aria-live="polite">
-        {final !== null && cor ? (
-          <>
-            <b>{final}</b> {NOME_COR[cor]}
-          </>
-        ) : rodando ? (
-          "Girando…"
-        ) : (
-          "Faça a sua aposta"
-        )}
-      </p>
-      {ultimos.length > 0 && (
-        <ol className="rr-ultimos" aria-label="Últimos números">
-          {ultimos.slice(0, 10).map((n, k) => (
-            <li key={k} className={"rr-" + corDa(n)}>
-              {n}
-            </li>
-          ))}
-        </ol>
-      )}
     </div>
   );
 }

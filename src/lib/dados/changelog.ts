@@ -250,6 +250,14 @@ export const CHANGELOG: EntradaLog[] = [
     data: "02/11/2026",
     itens: ["Tocar no boneco não deixa mais uma caixa escura em volta dele"],
   },
+  {
+    data: "02/11/2026",
+    itens: [
+      "Roleta nova no feltro: espalhe fichas pela mesa (número, dúzia, coluna, cor, par/ímpar e metade) e gire tudo de uma vez",
+      "Fichas de 5 a 100 com desfazer, limpar, dobrar e repetir a última aposta",
+      "Painel do resultado com o que você ganhou em cada ficha, os últimos números e as cores das últimas rodadas",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

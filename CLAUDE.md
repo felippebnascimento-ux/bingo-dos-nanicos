@@ -144,6 +144,8 @@ src/
     cassino/           aba Cassino (moedas fictícias): regras.ts (roleta, limbo, dado, caça-níquel, conferir() e
                        refazer() com HMAC-SHA256; puro e testado), roda.ts (plano do giro da roleta animada: a bolinha termina no centro
                        da casa que o banco mandou; puro e testado), RodaRoleta.tsx (a roda em SVG, animação, sons e mudo),
+                       RoletaMesa.tsx (o feltro: roda, painel do resultado, mesa de fichas deitada no computador e em pé no
+                       celular, desfazer/limpar/dobrar/repetir; chama apostar_roleta_mesa),
                        estado.ts (dados do banco), Jogos.tsx (limbo,
                        maior ou menor e caça-níquel) e CassinoView (seletor de jogo, roleta, conferência, histórico)
     salas/             salas tipo lan house: trocar.ts (entrarSala: encerra tela e voz, mantém a câmera, troca o canal,
@@ -269,7 +271,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 - **Sempre** use as variáveis (`var(--accent)` etc.), nunca hex solto, para o tema claro e escuro continuarem funcionando. Alguns hex vieram do site antigo (`#fff` e `#FAF9F6` sobre fundo escuro, o palco e as câmeras em `07`, `13` e `19`, o feltro e as cartas do truco em `20`). Não acrescente outros; quem mexer naquele trecho troca por variável.
 - Novas cores só se entrarem na paleta acima.
 - **Exceção: o quarto da ficha** (`24-ficha.css`) segue a mesma regra do hall, com as variáveis `--quarto-*` e as classes `q-<nome>` (valem também nas prévias da loja, `.loja-previa` e `.mochila-previa`).
-- **Exceção: a roleta animada do Cassino** (`26-cassino.css`): madeira, ouro, prata e feltro usam as variáveis `--roleta-*` (em `.rr`, com tema escuro); vermelho, preto e verde das casas são `--live`, `--accent-ink` e `--olive`.
+- **Exceção: a roleta animada do Cassino** (`26-cassino.css`): madeira, ouro, prata e feltro usam as variáveis `--roleta-*` (em `.rr`, com tema escuro), e a mesa usa `--rm-*` e as fichas `--ficha-*` (em `.rm`); vermelho, preto e verde das casas são `--live`, `--accent-ink` e `--olive`.
 - **Exceção: as cartas do truco** (`20-truco.css`): o baralho desenhado usa as variáveis `--carta-*` (definidas em `.tc`; o papel fica claro também no tema escuro, só mais apagado) e as classes `cf-<nome>`.
 - **Exceção: os desenhos dos itens da loja** (`30-loja.css`): cigarro, latas, cuia, copo e fumaça usam as variáveis `--loja-*` (com tema escuro) e as classes `l-<nome>`.
 - **Exceção: o cômodo do hall** (`22-hall.css`). Ele é uma ilustração com cores próprias (tijolo, madeira, lajota), definidas como variáveis `--hall-*` em `.hall`, cada uma com uma versão mais escura no tema escuro. O SVG usa as classes `f-<nome>` (preenchimento) e `s-<nome>` (traço). A interface em volta (placas com nome, TV, botões) continua com a paleta acima.
@@ -357,7 +359,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
   - **Se o SQL não rodou,** o site esconde as moedas e só deixa um aviso no console.
 - **Cassino (seção 11 do `seguranca.sql`, usa `pgcrypto`):**
   - **O sorteio é no banco:** `u` = primeiros 52 bits de `HMAC-SHA256(semente do servidor, "semente_cliente:nonce")`, feito por `cassino_numero()` (interna, incrementa o nonce com `for update`). O navegador nunca sorteia.
-  - **RPCs:** `apostar_roleta(aposta 5–100, tipo, valor)`, `apostar_limbo(aposta, alvo 1,01–100)`, `apostar_dado(aposta, lado, n)` (chance de 1% a 95%) e `apostar_slot(aposta)` (3 nonces seguidos, um por rolo). Todas debitam com `creditar`, sorteiam com `cassino_numero`, pagam e gravam em `cassino_apostas`. E `cassino_estado()`, `trocar_semente(cliente)` (revela a antiga) e `cassino_feed()`.
+  - **RPCs:** `apostar_roleta_mesa(fichas)` (seção 28: várias fichas numa rodada, um sorteio só; tipos número, cor, paridade, metade, dúzia e coluna; cada ficha 5–100, até 30 fichas e 1.000 por rodada; dúzia e coluna pagam 3×; guarda uma aposta `roleta` com `escolha.fichas`), `apostar_roleta(aposta 5–100, tipo, valor)` (a antiga, de uma ficha), `apostar_limbo(aposta, alvo 1,01–100)`, `apostar_dado(aposta, lado, n)` (chance de 1% a 95%) e `apostar_slot(aposta)` (3 nonces seguidos, um por rolo). Todas debitam com `creditar`, sorteiam com `cassino_numero`, pagam e gravam em `cassino_apostas`. E `cassino_estado()`, `trocar_semente(cliente)` (revela a antiga) e `cassino_feed()`.
   - **Quanto a casa leva:** roleta 2,7%, limbo e dado 3%, caça-níquel cerca de 8% (o fim da seção 11b recalcula o RTP exato da tabela e falha fora de 91,5%–92,5%).
   - **Conferência:** `conferir()` e `refazer()` em `features/cassino/regras.ts` refazem a conta de qualquer jogo com `crypto.subtle`.
 - **Atributos votados (seção 9 do `seguranca.sql`):**
