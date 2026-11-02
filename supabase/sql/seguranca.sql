@@ -242,7 +242,7 @@ create table if not exists public.extrato (
   id      bigint generated always as identity primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
   valor   int not null,
-  motivo  text not null check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin')),
+  motivo  text not null check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira')),
   ref     text,
   em      timestamptz not null default now()
 );
@@ -1167,7 +1167,92 @@ end $$;
 revoke all on function public.rodizio_desistir(text) from public, anon;
 grant execute on function public.rodizio_desistir(text) to authenticated;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença e as 4 do rodízio
+-- 20) zoeira: chinelada e torta na cara no Sítio ------------------------------------------------
+--     É paga (5 e 25 moedas, que somem da economia), então passa pelo banco e chega a todos pelo
+--     tempo real da tabela, nunca por broadcast. O alvo não perde nada.
+alter table public.extrato drop constraint if exists extrato_motivo_check;
+alter table public.extrato add constraint extrato_motivo_check
+  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira'));
+
+create table if not exists public.zoeiras (
+  id   bigint generated always as identity primary key,
+  de   uuid not null references public.friends(id) on delete cascade,
+  para uuid not null references public.friends(id) on delete cascade,
+  tipo text not null check (tipo in ('chinelo', 'torta', 'revide')),
+  em   timestamptz not null default now()
+);
+create index if not exists zoeiras_busca on public.zoeiras (para, em desc);
+create index if not exists zoeiras_de on public.zoeiras (de, em desc);
+alter table public.zoeiras enable row level security;
+revoke all on public.zoeiras from public, anon, authenticated;
+grant select on public.zoeiras to authenticated;
+drop policy if exists "nanicos veem a zoeira do dia" on public.zoeiras;
+create policy "nanicos veem a zoeira do dia" on public.zoeiras for select to authenticated
+  using (public.eh_nanico() and em > now() - interval '24 hours');
+do $$
+begin
+  begin alter publication supabase_realtime add table public.zoeiras; exception when duplicate_object then null; end;
+end $$;
+
+-- dá uma chinelada (5), uma torta (25) ou revida de graça (só uma vez, até 30 s depois de levar uma)
+create or replace function public.zoar(p_para_friend uuid, p_tipo text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid   uuid := auth.uid();
+  v_de    uuid;
+  v_preco int;
+  v_saldo int;
+  v_nome  text;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos zoam.' using errcode = 'P0001'; end if;
+  select id into v_de from public.friends where user_id = v_uid limit 1;
+  select name into v_nome from public.friends where id = p_para_friend;
+  if v_nome is null then raise exception 'Esse nanico não existe.' using errcode = 'P0001'; end if;
+  if p_para_friend = v_de then raise exception 'Não dá para zoar a si mesmo.' using errcode = 'P0001'; end if;
+  if p_tipo not in ('chinelo', 'torta', 'revide') then raise exception 'Zoeira inválida.' using errcode = 'P0001'; end if;
+  delete from public.zoeiras where em < now() - interval '30 days';
+  if p_tipo = 'revide' then
+    -- grátis só se o alvo zoou você nos últimos 30 s e você ainda não revidou depois disso
+    if not exists (select 1 from public.zoeiras z
+                    where z.de = p_para_friend and z.para = v_de and z.tipo in ('chinelo', 'torta')
+                      and z.em > now() - interval '30 seconds'
+                      and not exists (select 1 from public.zoeiras r where r.de = v_de and r.para = p_para_friend
+                                        and r.tipo = 'revide' and r.em >= z.em)) then
+      raise exception 'Só dá para revidar até 30 s depois de levar uma zoeira.' using errcode = 'P0001';
+    end if;
+    v_preco := 0;
+  else
+    v_preco := case p_tipo when 'chinelo' then 5 else 25 end;
+    perform public.limitar('zoar_10s', 1, interval '10 seconds', 'Calma: espere 10 s entre uma zoeira e outra.');
+  end if;
+  perform public.limitar('zoar', 6, interval '1 minute', 'Calma: muita zoeira em pouco tempo. Espere um pouco.');
+  if (select count(*) from public.zoeiras where de = v_de and para = p_para_friend and em > now() - interval '5 minutes') >= 3 then
+    raise exception 'Chega: % já levou 3 em 5 minutos. Dê um tempo.', v_nome using errcode = 'P0001';
+  end if;
+  if v_preco > 0 then
+    v_saldo := public.creditar(v_uid, -v_preco, 'zoeira', p_tipo);
+  else
+    select saldo into v_saldo from public.carteiras where user_id = v_uid;
+  end if;
+  insert into public.zoeiras (de, para, tipo) values (v_de, p_para_friend, p_tipo);
+  return jsonb_build_object('saldo', coalesce(v_saldo, 0), 'preco', v_preco);
+end $$;
+revoke all on function public.zoar(uuid, text) from public, anon;
+grant execute on function public.zoar(uuid, text) to authenticated;
+
+-- quantas a pessoa deu e levou nos últimos 7 dias (placar da ficha)
+create or replace function public.placar_zoeira(p_friend uuid) returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos veem a zoeira.' using errcode = 'P0001'; end if;
+  return jsonb_build_object(
+    'deu', (select count(*) from public.zoeiras where de = p_friend and em > now() - interval '7 days'),
+    'levou', (select count(*) from public.zoeiras where para = p_friend and em > now() - interval '7 days'));
+end $$;
+revoke all on function public.placar_zoeira(uuid) from public, anon;
+grant execute on function public.placar_zoeira(uuid) to authenticated;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio e as 2 da zoeira
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -1190,4 +1275,7 @@ select proname::text, 'presenca' from pg_proc
 union all
 select proname::text, 'rodizio' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('rodizio_fila', 'rodizio_girar', 'rodizio_colocar', 'rodizio_desistir')
+union all
+select proname::text, 'zoeira' from pg_proc
+ where pronamespace = 'public'::regnamespace and proname in ('zoar', 'placar_zoeira')
 order by 2, 1;

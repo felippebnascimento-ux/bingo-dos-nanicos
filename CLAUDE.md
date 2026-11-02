@@ -63,7 +63,9 @@ src/
                        de desenho; puro e testado), bonecos.ts (movimento, evento `hall`, presença), Sala.tsx
                        (cômodo em SVG com janelão e portão, um móvel por camada, destaque do piso), Boneco.tsx
                        (tocar abre a ficha), Cantos.tsx ("Na sala agora", ganhos, carteira, dica), ganhos.ts
-                       (ganhos de moedas de todo mundo pelo tempo real das carteiras), HallView
+                       (ganhos de moedas de todo mundo pelo tempo real das carteiras), HallView; zoeira:
+                       zoeira.ts (arco do voo e cambaleio; puro e testado), zoeiraSala.ts (chama zoar(), recebe
+                       a tabela zoeiras, anima) e ZoeiraTela.tsx (menu do boneco, voo, PLAFT!, revidar)
     jogar/             JogarView (escalação, cartela, montar cartela), MiniCartela (painel do Ao vivo e
                        cartela flutuante), riot.ts (consulta a função riot-ao-vivo), partida.ts (lanes, puro),
                        RiotBox, CellTag; roleta do rodízio: rodizio.ts (fatias, ângulo, "seguidas"; puro e
@@ -241,6 +243,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 | `online_diario` | minutos com o site aberto por dia (`minutos`, `ultimo_pulso`) | ninguém grava; cada um lê o seu |
 | `riot_contas`, `riot_ao_vivo`, `riot_meta` | cache da API da Riot | só a Edge Function |
 | `rodizio` | roleta do rodízio, uma linha por sala de LoL (`fila`, `rodada`, `ja_entraram`, `sorteado`, `girado_em`, `giro`, `trocas`, `no_time`) | ninguém direto: só `rodizio_fila`, `rodizio_girar` (o banco sorteia com `random()`), `rodizio_colocar` (troca a rota na `game` e passa pelo `escalacao_protecao`) e `rodizio_desistir` (seção 19) |
+| `zoeiras` | chinelada, torta e revide no Sítio (`de`, `para` = friend ids, `tipo`, `em`; apaga com 30 dias) | ninguém direto: só `zoar(nanico, tipo)` (cobra 5/25 com `creditar`, revide grátis em 30 s, limites) e `placar_zoeira(nanico)` (seção 20); nanicos leem as das últimas 24 h |
 | `jogos_stats` | números da ficha por nanico e fonte (`lol`: elo, vitórias, KDA, main; `steam`: horas) | nanicos leem; só a função `ficha-jogos` grava |
 | `riot_partidas_vistas` | partidas do LoL já lidas (KDA das últimas 20 sem buscar tudo de novo) | só a função `ficha-jogos` |
 | `atributos_votos` | votos anônimos (`de`, `para`, `atributo`, `nota` 0–10) | **ninguém lê nem grava direto**: só pelas funções abaixo |
@@ -280,7 +283,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
   - `risco`: desenho na live;
   - `truco`: mesas, jogadas e mão de cada um;
   - `hall`: `{ para: {i, j} }`, o destino do boneco. Cada navegador calcula o caminho e anima sozinho (limite de 8 a cada 2 s).
-- **Mudanças no banco:** chegam por `postgres_changes` em `friends`, `phrases`, `game`, `chat_messages`, `carteiras` e `rodizio`. O sorteio da roleta do rodízio vem do tempo real de `rodizio` (todo mundo anima até o mesmo `girado_em`), **nunca de broadcast**. Os ganhos de moedas de todo mundo no Sítio vêm do tempo real de `carteiras` (gravado por `creditar()`), **nunca de broadcast**.
+- **Mudanças no banco:** chegam por `postgres_changes` em `friends`, `phrases`, `game`, `chat_messages`, `carteiras` e `rodizio`. A chinelada e a torta vêm do tempo real de `zoeiras` (pagas, gravadas por `zoar()`), e o sorteio da roleta do rodízio vem do tempo real de `rodizio` (todo mundo anima até o mesmo `girado_em`), **nunca de broadcast**. Os ganhos de moedas de todo mundo no Sítio vêm do tempo real de `carteiras` (gravado por `creditar()`), **nunca de broadcast**.
 
 ### Navegador (`localStorage`, só conveniência de cada pessoa)
 - **Chaves:** `rift-lineup`, `rift-card`, `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `truco-mesa`, `log-visto`, `fome-fechado`, `hall-pos` (último piso no hall), `hall-sala-min` (lista "Na sala agora" do Sítio recolhida) e `sala-atual` (última sala; o site sempre abre no lobby).

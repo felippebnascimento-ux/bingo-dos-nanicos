@@ -13,6 +13,9 @@ import { andarAte, andarUmPiso, iniciarHall, useHall } from "./bonecos";
 import { Boneco } from "./Boneco";
 import { CarteiraCanto, Dica, Ganhos, NaSala } from "./Cantos";
 import { iniciarGanhos } from "./ganhos";
+import { cambalear } from "./zoeira";
+import { iniciarZoeira, useZoeira } from "./zoeiraSala";
+import { MenuBoneco, Revidar, ZoeiraCamada } from "./ZoeiraTela";
 import { caixaDoBoneco, caixaDoMovel, CLICAVEIS, MOVEIS, ordemZ, pisoLivreNaTela, pisoNaTela, VB_ESTREITO, VB_LARGO, type Caixa2D, type Clicavel, type Piso } from "./hall";
 import { Destaque, emPorcento, Fundo, MovelCamada, tvCaixa } from "./Sala";
 
@@ -54,9 +57,14 @@ export function HallView({ hidden }: { hidden: boolean }) {
   const [destaque, setDestaque] = useState<Piso | null>(null);
   const [pisca, setPisca] = useState(0);
 
+  const menu = useZoeira((s) => s.menu);
+  const pancada = useZoeira((s) => s.pancada);
+  const agora = useZoeira((s) => s.agora);
+
   useEffect(() => {
     iniciarHall();
     iniciarGanhos();
+    iniciarZoeira();
   }, []);
 
   /* z-index de cada móvel e boneco, do fundo para a frente */
@@ -125,8 +133,17 @@ export function HallView({ hidden }: { hidden: boolean }) {
             <MovelCamada key={m.id} id={m.id} z={z[k]} vb={vb} />
           ))}
           {bonecos.map((b, k) => (
-            <Boneco key={b.key} b={b} f={friendDaPresenca(b, friends) || { name: b.name }} eu={b.key === MY_KEY} z={z[MOVEIS.length + k]} vb={vb} />
+            <Boneco
+              key={b.key}
+              b={b}
+              f={friendDaPresenca(b, friends) || { name: b.name }}
+              eu={b.key === MY_KEY}
+              z={z[MOVEIS.length + k]}
+              vb={vb}
+              rot={b.fid && pancada[b.fid] ? cambalear(agora - pancada[b.fid]) : 0}
+            />
           ))}
+          <ZoeiraCamada bonecos={bonecos} vb={vb} />
           <button
             type="button"
             className="hall-tv"
@@ -159,11 +176,16 @@ export function HallView({ hidden }: { hidden: boolean }) {
               </button>
             );
           })}
+          {(() => {
+            const b = menu ? bonecos.find((x) => x.key === menu && x.key !== MY_KEY) : null;
+            return b ? <MenuBoneco key={b.key} b={b} vb={vb} /> : null;
+          })()}
         </div>
         <NaSala />
         <Ganhos />
         <CarteiraCanto />
         <Dica />
+        <Revidar />
       </div>
       <p className="hall-aviso" aria-live="polite">
         {aviso}

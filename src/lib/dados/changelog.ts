@@ -71,6 +71,7 @@ export const CHANGELOG: EntradaLog[] = [
   { data: "02/11/2026", itens: ["Ranking de quem tem mais moedas: clique na carteira para ver a sua posição"] },
   { data: "02/11/2026", itens: ["Na ficha de cada um: dias seguidos no Sítio, recorde e tempo online (hoje, na semana e no total)"] },
   { data: "02/11/2026", itens: ["Roleta do rodízio na aba Jogar: quem está de fora entra na roleta e todo mundo joga na sua vez"] },
+  { data: "02/11/2026", itens: ["No Sítio: clique num amigo para dar uma chinelada ou uma torta na cara (e ele pode revidar)"] },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

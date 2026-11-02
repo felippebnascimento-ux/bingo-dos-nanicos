@@ -1,16 +1,17 @@
 /* Um boneco no hall: o quadro da spritesheet (ou o rosto num pino) e a placa com o nome.
-   Tocar no boneco de outra pessoa abre a ficha dela (e não anda); o meu não abre nada. */
+   Tocar no boneco de outra pessoa abre o menu (ver ficha, chinelada, torta) e não anda; o meu não abre nada.
+   `rot` é o cambaleio de quem levou uma chinelada (graus). */
 import { memo, type CSSProperties } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { bonecoOf } from "@/lib/dados/nanicos";
-import { setApp } from "@/lib/store";
 import type { Rosto } from "@/lib/tipos";
 import type { Boneco as B } from "./bonecos";
 import { ANCORA, CEL_H, CEL_W, quadroSprite, tela, type Caixa2D } from "./hall";
+import { abrirMenu } from "./zoeiraSala";
 
 const pct = (v: number) => `${v * 100}%`;
 
-export const Boneco = memo(function Boneco({ b, f, eu, z, vb }: { b: B; f: Rosto; eu: boolean; z: number; vb: Caixa2D }) {
+export const Boneco = memo(function Boneco({ b, f, eu, z, vb, rot = 0 }: { b: B; f: Rosto; eu: boolean; z: number; vb: Caixa2D; rot?: number }) {
   const [x, y] = tela(b.i + 0.5, b.j + 0.5);
   const folha = bonecoOf(f);
   const q = quadroSprite(b.sentido, b.quadro);
@@ -21,6 +22,7 @@ export const Boneco = memo(function Boneco({ b, f, eu, z, vb }: { b: B; f: Rosto
     width: pct(CEL_W / vb.w),
     height: pct(CEL_H / vb.h),
     zIndex: z,
+    ...(rot ? { ["--balanco" as string]: `${rot.toFixed(2)}deg` } : {}),
   };
   const corpo = folha ? (
     <span
@@ -33,7 +35,7 @@ export const Boneco = memo(function Boneco({ b, f, eu, z, vb }: { b: B; f: Rosto
     </span>
   );
   return (
-    <div className={"boneco" + (eu ? " eu" : "")} style={caixa}>
+    <div className={"boneco" + (eu ? " eu" : "") + (rot ? " balanca" : "")} style={caixa}>
       <span className="boneco-nome">{b.name}</span>
       {eu || !f.id ? (
         corpo
@@ -41,10 +43,11 @@ export const Boneco = memo(function Boneco({ b, f, eu, z, vb }: { b: B; f: Rosto
         <button
           type="button"
           className="boneco-toque"
-          aria-label={`Abrir a ficha de ${b.name}`}
+          aria-label={`${b.name}, abrir opções`}
+          aria-haspopup="menu"
           onClick={(e) => {
             e.stopPropagation();
-            setApp({ fichaAberta: f.id! });
+            abrirMenu(b.key);
           }}
         >
           {corpo}

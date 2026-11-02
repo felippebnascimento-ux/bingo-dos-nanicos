@@ -19,6 +19,8 @@ export type Aviso = {
   eu: boolean;
   /** quantos nanicos entraram num aviso juntado de tempo online */
   pessoas?: number;
+  /** aviso que não é de moedas (zoeira): o texto pronto */
+  texto?: string;
 };
 
 const UUID = /^[0-9a-f-]{36}$/i;
@@ -88,6 +90,9 @@ function onCarteira(row: Record<string, unknown> | null) {
   }
   mostrar({ fid: f?.id ?? null, nome, valor: g.valor, motivo: g.motivo, eu });
 }
+
+/** Aviso de zoeira no mesmo canto ("Gamer deu uma chinelada no Max"). */
+export const avisarZoeira = (fid: string | null, texto: string) => mostrar({ fid, nome: "", valor: 0, motivo: "zoeira", eu: false, texto });
 
 let ligado = false;
 /** Começa a ouvir as carteiras (uma vez só). */

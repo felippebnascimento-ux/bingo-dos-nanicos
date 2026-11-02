@@ -87,7 +87,9 @@ export function Ganhos() {
           <div key={a.id} className={"hall-ganho" + (avisos.length === 3 && k === 2 ? " velho" : "")}>
             {f ? <Avatar f={f} size="xs" /> : <span className="hall-moeda" aria-hidden="true">$</span>}
             <div>
-              {a.pessoas && a.pessoas > 1 ? (
+              {a.texto ? (
+                <b>{a.texto}</b>
+              ) : a.pessoas && a.pessoas > 1 ? (
                 <>
                   <b>+{formatarMoedas(a.valor)}</b> {a.valor === 1 ? "moeda" : "moedas"} de tempo online para {a.nome}
                 </>
@@ -130,5 +132,5 @@ export function CarteiraCanto() {
 }
 
 export function Dica() {
-  return <p className="hall-canto hall-dica">Clique no chão para andar · clique num rosto para ver a ficha</p>;
+  return <p className="hall-canto hall-dica">Clique no chão para andar · clique num amigo para ver a ficha ou zoar</p>;
 }
