@@ -46,15 +46,18 @@ npm start            # serve out/ localmente para testar o build
 src/
   app/                 layout.tsx (fontes, CSS na ordem certa), page.tsx (monta o App só no navegador), ícones
   components/
-    App.tsx            casca do site: barra lateral, as 7 abas (sempre montadas, só escondidas), portas, toast
+    App.tsx            casca do site: barra lateral, as 8 abas (sempre montadas, só escondidas; abre no Início),
+                       portas, toast; no Início a barra lateral some (classe `no-inicio` no body)
     shell/             Sidebar (marca, navegação, rodapé; Perfil com o rosto) e People ("Na sala agora";
                        `usePessoasNaSala()` também serve o Sítio, e a lista da barra some na aba Sítio)
     portas/            login, primeira senha, trocar senha, log de versões (modo "tudo" e modo "novidades")
     ui/                Avatar, FriendPicker, Toast, ícones, useSure (segundo toque)
     Fome.tsx           easter egg das 18h às 22h
   features/            uma pasta por aba / assunto
+    inicio/            InicioView: tela de início (aba `inicio`, a primeira depois do login): barra de cima, saudação
+                       e um cartão por lugar com capa e linha ao vivo (só lê o store, nenhuma consulta nova)
     moedas/            Moedas.tsx: selinho do saldo no menu (CarteiraChip) e quadro do Perfil (MoedasBloco)
-    hall/              aba Sítio (tela inicial), sala de 14×11: hall.ts (grade, móveis, CLICAVEIS, caminho, ordem
+    hall/              aba Sítio, sala de 14×11: hall.ts (grade, móveis, CLICAVEIS, caminho, ordem
                        de desenho; puro e testado), bonecos.ts (movimento, evento `hall`, presença), Sala.tsx
                        (cômodo em SVG com janelão e portão, um móvel por camada, destaque do piso), Boneco.tsx
                        (tocar abre a ficha), Cantos.tsx ("Na sala agora", ganhos, carteira, dica), ganhos.ts

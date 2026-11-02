@@ -99,7 +99,7 @@ export const useApp = create<AppState>()(() => ({
   myLiveSid: null,
   myCamSid: null,
   hallPos: null,
-  aba: "hall",
+  aba: "inicio",
   sideMin: false,
   railTab: "telas",
   chatUnread: 0,

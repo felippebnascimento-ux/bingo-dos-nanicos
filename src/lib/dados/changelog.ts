@@ -67,6 +67,7 @@ export const CHANGELOG: EntradaLog[] = [
   { data: "02/11/2026", itens: ["Cassino com moedas: roleta europeia, com a vantagem da casa à mostra e resultado que dá para conferir"] },
   { data: "02/11/2026", itens: ["Cassino: limbo, maior ou menor e caça-níquel com o rosto dos nanicos"] },
   { data: "02/11/2026", itens: ["Sítio: cada nanico aparece uma vez só, e quem entra aparece na hora, mesmo depois de deixar o site em segundo plano"] },
+  { data: "02/11/2026", itens: ["Tela de início: escolha para onde ir (Sítio, Truco, Ao vivo, Jogar, Cassino, Nanicadas) e veja o que está rolando em cada um"] },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

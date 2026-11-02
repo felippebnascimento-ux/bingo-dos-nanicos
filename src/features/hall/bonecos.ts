@@ -224,7 +224,7 @@ function onHall(m: Record<string, unknown>) {
 }
 
 let iniciado = false;
-/** Liga o hall à sala (uma vez só). Chamado pela aba ao montar, antes do login. */
+/** Liga o hall à sala (uma vez só). Chamado no login (`enterApp`) e pela aba ao montar. */
 export function iniciarHall() {
   if (iniciado) return;
   iniciado = true;

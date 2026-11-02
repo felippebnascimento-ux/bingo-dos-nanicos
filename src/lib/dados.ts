@@ -12,6 +12,7 @@ import { VERSION } from "./dados/changelog";
 import { juntarVisto, lerVisto, temNovidade, ULTIMA } from "./dados/novidades";
 import { carregarChat } from "@/features/chat/chat";
 import { iniciarCarteira } from "./carteira";
+import { iniciarHall } from "@/features/hall/bonecos";
 import { iniciarRiot } from "@/features/jogar/riot";
 import { pararTudoAoVivo } from "@/features/live/live";
 
@@ -248,6 +249,8 @@ export function enterApp() {
   joinRoom(recarregar);
   carregarChat();
   iniciarCarteira();
+  /* o boneco aparece no Sítio para todo mundo mesmo sem abrir a aba */
+  iniciarHall();
   setTimeout(iniciarRiot, 1500);
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) {

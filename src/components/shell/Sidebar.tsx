@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, type ComponentType } from "react";
-import { IcAoVivo, IcCassino, IcJogar, IcSitio, IcNanicadas, IcNanicos, IcPerfil, IcTruco, IcVoltar } from "@/components/ui/icones";
+import { IcAoVivo, IcCassino, IcInicio, IcJogar, IcSitio, IcNanicadas, IcNanicos, IcPerfil, IcTruco, IcVoltar } from "@/components/ui/icones";
 import { fecharSeletores } from "@/components/ui/FriendPicker";
 import { Avatar } from "@/components/ui/Avatar";
 import { CamBotoes } from "@/features/live/CamBotoes";
@@ -16,6 +16,7 @@ import { local } from "@/lib/util";
 import { People } from "./People";
 
 const ABAS: { aba: Aba; t: string; Ic: ComponentType }[] = [
+  { aba: "inicio", t: "Início", Ic: IcInicio },
   { aba: "hall", t: "Sítio", Ic: IcSitio },
   { aba: "jogar", t: "Jogar", Ic: IcJogar },
   { aba: "frases", t: "Nanicadas", Ic: IcNanicadas },
@@ -101,8 +102,9 @@ export function Sidebar() {
         <IcVoltar />
       </button>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="brand-mini" id="brandMini" src={MARCA} alt="Bingo dos Nanicos" />
-      <div className="brand">
+      <img className="brand-mini" id="brandMini" src={MARCA} alt="Bingo dos Nanicos" onClick={() => setApp({ aba: "inicio" })} />
+      {/* a marca leva de volta ao Início */}
+      <button type="button" className="brand" aria-label="Bingo dos Nanicos: voltar ao Início" onClick={() => setApp({ aba: "inicio" })}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="brand-img" src={CREW} alt="Os Nanicos" width={1100} height={681} decoding="async" />
         <div className="brand-txt">
@@ -111,7 +113,7 @@ export function Sidebar() {
             Nanicos<i>.</i>
           </b>
         </div>
-      </div>
+      </button>
 
       <VoceEsta />
       <People />

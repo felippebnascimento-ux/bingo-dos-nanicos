@@ -225,4 +225,4 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | 25 | `25-eventos-com-horario.md` | `eventos-com-horario` | 2, 14 | a fazer |
 | 26 | `26-ficha-sequencia-online.md` | `ficha-sequencia-online` | 2, 3 | a fazer (pequena, pode vir logo depois da 3) |
 | 27 | `27-hall-um-por-nanico.md` | `hall-um-por-nanico` | 00 | **feita** e no oficial em 02/11/2026 (um por nanico + reconexão automática) |
-| 28 | `28-tela-inicio.md` | `tela-inicio` | 27 | a fazer (logo depois da 27) |
+| 28 | `28-tela-inicio.md` | `tela-inicio` | 27 | feito (02/11/2026) |

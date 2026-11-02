@@ -8,6 +8,7 @@ import { CassinoView } from "@/features/cassino/CassinoView";
 import { FichaNanico } from "@/features/ficha/Ficha";
 import { SalasJanela } from "@/features/salas/Salas";
 import { HallView } from "@/features/hall/HallView";
+import { InicioView } from "@/features/inicio/InicioView";
 import { JogarView } from "@/features/jogar/JogarView";
 import { NanicadasView } from "@/features/nanicadas/NanicadasView";
 import { NanicosView } from "@/features/nanicos/NanicosView";
@@ -29,6 +30,10 @@ export default function App() {
   useEffect(() => {
     boot();
   }, []);
+  /* no Início a barra lateral some: os cartões levam a cada lugar */
+  useEffect(() => {
+    document.body.classList.toggle("no-inicio", aba === "inicio");
+  }, [aba]);
 
   return (
     <>
@@ -40,6 +45,7 @@ export default function App() {
         <Sidebar />
         <main className="main">
           <div className="inner">
+            <InicioView hidden={aba !== "inicio"} />
             <HallView hidden={aba !== "hall"} />
             <JogarView hidden={aba !== "jogar"} />
             <NanicadasView hidden={aba !== "frases"} />
