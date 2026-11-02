@@ -88,7 +88,7 @@ Decisões combinadas com o João em 01/11/2026. Vale para qualquer pessoa ou IA 
 | Fonte | Valor |
 |---|---|
 | Ao criar a carteira | 200 |
-| Tempo online | 1 moeda a cada 6 min com o site aberto e visível, no máximo 40 por dia |
+| Tempo online | 1 moeda a cada 6 min com o site aberto (conta mesmo com a aba escondida, decisão de 01/11/2026), no máximo 40 por dia |
 | Bônus diário | `round(30 × multiplicador)`, uma vez por dia (horário de Brasília) |
 | Sequência | multiplicador = `min(1 + 0,1 × (dia − 1), 2)`: chega a ×2 no dia 11; perdeu um dia, volta a ×1 |
 | Prêmio da sequência | +100 no dia 7 e +500 no dia 30 |
@@ -153,7 +153,7 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | — | pasta `planejamento/` na `main` | `planejamento` | — | feita (PR #2) |
 | 00 | `00-hall-sitio-bonecos.md` | `hall-sitio` | 0 | **feita**, PR aberto (em cima da `nextjs-migracao`, porque o PR #1 ainda não entrou) |
 | 1 | `01-log-novidades.md` | `log-novidades` | 0 | **feita**, PR aberto (em cima da `hall-sitio`) |
-| 2 | `02-carteira-moedas.md` | `carteira-moedas` | 0 | a fazer |
+| 2 | `02-carteira-moedas.md` | `carteira-moedas` | 0 | **feita**, PR aberto (em cima da `log-novidades`); SQL da seção 7 já aplicado no Supabase em 01/11/2026 |
 | 3 | `03-ficha-dados-reais.md` | `ficha-dados-reais` | 0 | a fazer |
 | 4 | `04-atributos-votados.md` | `atributos-votados` | 3 | a fazer |
 | 5 | `05-salas-lan-house.md` | `salas-lan-house` | 00, 3 | a fazer |

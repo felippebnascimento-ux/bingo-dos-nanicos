@@ -227,6 +227,167 @@ revoke all on function public.nanicada_remocao()   from public, anon, authentica
 revoke all on function public.escalacao_protecao() from public, anon, authenticated;
 revoke all on function public.perfil_protecao()    from public, anon, authenticated;
 
--- 6) confere: deve listar as 5 proteções
-select tgname as protecao, tgrelid::regclass as tabela from pg_trigger
- where tgname in ('chat_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao') order by 1;
+-- 6) a conferência fica no fim do arquivo
+
+-- 7) moedas: carteira, bônus diário, sequência e tempo online ---------------------------
+--    O saldo só muda por public.creditar(), chamada de dentro de outras funções do banco.
+--    Ninguém do site grava nada direto nestas tabelas. O "dia" é sempre o de Brasília.
+create table if not exists public.carteiras (
+  user_id   uuid primary key references auth.users(id) on delete cascade,
+  saldo     int not null default 200 check (saldo >= 0),
+  criada_em timestamptz not null default now()
+);
+create table if not exists public.extrato (
+  id      bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  valor   int not null,
+  motivo  text not null check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin')),
+  ref     text,
+  em      timestamptz not null default now()
+);
+create index if not exists extrato_busca on public.extrato (user_id, em desc);
+-- a chave (pessoa, dia) impede pegar o bônus duas vezes no mesmo dia
+create table if not exists public.bonus_diario (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  dia     date not null,
+  seq     int not null,
+  valor   int not null,
+  primary key (user_id, dia)
+);
+create table if not exists public.online_diario (
+  user_id      uuid not null references auth.users(id) on delete cascade,
+  dia          date not null,
+  minutos      int not null default 0,
+  ultimo_pulso timestamptz,
+  primary key (user_id, dia)
+);
+alter table public.carteiras     enable row level security;
+alter table public.extrato       enable row level security;
+alter table public.bonus_diario  enable row level security;
+alter table public.online_diario enable row level security;
+revoke all on public.carteiras, public.extrato, public.bonus_diario, public.online_diario from public, anon, authenticated;
+grant select on public.carteiras, public.extrato, public.bonus_diario, public.online_diario to authenticated;
+drop policy if exists "nanicos veem as carteiras" on public.carteiras;
+drop policy if exists "cada um ve o seu extrato"  on public.extrato;
+drop policy if exists "cada um ve o seu bonus"    on public.bonus_diario;
+drop policy if exists "cada um ve o seu tempo"    on public.online_diario;
+-- o saldo de todo mundo é público no grupo (ranking); o resto, só o de cada um
+create policy "nanicos veem as carteiras" on public.carteiras     for select to authenticated using (public.eh_nanico());
+create policy "cada um ve o seu extrato"  on public.extrato       for select to authenticated using (user_id = auth.uid());
+create policy "cada um ve o seu bonus"    on public.bonus_diario  for select to authenticated using (user_id = auth.uid());
+create policy "cada um ve o seu tempo"    on public.online_diario for select to authenticated using (user_id = auth.uid());
+
+create or replace function public.hoje_br() returns date language sql stable as $$
+  select (now() at time zone 'America/Sao_Paulo')::date;
+$$;
+
+-- a ÚNICA coisa que muda saldo. Interna: as outras funções do banco chamam, o site não.
+-- Cria a carteira na primeira vez (com +200 no extrato) e não deixa o saldo ficar negativo.
+create or replace function public.creditar(p_user uuid, p_valor int, p_motivo text, p_ref text default null)
+returns int language plpgsql security definer set search_path = public as $$
+declare
+  v_saldo int;
+begin
+  if p_user is null then raise exception 'Sem usuário para creditar.' using errcode = 'P0001'; end if;
+  insert into public.carteiras (user_id) values (p_user) on conflict (user_id) do nothing;
+  if found then insert into public.extrato (user_id, valor, motivo) values (p_user, 200, 'inicio'); end if;
+  select saldo into v_saldo from public.carteiras where user_id = p_user for update;
+  if v_saldo + p_valor < 0 then raise exception 'Saldo insuficiente.' using errcode = 'P0001'; end if;
+  if p_valor <> 0 then
+    update public.carteiras set saldo = saldo + p_valor where user_id = p_user returning saldo into v_saldo;
+    insert into public.extrato (user_id, valor, motivo, ref) values (p_user, p_valor, p_motivo, p_ref);
+  end if;
+  return v_saldo;
+end $$;
+revoke all on function public.creditar(uuid, int, text, text) from public, anon, authenticated;
+
+-- saldo, sequência atual (0 se quebrou), se já pegou o bônus hoje e os minutos online de hoje
+create or replace function public.minha_carteira() returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  v_uid   uuid := auth.uid();
+  v_hoje  date := public.hoje_br();
+  v_saldo int;
+  v_seq   int;
+  v_pegou boolean;
+  v_min   int;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos têm carteira.' using errcode = 'P0001'; end if;
+  select saldo into v_saldo from public.carteiras where user_id = v_uid;
+  select seq into v_seq from public.bonus_diario where user_id = v_uid and dia = v_hoje;
+  v_pegou := v_seq is not null;
+  if not v_pegou then
+    select seq into v_seq from public.bonus_diario where user_id = v_uid and dia = v_hoje - 1;
+  end if;
+  select minutos into v_min from public.online_diario where user_id = v_uid and dia = v_hoje;
+  return jsonb_build_object('saldo', coalesce(v_saldo, 200), 'seq', coalesce(v_seq, 0), 'pegou_hoje', v_pegou,
+                            'minutos_hoje', coalesce(v_min, 0));
+end $$;
+revoke all on function public.minha_carteira() from public, anon;
+grant execute on function public.minha_carteira() to authenticated;
+
+-- bônus do dia: round(30 × min(1 + 0,1 × (dia − 1), 2)); +100 no 7º dia seguido e +500 no 30º.
+-- Chamar de novo no mesmo dia não paga nada (só devolve a carteira).
+create or replace function public.bater_ponto() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid   uuid := auth.uid();
+  v_hoje  date := public.hoje_br();
+  v_seq   int;
+  v_valor int;
+  v_extra int := 0;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos ganham o bônus.' using errcode = 'P0001'; end if;
+  perform public.limitar('ponto', 20, interval '1 minute', 'Calma: espere um pouco e recarregue a página.');
+  select seq + 1 into v_seq from public.bonus_diario where user_id = v_uid and dia = v_hoje - 1;
+  v_seq := coalesce(v_seq, 1);
+  v_valor := round(30 * least(1 + 0.1 * (v_seq - 1), 2));
+  insert into public.bonus_diario (user_id, dia, seq, valor) values (v_uid, v_hoje, v_seq, v_valor)
+    on conflict (user_id, dia) do nothing;
+  if not found then
+    return public.minha_carteira() || jsonb_build_object('ganhou', 0, 'bonus_extra', 0);
+  end if;
+  perform public.creditar(v_uid, v_valor, 'diario', v_hoje::text);
+  if v_seq = 7 then v_extra := 100; elsif v_seq = 30 then v_extra := 500; end if;
+  if v_extra > 0 then perform public.creditar(v_uid, v_extra, 'sequencia', v_seq || ' dias seguidos'); end if;
+  return public.minha_carteira() || jsonb_build_object('ganhou', v_valor, 'bonus_extra', v_extra);
+end $$;
+revoke all on function public.bater_ponto() from public, anon;
+grant execute on function public.bater_ponto() to authenticated;
+
+-- tempo online: o site manda um pulso por minuto (mesmo com a aba escondida).
+-- Conta 1 minuto quando o último pulso que valeu foi entre 55 s e 150 s atrás:
+-- pulsos mais rápidos (ou várias abas) não aceleram, e mais de 150 s parado recomeça sem contar.
+-- A cada 6 minutos, +1 moeda, até 40 por dia (240 minutos).
+create or replace function public.pulso() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid  uuid := auth.uid();
+  v_hoje date := public.hoje_br();
+  v_min  int;
+  v_ult  timestamptz;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos ganham moedas.' using errcode = 'P0001'; end if;
+  perform public.limitar('pulso', 6, interval '1 minute', 'Calma: muitos pulsos seguidos.');
+  insert into public.online_diario (user_id, dia) values (v_uid, v_hoje) on conflict (user_id, dia) do nothing;
+  select minutos, ultimo_pulso into v_min, v_ult from public.online_diario
+   where user_id = v_uid and dia = v_hoje for update;
+  if v_ult is null or now() - v_ult > interval '150 seconds' then
+    update public.online_diario set ultimo_pulso = now() where user_id = v_uid and dia = v_hoje;
+  elsif now() - v_ult >= interval '55 seconds' then
+    v_min := v_min + 1;
+    update public.online_diario set minutos = v_min, ultimo_pulso = now() where user_id = v_uid and dia = v_hoje;
+    if v_min % 6 = 0 and v_min <= 240 then perform public.creditar(v_uid, 1, 'online', v_hoje::text); end if;
+  end if;
+  return public.minha_carteira();
+end $$;
+revoke all on function public.pulso() from public, anon;
+grant execute on function public.pulso() to authenticated;
+
+-- 8) confere: deve listar as 5 proteções e as 4 funções das moedas
+select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
+ where tgname in ('chat_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
+union all
+select proname::text, 'moedas' from pg_proc
+ where pronamespace = 'public'::regnamespace and proname in ('creditar', 'minha_carteira', 'bater_ponto', 'pulso')
+order by 2, 1;

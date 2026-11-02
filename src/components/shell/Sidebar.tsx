@@ -3,6 +3,7 @@ import { useEffect, type ComponentType } from "react";
 import { IcAoVivo, IcJogar, IcSitio, IcNanicadas, IcNanicos, IcPerfil, IcTruco, IcVoltar } from "@/components/ui/icones";
 import { fecharSeletores } from "@/components/ui/FriendPicker";
 import { CamBotoes } from "@/features/live/CamBotoes";
+import { CarteiraChip } from "@/features/moedas/Moedas";
 import { logout } from "@/lib/dados";
 import { VERSION } from "@/lib/dados/changelog";
 import { temNovidade } from "@/lib/dados/novidades";
@@ -108,6 +109,7 @@ export function Sidebar() {
       <People />
       <Nav />
       <CamBotoes />
+      <CarteiraChip />
 
       <div className="side-foot">
         <div className="links">

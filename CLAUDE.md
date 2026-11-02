@@ -52,6 +52,7 @@ src/
     ui/                Avatar, FriendPicker, Toast, ícones, useSure (segundo toque)
     Fome.tsx           easter egg das 18h às 22h
   features/            uma pasta por aba / assunto
+    moedas/            Moedas.tsx: selinho do saldo no menu (CarteiraChip) e quadro do Perfil (MoedasBloco)
     hall/              aba Sítio (tela inicial): hall.ts (grade, móveis, caminho, ordem de desenho; puro e
                        testado), bonecos.ts (movimento, evento `hall`, presença), Sala.tsx (o cômodo em SVG,
                        um móvel por camada), Boneco.tsx, HallView
@@ -74,12 +75,14 @@ src/
     sala.ts            canal em tempo real: presença, broadcast, mudanças no banco
     dados.ts           carregar e gravar no banco, login → sessão → sala, sair
     bingo.ts           regras da cartela (quais nanicadas valem, sorteio, marcar)
+    moedas.ts          números das moedas (bônus, sequência, teto), só para mostrar; puro e testado
+    carteira.ts        carteira do nanico logado: bater_ponto no login, pulso a cada minuto, extrato
     toast.ts           toast("texto")
     util.ts            norm, canon, shuffle, local (localStorage), rolarAte…
     tipos.ts           Friend, Phrase, Card, Presence…
     dados/             campeoes.ts (CHAMPS, LANES, LANE_CAMP), nanicos.ts (NAN_MAP, artOf, bonecoOf), changelog.ts,
                        novidades.ts (o que mostrar no Log depois de uma atualização; puro e testado)
-  styles/              CSS global, numerado: 01-base.css … 22-hall.css
+  styles/              CSS global, numerado: 01-base.css … 23-moedas.css
 public/arte/           artes dos nanicos (rosto e corpo), bonecos do hall, foto da turma, reações dos Picarétezzi
 planejamento/          PLANO.md (próximas fases e decisões), prompts/ (um por fase), demos e arte pronta
 supabase/
@@ -203,9 +206,19 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 | `game` | escalação compartilhada (`players` = 5 rotas `{friendId, champion}`) | atualizar (formato conferido) |
 | `chat_messages` | chat da live (apaga sozinho após 30 dias) | enviar (o autor é sempre quem está logado) |
 | `limites` | contador anti-spam | ninguém |
+| `carteiras` | saldo de moedas de cada um (`user_id`, `saldo >= 0`) | ninguém grava; nanicos leem todas (ranking) |
+| `extrato` | cada entrada e saída de moedas (`valor`, `motivo`, `ref`) | ninguém grava; cada um lê o seu |
+| `bonus_diario` | bônus de cada dia e a sequência (`dia`, `seq`, `valor`) | ninguém grava; cada um lê o seu |
+| `online_diario` | minutos com o site aberto por dia (`minutos`, `ultimo_pulso`) | ninguém grava; cada um lê o seu |
 | `riot_contas`, `riot_ao_vivo`, `riot_meta` | cache da API da Riot | só a Edge Function |
 
 - **Quem é nanico:** `public.eh_nanico()` diz se o usuário logado está ligado a um nanico.
+- **Moedas (seção 7 do `seguranca.sql`):**
+  - **O saldo só muda por `public.creditar()`**, que é interna (o site não chama) e é usada por outras funções do banco. Toda fase que dá ou tira moedas (cassino, bingo, truco, loja) chama `creditar` de dentro de uma função do banco. O navegador nunca decide ganho nem perda.
+  - **RPCs do site:** `bater_ponto()` (bônus do dia, uma vez por dia, com a sequência), `pulso()` (um por minuto; conta 1 minuto se o último pulso que valeu foi entre 55 s e 150 s atrás; +1 moeda a cada 6 minutos, até 40 por dia) e `minha_carteira()`.
+  - **O dia é o de Brasília** (`public.hoje_br()`). Os números estão espelhados em `src/lib/moedas.ts`, só para mostrar.
+  - **Tempo online:** conta mesmo com a aba escondida (decisão do grupo, 01/11/2026).
+  - **Se o SQL não rodou,** o site esconde as moedas e só deixa um aviso no console.
 - **Gatilhos:** `chat_protecao`, `nanicada_protecao`, `nanicada_remocao`, `escalacao_protecao` e `perfil_protecao`.
 - **"Já vi" do Log:** fica na conta, em `user_metadata.log_visto` (índice da entrada no `CHANGELOG`), gravado com `auth.updateUser({ data })` por `marcarLogVisto()` (`src/lib/dados.ts`). Vale em todos os aparelhos e não precisa de SQL. O `localStorage` (`log-visto`) fica de reserva.
 - **Logins:** são criados só pelo admin, com `criar_login_nanico(nome, usuario, senha)` e `resetar_senha_nanico(usuario, senha)`. O e-mail interno é `usuario@nanicos.app`.
