@@ -2,8 +2,8 @@
 /*
  * Canais na barra lateral, como no Discord:
  * - "Canais de voz": uma linha por sala, com quem está nela embaixo (anel aceso em quem está falando)
- *   e quem está transmitindo. Clicar entra na sala e na voz e abre o Ao vivo; clicar no AO VIVO de alguém
- *   faz o mesmo e já abre a tela da pessoa.
+ *   e quem está transmitindo. Clicar entra na sala e na voz e abre o Ao vivo; o AO VIVO de alguém (vira "Assistir"
+ *   com o mouse em cima) entra na sala dele só para assistir, sem voz, e já abre a tela da pessoa.
  *   O chat de cada sala é o chat do canal de voz: fica no painel do Ao vivo, e o canal mostra as mensagens novas dele.
  * - "Canais de texto": só o #geral (o único chat de todo mundo), com as não lidas e quem está olhando agora.
  * Cada categoria recolhe (fica só o canal onde eu estou). E o painel da voz conectada (microfone, fone, desligar).
@@ -17,7 +17,7 @@ import { entrarSala, nomeDaSala } from "@/features/salas/trocar";
 import type { PresencaNanico } from "@/lib/presenca";
 import { friendDaPresenca, getApp, MY_KEY, setApp, useApp } from "@/lib/store";
 import { ehCelular, local } from "@/lib/util";
-import { goWatch, useNanicosOnline } from "./People";
+import { assistirLive, useNanicosOnline } from "./People";
 
 /** Categoria recolhível; recolhida, mostra só o que `fica` deixar (o canal onde eu estou). */
 function Categoria({ chave, titulo, children }: { chave: string; titulo: string; children: (recolhida: boolean) => ReactNode }) {
@@ -44,7 +44,6 @@ function Categoria({ chave, titulo, children }: { chave: string; titulo: string;
 /** Rosto pequeno de quem está num canal; o anel acende quando a pessoa fala. */
 function PessoaCanal({ p, falando }: { p: PresencaNanico; falando: boolean }) {
   const friends = useApp((s) => s.friends);
-  const minhaSala = useApp((s) => s.minhaSala);
   const f = friendDaPresenca(p, friends);
   const nome = f?.name ?? p.name;
   const eu = p.chaves.includes(MY_KEY);
@@ -53,15 +52,11 @@ function PessoaCanal({ p, falando }: { p: PresencaNanico; falando: boolean }) {
     <li className={"canal-pessoa" + (naVoz ? "" : " sem-voz") + (falando ? " falando" : "") + (eu ? " me" : "")} title={naVoz ? nome : `${nome}: na sala, fora da voz`}>
       {f ? <Avatar f={f} size="xs" /> : <span className="av xs">{nome[0]}</span>}
       <span className="nm">{nome}</span>
-      {/* de outra sala: entra no canal (voz) e abre a tela da pessoa assim que ela aparecer na sala */}
+      {/* um clique assiste: de outra sala, entra nela só para ver (sem voz) e abre a tela da pessoa */}
       {p.live && p.sala && (
-        <button
-          type="button"
-          className="live-pill"
-          onClick={() => (p.sala === minhaSala ? goWatch(p.key) : assistirEmOutraSala(p.sala!, p.key))}
-          aria-label={eu ? "Ver a sua transmissão" : p.sala === minhaSala ? `Assistir a tela de ${nome}` : `Entrar no canal e assistir a tela de ${nome}`}
-        >
-          AO VIVO
+        <button type="button" className="live-pill vira" onClick={() => assistirLive(p.key, p.sala)} aria-label={eu ? "Ver a sua transmissão" : `Assistir a tela de ${nome}`}>
+          <span className="a">AO VIVO</span>
+          <span className="b">▶ ASSISTIR</span>
         </button>
       )}
       {naVoz && p.surdo ? (
@@ -83,29 +78,6 @@ function clicarVoz(id: string) {
   if (!getApp().myVozSid) entrarVoz();
   const novas = s.minhaSala === id && (useChat.getState().naoLidas[id] ?? 0) > 0;
   setApp(novas ? { aba: "live", railTab: "chat" } : { aba: "live" });
-}
-
-/**
- * AO VIVO de alguém de outra sala: entra no canal e abre a tela da pessoa quando ela aparecer
- * na lista da minha sala (a presença do canal novo leva um instante). Desiste em 10 s.
- */
-function assistirEmOutraSala(sala: string, key: string) {
-  clicarVoz(sala);
-  const tentar = () => {
-    if (getApp().minhaSala !== sala) return true;
-    if (!getApp().onlineSala.some((p) => p.key === key && p.live)) return false;
-    goWatch(key);
-    return true;
-  };
-  if (tentar()) return;
-  const parar = useApp.subscribe(() => {
-    if (tentar()) fim();
-  });
-  const t = setTimeout(() => fim(), 10000);
-  const fim = () => {
-    parar();
-    clearTimeout(t);
-  };
 }
 
 export function Canais() {

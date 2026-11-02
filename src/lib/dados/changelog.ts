@@ -262,6 +262,14 @@ export const CHANGELOG: EntradaLog[] = [
     data: "02/11/2026",
     itens: ["Passar o mouse no boneco não pinta mais um quadrado escuro em volta"],
   },
+  {
+    data: "02/11/2026",
+    itens: [
+      "Um clique no AO VIVO de alguém (nos canais, nos membros ou no K-FOFO) já abre a tela da pessoa, sem entrar na voz",
+      "Com o mouse em cima, o AO VIVO vira \"Assistir\"",
+      "A TV do K-FOFO abre direto a live de quem está transmitindo",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

@@ -8,9 +8,36 @@ import { assistir } from "@/features/live/live";
 import { nomeDaSala } from "@/features/salas/trocar";
 import { bingoLines } from "@/lib/bingo";
 import { umPorNanico, type PresencaNanico } from "@/lib/presenca";
-import { friendDaPresenca, MY_KEY, setApp, useApp } from "@/lib/store";
+import { entrarSala } from "@/features/salas/trocar";
+import { friendDaPresenca, getApp, MY_KEY, setApp, useApp } from "@/lib/store";
 import type { Friend, Presence } from "@/lib/tipos";
 import { ehCelular, hueOf, initials, local, rolarAte } from "@/lib/util";
+
+/**
+ * Assistir a live de alguém com um clique, de onde estiver: se a pessoa está em outra sala, entra nela só
+ * para assistir (sem voz e sem microfone) e abre a tela dela assim que a presença da sala chegar (desiste em 10 s).
+ */
+export function assistirLive(key: string, sala: string | null) {
+  const s = getApp();
+  if (!sala || sala === s.minhaSala || key === MY_KEY) return goWatch(key);
+  entrarSala(sala);
+  setApp({ aba: "live" });
+  const tentar = () => {
+    if (getApp().minhaSala !== sala) return true;
+    if (!getApp().onlineSala.some((p) => p.key === key && p.live)) return false;
+    goWatch(key);
+    return true;
+  };
+  if (tentar()) return;
+  const parar = useApp.subscribe(() => {
+    if (tentar()) fim();
+  });
+  const t = setTimeout(() => fim(), 10000);
+  const fim = () => {
+    parar();
+    clearTimeout(t);
+  };
+}
 
 /** Clicar em quem está ao vivo na lista da sala: abre a aba Ao vivo já na tela da pessoa. */
 export function goWatch(key: string) {
@@ -72,15 +99,14 @@ export function useNanicosOnline(): PresencaNanico[] {
 /* quem está falando aparece só nos canais de voz (à esquerda), não aqui */
 function Membro({ p, f }: { p: PresencaNanico | null; f: Friend | undefined }) {
   const salas = useApp((s) => s.salas);
-  const minhaSala = useApp((s) => s.minhaSala);
   const nome = f?.name ?? p?.name ?? "";
   const eu = !!p?.chaves.includes(MY_KEY);
   const online = !!p;
-  /* a tela só dá para assistir de dentro da mesma sala */
-  const assiste = !!p?.live && p.sala === minhaSala;
+  /* quem está ao vivo: um clique assiste, de qualquer sala (entra só para ver, sem voz) */
+  const assiste = !!p?.live;
   const titulo = assiste ? (eu ? "Ver a sua transmissão" : `Assistir a tela de ${nome}`) : `Ver a ficha de ${nome}`;
   const abrir = () => {
-    if (assiste && p) goWatch(p.key);
+    if (assiste && p) assistirLive(p.key, p.sala);
     else if (f) setApp({ fichaAberta: f.id });
   };
   const onde = !p ? null : p.sala ? (nomeDaSala(p.sala, salas) ?? "Numa sala") : salas.length ? "No lobby" : null;
@@ -131,7 +157,12 @@ function Membro({ p, f }: { p: PresencaNanico | null; f: Friend | undefined }) {
           </small>
         )}
       </span>
-      {p?.live && <span className="live-pill">AO VIVO</span>}
+      {p?.live && (
+        <span className="live-pill vira">
+          <span className="a">AO VIVO</span>
+          <span className="b">▶ ASSISTIR</span>
+        </span>
+      )}
       {!!p?.lines && <span className="bingo-pill">BINGO{p.lines > 1 ? " ×" + p.lines : ""}</span>}
     </li>
   );

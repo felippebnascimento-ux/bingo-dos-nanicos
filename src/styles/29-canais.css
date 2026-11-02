@@ -163,3 +163,9 @@ body.sem-membros .membros{display:none}
   .membros .people{flex:none;overflow:visible}
   .membros .onde{display:none}
 }
+
+/* AO VIVO que vira "Assistir" com o mouse em cima (ou com o foco do teclado) */
+.live-pill.vira .b{display:none}
+.live-pill.vira:hover .a,.live-pill.vira:focus-visible .a,button:hover>.live-pill.vira .a,li:hover .live-pill.vira .a{display:none}
+.live-pill.vira:hover .b,.live-pill.vira:focus-visible .b,button:hover>.live-pill.vira .b,li:hover .live-pill.vira .b{display:inline}
+button.live-pill.vira{border:0;cursor:pointer}

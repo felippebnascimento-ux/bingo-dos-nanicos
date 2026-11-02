@@ -7,7 +7,8 @@
  */
 import { useEffect, useMemo, useState, useSyncExternalStore, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
 import { useTruco } from "@/features/truco/mesa";
-import { friendDaPresenca, MY_KEY, setApp, useApp } from "@/lib/store";
+import { friendDaPresenca, getApp, MY_KEY, setApp, useApp } from "@/lib/store";
+import { assistirLive } from "@/components/shell/People";
 import { andarAte, andarUmPiso, iniciarHall, useHall } from "./bonecos";
 import { Boneco } from "./Boneco";
 import { BotaoCelular } from "@/features/celular/Celular";
@@ -136,7 +137,12 @@ export function HallView({ hidden }: { hidden: boolean }) {
 
   const abrir = (c: Clicavel["id"]) => {
     if (c === "salas") setApp({ salasAberto: true });
-    else if (c === "tv") setApp({ aba: "live" });
+    else if (c === "tv") {
+      /* a TV assiste direto quem estiver transmitindo (de outra sala, entra só para ver); senão, abre o Ao vivo */
+      const p = getApp().online.find((x) => x.live && x.key !== MY_KEY);
+      if (p) assistirLive(p.key, p.sala);
+      else setApp({ aba: "live" });
+    }
     else if (c === "truco") setApp({ aba: "truco" });
     else if (c === "trofeus") setApp({ aba: "trofeus" });
     else setApp({ aba: "loja" });
