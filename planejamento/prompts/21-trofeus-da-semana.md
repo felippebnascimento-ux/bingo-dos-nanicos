@@ -10,7 +10,18 @@ Modelo: `planejamento/demo/hall-zoeira.html` e `.png` (o quadro na parede e os e
   - **Carregou o piano:** melhor KDA (mínimo de 5 partidas);
   - **Viciado:** quem jogou mais partidas;
   - **Sumido:** ninguém do grupo jogou com ele na semana (aparece só se tiver jogado alguma).
-- **Quadro na parede do hall:** "Troféus da semana", com o rosto, o nome e o número de cada troféu. Clicar abre o quadro grande com os 3 primeiros de cada troféu.
+- **Quadro na parede do hall:** "Troféus da semana", com o nome do vencedor de cada troféu.
+  - Tem a placa "Troféus" em cima, no estilo das placas da fase 14.
+  - **Clicar no quadro abre a aba Troféus.**
+- **Aba Troféus** (modelo: `planejamento/demo/trofeus.html` e `.png`):
+  - **um cartão por categoria** (Feeder, Turista, Carregou o piano, Viciado, Sumido e Mais rico), cada um com:
+    - o ícone e o nome;
+    - uma frase curta dizendo como se ganha;
+    - o pódio da semana (1º, 2º e 3º, com rosto, nome e número);
+    - o prêmio ou o castigo ("+50 moedas", "chapéu de burro a semana inteira");
+  - **no topo**, um seletor de semana (`.seg`) para ver as semanas anteriores;
+  - **embaixo**, o "Hall da fama": quantas vezes cada nanico ganhou cada troféu desde o começo;
+  - clicar num rosto abre a ficha da pessoa (`fichaAberta`).
 - **Enfeite na cabeça do boneco, a semana inteira:**
   - **chapéu de burro** para o Feeder;
   - **coroa dourada** para quem Carregou o piano;
@@ -49,7 +60,19 @@ Leia também o SQL da seção 7 (`creditar`) e o `src/features/hall/*`.
 - **O site chama a `riot-semana`** ao entrar, só às segundas, ou quando a semana anterior não estiver pronta no banco.
 - **Quadro na parede:**
   - SVG na parede da esquerda do hall, entre a TV e a porta, com moldura de madeira e três linhas;
-  - clicar abre o quadro grande num diálogo, com os 3 primeiros de cada troféu e os números.
+  - é um clicável da lista `CLICAVEIS` da fase 14 (`{ id: "trofeus", alvo: "trofeus" }`), com a placa "Troféus" e um botão por cima do quadro;
+  - clicar faz `setApp({ aba: "trofeus" })`.
+- **Aba Troféus (`src/features/trofeus/TrofeusView.tsx`):**
+  - `Aba` ganha `"trofeus"`. Ela fica **fora do menu lateral** (abre pelo quadro do hall) e tem um "Voltar ao Sítio" no topo. Se o grupo quiser, dá para pôr no menu depois.
+  - **Seletor de semana:** as últimas 8 semanas com troféus (`.seg`); a mais nova vem marcada.
+  - **Cartões de categoria** (`.block`), um por troféu, em grade (3 colunas no desktop, 1 no celular):
+    - ícone desenhado em SVG (prato vazio para o Feeder, mapa para o Turista, piano para Carregou o piano, controle para o Viciado, interrogação para o Sumido, moeda para o Mais rico);
+    - o 1º lugar em destaque e o 2º e o 3º menores;
+    - o prêmio ou o castigo ("+50 moedas", "chapéu de burro a semana inteira").
+  - O **Mais rico** é ao vivo (saldo de agora), não da semana; no cartão aparece "agora".
+  - **Hall da fama:** tabela compacta com as contagens por nanico e troféu, calculada por `hall_da_fama()` (função `stable` que conta `trofeus_semana` com `posicao = 1`).
+  - Clicar num rosto abre a ficha (`fichaAberta`).
+  - **Regra pura** `src/features/trofeus/trofeus.ts` + teste: `TROFEUS` (id, nome, frase, ícone, prêmio ou castigo, se maior é melhor), `podio(linhas, trofeu)` e `formatarValor(trofeu, valor)` ("9,1 mortes por partida", "KDA 4,8").
 - **Enfeites de cabeça (`Chapeu.tsx`):** SVG por código (coroa, chapéu de burro com "BURRO" escrito, coroa de moedas), presos à âncora da cabeça do boneco. Ficam de frente e de costas e seguem o espelho.
 - **Sem dados da Riot** (ninguém com op.gg), o quadro não aparece.
 
@@ -64,7 +87,9 @@ Leia também o SQL da seção 7 (`creditar`) e o `src/features/hall/*`.
 - [ ] Duas abas abrindo na segunda: só uma calcula, e as duas veem o quadro pronto depois.
 - [ ] Rodar o pagamento duas vezes não muda nenhum saldo.
 - [ ] A coroa de moedas muda de cabeça na hora em que alguém passa o saldo do outro.
-- [ ] O `CLAUDE.md` (tabelas, função nova, segredo usado) e o `CHANGELOG` foram atualizados. O PR lembra de publicar a `riot-semana`.
+- [ ] Clicar no quadro do hall abre a aba Troféus. As semanas anteriores aparecem pelo seletor, e o hall da fama soma certo.
+- [ ] A aba Troféus funciona com 390 px (os cartões em uma coluna).
+- [ ] O `CLAUDE.md` (tabelas, função nova, segredo usado, aba `trofeus`, pasta `features/trofeus`) e o `CHANGELOG` foram atualizados. O PR lembra de publicar a `riot-semana`.
 
 ## Entrada do CHANGELOG
-`"Troféus da semana no Sítio: Feeder, Turista, Carregou o piano, Viciado e Sumido, com chapéu de burro e coroa"`, `"Coroa de moedas para o mais rico do Sítio"`
+`"Troféus da semana no Sítio: Feeder, Turista, Carregou o piano, Viciado e Sumido, com chapéu de burro e coroa"`, `"Coroa de moedas para o mais rico do Sítio"`, `"Clique no quadro de troféus do Sítio para ver todas as categorias, as semanas anteriores e o hall da fama"`

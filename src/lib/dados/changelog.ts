@@ -64,6 +64,7 @@ export const CHANGELOG: EntradaLog[] = [
       "No celular, as abas ficam numa barra embaixo da tela",
     ],
   },
+  { data: "02/11/2026", itens: ["Cassino com moedas: roleta europeia, com a vantagem da casa à mostra e resultado que dá para conferir"] },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

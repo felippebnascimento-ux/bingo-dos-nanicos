@@ -624,7 +624,181 @@ drop policy if exists "nanicos mudam a escalacao" on public.game;
 create policy "nanicos mudam a escalacao" on public.game for update to authenticated
   using (public.eh_nanico() and sala is not null) with check (public.eh_nanico() and sala is not null);
 
--- 11) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos e as 4 salas
+-- 11) cassino: motor justo ("provably fair") e a roleta europeia ------------------------------
+--     Moedas fictícias, sem compra e sem saque. O sorteio acontece AQUI, nunca no navegador:
+--     u = primeiros 52 bits de HMAC-SHA256(chave = semente do servidor, texto = "semente_cliente:nonce").
+--     Antes de apostar a pessoa vê o hash da semente; ao trocar de semente, a antiga é revelada e
+--     qualquer um recalcula os resultados.
+create extension if not exists pgcrypto with schema extensions;
+
+create table if not exists public.cassino_sementes (
+  user_id         uuid primary key references auth.users(id) on delete cascade,
+  semente         bytea not null,
+  hash            text not null,
+  semente_cliente text not null default 'nanico' check (semente_cliente ~ '^[A-Za-z0-9_-]{1,32}$'),
+  nonce           int not null default 0,
+  criada_em       timestamptz not null default now()
+);
+create table if not exists public.cassino_sementes_antigas (
+  id              bigint generated always as identity primary key,
+  user_id         uuid not null references auth.users(id) on delete cascade,
+  semente_hex     text not null,
+  hash            text not null,
+  semente_cliente text not null,
+  ultimo_nonce    int not null,
+  revelada_em     timestamptz not null default now()
+);
+create table if not exists public.cassino_apostas (
+  id        bigint generated always as identity primary key,
+  user_id   uuid not null references auth.users(id) on delete cascade,
+  jogo      text not null check (jogo in ('roleta')),
+  aposta    int not null check (aposta between 5 and 100),
+  escolha   jsonb not null,
+  resultado jsonb not null,
+  pagou     int not null default 0,
+  hash      text not null,
+  nonce     int not null,
+  em        timestamptz not null default now()
+);
+create index if not exists cassino_apostas_busca on public.cassino_apostas (user_id, em desc);
+alter table public.cassino_sementes         enable row level security;
+alter table public.cassino_sementes_antigas enable row level security;
+alter table public.cassino_apostas          enable row level security;
+revoke all on public.cassino_sementes, public.cassino_sementes_antigas, public.cassino_apostas from public, anon, authenticated;
+-- a semente atual NUNCA é lida pelo site: só o hash, a semente do cliente e o nonce
+grant select (user_id, hash, semente_cliente, nonce, criada_em) on public.cassino_sementes to authenticated;
+grant select on public.cassino_sementes_antigas, public.cassino_apostas to authenticated;
+drop policy if exists "cada um ve a sua semente"   on public.cassino_sementes;
+drop policy if exists "cada um ve as reveladas"    on public.cassino_sementes_antigas;
+drop policy if exists "cada um ve as suas apostas" on public.cassino_apostas;
+create policy "cada um ve a sua semente"   on public.cassino_sementes         for select to authenticated using (user_id = auth.uid());
+create policy "cada um ve as reveladas"    on public.cassino_sementes_antigas for select to authenticated using (user_id = auth.uid());
+create policy "cada um ve as suas apostas" on public.cassino_apostas          for select to authenticated using (user_id = auth.uid());
+
+-- cria a semente da pessoa na primeira vez
+create or replace function public.cassino_garantir(p_user uuid) returns void
+language plpgsql security definer set search_path = public, extensions as $$
+declare
+  v_s bytea;
+begin
+  if exists (select 1 from public.cassino_sementes where user_id = p_user) then return; end if;
+  v_s := extensions.gen_random_bytes(32);
+  insert into public.cassino_sementes (user_id, semente, hash) values (p_user, v_s, encode(extensions.digest(v_s, 'sha256'), 'hex'))
+  on conflict (user_id) do nothing;
+end $$;
+revoke all on function public.cassino_garantir(uuid) from public, anon, authenticated;
+
+-- o número sorteado (interna): incrementa o nonce e devolve u em [0, 1), o hash e o nonce usados
+create or replace function public.cassino_numero(p_user uuid, out u numeric, out hash text, out nonce int)
+language plpgsql security definer set search_path = public, extensions as $$
+declare
+  v public.cassino_sementes;
+  h bytea;
+begin
+  perform public.cassino_garantir(p_user);
+  select * into v from public.cassino_sementes where user_id = p_user for update;
+  update public.cassino_sementes set nonce = v.nonce + 1 where user_id = p_user;
+  nonce := v.nonce + 1;
+  hash := v.hash;
+  h := extensions.hmac(convert_to(v.semente_cliente || ':' || nonce, 'UTF8'), v.semente, 'sha256');
+  u := ('x' || lpad(substr(encode(h, 'hex'), 1, 13), 16, '0'))::bit(64)::bigint / 4503599627370496.0;
+end $$;
+revoke all on function public.cassino_numero(uuid) from public, anon, authenticated;
+
+-- o que o site mostra antes de apostar: o hash da semente atual, a semente do cliente e o nonce
+create or replace function public.cassino_estado() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v public.cassino_sementes;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
+  perform public.cassino_garantir(auth.uid());
+  select * into v from public.cassino_sementes where user_id = auth.uid();
+  return jsonb_build_object('hash', v.hash, 'cliente', v.semente_cliente, 'nonce', v.nonce);
+end $$;
+revoke all on function public.cassino_estado() from public, anon;
+grant execute on function public.cassino_estado() to authenticated;
+
+-- revela a semente atual (vai para as antigas, em hex) e começa uma nova com a semente do cliente escolhida
+create or replace function public.trocar_semente(p_cliente text) returns jsonb
+language plpgsql security definer set search_path = public, extensions as $$
+declare
+  v   public.cassino_sementes;
+  v_s bytea;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
+  if p_cliente is null or p_cliente !~ '^[A-Za-z0-9_-]{1,32}$' then
+    raise exception 'A semente do cliente usa só letras, números, _ e -, até 32.' using errcode = 'P0001';
+  end if;
+  perform public.limitar('semente', 10, interval '10 minutes', 'Calma: muitas trocas de semente. Espere uns minutos.');
+  perform public.cassino_garantir(auth.uid());
+  select * into v from public.cassino_sementes where user_id = auth.uid() for update;
+  insert into public.cassino_sementes_antigas (user_id, semente_hex, hash, semente_cliente, ultimo_nonce)
+    values (auth.uid(), encode(v.semente, 'hex'), v.hash, v.semente_cliente, v.nonce);
+  v_s := extensions.gen_random_bytes(32);
+  update public.cassino_sementes set semente = v_s, hash = encode(extensions.digest(v_s, 'sha256'), 'hex'),
+         semente_cliente = p_cliente, nonce = 0, criada_em = now()
+   where user_id = auth.uid();
+  return public.cassino_estado();
+end $$;
+revoke all on function public.trocar_semente(text) from public, anon;
+grant execute on function public.trocar_semente(text) to authenticated;
+
+-- roleta europeia: 37 casas; número paga 35× (volta 36×); cor, paridade e metade pagam 1× (voltam 2×); o 0 perde nelas
+create or replace function public.apostar_roleta(p_aposta int, p_tipo text, p_valor int) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid   uuid := auth.uid();
+  v_verm  int[] := array[1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+  r       record;
+  v_casa  int;
+  v_cor   text;
+  v_ganha boolean;
+  v_paga  int := 0;
+  v_saldo int;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
+  if p_aposta is null or p_aposta not between 5 and 100 then raise exception 'A aposta vai de 5 a 100 moedas.' using errcode = 'P0001'; end if;
+  if p_tipo is null or p_tipo not in ('numero', 'cor', 'paridade', 'metade')
+     or p_valor is null or (p_tipo = 'numero' and p_valor not between 0 and 36) or (p_tipo <> 'numero' and p_valor not in (0, 1)) then
+    raise exception 'Aposta inválida.' using errcode = 'P0001';
+  end if;
+  perform public.limitar('cassino', 30, interval '1 minute', 'Calma: muitas apostas seguidas. Espere um pouco.');
+  perform public.creditar(v_uid, -p_aposta, 'cassino', 'roleta');
+  select * into r from public.cassino_numero(v_uid);
+  v_casa := floor(r.u * 37)::int;
+  v_cor := case when v_casa = 0 then 'verde' when v_casa = any (v_verm) then 'vermelho' else 'preto' end;
+  v_ganha := case p_tipo
+    when 'numero'   then v_casa = p_valor
+    when 'cor'      then v_casa <> 0 and (v_cor = 'vermelho') = (p_valor = 0)
+    when 'paridade' then v_casa <> 0 and v_casa % 2 = p_valor
+    when 'metade'   then v_casa <> 0 and (v_casa <= 18) = (p_valor = 0)
+  end;
+  if v_ganha then v_paga := p_aposta * case when p_tipo = 'numero' then 36 else 2 end; end if;
+  if v_paga > 0 then v_saldo := public.creditar(v_uid, v_paga, 'cassino', 'roleta');
+  else select saldo into v_saldo from public.carteiras where user_id = v_uid; end if;
+  insert into public.cassino_apostas (user_id, jogo, aposta, escolha, resultado, pagou, hash, nonce)
+    values (v_uid, 'roleta', p_aposta, jsonb_build_object('tipo', p_tipo, 'valor', p_valor),
+            jsonb_build_object('casa', v_casa, 'cor', v_cor), v_paga, r.hash, r.nonce);
+  return jsonb_build_object('casa', v_casa, 'cor', v_cor, 'pagou', v_paga, 'saldo', v_saldo, 'hash', r.hash, 'nonce', r.nonce);
+end $$;
+revoke all on function public.apostar_roleta(int, text, int) from public, anon;
+grant execute on function public.apostar_roleta(int, text, int) to authenticated;
+
+-- as últimas 20 apostas de todo mundo (com o nome do nanico), para o feed do cassino
+create or replace function public.cassino_feed() returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
+  return coalesce((select jsonb_agg(x order by x.em desc) from (
+    select a.em, a.jogo, a.aposta, a.pagou, a.resultado, f.name as nome
+      from public.cassino_apostas a left join public.friends f on f.user_id = a.user_id
+     order by a.em desc limit 20) x), '[]'::jsonb);
+end $$;
+revoke all on function public.cassino_feed() from public, anon;
+grant execute on function public.cassino_feed() to authenticated;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas e as 3 funções do cassino
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -638,4 +812,7 @@ select proname::text, 'atributos' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('votar_atributos', 'atributos_de', 'atributos_todos', 'meu_voto')
 union all
 select id, 'sala' from public.salas
+union all
+select proname::text, 'cassino' from pg_proc
+ where pronamespace = 'public'::regnamespace and proname in ('apostar_roleta', 'trocar_semente', 'cassino_estado')
 order by 2, 1;

@@ -25,6 +25,14 @@ export const IcVoltar = (p: P) => (
     <path d="M15 6l-6 6 6 6" />
   </Base>
 );
+/** Ficha de cassino (aba Cassino). */
+export const IcCassino = (p: P) => (
+  <Base {...p}>
+    <circle cx="12" cy="12" r="8.5" />
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 3.5v4M12 16.5v4M3.5 12h4M16.5 12h4" />
+  </Base>
+);
 /** Moeda (carteira). */
 export const IcMoeda = (p: P) => (
   <Base {...p}>

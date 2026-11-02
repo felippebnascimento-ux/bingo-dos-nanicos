@@ -62,7 +62,8 @@ Decisões combinadas com o João em 01/11/2026. Vale para qualquer pessoa ou IA 
   - **CS2 e outros jogos** pela Steam: horas jogadas.
   - **Links:** op.gg e Steam.
 - **Metade zoeira:** Tilt, Choro, Clutch (CS2), Farm, Sorte e Call, com notas de 0 a 10.
-  - O voto é **anônimo**: o site só recebe média e contagem, e o atributo só aparece com 3 votos ou mais.
+  - O voto é **anônimo**: o site só recebe a média e a contagem, nunca quem votou.
+  - **A nota é sempre a média de todos os votos, e aparece para todo mundo** (na ficha e na aba Nanicos), mesmo com poucos votos, atualizando na hora (decisão de 02/11/2026).
   - Ninguém vota em si mesmo.
   - Cada um muda o voto em alguém uma vez por semana.
 - **Boneco (decidido em 02/11/2026, falta o ok do grupo):**
@@ -90,7 +91,7 @@ Decisões combinadas com o João em 01/11/2026. Vale para qualquer pessoa ou IA 
   - **Cantos:**
     - "Na sala agora" em cima, à esquerda, e clicar num nome abre a ficha;
     - ganhos de moedas de todo mundo em cima, à direita, vindos do banco e não do broadcast;
-    - carteira pequena embaixo, à esquerda.
+    - carteira pequena embaixo, à esquerda, que abre o **ranking de quem tem mais moedas** (ao vivo) e o extrato.
   - **Menu:** "Perfil" mostra o rosto de quem está logado.
   - **Portão K-FOFO aberto,** com vista para a rua.
   - **Fundo claro** em volta do cômodo (creme quente), em vez do escuro do site.
@@ -98,6 +99,21 @@ Decisões combinadas com o João em 01/11/2026. Vale para qualquer pessoa ou IA 
   - Sai-se andando pelo portão K-FOFO.
   - Lá fora: grama, uma árvore grande à direita, bancos (só enfeite por enquanto), céu claro de fundo e cinco carros parados de fundo (Honda Fit verde-escuro, Fiat Fastback branco, Jeep Renegade, Chevrolet Onix branco e Honda HR-V azul-escuro). Os carros são desenhados só com forma e cor, sem logotipos e sem nome.
   - A escolha das salas da fase 5 passa para a porta de vidro.
+### Para o pessoal querer entrar e ficar (decidido em 02/11/2026)
+A ideia é dar três motivos para abrir o site: zoar os amigos, não perder o que só acontece agora e ver o que o grupo aprontou. Modelo de tudo no hall: `planejamento/demo/hall-zoeira.html` e `.png`.
+- **Zoeira:**
+  - chinelada (5 moedas) e torta na cara (25) no hall, com revide grátis (fase 18);
+  - emotes do boneco (fase 19);
+  - mesa de som com os bordões do grupo (fase 20).
+- **LoL:**
+  - troféus da semana (Feeder, Turista, Carregou o piano, Viciado, Sumido), com quadro na parede e chapéu de burro ou coroa no boneco;
+  - coroa de moedas para o mais rico (fase 21);
+  - bolão de perguntas sobre a partida ao vivo (fase 22).
+- **Voltar todo dia:**
+  - 3 missões do dia, só de coisas que o banco confere (fase 23);
+  - happy hour das 22h à meia-noite, com moedas em dobro, e o churrasco de sábado com o espetinho surpresa (fase 25).
+- **Regra de sempre:** tudo que dá ou tira moedas passa pelo banco. Broadcast só para o que é de graça (emote, som tocado).
+
 - **Roleta do rodízio (fase 17):** modelo em `planejamento/demo/roleta.html` e `.png`.
   - Quem está de fora entra na roleta, e ela sorteia quem entra no time.
   - Quem já entrou fica de fora até todos jogarem na rodada.
@@ -165,7 +181,8 @@ Decisões combinadas com o João em 01/11/2026. Vale para qualquer pessoa ou IA 
 ## Fila de ideias (ainda sem prompt)
 Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 - **Balão do chat no hall:** a mensagem aparece por 5 s em cima do boneco de quem escreveu.
-- **Acenar e sentar dentro do hall:** acenar com um botão, e sentar nas cadeiras e no colchão do hall. Inclui sentar nos bancos da rua (fica para depois, decisão de 02/11/2026). São mais quadros gerados com IA, no mesmo estilo.
+- **Bicho de estimação do Sítio:** um cachorro no hall que fica feliz quando o grupo aparece e come ração comprada com moedas. Saiu do plano em 02/11/2026 ("não precisa agora"); o prompt antigo (fase 24) foi apagado e o número 24 fica vago.
+- **Acenar e sentar:** acenar com um botão (pode entrar junto dos emotes da fase 19), e sentar nas cadeiras, no colchão do hall e nos bancos da rua. Inclui sentar nos bancos da rua (fica para depois, decisão de 02/11/2026). São mais quadros gerados com IA, no mesmo estilo.
 - **Trocar a senha de novo:** falta saber se o problema é o botão não funcionar ou se a ideia é recuperar uma senha esquecida.
 
 ## Ordem e andamento
@@ -192,3 +209,10 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | 15 | `15-celular-rede-nanica.md` | `celular-rede-nanica` | 11, 12 | a fazer |
 | 16 | `16-rua-do-sitio.md` | `rua-do-sitio` | 14 | a fazer |
 | 17 | `17-roleta-rodizio.md` | `roleta-rodizio` | 0 (se a 5 existir, a roleta é por sala) | a fazer (independente, pode entrar cedo) |
+| 18 | `18-chinelada-torta.md` | `chinelada-torta` | 2, 14 | a fazer |
+| 19 | `19-emotes-boneco.md` | `emotes-boneco` | 14 (e os quadros dos emotes, que a sessão de planejamento gera antes) | a fazer |
+| 20 | `20-mesa-de-som.md` | `mesa-de-som` | 14 | a fazer |
+| 21 | `21-trofeus-da-semana.md` | `trofeus-da-semana` | 14 | a fazer |
+| 22 | `22-bolao-da-partida.md` | `bolao-da-partida` | 10 | a fazer |
+| 23 | `23-missoes-do-dia.md` | `missoes-do-dia` | 2 (cada missão liga quando a fase dela existir) | a fazer |
+| 25 | `25-eventos-com-horario.md` | `eventos-com-horario` | 2, 14 | a fazer |

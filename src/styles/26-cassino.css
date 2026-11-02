@@ -1,0 +1,52 @@
+/* Cassino: saldo, roda, mesa da roleta (no celular, 3 colunas que rolam na vertical), conferência e listas.
+   Vermelho e preto da roleta usam --live e --ink; o 0 é o verde da mesa (--olive). */
+#view-cassino{width:100%;max-width:1200px;margin:0 auto}
+.cassino-topo{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px}
+.cassino-saldo b{font:800 26px var(--display);font-variant-numeric:tabular-nums}
+.cassino-topo .hint{margin:0}
+.cassino-grid{display:grid;gap:18px}
+@media (min-width:1000px){.cassino-grid{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);align-items:start}}
+.roleta{display:grid;gap:14px}
+.roleta-roda{justify-self:center;width:110px;height:110px;border-radius:50%;display:grid;place-items:center;font:800 40px var(--display);color:var(--stamp-ink);background:var(--muted);border:6px solid var(--accent);box-shadow:inset 0 0 0 4px color-mix(in srgb,var(--accent-ink) 30%,transparent)}
+.roleta-roda.vermelho{background:var(--live)}
+.roleta-roda.preto{background:var(--accent-ink)}
+.roleta-roda.verde{background:var(--olive)}
+.roleta-roda.girando{animation:roleta-gira .6s linear infinite}
+@keyframes roleta-gira{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.roleta-roda.girando{animation:none}}
+.roleta-mesa{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px}
+.roleta-mesa .casa.verde{grid-column:1 / -1}
+.casa{min-width:0;padding:8px 0;border:2px solid transparent;border-radius:8px;font:700 13px var(--display);color:var(--stamp-ink);cursor:pointer}
+.casa.vermelho{background:var(--live)}
+.casa.preto{background:var(--accent-ink)}
+.casa.verde{background:var(--olive)}
+.casa.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+@media (max-width:700px){.roleta-mesa{grid-template-columns:repeat(3,minmax(0,1fr));max-height:300px;overflow-y:auto}}
+.roleta-fora{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.roleta-fora .btn{width:auto;padding-inline:4px}
+.roleta-fora .btn.on{background:var(--accent);color:var(--accent-ink)}
+@media (max-width:700px){.roleta-fora{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.roleta .roleta-fichas{justify-self:start;display:inline-flex;flex-wrap:wrap;width:auto}
+.roleta-girar{justify-self:stretch}
+.roleta .hint{margin:0}
+.cassino-lado{display:grid;gap:14px;min-width:0}
+.cassino-lado h3{margin:0 0 8px;font:700 14px var(--display)}
+.cassino-justo summary{cursor:pointer;font-weight:700}
+.cassino-justo dl{display:grid;gap:2px;margin:8px 0}
+.cassino-justo dt{font-size:12px;color:var(--muted)}
+.cassino-justo dd{margin:0 0 6px}
+.hash{font:500 12px ui-monospace,Consolas,monospace;overflow-wrap:anywhere}
+.cassino-semente{display:flex;flex-wrap:wrap;gap:8px}
+.cassino-semente input{flex:1;min-width:120px}
+.cassino-semente .btn{width:auto}
+.cassino-reveladas{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px}
+.cassino-reveladas li{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline}
+.cassino-reveladas small{flex-basis:100%;color:var(--muted)}
+.cassino-lista{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.cassino-lista li{display:grid;grid-template-columns:minmax(0,1fr) auto 56px;gap:10px;align-items:center;font-size:14px}
+.casa-mini{min-width:28px;padding:2px 6px;border-radius:6px;text-align:center;font:700 12px var(--display);color:var(--stamp-ink)}
+.casa-mini.vermelho{background:var(--live)}
+.casa-mini.preto{background:var(--accent-ink)}
+.casa-mini.verde{background:var(--olive)}
+.cassino-lista .ganhou{color:var(--accent-text);text-align:right}
+.cassino-lista .perdeu{color:var(--muted);text-align:right;font-weight:500}

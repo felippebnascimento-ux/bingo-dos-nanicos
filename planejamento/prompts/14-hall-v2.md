@@ -18,7 +18,9 @@ O modelo novo está em `planejamento/demo/hall-v2.html` e `hall-v2.png`. Abra os
 - **Cantos da tela do hall:**
   - **em cima, à esquerda: "Na sala agora"**, com rosto e nome de quem está no site. Clicar num nome abre a **ficha** daquela pessoa. Quem está ao vivo tem o selo `AO VIVO` e um botão "Assistir" (o que o `goWatch` já faz);
   - **em cima, à direita: ganhos de moedas**, um aviso por ganho com rosto, nome, quanto e por quê ("Pitoco +36 moedas · bônus do dia"). Aparece para os ganhos de **todo mundo**, tanto o bônus ao entrar quanto o tempo online, o truco etc.;
-  - **embaixo, à esquerda: carteira** pequena com o seu saldo. Clicar abre o extrato (o `MoedasBloco` do Perfil);
+  - **embaixo, à esquerda: carteira** pequena com o seu saldo e a sua posição ("1.284 · 3º lugar"). Clicar abre o painel da carteira com duas abas (`.seg`):
+    - **"Ranking":** os 14 nanicos do mais rico ao mais pobre, com posição, rosto, nome e saldo; o 1º com a coroa de moedas (desenho da fase 21) e você destacado em `--accent`. Clicar num nome abre a ficha. Modelo: `planejamento/demo/ranking.html` e `.png`;
+    - **"Meu extrato":** o `MoedasBloco` do Perfil;
   - **embaixo, à direita:** a dica "Clique no chão para andar".
 - **Clicar num boneco** também abre a ficha da pessoa.
 - **Menu:** o item "Perfil" mostra o **seu rosto** (`Avatar`, tamanho `xs`) no lugar do ícone, com o texto "Perfil".
@@ -54,6 +56,11 @@ Siga as "Regras de toda sessão" de `planejamento/PLANO.md`. Leia:
   - no hall, a lista fica no canto, por cima do cômodo, e pode ser **recolhida** (lembrando em `local`, chave `hall-sala-min`);
   - enquanto a aba Sítio está aberta, a lista da barra lateral fica escondida, para não aparecer duas vezes. Nas outras abas, continua lá.
 - **Carteira:** reaproveite o `useCarteira`. Mostra o saldo com o número formatado (`1.284`). Se o SQL das moedas não rodou, não aparece.
+- **Ranking (`src/features/moedas/Ranking.tsx`):**
+  - lê todas as `carteiras` (a RLS já deixa nanicos lerem todas) uma vez ao abrir e depois acompanha pelo tempo real de `carteiras` desta fase, então muda **na hora** quando alguém ganha ou gasta;
+  - quem subiu de posição ganha uma setinha verde por 3 s (sem animação com `prefers-reduced-motion`);
+  - nanico sem carteira ainda aparece no fim com "—";
+  - **regra pura** em `src/lib/moedas.ts` + teste: `ranking(carteiras, friends)` ordena por saldo e, no empate, por nome, e devolve a posição de cada um (empatados dividem a posição: "2º, 2º, 4º").
 - **Ganhos (`Ganhos.tsx`):** pilha de no máximo 3 avisos; cada um some depois de 5 s e o mais velho fica apagado. Com `prefers-reduced-motion`, nada desliza. Tem `aria-live="polite"`.
 - **No celular (390 px):** a lista vira uma fileira de rostos acima do hall, com rolagem para o lado só dentro dela; a carteira e os ganhos ficam embaixo do hall. A página continua sem rolagem para o lado.
 
@@ -85,8 +92,9 @@ Os ganhos dos outros **não** podem vir por broadcast, que qualquer um forja. El
 - [ ] Clicar num nome do "Na sala agora" ou num boneco abre a ficha da pessoa.
 - [ ] Com duas abas logadas, o bônus do dia de uma aparece como aviso na outra. Um broadcast forjado não gera aviso nenhum.
 - [ ] O SQL roda duas vezes sem erro, e `creditar` continua recusando saldo negativo.
+- [ ] O ranking mostra os 14 na ordem certa, com empates dividindo a posição, e muda na hora em outra aba quando alguém ganha moedas.
 - [ ] Com 390 px, tudo cabe sem rolagem para o lado. `npm run check` passa e o console está sem erros de CSP.
 - [ ] O `CLAUDE.md` (colunas novas de `carteiras`, `carteiras` no tempo real, chave `hall-sala-min`, `Cantos`/`Ganhos` em `features/hall`) e o `CHANGELOG` foram atualizados. No `PLANO.md`, a fase 14 aparece como feita.
 
 ## Entrada do CHANGELOG
-`"Sítio maior e mais claro, com janelão para as árvores"`, `"No Sítio: TV, mesa do truco e loja abrem com um clique, e o piso fica marcado embaixo do mouse"`, `"Quem está na sala, a sua carteira e os ganhos de moedas de todo mundo aparecem nos cantos do Sítio"`
+`"Sítio maior e mais claro, com janelão para as árvores"`, `"No Sítio: TV, mesa do truco e loja abrem com um clique, e o piso fica marcado embaixo do mouse"`, `"Quem está na sala, a sua carteira e os ganhos de moedas de todo mundo aparecem nos cantos do Sítio"`, `"Ranking de quem tem mais moedas: clique na carteira"`

@@ -73,6 +73,8 @@ src/
                        reacoes.ts, desenho.ts, estado.ts (store + preferências), pip.ts;
                        telas: LiveView, Palco, Painel, Cameras, Video, Voos, Rosto, CamNaSala, CamBotoes
     chat/              chat.ts (um chat por sala: "geral" no lobby e o id da sala dentro dela) e ChatPainel
+    cassino/           aba Cassino (moedas fictícias): regras.ts (roleta europeia e conferir() com HMAC-SHA256;
+                       puro e testado) e CassinoView (mesa, roda, "Como conferir que é justo", histórico, feed)
     salas/             salas tipo lan house: trocar.ts (entrarSala: encerra tela e câmera, troca o canal,
                        carrega escalação e chat) e Salas.tsx (janela das salas com cartões e chat geral; "Você está em")
     truco/             engine.ts (regras, puro e testado), valida.ts (confere mesa vinda da sala),
@@ -91,7 +93,7 @@ src/
     tipos.ts           Friend, Phrase, Card, Presence…
     dados/             campeoes.ts (CHAMPS, LANES, LANE_CAMP), nanicos.ts (NAN_MAP, artOf, bonecoOf), changelog.ts,
                        novidades.ts (o que mostrar no Log depois de uma atualização; puro e testado)
-  styles/              CSS global, numerado: 01-base.css … 25-salas.css (no celular, as abas ficam numa barra embaixo)
+  styles/              CSS global, numerado: 01-base.css … 26-cassino.css (no celular, as abas ficam numa barra embaixo)
 public/arte/           artes dos nanicos (rosto e corpo), bonecos do hall, foto da turma, reações dos Picarétezzi
 planejamento/          PLANO.md (próximas fases e decisões), prompts/ (um por fase), demos e arte pronta
 supabase/
@@ -215,6 +217,9 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 | `phrases` | nanicadas (`text`, `friend_ids uuid[]`, `champions text[]`, `modo 'qualquer'\|'todos'`) | criar, editar e remover (com limite e histórico) |
 | `nanicadas_historico` | cópia de toda nanicada editada ou removida | ninguém pelo site (só o admin) |
 | `game` | escalação por sala de LoL (`sala`, `players` = 5 rotas `{friendId, champion}`; a linha 1 é a da `lol-1`) | atualizar (formato conferido) |
+| `cassino_sementes` | semente do servidor de cada um (`semente` secreta, `hash`, `semente_cliente`, `nonce`) | cada um lê só `hash`, `semente_cliente` e `nonce` da sua; **ninguém lê `semente`** |
+| `cassino_sementes_antigas` | sementes reveladas (em hex), para conferir as apostas | cada um lê as suas |
+| `cassino_apostas` | apostas (`jogo`, `aposta`, `escolha`, `resultado`, `pagou`, `hash`, `nonce`) | cada um lê as suas; o feed das últimas 20 vem de `cassino_feed()` |
 | `salas` | salas tipo lan house (`id`, `nome`, `jogo` lol/cs/outro, `discord`, `ordem`): `lol-1`, `lol-2`, `cs`, `resenha` | ninguém pelo site (só o admin cria) |
 | `chat_messages` | chat (`sala` = `'geral'` no lobby ou o id da sala; apaga sozinho após 30 dias) | enviar (o autor é sempre quem está logado; sala que não existe é recusada) |
 | `limites` | contador anti-spam | ninguém |
@@ -234,6 +239,10 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
   - **O dia é o de Brasília** (`public.hoje_br()`). Os números estão espelhados em `src/lib/moedas.ts`, só para mostrar.
   - **Tempo online:** conta mesmo com a aba escondida (decisão do grupo, 01/11/2026).
   - **Se o SQL não rodou,** o site esconde as moedas e só deixa um aviso no console.
+- **Cassino (seção 11 do `seguranca.sql`, usa `pgcrypto`):**
+  - **O sorteio é no banco:** `u` = primeiros 52 bits de `HMAC-SHA256(semente do servidor, "semente_cliente:nonce")`, feito por `cassino_numero()` (interna, incrementa o nonce com `for update`). O navegador nunca sorteia.
+  - **RPCs:** `apostar_roleta(aposta 5–100, tipo, valor)` (debita com `creditar`, sorteia, paga e grava), `cassino_estado()`, `trocar_semente(cliente)` (revela a antiga) e `cassino_feed()`.
+  - **Conferência:** `conferir()` em `features/cassino/regras.ts` refaz a conta com `crypto.subtle`. A roleta devolve 36/37 (a casa leva 2,7%).
 - **Atributos votados (seção 9 do `seguranca.sql`):**
   - **Anonimato:** `atributos_votos` não tem `select` para ninguém. O site só recebe média e contagem por `atributos_de(nanico)` e `atributos_todos()`. Com menos de 3 votos, a média sai `null` ("poucos votos").
   - **Votar:** `votar_atributos(nanico, notas)` exige as 6 notas inteiras de 0 a 10, não deixa votar em si mesmo e só deixa mudar o voto em alguém uma vez a cada 7 dias (o erro diz a data).
