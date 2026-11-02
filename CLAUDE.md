@@ -184,7 +184,7 @@ planejamento/          PLANO.md (próximas fases e decisões), prompts/ (um por 
 supabase/
   functions/riot-ao-vivo/index.ts   Edge Function (Deno): partida ao vivo e as apostas dela (abre o mercado e paga
                                     pelo resultado da match-v5). Fora do build do Next.
-  functions/ficha-jogos/index.ts    Edge Function (Deno): números da ficha (Riot e Steam), guardados por 6 h
+  functions/ficha-jogos/index.ts    Edge Function (Deno): números da ficha (Riot, Steam e Leetify), guardados por 6 h
   functions/truco-mesa/            Edge Function (Deno): o juiz do truco (embaralha, guarda as mãos, confere as
                                    jogadas, paga a vitória). engine.ts é cópia GERADA por `npm run sincronizar:truco`
                                    (scripts/sincronizar-truco.mjs); o teste engine-copia.test.ts falha se divergir
@@ -330,7 +330,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 | `consumos` | consumível usado no Sítio (`de` = friend id, `item_id`, `em`; apaga com 30 dias) | ninguém grava direto (só `usar_item`); nanicos leem as das últimas 24 h |
 | `trofeus_semana` | pódio de cada troféu por semana (`semana` = segunda, `trofeu`, `posicao` 1–3, `friend_id`, `valor`, `partidas`) | nanicos leem; só a função `riot-semana` grava |
 | `riot_semana_meta`, `riot_semana_partidas` | trava e progresso do cálculo da semana (`estado` calculando/parcial/pronta) e as partidas já lidas (só os números dos nanicos) | só a função `riot-semana` (o site lê `estado`) |
-| `jogos_stats` | números da ficha por nanico e fonte (`lol`: elo, vitórias, KDA, main; `steam`: horas) | nanicos leem; só a função `ficha-jogos` grava |
+| `jogos_stats` | números da ficha por nanico e fonte (`lol`: elo, vitórias, KDA, main; `steam`: horas; `cs`: Premier e nível da GC pelo Leetify, seção 30) | nanicos leem; só a função `ficha-jogos` grava |
 | `riot_partidas_vistas` | partidas do LoL já lidas (KDA das últimas 20 sem buscar tudo de novo) | só a função `ficha-jogos` |
 | `midias` | galeria (`user_id`, `caminho` no bucket **ou** `link` de vídeo do YouTube/Medal/clipe da Twitch, `legenda` ≤ 140, `sala`) | nanicos leem; cada um manda (gatilho `midias_protecao`: autor, pasta própria, arquivo existe, 10 por hora, até 60 por pessoa) e apaga as suas |
 | `perfil_links` | links da ficha (`friend_id`, `tipo` twitch/youtube/instagram/tiktok/x/faceit/leetify, `url` no formato de cada site) | nanicos leem; cada um grava só os próprios |
@@ -480,7 +480,7 @@ Mais de uma pessoa (e mais de uma IA) mexe no site. **Toda tarefa começa assim,
 - **Chave da Steam:** fica em **Edge Functions → Secrets → `STEAM_API_KEY`** (tirada em steamcommunity.com/dev/apikey). Sem ela, a ficha mostra só os números do LoL.
 - **Edge Function `riot-semana`** (usa o segredo `RIOT_API_KEY`): o site chama ao entrar quando a semana anterior (segunda a domingo, Brasília) não está pronta. Só uma pessoa calcula por vez (`semana_vez`); cada chamada faz no máximo 40 consultas à Riot com pausa e guarda o progresso, e a próxima continua (o site tenta de novo a cada 2,5 min). No fim grava `trofeus_semana` e paga com `trofeus_pagar` (+50 Carregou o piano, +20 Viciado; o `ref` com a semana evita pagar duas vezes). `hall_da_fama()` conta os 1º lugares. O "Mais rico" não tem tabela: é o maior saldo de `carteiras`, ao vivo.
 - **Edge Function `truco-mesa`:** publicada pelo MCP do Supabase (ou `npx supabase functions deploy truco-mesa`) com os dois arquivos da pasta, `index.ts` e `engine.ts`. Antes de publicar, rode `npm run sincronizar:truco`. Usa só a chave do próprio Supabase.
-- **Edge Function `ficha-jogos`:** busca cada fonte de um nanico no máximo uma vez a cada 6 h (usa no máximo 25 chamadas à Riot por vez). As origens aceitas são as mesmas da `riot-ao-vivo`.
+- **Edge Function `ficha-jogos`:** busca cada fonte de um nanico no máximo uma vez a cada 6 h (usa no máximo 25 chamadas à Riot por vez). O CS vem da API pública do Leetify (sem chave) pelo número da Steam do `friends.steam` (link `/profiles/<17 dígitos>`; link `/id/` só com a chave da Steam); a GC é o nível da partida mais recente na Gamers Club. As origens aceitas são as mesmas da `riot-ao-vivo`.
 
 ### Pendências conhecidas
 - **Validar a v2 com o grupo:** login, sala, live, câmera, chat, truco entre duas abas, Riot. Depois disso, apagar `legacy/`.

@@ -123,3 +123,5 @@
 /* chama pequena ao lado do nome (3 dias seguidos ou mais) */
 .chama-nome{display:inline-flex;align-items:center;gap:1px;margin-left:5px;font:700 11px var(--display);color:var(--live);vertical-align:middle}
 .chama-nome svg{fill:color-mix(in srgb,var(--accent) 45%,transparent)}
+.ficha-cs{margin:0;font:600 14px var(--body)}
+.ficha-cs b{margin-right:6px;font:700 12px var(--display);letter-spacing:.06em;color:var(--accent)}

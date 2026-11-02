@@ -9,7 +9,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { IcFechar } from "@/components/ui/icones";
 import { enviarChat, useChat } from "@/features/chat/chat";
 import { carregarFicha, useFicha } from "@/features/ficha/estado";
-import { eloTexto, horasTexto, kdaTexto } from "@/features/ficha/numeros";
+import { csTexto, eloTexto, kdaTexto } from "@/features/ficha/numeros";
 import { riotEmJogo, useRiot } from "@/features/jogar/riot";
 import { opggOf } from "@/features/perfil/opgg";
 import { steamOf } from "@/features/perfil/steam";
@@ -31,7 +31,7 @@ function RostoSala({ p, f, jogo }: { p: Presence; f: Friend | undefined; jogo: S
   };
   const nome = f?.name ?? p.name;
   const lol = num?.lol?.dados;
-  const steam = num?.steam?.dados;
+  const cs = csTexto(num?.cs?.dados);
   const opgg = f ? opggOf(f) : "";
   const st = f ? steamOf(f) : "";
   return (
@@ -48,7 +48,7 @@ function RostoSala({ p, f, jogo }: { p: Presence; f: Friend | undefined; jogo: S
               {lol.kda !== null && ` · KDA ${kdaTexto(lol.kda)}`}
             </span>
           )}
-          {jogo === "cs" && steam && !steam.privado && steam.cs2Horas !== null && <span>{horasTexto(steam.cs2Horas)} h de CS2</span>}
+          {jogo === "cs" && cs && <span>{cs}</span>}
           {(opgg || st) && (
             <span className="links">
               {opgg && (

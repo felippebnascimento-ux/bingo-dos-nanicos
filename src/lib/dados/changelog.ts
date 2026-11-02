@@ -282,6 +282,10 @@ export const CHANGELOG: EntradaLog[] = [
     data: "02/11/2026",
     itens: ["Maior ou menor de cara nova: placas de dígitos que param uma a uma, lados grandes, barra colorida para mudar a chance e ½, ×2 e Máx"],
   },
+  {
+    data: "02/11/2026",
+    itens: ["CS na ficha: o Premier atual e o nível da GC de cada nanico, vindos do Leetify (também ao passar o mouse nos rostos da sala de CS)"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

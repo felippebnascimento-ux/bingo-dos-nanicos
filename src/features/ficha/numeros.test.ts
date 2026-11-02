@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { eloTexto, haQuanto, horasTexto, kdaTexto, lerNumeros, taxaVitoria } from "./numeros";
+import { csTexto, eloTexto, haQuanto, horasTexto, kdaTexto, lerNumeros, taxaVitoria } from "./numeros";
 
 describe("lerNumeros", () => {
   it("separa LoL e Steam e confere os campos", () => {
@@ -23,10 +23,24 @@ describe("lerNumeros", () => {
   });
 
   it("lixo não quebra", () => {
-    for (const v of [null, "x", 1, {}, { linhas: "a" }, { linhas: [null, 1, "a"] }]) expect(lerNumeros(v)).toEqual({ lol: null, steam: null, avisos: [] });
+    for (const v of [null, "x", 1, {}, { linhas: "a" }, { linhas: [null, 1, "a"] }]) expect(lerNumeros(v)).toEqual({ lol: null, steam: null, cs: null, avisos: [] });
     expect(lerNumeros({ linhas: [{ fonte: "lol", dados: { tier: 5, vitorias: "9", kda: "3" } }] }).lol?.dados).toEqual({
       tier: null, rank: null, lp: null, vitorias: 0, derrotas: 0, kda: null, main: null, partidas: 0,
     });
+  });
+});
+
+describe("CS pelo Leetify", () => {
+  it("lê Premier e GC e escreve numa linha", () => {
+    const r = lerNumeros({ linhas: [{ fonte: "cs", dados: { premier: 12043, gc: 13, gc_em: "2026-10-31" }, erro: null, atualizado: "2026-11-02T10:00:00Z" }] });
+    expect(r.cs?.dados).toEqual({ premier: 12043, gc: 13 });
+    expect(csTexto(r.cs?.dados)).toBe("Premier 12.043 · GC nível 13");
+  });
+  it("só um dos dois, ou nenhum", () => {
+    expect(csTexto({ premier: null, gc: 9 })).toBe("GC nível 9");
+    expect(csTexto({ premier: 8500, gc: null })).toBe("Premier 8.500");
+    expect(lerNumeros({ linhas: [{ fonte: "cs", dados: { premier: null, gc: null } }] }).cs?.dados).toBeNull();
+    expect(csTexto(null)).toBeNull();
   });
 });
 

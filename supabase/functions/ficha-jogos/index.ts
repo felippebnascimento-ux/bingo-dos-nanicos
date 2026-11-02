@@ -1,4 +1,4 @@
-// Bingo dos Nanicos: números da ficha de cada nanico (Riot e Steam)
+// Bingo dos Nanicos: números da ficha de cada nanico (Riot, Steam e Leetify)
 // ------------------------------------------------------------------
 // O site chama esta função ao abrir a ficha de um nanico. Ela:
 //   1. confere se quem chamou é um nanico logado;
@@ -6,6 +6,7 @@
 //      - LoL: elo e vitórias da ranqueada solo (league-v4) e KDA e main das últimas 20 partidas
 //        (match-v5; só busca as partidas que ainda não foram lidas);
 //      - Steam: horas de CS2 e o total de horas (perfil privado vira privado: true);
+//      - CS (Leetify, API pública sem chave): o Premier atual e o nível da Gamers Club da última partida na GC;
 //   3. devolve o que está guardado em jogos_stats.
 // As chaves ficam só aqui, nos segredos RIOT_API_KEY e STEAM_API_KEY do Supabase. Nunca no site.
 
@@ -185,8 +186,38 @@ async function buscarSteam(link: string) {
   };
 }
 
+/* ---------- CS (Leetify) ---------- */
+// O Leetify precisa do número de 17 dígitos; link /id/<nome> só dá para traduzir com a chave da Steam.
+async function steam64De(link: string): Promise<string> {
+  const m = /^https:\/\/steamcommunity\.com\/(id|profiles)\/([^/]+)\/?$/.exec(link);
+  if (!m) throw new Error("Link da Steam inválido.");
+  if (m[1] === "profiles") return m[2];
+  if (!STEAM_KEY) throw new Error("Use o link da Steam com o número (steamcommunity.com/profiles/...).");
+  const v = await steamApi(`https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?key=${STEAM_KEY}&vanityurl=${encodeURIComponent(m[2])}`);
+  if (v?.response?.success !== 1) throw new Error("Não achei esse perfil na Steam. Confira o link.");
+  return String(v.response.steamid);
+}
+
+async function buscarCs(link: string) {
+  const id = await steam64De(link);
+  const r = await fetch(`https://api-public.cs-prod.leetify.com/v3/profile?steam64_id=${encodeURIComponent(id)}`);
+  if (r.status === 404) throw new Error("Esse perfil não está no Leetify.");
+  if (!r.ok) throw new Error(`O Leetify respondeu ${r.status}.`);
+  const p = await r.json();
+  const premier = Number(p?.ranks?.premier);
+  // a GC não vem nos ranks: o nível é o "rank" da partida mais recente da Gamers Club
+  const gc = (Array.isArray(p?.recent_matches) ? p.recent_matches : [])
+    .filter((x: any) => x?.data_source === "gamers_club" && Number(x?.rank) > 0)
+    .sort((a: any, b: any) => Date.parse(b?.finished_at) - Date.parse(a?.finished_at))[0];
+  return {
+    premier: Number.isFinite(premier) && premier > 0 ? Math.round(premier) : null,
+    gc: gc ? Math.round(Number(gc.rank)) : null,
+    gc_em: gc?.finished_at ? String(gc.finished_at).slice(0, 30) : null,
+  };
+}
+
 /* ---------- atualizar uma fonte de um nanico ---------- */
-async function atualizar(admin: any, fid: string, fonte: "lol" | "steam", buscar: () => Promise<Record<string, unknown>>) {
+async function atualizar(admin: any, fid: string, fonte: "lol" | "steam" | "cs", buscar: () => Promise<Record<string, unknown>>) {
   const { data: atual } = await admin.from("jogos_stats").select("atualizado,erro").eq("friend_id", fid).eq("fonte", fonte).maybeSingle();
   if (atual && Date.now() - Date.parse(atual.atualizado) < FRESCO_MS) return;
   try {
@@ -229,6 +260,7 @@ Deno.serve(async (req: Request) => {
     else if (f.opgg) avisos.push("Falta a chave da Riot (segredo RIOT_API_KEY) no Supabase.");
     if (f.steam && STEAM_KEY) await atualizar(admin, fid, "steam", () => buscarSteam(f.steam));
     else if (f.steam) avisos.push("Falta a chave da Steam (segredo STEAM_API_KEY) no Supabase.");
+    if (f.steam) await atualizar(admin, fid, "cs", () => buscarCs(f.steam));
 
     const { data: linhas } = await admin.from("jogos_stats").select("fonte,dados,erro,atualizado").eq("friend_id", fid);
     return json(req, { linhas: linhas ?? [], avisos });

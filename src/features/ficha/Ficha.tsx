@@ -1,7 +1,7 @@
 "use client";
 /*
  * Ficha do nanico (abre ao tocar num nanico na aba Nanicos): o boneco no quarto, à esquerda,
- * e os links do jogo (op.gg, smurf, Steam) e os atributos votados, à direita. Fecha com Esc ou no X; o foco fica preso dentro.
+ * e os links do jogo (op.gg, smurf, Steam, com o Premier e a GC do CS) e os atributos votados, à direita. Fecha com Esc ou no X; o foco fica preso dentro.
  */
 import { useEffect, useMemo, useRef, type KeyboardEvent as KE } from "react";
 import { Avatar } from "@/components/ui/Avatar";
@@ -19,6 +19,8 @@ import { friendOf, getApp, setApp, useApp } from "@/lib/store";
 import type { Friend } from "@/lib/tipos";
 import { AtributosFicha } from "./AtributosFicha";
 import { NoSitio } from "./NoSitio";
+import { carregarFicha, useFicha } from "./estado";
+import { csTexto } from "./numeros";
 import { EmblemasFicha } from "@/features/emblemas/EmblemasFicha";
 import { Quarto, type EquipQuarto } from "./Quarto";
 
@@ -37,13 +39,19 @@ export function DicaSteamPrivada() {
 
 /** "No jogo": só os links (op.gg, o do smurf, Steam e os outros do perfil), sem números. */
 function Links({ f }: { f: Friend }) {
+  const cs = csTexto(useFicha((s) => s.porNanico[f.id]?.cs?.dados));
   const opgg = opggOf(f);
   const smurf = opggSmurfOf(f);
   const steam = steamOf(f);
+  /* Premier e GC vêm da função ficha-jogos (Leetify), guardados por 6 h */
+  useEffect(() => {
+    if (steam) void carregarFicha(f.id);
+  }, [f.id, steam]);
   const extras = linksDe(useMidias((s) => s.links), f.id);
   return (
     <section className="ficha-sec">
       <h3>No jogo</h3>
+      {cs && <p className="ficha-cs"><b>CS2</b> {cs}</p>}
       {!opgg && !smurf && !steam && !extras.length && <p className="hint">{f.name} ainda não colocou o op.gg no Perfil.</p>}
       {(opgg || smurf || steam || extras.length > 0) && (
         <div className="ficha-links">
