@@ -1,5 +1,5 @@
 "use client";
-/* Aba Nanicos: os 14 com a arte de corpo inteiro. Tocar num nanico abre as nanicadas dele. */
+/* Aba Nanicos: os 14 com a arte de corpo inteiro. Tocar num nanico abre a ficha dele (features/ficha). */
 import { Avatar } from "@/components/ui/Avatar";
 import { fecharSeletores } from "@/components/ui/FriendPicker";
 import { artOf } from "@/lib/dados/nanicos";
@@ -33,9 +33,9 @@ export function NanicosView({ hidden }: { hidden: boolean }) {
                   key={f.id}
                   type="button"
                   className="nanico"
-                  aria-label={`Ver as nanicadas de ${f.name}`}
-                  title={`Ver as nanicadas de ${f.name}`}
-                  onClick={() => verNanicadas(f.id)}
+                  aria-label={`Abrir a ficha de ${f.name}`}
+                  title={`Abrir a ficha de ${f.name}`}
+                  onClick={() => setApp({ fichaAberta: f.id })}
                 >
                   <strong>{f.name}</strong>
                   {art ? (

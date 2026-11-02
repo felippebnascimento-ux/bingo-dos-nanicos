@@ -6,6 +6,7 @@ export type Friend = {
   user_id?: string | null;
   created_at?: string;
   opgg?: string | null;
+  steam?: string | null;
 };
 
 /** Algo que dá para desenhar como rosto: um nanico ou só um nome. */
