@@ -1,8 +1,9 @@
 "use client";
-/* Aba Perfil: o link do meu op.gg e a lista do op.gg de todo mundo (com quem está em partida). */
+/* Aba Perfil: o link do meu op.gg, as minhas moedas e a lista do op.gg de todo mundo (com quem está em partida). */
 import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { riotEmJogo, useRiot } from "@/features/jogar/riot";
+import { MoedasBloco } from "@/features/moedas/Moedas";
 import { api, loadFriends } from "@/lib/dados";
 import { friendOf, getApp, useApp } from "@/lib/store";
 import { errMsg } from "@/lib/supabase";
@@ -105,8 +106,11 @@ export function PerfilView({ hidden }: { hidden: boolean }) {
         <h1>Perfil</h1>
       </header>
       <div className="perfil-grid">
-        <div className="block me-block" id="meBlock">
-          {me ? <MeuPerfil key={me.id} me={me} /> : <p className="status">Carregando…</p>}
+        <div className="perfil-col">
+          <div className="block me-block" id="meBlock">
+            {me ? <MeuPerfil key={me.id} me={me} /> : <p className="status">Carregando…</p>}
+          </div>
+          <MoedasBloco />
         </div>
         <div className="block">
           <h2>op.gg dos nanicos</h2>

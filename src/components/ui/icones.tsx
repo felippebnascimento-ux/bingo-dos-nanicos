@@ -25,6 +25,13 @@ export const IcVoltar = (p: P) => (
     <path d="M15 6l-6 6 6 6" />
   </Base>
 );
+/** Moeda (carteira). */
+export const IcMoeda = (p: P) => (
+  <Base {...p}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M14.6 9.2c-.5-.8-1.5-1.3-2.6-1.3-1.5 0-2.6.8-2.6 2s1.1 1.7 2.6 2.1 2.6.9 2.6 2.1-1.1 2-2.6 2c-1.1 0-2.1-.5-2.6-1.3M12 6.5v1.4M12 16.1v1.4" />
+  </Base>
+);
 /** Casa do sítio (aba Sítio). */
 export const IcSitio = (p: P) => (
   <Base {...p}>
