@@ -258,6 +258,10 @@ export const CHANGELOG: EntradaLog[] = [
       "Painel do resultado com o que você ganhou em cada ficha, os últimos números e as cores das últimas rodadas",
     ],
   },
+  {
+    data: "02/11/2026",
+    itens: ["Passar o mouse no boneco não pinta mais um quadrado escuro em volta (alto contraste do Windows e cores de página do Edge)"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
