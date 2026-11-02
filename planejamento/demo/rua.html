@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Rua do Sítio</title>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@500;700&family=Unbounded:wght@700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:linear-gradient(#8CC8EE 0%,#BFE2F4 45%,#E4F1EC 75%,#D6EBC6 100%);width:1400px;height:900px;font-family:Onest,sans-serif;overflow:hidden;position:relative;color:#FAF9F6}
+svg{position:absolute;left:0;top:0}
+#bonecos{position:absolute;left:0;top:0;width:1400px;height:900px;pointer-events:none}
+.bon{position:absolute;width:84px;height:134px;background-size:420px 268px;transform-origin:42px 132px}
+.nome{position:absolute;transform:translateX(-50%);font:700 10px Unbounded,sans-serif;color:#C4A06A;background:rgba(38,38,38,.85);padding:3px 8px;border-radius:6px;white-space:nowrap}
+.nome.eu{color:#262626;background:#B08D57}
+.rot{position:absolute;transform:translate(-50%,-100%);font:700 11px Unbounded,sans-serif;color:#FAF9F6;background:rgba(38,38,38,.9);border:1.5px solid #B08D57;padding:6px 11px;border-radius:999px;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,.25)}
+.rot::after{content:"";position:absolute;left:50%;bottom:-6px;width:9px;height:9px;background:rgba(38,38,38,.9);border-right:1.5px solid #B08D57;border-bottom:1.5px solid #B08D57;transform:translateX(-50%) rotate(45deg)}
+.rot small{font:500 10px Onest,sans-serif;color:#C9C4B8}
+.carro{position:absolute;transform:translate(-50%,-100%);font:500 10.5px Onest,sans-serif;color:#E9E4D8;background:rgba(38,38,38,.7);padding:2px 7px;border-radius:5px;white-space:nowrap}
+h1{position:absolute;left:28px;top:18px;margin:0;font:800 20px Unbounded,sans-serif;color:#2B3A2E}
+p.sub{position:absolute;left:28px;top:48px;margin:0;color:#3E5A44;font-size:13px}
+</style></head><body>
+<svg id="s" width="1400" height="900"></svg>
+<div id="bonecos"></div>
+<h1>Rua do Sítio</h1>
+<p class="sub">Saindo pelo portão K-FOFO: grama, a árvore grande, os bancos e os carros parados na rua</p>
+<script>
+const BON="../assets/bonecos/";
+const svg=document.getElementById("s"),NS="http://www.w3.org/2000/svg";
+// rua: 16 x 12 pisos. j=0..2 asfalto (fundo), j=3 calçada, j>=4 grama
+const X0=640,Y0=250,TW=40,TH=20,NI=16,NJ=12;
+const p=(i,j,z=0)=>[X0+(i-j)*TW,Y0+(i+j)*TH-z];
+const el=(tag,attrs,pai=svg)=>{const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);pai.appendChild(e);return e};
+const pts=a=>a.map(q=>q.join(",")).join(" ");
+const poly=(a,fill,stroke,sw=1)=>el("polygon",{points:pts(a),fill,stroke:stroke||"none","stroke-width":sw,"stroke-linejoin":"round"});
+let semente=5;const rnd=()=>(semente=(semente*16807)%2147483647)/2147483647;
+const escurece=(h,f)=>{const n=parseInt(h.slice(1),16);const m=v=>Math.max(0,Math.min(255,Math.round(v*f)));return"#"+((1<<24)|(m(n>>16)<<16)|(m(n>>8&255)<<8)|m(n&255)).toString(16).slice(1)};
+function caixa(i,j,w,d,h,topo,esq,dir,z=0,linha="#3a2e25"){
+  poly([p(i,j+d,z),p(i+w,j+d,z),p(i+w,j+d,z+h),p(i,j+d,z+h)],esq,linha);
+  poly([p(i+w,j,z),p(i+w,j+d,z),p(i+w,j+d,z+h),p(i+w,j,z+h)],dir,linha);
+  poly([p(i,j,z+h),p(i+w,j,z+h),p(i+w,j+d,z+h),p(i,j+d,z+h)],topo,linha);
+}
+const quad=(i,j,w,d,fill,stroke,z=0)=>poly([p(i,j,z),p(i+w,j,z),p(i+w,j+d,z),p(i,j+d,z)],fill,stroke);
+
+// ---------- céu: sol, nuvens e árvores ao longe (atrás de tudo)
+el("circle",{cx:1180,cy:110,r:46,fill:"#FFF6CF",opacity:.95});el("circle",{cx:1180,cy:110,r:70,fill:"#FFF6CF",opacity:.25});
+for(const[x,y,k]of[[260,120,1],[520,80,.8],[900,140,1.1],[1290,230,.7],[120,300,.8]]){for(const[dx,dy,r]of[[0,0,26],[28,-10,30],[58,0,24],[30,8,26]])el("ellipse",{cx:x+dx*k,cy:y+dy*k,rx:r*k*1.3,ry:r*k*.8,fill:"#FFFFFF",opacity:.92})}
+// fileira de árvores e morros ao longe, atrás da rua
+{const lin=[];for(let i=-3;i<=NI+3;i+=.5){const[x,y]=p(i,-1.2);lin.push([x,y-28-Math.sin(i*1.7)*10-Math.cos(i*.9)*8])}
+ const[xa,ya]=p(NI+3,-1.2),[xb,yb]=p(-3,-1.2);
+ poly([...lin,[xa,ya+40],[xb,yb+40]],"#7FB56A");
+ for(let i=-2;i<=NI+2;i+=.7){const[x,y]=p(i,-.6);const r=14+((i*7)%5)*3;el("circle",{cx:x,cy:y-26,r,fill:["#5E9A4A","#6BA856","#4E8A3E"][Math.floor(Math.abs(i*3))%3]});el("rect",{x:x-2,y:y-14,width:4,height:12,fill:"#6B4A2E"})}}
+// ---------- chão
+// asfalto com faixa amarela tracejada
+quad(0,0,NI,3,"#5E6163","#4b4e50");
+for(let a=.4;a<NI;a+=1.2)quad(a,1.45,.6,.1,"#E8C24A");
+// meio-fio e calçada
+quad(0,3,NI,.15,"#BDB8AE");caixa(0,3,NI,.15,4,"#CFCAC0","#A8A398","#BDB8AE");
+for(let i=0;i<NI;i++)quad(i,3.15,1,.85,i%2?"#D9D3C6":"#D2CBBD","#BDB6A8");
+// grama com variação
+for(let i=0;i<NI;i++)for(let j=4;j<NJ;j++){const c=["#8FC266","#86BA5E","#93C56B","#8ABE62"][Math.floor(rnd()*4)];quad(i,j,1,1,c,"#7FB257")}
+// trilha de pedra do portão até a calçada
+for(let j=4;j<NJ;j++){const[x,y]=p(1.4+(j%2)*.25,j+.5);el("ellipse",{cx:x,cy:y,rx:15,ry:7,fill:"#C9C2B2",stroke:"#A9A291"})}
+// tufos de capim
+for(let k=0;k<70;k++){const i=rnd()*NI,j=4+rnd()*(NJ-4);const[x,y]=p(i,j);el("path",{d:`M${x-3} ${y} l2 -6 l1 6 l2 -7 l1 7`,stroke:"#5E9A42","stroke-width":1.4,fill:"none"})}
+
+// ---------- muro do Sítio (esquerda, ao longo de j), com o portão K-FOFO aberto
+const MH=150;
+function tijoloMuro(a,b){
+  poly([p(0,a),p(0,b),p(0,b,MH),p(0,a,MH)],"#DCCBA6");
+  for(let r=0,z=0;z<MH;r++,z+=9)for(let c=(r%2?-.25:0)+a;c<b;c+=.5){const c0=Math.max(a,c),c1=Math.min(b,c+.5);if(c1<=c0)continue;
+    poly([p(0,c0+.03,z+1),p(0,c1-.03,z+1),p(0,c1-.03,Math.min(MH,z+8)),p(0,c0+.03,Math.min(MH,z+8))],escurece(["#F0DDB4","#E9D2A2","#F3E4C1","#E6CC98"][Math.floor(rnd()*4)],.95))}
+  poly([p(0,a,MH),p(0,b,MH),p(0,b,MH+10),p(0,a,MH+10)],"#9C6A42","#5b3a22");
+}
+tijoloMuro(4,6.6);tijoloMuro(8.6,NJ);
+// vão do portão: dá para ver o hall lá dentro
+poly([p(0,6.6),p(0,8.6),p(0,8.6,138),p(0,6.6,138)],"#EFE6D2","#5b3a22",2);
+poly([p(0,6.6),p(0,8.6),p(0,8.6,30),p(0,6.6,30)],"#E3DACA");
+poly([p(0,6.9,60),p(0,7.6,60),p(0,7.6,110),p(0,6.9,110)],"#E9D2A2");
+// folha do portão aberta para fora (girada, encostada no muro)
+{const fo=[[...p(0,6.6)],[...p(1.6,6.6)],[...p(1.6,6.6,138)],[...p(0,6.6,138)]];poly(fo,"#8B6B4A","#5b3a22",2);
+ for(let a=.2;a<1.6;a+=.22)poly([p(a,6.6),p(a+.02,6.6),p(a+.02,6.6,138),p(a,6.6,138)],"#5b3a22")}
+poly([p(0,7.0,144),p(0,8.2,144),p(0,8.2,160),p(0,7.0,160)],"#5E4630","#3a2a1c",2);
+{const[sx,sy]=p(0,7.6,152);const t=el("text",{x:sx,y:sy+4,"text-anchor":"middle","font-family":"Unbounded,sans-serif","font-weight":"700","font-size":"10",fill:"#F1E8D9",transform:`rotate(-26.6 ${sx} ${sy})`});t.textContent="K-FOFO 2018"}
+
+// ---------- carros estacionados na rua (fundo), sem marcas: só forma e cor
+function roda(i,j,z=0){const[x,y]=p(i,j,z);el("ellipse",{cx:x,cy:y-6,rx:9,ry:8,fill:"#1d1d1d"});el("ellipse",{cx:x,cy:y-6,rx:4,ry:3.5,fill:"#9a9a9a"})}
+// carro ao longo de i: comprimento L, largura W. tipo: hatch | suv | fastback | sedan
+function carro(i,j,L,W,cor,tipo){
+  const vid="#2B3A4A",escuro=escurece(cor,.82),claro=escurece(cor,1.06);
+  const alto=tipo==="suv"?24:tipo==="fastback"?22:19;
+  el("ellipse",{cx:p(i+L/2,j+W/2)[0],cy:p(i+L/2,j+W/2)[1],rx:L*28,ry:W*16,fill:"rgba(0,0,0,.22)"});
+  caixa(i,j,L,W,alto,claro,cor,escuro,5,"#222");
+  roda(i+.55,j+W,-3);roda(i+L-.6,j+W,-3);
+  // cabine
+  let c0=.55,c1=L-.75,ch=tipo==="suv"?20:16;
+  if(tipo==="hatch"){c0=.45;c1=L-.35}
+  if(tipo==="sedan"){c0=.75;c1=L-.95}
+  const z=5+alto;
+  if(tipo==="fastback"){ // teto caindo para trás
+    poly([p(i+c0,j+W-.12,z),p(i+c1,j+W-.12,z),p(i+c1-.25,j+W-.12,z+ch),p(i+c0+.7,j+W-.12,z+ch)],vid,"#222");
+    poly([p(i+c1,j+.12,z),p(i+c1,j+W-.12,z),p(i+c1-.25,j+W-.12,z+ch),p(i+c1-.25,j+.12,z+ch)],escurece(vid,1.2),"#222");
+    poly([p(i+c0+.7,j+.12,z+ch),p(i+c1-.25,j+.12,z+ch),p(i+c1-.25,j+W-.12,z+ch),p(i+c0+.7,j+W-.12,z+ch)],claro,"#222");
+    poly([p(i+c0,j+.12,z),p(i+c0+.7,j+.12,z+ch),p(i+c0+.7,j+W-.12,z+ch),p(i+c0,j+W-.12,z)],escurece(vid,.9),"#222");
+  }else{
+    caixa(i+c0,j+.12,c1-c0,W-.24,ch,claro,vid,escurece(vid,1.2),z,"#222");
+    // coluna do meio
+    const m=(c0+c1)/2;poly([p(i+m-.05,j+W-.12,z),p(i+m+.05,j+W-.12,z),p(i+m+.05,j+W-.12,z+ch),p(i+m-.05,j+W-.12,z+ch)],cor);
+  }
+  if(tipo==="suv")for(const b of[j+.2,j+W-.25])poly([p(i+c0+.1,b,z+ch),p(i+c1-.1,b,z+ch),p(i+c1-.1,b,z+ch+3),p(i+c0+.1,b,z+ch+3)],"#333"); // rack
+  // farol e lanterna
+  poly([p(i+L,j+.15,5+alto-8),p(i+L,j+.45,5+alto-8),p(i+L,j+.45,5+alto-3),p(i+L,j+.15,5+alto-3)],"#F5F1DD");
+  poly([p(i+L,j+W-.45,5+alto-8),p(i+L,j+W-.15,5+alto-8),p(i+L,j+W-.15,5+alto-3),p(i+L,j+W-.45,5+alto-3)],"#F5F1DD");
+}
+const CARROS=[
+  [0.6,"#2F4A36","hatch","Honda Fit verde escuro",2.3],
+  [3.6,"#F2F2EF","fastback","Fiat Fastback branco",2.7],
+  [7.0,"#8C1F1F","suv","Jeep Renegade",2.5],
+  [10.2,"#F4F4F1","sedan","Chevrolet Onix branco",2.6],
+  [13.3,"#1F2D4D","suv","Honda HR-V azul escuro",2.6],
+];
+for(const[i,cor,tipo,,L]of CARROS)carro(i,.35,L,1.25,cor,tipo);
+
+// ---------- poste de luz na calçada
+{caixa(6.2,3.4,.12,.12,150,"#555","#444","#666");const[x,y]=p(6.26,3.46,150);el("ellipse",{cx:x+10,cy:y,rx:14,ry:5,fill:"#444"});el("ellipse",{cx:x+10,cy:y+3,rx:9,ry:3,fill:"#FFF3C4"})}
+
+// ---------- bancos de praça (madeira com pé de ferro)
+function banco(i,j,vira){
+  const L=1.6,W=.5;
+  if(vira==="i"){
+    for(const a of[i+.15,i+L-.25])caixa(a,j,.1,W,16,"#333","#2a2a2a","#3a3a3a");
+    for(let k=0;k<3;k++)caixa(i,j+k*.17,L,.13,3,"#B07A45","#8E5F33","#A06C3B",16,"#5b3a22");
+    for(let k=0;k<2;k++)caixa(i,j-.02,L,.08,6,"#B07A45","#8E5F33","#A06C3B",26+k*9,"#5b3a22");
+  }else{
+    for(const b of[j+.15,j+L-.25])caixa(i,b,W,.1,16,"#333","#2a2a2a","#3a3a3a");
+    for(let k=0;k<3;k++)caixa(i+k*.17,j,.13,L,3,"#B07A45","#8E5F33","#A06C3B",16,"#5b3a22");
+    for(let k=0;k<2;k++)caixa(i-.02,j,.08,L,6,"#B07A45","#8E5F33","#A06C3B",26+k*9,"#5b3a22");
+  }
+}
+// ---------- árvore grande à direita
+function arvore(i,j){
+  const[x,y]=p(i,j);
+  el("ellipse",{cx:x,cy:y+4,rx:120,ry:52,fill:"rgba(30,60,20,.25)"});
+  // raízes e tronco
+  el("path",{d:`M${x-26} ${y+4} Q${x-10} ${y-20} ${x-12} ${y-110} L${x+12} ${y-110} Q${x+10} ${y-20} ${x+28} ${y+4} Z`,fill:"#7A5332",stroke:"#4a3020","stroke-width":2});
+  el("path",{d:`M${x-4} ${y-20} Q${x-2} ${y-70} ${x+4} ${y-100}`,stroke:"#5E3F25","stroke-width":3,fill:"none"});
+  el("path",{d:`M${x+6} ${y-105} Q${x+40} ${y-140} ${x+70} ${y-150}`,stroke:"#6B4A2E","stroke-width":9,fill:"none"});
+  el("path",{d:`M${x-6} ${y-100} Q${x-40} ${y-135} ${x-75} ${y-140}`,stroke:"#6B4A2E","stroke-width":9,fill:"none"});
+  const copa=[[0,-190,85,"#3F7F33"],[-75,-160,62,"#4A8C3A"],[78,-165,64,"#4A8C3A"],[-40,-225,60,"#4E9440"],[45,-230,62,"#56A046"],[0,-150,60,"#3B7630"],[-100,-130,40,"#3F7F33"],[105,-135,42,"#3F7F33"],[10,-255,48,"#62AC4F"],[-20,-200,40,"#5BA449"],[60,-190,38,"#62AC4F"]];
+  for(const[dx,dy,r,c]of copa)el("circle",{cx:x+dx,cy:y+dy,r,fill:c});
+  for(let k=0;k<26;k++)el("circle",{cx:x-90+rnd()*180,cy:y-270+rnd()*150,r:6+rnd()*8,fill:"#6DB85A",opacity:.75});
+}
+banco(10.2,7.2,"i");
+banco(14.5,6.2,"j");
+arvore(13.8,8.9);
+banco(10.8,10.4,"i");
+// lixeira
+caixa(8.2,4.4,.35,.35,26,"#3E6B3A","#335A30","#3A6436");
+
+// ---------- bonecos de exemplo
+const B=[["gamer","Gamer",3,6,0,0,0],["pitoco","Pitoco",5,5,1,1,0],["max","Max",10.3,7.5,0,0,0],["john","John",11.3,7.5,0,1,0],["abreutz","Abreutz",7,8,0,0,2]];
+const camada=document.getElementById("bonecos");
+B.sort((a,b)=>(a[2]+a[3])-(b[2]+b[3])).forEach(([arq,nm,i,j,lin,esp,col])=>{
+  const[x,y]=p(i+.5,j+.5);const d=document.createElement("div");d.className="bon";
+  d.style.left=(x-42)+"px";d.style.top=(y-132)+"px";d.style.backgroundImage=`url(${BON}${arq}.webp)`;d.style.backgroundPosition=`${-col*84}px ${-lin*134}px`;
+  if(esp)d.style.transform="scaleX(-1)";camada.appendChild(d);
+  const t=document.createElement("div");t.className="nome"+(nm==="Gamer"?" eu":"");t.textContent=nm.toUpperCase();t.style.left=x+"px";t.style.top=(y-150)+"px";camada.appendChild(t);
+});
+function rotulo(html,i,j,z,cls="rot"){const[x,y]=p(i,j,z);const r=document.createElement("div");r.className=cls;r.innerHTML=html;r.style.left=x+"px";r.style.top=y+"px";document.body.appendChild(r)}
+rotulo("Voltar ao Sítio",0,7.6,185);
+for(const[i,,,nome,L]of CARROS)rotulo(nome,i+L/2,.95,70,"carro");
+</script>
+</body></html>

@@ -2,7 +2,7 @@
 <html lang="pt-BR"><head><meta charset="utf-8"><title>Hall do Sítio v2</title>
 <link href="https://fonts.googleapis.com/css2?family=Onest:wght@500;700&family=Unbounded:wght@700;800&display=swap" rel="stylesheet">
 <style>
-body{margin:0;background:#2E2E2D;width:1400px;height:900px;font-family:Onest,sans-serif;overflow:hidden;position:relative;color:#FAF9F6}
+body{margin:0;background:radial-gradient(ellipse at 50% 45%,#FBF4E6 0%,#F1E6D0 55%,#E4D4B6 100%);width:1400px;height:900px;font-family:Onest,sans-serif;overflow:hidden;position:relative;color:#FAF9F6}
 svg{position:absolute;left:0;top:0}
 #bonecos{position:absolute;left:0;top:0;width:1400px;height:900px;pointer-events:none}
 .bon{position:absolute;width:84px;height:134px;background-size:420px 268px;transform-origin:42px 132px}
@@ -15,7 +15,7 @@ svg{position:absolute;left:0;top:0}
 .rot small{font:500 10px Onest,sans-serif;color:#C9C4B8}
 /* cantos */
 .canto{position:absolute;background:rgba(30,30,29,.88);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px 14px;box-shadow:0 6px 20px rgba(0,0,0,.3)}
-h1{position:absolute;left:28px;top:18px;margin:0;font:800 20px Unbounded,sans-serif}
+h1{position:absolute;left:28px;top:18px;margin:0;font:800 20px Unbounded,sans-serif;color:#353535}
 #sala{left:22px;top:60px;width:206px}
 #sala h3{margin:0 0 8px;font:700 11px Unbounded,sans-serif;display:flex;gap:7px;align-items:center}
 #sala h3 i{width:8px;height:8px;border-radius:50%;background:#7BC47F;display:inline-block}
@@ -130,8 +130,26 @@ for(const[a,b]of[[1.3,2.1],[2.5,3.2]]){naParede("esq",a,b,172,208,"none","#8A6A4
 {const[cx,cy]=p(6.0,0,140);el("ellipse",{cx,cy:cy+9,rx:15,ry:17,fill:"#F4F1EA",stroke:"#2b2b2b","stroke-width":3});
  el("line",{x1:cx,y1:cy+9,x2:cx+1,y2:cy-2,stroke:"#2b2b2b","stroke-width":2});el("line",{x1:cx,y1:cy+9,x2:cx+8,y2:cy+11,stroke:"#2b2b2b","stroke-width":2})}
 for(const[a,b]of[[5.4,6.5],[11.4,12.4]]){naParede("dir",a,b,176,210,"none","#8A6A45",4);naParede("dir",(a+b)/2-.02,(a+b)/2+.02,176,210,"#8A6A45")}
-naParede("dir",11.1,13.6,0,138,"#8B6B4A","#5b3a22",2);
-for(let a=11.3;a<13.6;a+=.22)naParede("dir",a,a+.02,0,138,"#5b3a22");
+// portão K-FOFO aberto: dá para ver a rua (grama, calçada, carro e a árvore grande)
+naParede("dir",11.0,13.7,0,142,"#5b3a22","#3a2a1c",2);
+{const vao=naParedeP("dir",11.1,13.6,0,138);
+ const cp=el("clipPath",{id:"clipPortao"},svg.querySelector("defs"));el("polygon",{points:pts(vao)},cp);
+ const g=el("g",{"clip-path":"url(#clipPortao)"});
+ const[x0,y0]=p(11.1,0,138),[x1,y1]=p(13.6,0,0);
+ el("rect",{x:x0-10,y:y0-60,width:x1-x0+20,height:y1-y0+90,fill:"url(#ceu)"},g);
+ el("polygon",{points:pts([[x0-10,y0+70],[x1+10,y0+40],[x1+10,y1+10],[x0-10,y1+10]]),fill:"#5E6163"},g);
+ el("polygon",{points:pts([[x0-10,y0+92],[x1+10,y0+62],[x1+10,y1+10],[x0-10,y1+10]]),fill:"#D2CBBD"},g);
+ el("polygon",{points:pts([[x0-10,y0+104],[x1+10,y0+74],[x1+10,y1+10],[x0-10,y1+10]]),fill:"#8FC266"},g);
+ // pedaço de um carro branco parado
+ el("rect",{x:x0+12,y:y0+50,width:58,height:20,rx:5,fill:"#F2F2EF",stroke:"#666"},g);el("rect",{x:x0+24,y:y0+38,width:32,height:14,rx:4,fill:"#2B3A4A"},g);
+ el("circle",{cx:x0+24,cy:y0+71,r:6,fill:"#1d1d1d"},g);el("circle",{cx:x0+60,cy:y0+71,r:6,fill:"#1d1d1d"},g);
+ // a árvore grande
+ el("rect",{x:x1-34,y:y0+40,width:9,height:70,fill:"#7A5332"},g);
+ for(const[dx,dy,r,c]of[[-30,30,30,"#3F7F33"],[-10,15,26,"#4E9440"],[-50,20,22,"#56A046"],[-28,0,20,"#62AC4F"]])el("circle",{cx:x1+dx,cy:y0+dy,r,fill:c},g);
+}
+// folha do portão aberta para dentro, encostada (de tábuas)
+poly([p(13.6,0),p(13.6,1.35),p(13.6,1.35,136),p(13.6,0,136)],"#8B6B4A","#5b3a22",2);
+for(let b=.18;b<1.35;b+=.2)poly([p(13.6,b),p(13.6,b+.02),p(13.6,b+.02,136),p(13.6,b,136)],"#5b3a22");
 naParede("dir",11.8,12.9,144,160,"#5E4630","#3a2a1c",2);
 {const[sx,sy]=p(12.35,0,151);const t=el("text",{x:sx,y:sy+4,"text-anchor":"middle","font-family":"Unbounded,sans-serif","font-weight":"700","font-size":"11",fill:"#F1E8D9",transform:`rotate(26.6 ${sx} ${sy})`});t.textContent="K-FOFO 2018"}
 
@@ -209,6 +227,7 @@ function rotulo(html,i,j,z){const[x,y]=p(i,j,z);const r=document.createElement("
 rotulo('Ao vivo <span class="live">AO VIVO</span>',0,2.05,160);
 rotulo("Truco <small>2 na mesa</small>",11.1,4.3,72);
 rotulo("Loja",0.45,9.9,118);
+rotulo("Rua <small>sair pelo portão</small>",12.35,0,190);
 </script>
 
 <!-- cantos -->

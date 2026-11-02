@@ -80,8 +80,8 @@ Decisões combinadas com o João em 01/11/2026. Vale para qualquer pessoa ou IA 
 - **Piso:** lajota clara.
 - **Objetos que levam para algum lugar:**
   - a **TV** mostra quem está ao vivo;
-  - a **porta de tábuas** com a placa "K-FOFO 2018" leva às salas de LoL e CS;
-  - a **porta de vidro** para o gramado leva à Resenha.
+  - a **porta de tábuas** com a placa "K-FOFO 2018" fica aberta e leva à rua (fase 16);
+  - a **porta de vidro** abre a escolha das salas (LoL 1, LoL 2, CS e Resenha, fase 5).
 - **Enfeites:** churrasqueira de tijolo com coifa, relógio, quadro, geladeira e freezer brancos, mesa comprida com toalha, mesa de toalha verde, cadeiras de plástico brancas e colchões infláveis azuis.
 - **Hall v2 (pedido de 01/11/2026, fase 14):** modelo em `planejamento/demo/hall-v2.html` e `.png`.
   - **Mais espaço e mais alegre:** piso de 14×11 para caber os 14 bonecos, cores mais claras e um janelão com árvores na parede do fundo.
@@ -92,8 +92,14 @@ Decisões combinadas com o João em 01/11/2026. Vale para qualquer pessoa ou IA 
     - ganhos de moedas de todo mundo em cima, à direita, vindos do banco e não do broadcast;
     - carteira pequena embaixo, à esquerda.
   - **Menu:** "Perfil" mostra o rosto de quem está logado.
+  - **Portão K-FOFO aberto,** com vista para a rua.
+  - **Fundo claro** em volta do cômodo (creme quente), em vez do escuro do site.
+- **Rua do Sítio (fase 16):** modelo em `planejamento/demo/rua.html` e `.png`.
+  - Sai-se andando pelo portão K-FOFO.
+  - Lá fora: grama, uma árvore grande à direita, bancos (só enfeite por enquanto), céu claro de fundo e cinco carros parados de fundo (Honda Fit verde-escuro, Fiat Fastback branco, Jeep Renegade, Chevrolet Onix branco e Honda HR-V azul-escuro). Os carros são desenhados só com forma e cor, sem logotipos.
+  - A escolha das salas da fase 5 passa para a porta de vidro.
 - **Celular e rede social nanica (fase 15):**
-  - é um item da loja;
+  - é um item da loja, por **3.000 moedas** (cerca de um mês de presença), para ser a meta grande da economia;
   - quem compra posta, curte e comenta na rede do grupo, com imagens no bucket `midias`;
   - sem o celular, o banco não deixa ler nem postar.
 
@@ -154,8 +160,7 @@ Decisões combinadas com o João em 01/11/2026. Vale para qualquer pessoa ou IA 
 ## Fila de ideias (ainda sem prompt)
 Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 - **Balão do chat no hall:** a mensagem aparece por 5 s em cima do boneco de quem escreveu.
-- **Sentar e acenar:** sentar nas cadeiras e no colchão do hall, e acenar com um botão. São mais quadros gerados com IA, no mesmo estilo.
-- **Gramado da Resenha:** a área de fora do Sítio, com as cadeiras de plástico na grama, como sala.
+- **Acenar e sentar dentro do hall:** acenar com um botão, e sentar nas cadeiras e no colchão do hall. Inclui sentar nos bancos da rua (fica para depois, decisão de 02/11/2026). São mais quadros gerados com IA, no mesmo estilo.
 - **Trocar a senha de novo:** falta saber se o problema é o botão não funcionar ou se a ideia é recuperar uma senha esquecida.
 
 ## Ordem e andamento
@@ -180,3 +185,4 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | 13 | `13-login-convidado.md` | `login-convidado` | 5 | a fazer |
 | 14 | `14-hall-v2.md` | `hall-v2` | 00, 2, 3 | **feita**, PR aberto (em cima da `atributos-votados`); SQL da seção 7b aplicado em 02/11/2026 |
 | 15 | `15-celular-rede-nanica.md` | `celular-rede-nanica` | 11, 12 | a fazer |
+| 16 | `16-rua-do-sitio.md` | `rua-do-sitio` | 14 | a fazer |

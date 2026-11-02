@@ -3,7 +3,9 @@
 **Branch:** `celular-rede-nanica` · **Depende de:** fase 11 (loja e mochila) e fase 12 (bucket `midias` e a compressão de imagem) · **Banco:** sim
 
 ## Objetivo (para quem usa)
-- **Celular na loja:** um item novo, "Celular" (300 moedas, compra única). Quem compra ganha um **celular** no canto do Sítio e no menu.
+- **Celular na loja:** um item novo, "Celular", por **3.000 moedas** (compra única). Quem compra ganha um **celular** no canto do Sítio e no menu.
+  - **O preço é alto de propósito:** com o bônus diário e o tempo online, dá umas 70 a 100 moedas por dia, então leva cerca de **um mês** de presença para comprar. É a meta grande da economia, para o pessoal ficar mais tempo no site.
+  - A loja mostra quanto falta ("faltam 1.716 moedas") e uma barra de progresso.
 - **Dentro do celular:** a tela tem formato de celular (moldura, barra de cima com a hora) e um app só, a **rede social nanica**:
   - **feed** com as postagens de todo mundo, das mais novas para as mais velhas;
   - **postar:** texto de até 500 caracteres e, se quiser, **uma imagem**;
@@ -22,7 +24,7 @@ Siga as "Regras de toda sessão" de `planejamento/PLANO.md`. Leia:
 ## Como fazer
 
 ### Banco (seção "18) rede nanica" no `seguranca.sql`)
-- **Item:** semente idempotente em `loja_itens` com `('celular', 'Celular', espaco 'celular', preco 300)`. Acrescente `'celular'` ao `check` de `espaco` (troque o `check` com `drop constraint if exists` + `add constraint`).
+- **Item:** semente idempotente em `loja_itens` com `('celular', 'Celular', espaco 'celular', preco 3000)`. Acrescente `'celular'` ao `check` de `espaco` (troque o `check` com `drop constraint if exists` + `add constraint`).
 - **`public.tem_item(p_item text) returns boolean`:** `stable security definer`, olha a `mochila` de `auth.uid()`. Mesmos `revoke`/`grant` da `eh_nanico`.
 - **Tabelas:**
   - `rede_posts (id bigint identity pk, user_id uuid default auth.uid() → auth.users, texto text check (char_length(texto) between 1 and 500), midia text null, em timestamptz default now())`, com `midia` obrigatoriamente no formato `rede/<uid>/<id>.webp` do bucket `midias`;

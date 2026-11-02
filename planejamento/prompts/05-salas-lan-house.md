@@ -5,7 +5,7 @@
 ## Objetivo (para quem usa)
 A call do Discord se dividiu? Cada grupo entra numa **sala** do site.
 - **Lobby = o hall do Sítio (já feito na fase 00).** Esta fase acrescenta:
-  - o **portão de tábuas** (K-FOFO 2018) abre a escolha das salas fixas, por enquanto **LoL 1, LoL 2 e CS**, e a **porta de vidro** leva à **Resenha** (o gramado lá fora);
+  - a **porta de vidro** abre a escolha das salas fixas, por enquanto **LoL 1, LoL 2, CS e Resenha**, com a placa "Salas" em cima (no estilo das placas da fase 14). O **portão K-FOFO não é das salas**: ele leva à **rua** (fase 16);
   - cada cartão de sala mostra quem está ali (rosto), quem está **ao vivo** e quem está **em partida**;
   - ao passar o mouse ou tocar num rosto, aparecem as horas daquele jogo (dado da fase 3) e os links do op.gg e da Steam;
   - o **chat geral** fica no lobby.
@@ -60,7 +60,7 @@ Siga as "Regras de toda sessão" de `planejamento/PLANO.md`. **Esta fase é gran
   - `enviar`/`aoReceber` de `rtc`, `reacao` e `risco` passam pelo canal da sala;
   - `truco` continua no lobby;
   - mantenha as conferências da regra 4 (`estaNaSala` passa a olhar a presença do canal certo).
-- **No hall (`features/hall/`):** o portão e a porta de vidro aparecem, e clicar neles abre a grade de cartões de sala (cada um como uma "máquina", no visual do `.block`), o chat geral ao lado no desktop e embaixo no celular, e o botão "Entrar na sala".
+- **No hall (`features/hall/`):** a porta de vidro ganha a placa "Salas", e clicar nela abre a grade de cartões de sala (cada um como uma "máquina", no visual do `.block`), o chat geral ao lado no desktop e embaixo no celular, e o botão "Entrar na sala".
 - **Menu:**
   - "Na sala agora" mostra quem está na **minha** sala;
   - em cima fica "Você está em: LoL 1 · Trocar".
