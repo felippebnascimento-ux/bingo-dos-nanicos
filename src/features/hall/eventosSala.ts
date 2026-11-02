@@ -25,7 +25,7 @@ export const useEventos = create<EstadoEventos>()(() => ({ agora: 0, evento: nul
 /** A primeira vez que a pessoa vê cada evento, um aviso explica o que é. */
 const EXPLICA: Record<Evento, string> = {
   happy: "Happy hour: até a meia-noite, o tempo no site paga moedas em dobro.",
-  churrasco: "Churrasco de sábado: clique na churrasqueira do Nanico Hotel e pegue seu espetinho surpresa.",
+  churrasco: "Churrasco de sábado: clique na churrasqueira do K-FOFO e pegue seu espetinho surpresa.",
 };
 function explicarUmaVez(ev: Evento) {
   const vistos = local.json<Record<string, boolean>>("evento-visto") ?? {};

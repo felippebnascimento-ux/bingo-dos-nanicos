@@ -229,6 +229,10 @@ export const CHANGELOG: EntradaLog[] = [
       "Cor preta no desenho da live",
     ],
   },
+  {
+    data: "02/11/2026",
+    itens: ["O Nanico Hotel voltou a se chamar K-FOFO no menu e no resto do site"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
