@@ -25,6 +25,14 @@ export const IcVoltar = (p: P) => (
     <path d="M15 6l-6 6 6 6" />
   </Base>
 );
+/** Coroa de moedas (1º lugar do ranking). */
+export const IcCoroa = (p: P) => (
+  <Base {...p} fill="currentColor" strokeWidth={1.5}>
+    <path d="M3 17l2-9 4.5 4L12 6l2.5 6L19 8l2 9z" />
+    <circle cx="12" cy="4.5" r="1.5" />
+    <path d="M4 19.5h16" />
+  </Base>
+);
 /** Casinha (Início). */
 export const IcInicio = (p: P) => (
   <Base {...p}>

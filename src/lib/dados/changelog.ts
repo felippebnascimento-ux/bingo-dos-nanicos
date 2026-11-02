@@ -68,6 +68,7 @@ export const CHANGELOG: EntradaLog[] = [
   { data: "02/11/2026", itens: ["Cassino: limbo, maior ou menor e caça-níquel com o rosto dos nanicos"] },
   { data: "02/11/2026", itens: ["Sítio: cada nanico aparece uma vez só, e quem entra aparece na hora, mesmo depois de deixar o site em segundo plano"] },
   { data: "02/11/2026", itens: ["Tela de início: escolha para onde ir (Sítio, Truco, Ao vivo, Jogar, Cassino, Nanicadas) e veja o que está rolando em cada um"] },
+  { data: "02/11/2026", itens: ["Ranking de quem tem mais moedas: clique na carteira para ver a sua posição"] },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

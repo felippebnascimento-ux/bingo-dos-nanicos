@@ -204,8 +204,8 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | 3 | `03-ficha-dados-reais.md` | `ficha-dados-reais` | 0 | **feita**, PR aberto (em cima da `carteira-moedas`); SQL da seção 8 aplicado e função `ficha-jogos` publicada em 01/11/2026; falta o segredo `STEAM_API_KEY` |
 | 4 | `04-atributos-votados.md` | `atributos-votados` | 3 | **feita**, PR aberto (em cima da `ficha-dados-reais`); SQL da seção 9 aplicado em 01/11/2026 |
 | 5 | `05-salas-lan-house.md` | `salas-lan-house` | 00, 3 | **feita**, PR aberto (em cima da `hall-v2`); SQL da seção 10 aplicado em 02/11/2026 |
-| 6 | `06-cassino-roleta.md` | `cassino-roleta` | 2 | a fazer |
-| 7 | `07-cassino-jogos.md` | `cassino-jogos` | 6 | a fazer |
+| 6 | `06-cassino-roleta.md` | `cassino-roleta` | 2 | **feita** e no oficial (SQL da seção 11 aplicado) |
+| 7 | `07-cassino-jogos.md` | `cassino-jogos` | 6 | **feita** e no oficial (SQL da seção 11b aplicado) |
 | 8 | `08-bingo-servidor.md` | `bingo-servidor` | 2, 5 | a fazer |
 | 9 | `09-truco-servidor.md` | `truco-servidor` | 2 | a fazer |
 | 10 | `10-apostas-ao-vivo.md` | `apostas-ao-vivo` | 6 | a fazer |
@@ -226,3 +226,4 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | 26 | `26-ficha-sequencia-online.md` | `ficha-sequencia-online` | 2, 3 | a fazer (pequena, pode vir logo depois da 3) |
 | 27 | `27-hall-um-por-nanico.md` | `hall-um-por-nanico` | 00 | **feita** e no oficial em 02/11/2026 (um por nanico + reconexão automática) |
 | 28 | `28-tela-inicio.md` | `tela-inicio` | 27 | feito (02/11/2026) |
+| 29 | `29-ranking-moedas.md` | `ranking-moedas` | 14, 28 | feito (02/11/2026) |

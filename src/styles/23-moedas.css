@@ -34,3 +34,27 @@
 .moedas-extrato time{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .moedas-extrato b{font-variant-numeric:tabular-nums;color:var(--accent-text)}
 .moedas-extrato b.neg{color:var(--live)}
+
+/* painel da carteira: ranking e extrato (abaixo da ficha, que abre por cima ao clicar num nome) */
+.carteira-gate{z-index:55;overflow:auto;place-items:start center}
+.carteira-painel{width:min(440px,100%);margin:auto 0;display:grid;gap:14px;padding:18px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:0 30px 80px -20px var(--shadow)}
+.carteira-topo{display:flex;align-items:center;gap:12px}
+.carteira-topo b{display:block;font:800 24px/1.1 var(--display);font-variant-numeric:tabular-nums}
+.carteira-topo small{display:block;font-size:12px;color:var(--muted)}
+.carteira-topo .hall-moeda{width:36px;height:36px;font-size:14px}
+.carteira-painel .seg{margin:0}
+.carteira-painel .moedas-block{margin:0;padding:0;border:0;background:none;box-shadow:none}
+.ranking{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.ranking button{width:100%;display:grid;grid-template-columns:34px 30px minmax(0,1fr) auto;align-items:center;gap:10px;padding:8px 10px;border:1px solid transparent;border-radius:var(--r-sm);background:none;color:var(--ink);font:500 14px var(--body);text-align:left;cursor:pointer}
+.ranking button:hover{background:var(--surface-2)}
+.ranking .eu button{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.ranking .eu .ranking-nome{color:var(--accent-text);font-weight:700}
+.ranking-pos{font:700 13px var(--display);color:var(--muted);text-align:right}
+.ranking-rosto{position:relative;display:grid;place-items:center}
+.ranking-rosto .av.xs{width:26px;height:26px}
+.ranking-coroa{position:absolute;top:-13px;left:50%;transform:translateX(-50%);color:var(--accent)}
+.ranking-nome{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ranking button>b{font:700 14px var(--display);color:var(--accent-text);font-variant-numeric:tabular-nums}
+.ranking-subiu{margin-left:6px;font:600 11px var(--body);font-style:normal;color:var(--mint);animation:ranking-subiu 3s ease-out forwards}
+@keyframes ranking-subiu{0%,80%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.ranking-subiu{animation:none}}

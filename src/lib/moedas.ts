@@ -60,3 +60,31 @@ export const MOTIVOS: Readonly<Record<string, string>> = {
   loja: "Loja",
   admin: "Ajuste do admin",
 };
+
+/* ---------- ranking ---------- */
+export type LinhaRanking = { fid: string; nome: string; userId: string | null; saldo: number | null; pos: number | null };
+
+/**
+ * Ranking das moedas: do mais rico ao mais pobre (no empate, por nome). Empatados dividem a posição
+ * ("5º, 5º, 7º"). Quem ainda não tem carteira vai para o fim, sem posição.
+ */
+export function ranking(
+  carteiras: readonly { userId: string; saldo: number }[],
+  friends: readonly { id: string; name: string; user_id?: string | null }[],
+): LinhaRanking[] {
+  const saldo = new Map(carteiras.map((c) => [c.userId, c.saldo]));
+  const linhas: LinhaRanking[] = friends.map((f) => {
+    const s = f.user_id ? saldo.get(f.user_id) : undefined;
+    return { fid: f.id, nome: f.name, userId: f.user_id ?? null, saldo: s ?? null, pos: null };
+  });
+  const porNome = (a: LinhaRanking, b: LinhaRanking) => a.nome.localeCompare(b.nome, "pt-BR");
+  const com = linhas.filter((l) => l.saldo !== null).sort((a, b) => b.saldo! - a.saldo! || porNome(a, b));
+  const sem = linhas.filter((l) => l.saldo === null).sort(porNome);
+  com.forEach((l, i) => (l.pos = i > 0 && com[i - 1].saldo === l.saldo ? com[i - 1].pos : i + 1));
+  return [...com, ...sem];
+}
+
+/** Minha posição no ranking (null sem carteira ou sem o ranking carregado). */
+export const posicaoDe = (lista: readonly LinhaRanking[], userId: string | null) => (userId ? (lista.find((l) => l.userId === userId)?.pos ?? null) : null);
+
+export const ordinal = (n: number) => `${n}º`;

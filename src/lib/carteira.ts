@@ -3,16 +3,32 @@
  * aqui só pedimos e mostramos. Se o SQL das moedas ainda não rodou, tudo fica escondido.
  */
 import { create } from "zustand";
-import { textoBonus } from "./moedas";
+import { ranking, textoBonus } from "./moedas";
+import { aoMudarTabela } from "./sala";
+import { getApp } from "./store";
 import { sb } from "./supabase";
 import { toast } from "./toast";
 
 export type Carteira = { saldo: number; seq: number; pegouHoje: boolean; minutosHoje: number };
 export type LinhaExtrato = { id: number; valor: number; motivo: string; ref: string | null; em: string };
 
-export const useCarteira = create<{ carteira: Carteira | null; extrato: LinhaExtrato[] }>()(() => ({
+export type SaldoDe = { userId: string; saldo: number };
+
+export const useCarteira = create<{
+  carteira: Carteira | null;
+  extrato: LinhaExtrato[];
+  /** saldo de todo mundo, para o ranking (null = ainda não carregou) */
+  todas: SaldoDe[] | null;
+  /** quem subiu de posição agora há pouco (user_id → até quando mostra o "▲ subiu") */
+  subiram: Record<string, number>;
+  /** painel da carteira (ranking e extrato) aberto */
+  painel: "ranking" | "extrato" | null;
+}>()(() => ({
   carteira: null,
   extrato: [],
+  todas: null,
+  subiram: {},
+  painel: null,
 }));
 
 /** Pulso a cada minuto, mesmo com a aba escondida (decisão do grupo: o tempo conta assim mesmo). */
@@ -80,4 +96,48 @@ export function ajustarSaldo(saldo: number) {
 export async function carregarExtrato() {
   const { data, error } = await sb().from("extrato").select("id,valor,motivo,ref,em").order("em", { ascending: false }).limit(30);
   if (!error && Array.isArray(data)) useCarteira.setState({ extrato: data as LinhaExtrato[] });
+}
+
+/* ---------- ranking ---------- */
+const SUBIU_MS = 3000;
+let rankingLigado = false;
+
+/** Lê o saldo de todas as carteiras uma vez (a RLS deixa nanicos lerem); depois o tempo real mantém a lista. */
+export async function carregarRanking() {
+  if (rankingLigado) return;
+  rankingLigado = true;
+  aoMudarTabela("carteiras", (row) => {
+    if (!row || typeof row.user_id !== "string" || typeof row.saldo !== "number" || !Number.isFinite(row.saldo)) return;
+    mudarSaldo(row.user_id, Math.max(0, Math.trunc(row.saldo)));
+  });
+  const { data, error } = await sb().from("carteiras").select("user_id,saldo");
+  if (error || !Array.isArray(data)) {
+    rankingLigado = false;
+    return;
+  }
+  const todas = data
+    .filter((c) => typeof c.user_id === "string" && typeof c.saldo === "number")
+    .map((c) => ({ userId: c.user_id as string, saldo: Math.max(0, Math.trunc(c.saldo as number)) }));
+  /* algum saldo chegou pelo tempo real enquanto a leitura voltava: fica o do tempo real */
+  const jaTem = new Map((useCarteira.getState().todas ?? []).map((c) => [c.userId, c.saldo]));
+  useCarteira.setState({ todas: todas.map((c) => ({ ...c, saldo: jaTem.get(c.userId) ?? c.saldo })) });
+}
+
+/** Saldo novo de alguém: reordena e marca quem subiu de posição por 3 s. */
+function mudarSaldo(userId: string, saldo: number) {
+  const { todas, subiram } = useCarteira.getState();
+  if (!todas) return;
+  const antes = todas.find((c) => c.userId === userId);
+  if (antes?.saldo === saldo) return;
+  const novas = antes ? todas.map((c) => (c.userId === userId ? { ...c, saldo } : c)) : [...todas, { userId, saldo }];
+  const friends = getApp().friends;
+  const posAntes = ranking(todas, friends).find((l) => l.userId === userId)?.pos ?? Infinity;
+  const posDepois = ranking(novas, friends).find((l) => l.userId === userId)?.pos ?? Infinity;
+  const ate = Date.now() + SUBIU_MS;
+  useCarteira.setState({ todas: novas, subiram: posDepois < posAntes ? { ...subiram, [userId]: ate } : subiram });
+  if (posDepois < posAntes)
+    setTimeout(() => {
+      const { [userId]: fim, ...resto } = useCarteira.getState().subiram;
+      if (fim === ate) useCarteira.setState({ subiram: resto });
+    }, SUBIU_MS);
 }

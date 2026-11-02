@@ -10,6 +10,7 @@ import { Fundo } from "@/features/hall/Sala";
 import { riotEmJogo, useRiot } from "@/features/jogar/riot";
 import { useTruco } from "@/features/truco/mesa";
 import { useCarteira } from "@/lib/carteira";
+import { abrirCarteira, useMinhaPosicao } from "@/features/moedas/Ranking";
 import { bonecoOf } from "@/lib/dados/nanicos";
 import { LANES } from "@/lib/dados/campeoes";
 import { bonusDoDia, diasSeguidos, formatarMoedas } from "@/lib/moedas";
@@ -64,6 +65,7 @@ export function InicioView({ hidden }: { hidden: boolean }) {
   const phrases = useApp((s) => s.phrases);
   const temJogar = useApp((s) => !s.salas.length || !!salaLol(s));
   const carteira = useCarteira((s) => s.carteira);
+  const posicao = useMinhaPosicao();
   const mesas = useTruco((s) => s.mesas);
   const jogos = useRiot((s) => s.jogos);
 
@@ -104,9 +106,10 @@ export function InicioView({ hidden }: { hidden: boolean }) {
         </button>
         <span className="inicio-chips">
           {carteira && (
-            <button type="button" className="inicio-chip" aria-label={`${formatarMoedas(carteira.saldo)} moedas. Abrir o extrato`} onClick={ir("perfil")}>
+            <button type="button" className="inicio-chip" aria-label={`${formatarMoedas(carteira.saldo)} moedas${posicao ? `, ${posicao}` : ""}. Abrir o ranking`} onClick={abrirCarteira}>
               <span className="hall-moeda" aria-hidden="true">$</span>
               <b>{formatarMoedas(carteira.saldo)}</b>
+              {posicao && <span>· {posicao}</span>}
             </button>
           )}
           {eu && (

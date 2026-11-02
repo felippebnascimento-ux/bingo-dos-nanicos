@@ -6,6 +6,7 @@ import { Sidebar } from "./shell/Sidebar";
 import { Toast } from "./ui/Toast";
 import { CassinoView } from "@/features/cassino/CassinoView";
 import { FichaNanico } from "@/features/ficha/Ficha";
+import { PainelCarteira } from "@/features/moedas/Ranking";
 import { SalasJanela } from "@/features/salas/Salas";
 import { HallView } from "@/features/hall/HallView";
 import { InicioView } from "@/features/inicio/InicioView";
@@ -62,6 +63,7 @@ export default function App() {
       <PortaPrimeiraSenha />
       <PortaLog />
       <PortaTrocarSenha />
+      <PainelCarteira />
       <FichaNanico />
       <SalasJanela />
 

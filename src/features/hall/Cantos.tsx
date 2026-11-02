@@ -8,6 +8,7 @@ import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { goWatch, usePessoasNaSala } from "@/components/shell/People";
 import { useCarteira } from "@/lib/carteira";
+import { abrirCarteira, useMinhaPosicao } from "@/features/moedas/Ranking";
 import { formatarMoedas, motivoGanho } from "@/lib/moedas";
 import { friendDaPresenca, friendOf, MY_KEY, setApp, useApp } from "@/lib/store";
 import { hueOf, initials, local } from "@/lib/util";
@@ -105,21 +106,22 @@ export function Ganhos() {
   );
 }
 
-/** Carteira pequena com o meu saldo; tocar abre o extrato no Perfil. Some se as moedas estiverem desligadas. */
+/** Carteira pequena com o meu saldo e a posição; tocar abre o ranking. Some se as moedas estiverem desligadas. */
 export function CarteiraCanto() {
   const c = useCarteira((s) => s.carteira);
+  const posicao = useMinhaPosicao();
   if (!c) return null;
   return (
     <button
       type="button"
       className="hall-canto hall-carteira"
-      aria-label={`${formatarMoedas(c.saldo)} moedas. Abrir o extrato no Perfil`}
-      onClick={() => setApp({ aba: "perfil" })}
+      aria-label={`${formatarMoedas(c.saldo)} moedas${posicao ? `, ${posicao}` : ""}. Abrir o ranking`}
+      onClick={abrirCarteira}
     >
       <span className="hall-moeda" aria-hidden="true">$</span>
       <span>
         <b>{formatarMoedas(c.saldo)}</b>
-        <small>suas moedas</small>
+        <small>suas moedas{posicao && ` · ${posicao}`}</small>
       </span>
     </button>
   );

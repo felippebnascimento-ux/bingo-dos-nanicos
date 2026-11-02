@@ -56,7 +56,9 @@ src/
   features/            uma pasta por aba / assunto
     inicio/            InicioView: tela de início (aba `inicio`, a primeira depois do login): barra de cima, saudação
                        e um cartão por lugar com capa e linha ao vivo (só lê o store, nenhuma consulta nova)
-    moedas/            Moedas.tsx: selinho do saldo no menu (CarteiraChip) e quadro do Perfil (MoedasBloco)
+    moedas/            Moedas.tsx: selinho do saldo no menu (CarteiraChip) e quadro do Perfil (MoedasBloco);
+                       Ranking.tsx: painel da carteira (abas Ranking e Meu extrato), aberto pela carteira do Sítio e
+                       pelo chip do Início (`abrirCarteira`), e `useMinhaPosicao()` ("3º lugar")
     hall/              aba Sítio, sala de 14×11: hall.ts (grade, móveis, CLICAVEIS, caminho, ordem
                        de desenho; puro e testado), bonecos.ts (movimento, evento `hall`, presença), Sala.tsx
                        (cômodo em SVG com janelão e portão, um móvel por camada, destaque do piso), Boneco.tsx
@@ -91,7 +93,9 @@ src/
     dados.ts           carregar e gravar no banco, login → sessão → sala, sair
     bingo.ts           regras da cartela (quais nanicadas valem, sorteio, marcar)
     moedas.ts          números das moedas (bônus, sequência, teto), só para mostrar; puro e testado
-    carteira.ts        carteira do nanico logado: bater_ponto no login, pulso a cada minuto, extrato
+    carteira.ts        carteira do nanico logado: bater_ponto no login, pulso a cada minuto, extrato; ranking:
+                       `carregarRanking()` lê o saldo de todas as carteiras uma vez e o tempo real das carteiras mantém
+                       `todas` (e o "▲ subiu" em `subiram`); a ordem vem de `ranking()` em moedas.ts (empate divide a posição)
     toast.ts           toast("texto")
     util.ts            norm, canon, shuffle, local (localStorage), rolarAte…
     tipos.ts           Friend, Phrase, Card, Presence…
