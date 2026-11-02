@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Início</title>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@500;700&family=Unbounded:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FAF9F6;--ink:#353535;--muted:#7A776F;--accent:#B08D57;--olive:#4A4E44;--mint:#3E4C59;--live:#B4442F;--line:#E4E0D6}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Onest,sans-serif;width:1240px;height:820px;overflow:hidden}
+header{display:flex;align-items:center;gap:18px;padding:14px 32px;border-bottom:1px solid var(--line);background:#fff}
+.marca{display:flex;align-items:center;gap:12px}
+.marca .img{width:118px;height:62px;border-radius:10px;background:linear-gradient(#3a3a38,#262625);display:flex;align-items:flex-end;justify-content:center;overflow:hidden}
+.img i{display:block;width:30px;height:48px;margin:0 -4px -2px;background-size:150px 96px;background-position:0 0}
+.marca b{font:800 20px Unbounded,sans-serif;display:block}
+.marca small{color:var(--muted);font-size:12px}
+.dir{margin-left:auto;display:flex;gap:10px;align-items:center}
+.chip{display:flex;align-items:center;gap:9px;border:1.5px solid var(--line);border-radius:999px;padding:6px 14px 6px 6px;font-size:13px;font-weight:700;background:#fff}
+.chip img{width:30px;height:30px;border-radius:50%;object-fit:cover}
+.moeda{width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#F3D58B,#C99A3E 60%,#9C7428);box-shadow:inset 0 0 0 2px #9C7428;display:grid;place-items:center;font:800 11px Unbounded,sans-serif;color:#7A5A1E}
+.chip.m b{font:800 14px Unbounded,sans-serif}
+.chip.m small{color:var(--muted);font-weight:500}
+main{padding:24px 32px}
+.ola{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+.ola h1{margin:0;font:800 22px Unbounded,sans-serif}
+.ola span{color:var(--muted);font-size:13px}
+.grade{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.card{position:relative;border-radius:18px;overflow:hidden;background:#fff;border:1px solid var(--line);height:290px;display:flex;flex-direction:column;box-shadow:0 2px 0 rgba(0,0,0,.02)}
+.card:hover,.card.foco{outline:3px solid var(--accent);outline-offset:2px}
+.capa{flex:1;position:relative;overflow:hidden}
+.rod{padding:12px 16px;display:flex;align-items:center;gap:10px}
+.rod h2{margin:0;font:800 16px Unbounded,sans-serif}
+.rod p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
+.rod .ir{margin-left:auto;font:700 12px Onest,sans-serif;color:var(--accent)}
+.pill{position:absolute;left:12px;top:12px;font:800 10px Unbounded,sans-serif;border-radius:6px;padding:3px 7px;background:var(--live);color:#fff}
+.rostos{position:absolute;left:12px;bottom:10px;display:flex}
+.rostos img{width:30px;height:30px;border-radius:50%;border:2px solid #fff;margin-right:-8px;object-fit:cover;background:#ddd}
+.rostos span{margin-left:14px;align-self:center;font:700 11px Onest,sans-serif;color:#fff;background:rgba(0,0,0,.55);border-radius:999px;padding:3px 8px}
+.sitio .capa{background:url(hall-v2.png) 52% 44%/170% auto}
+.truco .capa{background:radial-gradient(ellipse at 50% 60%,#5C6156,#3E423A)}
+.vivo .capa{background:#1c2230}
+.jogar .capa{background:linear-gradient(135deg,#3E4C59,#2B3540)}
+.cassino .capa{background:radial-gradient(circle at 50% 55%,#5a3a2a,#2E2E2D)}
+.frases .capa{background:#F3EDE1}
+.dica{margin-top:14px;font-size:12px;color:var(--muted)}
+</style></head><body>
+<header>
+  <div class="marca"><div class="img"></div><div><b>Bingo dos Nanicos</b><small>Sítio do Mitz · 6 online agora</small></div></div>
+  <div class="dir">
+    <div class="chip m"><span class="moeda">$</span><div><b>1.284</b> <small>· 1º lugar</small></div></div>
+    <div class="chip"><img src="../../public/arte/nanicos/4-rosto.webp" alt="">Gamer</div>
+  </div>
+</header>
+<main>
+  <div class="ola"><h1>E aí, Gamer</h1><span>12 dias seguidos · bônus de hoje: +36 moedas</span></div>
+  <div class="grade">
+    <div class="card sitio foco"><div class="capa"><div class="rostos" id="r1"></div></div><div class="rod"><div><h2>Sítio</h2><p>6 nanicos no hall agora</p></div><span class="ir">Entrar →</span></div></div>
+    <div class="card truco"><div class="capa"><svg viewBox="0 0 380 200" width="100%" height="100%"><g transform="translate(190 108)"><rect x="-70" y="-46" width="58" height="84" rx="8" fill="#FAF9F6" transform="rotate(-14)"/><rect x="-26" y="-50" width="58" height="84" rx="8" fill="#FAF9F6"/><rect x="18" y="-46" width="58" height="84" rx="8" fill="#FAF9F6" transform="rotate(14)"/><text x="3" y="-20" font-family="Unbounded" font-weight="800" font-size="20" fill="#B4442F">1</text><text x="3" y="8" font-family="Unbounded" font-size="22" fill="#B4442F" text-anchor="middle" dx="-2">♥</text></g></svg><div class="rostos" id="r2"></div></div><div class="rod"><div><h2>Truco</h2><p>1 mesa aberta · falta 1</p></div><span class="ir">Jogar →</span></div></div>
+    <div class="card vivo"><div class="capa"><span class="pill">AO VIVO</span><svg viewBox="0 0 380 200" width="100%" height="100%"><rect x="70" y="30" width="240" height="135" rx="6" fill="#4C5FA8"/><rect x="70" y="30" width="240" height="55" fill="#7E6BC4"/><rect x="160" y="80" width="60" height="38" fill="#C4A06A"/></svg><div class="rostos" id="r3"></div></div><div class="rod"><div><h2>Ao vivo</h2><p>Alemão está transmitindo</p></div><span class="ir">Assistir →</span></div></div>
+    <div class="card jogar"><div class="capa"><span class="pill">EM PARTIDA</span><svg viewBox="0 0 380 200" width="100%" height="100%"><g font-family="Unbounded" font-weight="700" font-size="11" fill="#C9D2DA">${''}</g><g id="lanes"></g></svg><div class="rostos" id="r4"></div></div><div class="rod"><div><h2>Jogar</h2><p>Escalação, cartela e roleta do rodízio</p></div><span class="ir">Abrir →</span></div></div>
+    <div class="card cassino"><div class="capa"><svg viewBox="0 0 380 200" width="100%" height="100%"><g transform="translate(190 100)"><circle r="78" fill="#7A4E2E"/><circle r="70" fill="#1d1d1d"/><g id="roda"></g><circle r="22" fill="#B08D57"/></g></svg></div><div class="rod"><div><h2>Cassino</h2><p>Pitoco ganhou 140 na roleta</p></div><span class="ir">Apostar →</span></div></div>
+    <div class="card frases"><div class="capa"><svg viewBox="0 0 380 200" width="100%" height="100%" font-family="Onest" font-size="15" font-weight="700"><rect x="40" y="34" width="210" height="40" rx="20" fill="#fff" stroke="#E4E0D6"/><text x="60" y="59" fill="#353535">"bora uma ranked?"</text><rect x="120" y="88" width="220" height="40" rx="20" fill="#fff" stroke="#E4E0D6"/><text x="140" y="113" fill="#353535">"foi o lag, juro"</text><rect x="60" y="142" width="170" height="40" rx="20" fill="#fff" stroke="#E4E0D6"/><text x="80" y="167" fill="#353535">"tiltei, saí"</text></svg></div><div class="rod"><div><h2>Nanicadas</h2><p>87 cadastradas · 2 novas hoje</p></div><span class="ir">Ver →</span></div></div>
+  </div>
+  <p class="dica">Ao entrar no site, o seu boneco já aparece no Sítio para todo mundo, mesmo que você fique aqui no início.</p>
+</main>
+<script>
+const R="../../public/arte/nanicos/";
+const rostos=(id,ns,txt)=>{const d=document.getElementById(id);d.innerHTML=ns.map(n=>`<img src="${R}${n}-rosto.webp" alt="">`).join("")+(txt?`<span>${txt}</span>`:"")};
+rostos("r1",[4,9,12,1,2,10],"+0");document.querySelector("#r1 span").remove();
+rostos("r2",[9,12,1]);rostos("r3",[2],"");rostos("r4",[12,10,8,3,1],"");
+const NS="http://www.w3.org/2000/svg";
+const g=document.getElementById("roda");for(let k=0;k<18;k++){const a0=k/18*2*Math.PI,a1=(k+1)/18*2*Math.PI,r=70;const p=document.createElementNS(NS,"path");p.setAttribute("d",`M0 0 L${r*Math.cos(a0)} ${r*Math.sin(a0)} A${r} ${r} 0 0 1 ${r*Math.cos(a1)} ${r*Math.sin(a1)} Z`);p.setAttribute("fill",k===0?"#3E7A3E":k%2?"#B4442F":"#1d1d1d");p.setAttribute("stroke","#B08D57");p.setAttribute("stroke-width",".6");g.appendChild(p)}
+const L=document.getElementById("lanes");["TOP","JG","MID","ADC","SUP"].forEach((t,k)=>{const x=40+k*64;const r=document.createElementNS(NS,"rect");r.setAttribute("x",x);r.setAttribute("y",50);r.setAttribute("width",52);r.setAttribute("height",78);r.setAttribute("rx",10);r.setAttribute("fill","rgba(255,255,255,.08)");r.setAttribute("stroke","rgba(255,255,255,.2)");L.appendChild(r);const tx=document.createElementNS(NS,"text");tx.setAttribute("x",x+26);tx.setAttribute("y",146);tx.setAttribute("text-anchor","middle");tx.setAttribute("font-family","Unbounded");tx.setAttribute("font-weight","700");tx.setAttribute("font-size","10");tx.setAttribute("fill","#C9D2DA");tx.textContent=t;L.appendChild(tx);const im=document.createElementNS(NS,"image");im.setAttribute("href",`${R}${[12,1,10,8,3][k]}-rosto.webp`);im.setAttribute("x",x+6);im.setAttribute("y",62);im.setAttribute("width",40);im.setAttribute("height",40);L.appendChild(im)});
+document.getElementById("r4").innerHTML="";
+const lg=document.querySelector(".marca .img");for(const a of["pitoco","max","gamer","john","alemao"]){const i=document.createElement("i");i.style.backgroundImage=`url(../assets/bonecos/${a}.webp)`;lg.appendChild(i)}
+</script>
+</body></html>

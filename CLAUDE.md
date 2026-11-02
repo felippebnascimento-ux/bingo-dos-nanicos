@@ -73,8 +73,9 @@ src/
                        reacoes.ts, desenho.ts, estado.ts (store + preferências), pip.ts;
                        telas: LiveView, Palco, Painel, Cameras, Video, Voos, Rosto, CamNaSala, CamBotoes
     chat/              chat.ts (um chat por sala: "geral" no lobby e o id da sala dentro dela) e ChatPainel
-    cassino/           aba Cassino (moedas fictícias): regras.ts (roleta europeia e conferir() com HMAC-SHA256;
-                       puro e testado) e CassinoView (mesa, roda, "Como conferir que é justo", histórico, feed)
+    cassino/           aba Cassino (moedas fictícias): regras.ts (roleta, limbo, dado, caça-níquel, conferir() e
+                       refazer() com HMAC-SHA256; puro e testado), estado.ts (dados do banco), Jogos.tsx (limbo,
+                       maior ou menor e caça-níquel) e CassinoView (seletor de jogo, roleta, conferência, histórico)
     salas/             salas tipo lan house: trocar.ts (entrarSala: encerra tela e câmera, troca o canal,
                        carrega escalação e chat) e Salas.tsx (janela das salas com cartões e chat geral; "Você está em")
     truco/             engine.ts (regras, puro e testado), valida.ts (confere mesa vinda da sala),
@@ -220,6 +221,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 | `cassino_sementes` | semente do servidor de cada um (`semente` secreta, `hash`, `semente_cliente`, `nonce`) | cada um lê só `hash`, `semente_cliente` e `nonce` da sua; **ninguém lê `semente`** |
 | `cassino_sementes_antigas` | sementes reveladas (em hex), para conferir as apostas | cada um lê as suas |
 | `cassino_apostas` | apostas (`jogo`, `aposta`, `escolha`, `resultado`, `pagou`, `hash`, `nonce`) | cada um lê as suas; o feed das últimas 20 vem de `cassino_feed()` |
+| `cassino_rolos`, `cassino_pagamentos` | pesos dos símbolos e tabela de pagamentos do caça-níquel (o banco é a fonte; RTP conferido no SQL) | nanicos leem; ninguém grava pelo site |
 | `salas` | salas tipo lan house (`id`, `nome`, `jogo` lol/cs/outro, `discord`, `ordem`): `lol-1`, `lol-2`, `cs`, `resenha` | ninguém pelo site (só o admin cria) |
 | `chat_messages` | chat (`sala` = `'geral'` no lobby ou o id da sala; apaga sozinho após 30 dias) | enviar (o autor é sempre quem está logado; sala que não existe é recusada) |
 | `limites` | contador anti-spam | ninguém |
@@ -241,8 +243,9 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
   - **Se o SQL não rodou,** o site esconde as moedas e só deixa um aviso no console.
 - **Cassino (seção 11 do `seguranca.sql`, usa `pgcrypto`):**
   - **O sorteio é no banco:** `u` = primeiros 52 bits de `HMAC-SHA256(semente do servidor, "semente_cliente:nonce")`, feito por `cassino_numero()` (interna, incrementa o nonce com `for update`). O navegador nunca sorteia.
-  - **RPCs:** `apostar_roleta(aposta 5–100, tipo, valor)` (debita com `creditar`, sorteia, paga e grava), `cassino_estado()`, `trocar_semente(cliente)` (revela a antiga) e `cassino_feed()`.
-  - **Conferência:** `conferir()` em `features/cassino/regras.ts` refaz a conta com `crypto.subtle`. A roleta devolve 36/37 (a casa leva 2,7%).
+  - **RPCs:** `apostar_roleta(aposta 5–100, tipo, valor)`, `apostar_limbo(aposta, alvo 1,01–100)`, `apostar_dado(aposta, lado, n)` (chance de 1% a 95%) e `apostar_slot(aposta)` (3 nonces seguidos, um por rolo). Todas debitam com `creditar`, sorteiam com `cassino_numero`, pagam e gravam em `cassino_apostas`. E `cassino_estado()`, `trocar_semente(cliente)` (revela a antiga) e `cassino_feed()`.
+  - **Quanto a casa leva:** roleta 2,7%, limbo e dado 3%, caça-níquel cerca de 8% (o fim da seção 11b recalcula o RTP exato da tabela e falha fora de 91,5%–92,5%).
+  - **Conferência:** `conferir()` e `refazer()` em `features/cassino/regras.ts` refazem a conta de qualquer jogo com `crypto.subtle`.
 - **Atributos votados (seção 9 do `seguranca.sql`):**
   - **Anonimato:** `atributos_votos` não tem `select` para ninguém. O site só recebe média e contagem por `atributos_de(nanico)` e `atributos_todos()`. Com menos de 3 votos, a média sai `null` ("poucos votos").
   - **Votar:** `votar_atributos(nanico, notas)` exige as 6 notas inteiras de 0 a 10, não deixa votar em si mesmo e só deixa mudar o voto em alguém uma vez a cada 7 dias (o erro diz a data).
@@ -295,7 +298,22 @@ A versão (`v1.NN`) é **calculada sozinha** pelo tamanho do array `CHANGELOG` e
 
 ## 8. Como trabalhar
 
-1. Crie uma **branch** (`git checkout -b minha-mudanca`). Não faça commit direto na principal sem combinar com o Felippe.
+### 0. Antes de qualquer mudança: leia o que os outros fizeram
+Mais de uma pessoa (e mais de uma IA) mexe no site. **Toda tarefa começa assim, sem exceção:**
+
+1. **GitHub:**
+   - `git fetch` e `git pull` na branch principal;
+   - leia os commits novos (`git log --oneline -20` e `git show <commit>`);
+   - leia o diff dos arquivos que você vai tocar.
+   - Se alguém mudou o mesmo trecho, parta da versão nova; nunca sobrescreva com uma cópia antiga.
+2. **Supabase:** confira o estado real do banco antes de escrever SQL:
+   - tabelas, colunas, políticas (`pg_policies`), gatilhos e funções;
+   - as Edge Functions publicadas.
+   - Se o banco tiver algo que não está nos `.sql` do repositório, **pare e pergunte ao Felippe** antes de mudar.
+3. **Vercel:** veja se a última publicação deu certo antes de publicar outra por cima.
+4. Só então planeje e faça a mudança. No fim, diga em uma linha o que encontrou de novo dos outros, se encontrou.
+
+1. Crie uma **branch** (`git checkout -b minha-mudanca`) para cada mudança.
 2. Faça a mudança **pequena e focada**. Não reformate arquivos que você não mudou.
 3. Antes do commit, confira:
    - [ ] `npm run check` passa (typecheck, lint, testes e build);
@@ -305,7 +323,7 @@ A versão (`v1.NN`) é **calculada sozinha** pelo tamanho do array `CHANGELOG` e
    - [ ] a entrada nova está no `CHANGELOG`;
    - [ ] se mexeu no banco: o SQL roda duas vezes seguidas sem erro, e as permissões continuam fechadas.
 4. Commit com mensagem em português dizendo **o quê** e **por quê** (ex.: `Truco: botão de ir ao mazo pede confirmação`).
-5. Abra um Pull Request e espere outra pessoa olhar antes de juntar.
+5. **Juntar na principal:** desde 02/11/2026 (decisão do João, com o ok do grupo), quem terminou e conferiu tudo acima pode juntar direto na principal, sem esperar revisão ("trocar a roda com o carro andando"). Abrir Pull Request continua bom para registrar o que mudou, mas não é obrigatório. Antes de juntar, refaça o passo 0 (pegue o que os outros juntaram) e rode o `npm run check` de novo.
 
 ### Mudanças no Supabase
 - **Nunca** apague tabelas nem dados pelo Table Editor sem avisar o grupo.

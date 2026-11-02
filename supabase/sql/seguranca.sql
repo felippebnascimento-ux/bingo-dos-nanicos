@@ -651,7 +651,7 @@ create table if not exists public.cassino_sementes_antigas (
 create table if not exists public.cassino_apostas (
   id        bigint generated always as identity primary key,
   user_id   uuid not null references auth.users(id) on delete cascade,
-  jogo      text not null check (jogo in ('roleta')),
+  jogo      text not null check (jogo in ('roleta', 'limbo', 'dado', 'slot')),
   aposta    int not null check (aposta between 5 and 100),
   escolha   jsonb not null,
   resultado jsonb not null,
@@ -798,7 +798,162 @@ end $$;
 revoke all on function public.cassino_feed() from public, anon;
 grant execute on function public.cassino_feed() to authenticated;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas e as 3 funções do cassino
+-- 11b) cassino, parte 2: limbo, maior ou menor (dado) e caça-níquel dos nanicos -----------------
+--      Mesmo motor (cassino_numero), mesmas regras: aposta de 5 a 100, creditar, limitar e cassino_apostas.
+alter table public.cassino_apostas drop constraint if exists cassino_apostas_jogo_check;
+alter table public.cassino_apostas add constraint cassino_apostas_jogo_check check (jogo in ('roleta', 'limbo', 'dado', 'slot'));
+
+-- limbo: resultado = max(1, floor(0,97 / (1 − u) × 100) / 100); ganha alvo × aposta se o resultado ≥ alvo (a casa leva 3%)
+create or replace function public.apostar_limbo(p_aposta int, p_alvo numeric) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+  r     record;
+  v_res numeric;
+  v_pg  int := 0;
+  v_sal int;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
+  if p_aposta is null or p_aposta not between 5 and 100 then raise exception 'A aposta vai de 5 a 100 moedas.' using errcode = 'P0001'; end if;
+  if p_alvo is null or p_alvo < 1.01 or p_alvo > 100 or round(p_alvo, 2) <> p_alvo then
+    raise exception 'O alvo vai de 1,01× a 100×, com até 2 casas depois da vírgula.' using errcode = 'P0001';
+  end if;
+  perform public.limitar('cassino', 30, interval '1 minute', 'Calma: muitas apostas seguidas. Espere um pouco.');
+  perform public.creditar(v_uid, -p_aposta, 'cassino', 'limbo');
+  select * into r from public.cassino_numero(v_uid);
+  v_res := greatest(1, floor((0.97 / (1 - r.u)) * 100) / 100);
+  if v_res >= p_alvo then v_pg := floor(p_aposta * p_alvo)::int; end if;
+  if v_pg > 0 then v_sal := public.creditar(v_uid, v_pg, 'cassino', 'limbo');
+  else select saldo into v_sal from public.carteiras where user_id = v_uid; end if;
+  insert into public.cassino_apostas (user_id, jogo, aposta, escolha, resultado, pagou, hash, nonce)
+    values (v_uid, 'limbo', p_aposta, jsonb_build_object('alvo', p_alvo), jsonb_build_object('valor', v_res), v_pg, r.hash, r.nonce);
+  return jsonb_build_object('valor', v_res, 'pagou', v_pg, 'saldo', v_sal, 'hash', r.hash, 'nonce', r.nonce);
+end $$;
+revoke all on function public.apostar_limbo(int, numeric) from public, anon;
+grant execute on function public.apostar_limbo(int, numeric) to authenticated;
+
+-- maior ou menor: número de 0 a 9999; "abaixo de N" ganha com número < N, "acima de N" com número > N;
+-- paga aposta × 0,97 / chance (a casa leva 3%); a chance fica entre 1% e 95%
+create or replace function public.apostar_dado(p_aposta int, p_lado text, p_n int) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid    uuid := auth.uid();
+  r        record;
+  v_chance numeric;
+  v_num    int;
+  v_pg     int := 0;
+  v_sal    int;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
+  if p_aposta is null or p_aposta not between 5 and 100 then raise exception 'A aposta vai de 5 a 100 moedas.' using errcode = 'P0001'; end if;
+  if p_lado is null or p_lado not in ('abaixo', 'acima') or p_n is null or p_n not between 0 and 9999 then
+    raise exception 'Aposta inválida.' using errcode = 'P0001';
+  end if;
+  v_chance := case when p_lado = 'abaixo' then p_n / 10000.0 else (9999 - p_n) / 10000.0 end;
+  if v_chance < 0.01 or v_chance > 0.95 then raise exception 'A chance precisa ficar entre 1%% e 95%%.' using errcode = 'P0001'; end if;
+  perform public.limitar('cassino', 30, interval '1 minute', 'Calma: muitas apostas seguidas. Espere um pouco.');
+  perform public.creditar(v_uid, -p_aposta, 'cassino', 'dado');
+  select * into r from public.cassino_numero(v_uid);
+  v_num := floor(r.u * 10000)::int;
+  if (p_lado = 'abaixo' and v_num < p_n) or (p_lado = 'acima' and v_num > p_n) then v_pg := floor(p_aposta * 0.97 / v_chance)::int; end if;
+  if v_pg > 0 then v_sal := public.creditar(v_uid, v_pg, 'cassino', 'dado');
+  else select saldo into v_sal from public.carteiras where user_id = v_uid; end if;
+  insert into public.cassino_apostas (user_id, jogo, aposta, escolha, resultado, pagou, hash, nonce)
+    values (v_uid, 'dado', p_aposta, jsonb_build_object('lado', p_lado, 'n', p_n), jsonb_build_object('numero', v_num), v_pg, r.hash, r.nonce);
+  return jsonb_build_object('numero', v_num, 'pagou', v_pg, 'saldo', v_sal, 'hash', r.hash, 'nonce', r.nonce);
+end $$;
+revoke all on function public.apostar_dado(int, text, int) from public, anon;
+grant execute on function public.apostar_dado(int, text, int) to authenticated;
+
+-- caça-níquel: os 14 rostos (n1…n14) e dois especiais (bola e moeda), com pesos e pagamentos AQUI no banco
+create table if not exists public.cassino_rolos (
+  simbolo text primary key check (simbolo ~ '^(n([1-9]|1[0-4])|bola|moeda)$'),
+  peso    int not null check (peso > 0),
+  ordem   int not null
+);
+create table if not exists public.cassino_pagamentos (
+  combinacao    text primary key check (combinacao in ('tres_bola', 'tres_moeda', 'tres_rosto', 'duas_moedas', 'uma_moeda')),
+  multiplicador numeric not null check (multiplicador > 0)
+);
+insert into public.cassino_rolos (simbolo, peso, ordem)
+  select 'n' || k, 10, k from generate_series(1, 14) k
+  union all select 'bola', 4, 15 union all select 'moeda', 6, 16
+on conflict (simbolo) do nothing;
+insert into public.cassino_pagamentos (combinacao, multiplicador) values
+  ('tres_bola', 1000), ('tres_moeda', 200), ('tres_rosto', 80), ('duas_moedas', 25), ('uma_moeda', 4)
+on conflict (combinacao) do nothing;
+alter table public.cassino_rolos      enable row level security;
+alter table public.cassino_pagamentos enable row level security;
+revoke all on public.cassino_rolos, public.cassino_pagamentos from public, anon, authenticated;
+grant select on public.cassino_rolos, public.cassino_pagamentos to authenticated;
+drop policy if exists "nanicos veem os rolos"      on public.cassino_rolos;
+drop policy if exists "nanicos veem os pagamentos" on public.cassino_pagamentos;
+create policy "nanicos veem os rolos"      on public.cassino_rolos      for select to authenticated using (public.eh_nanico());
+create policy "nanicos veem os pagamentos" on public.cassino_pagamentos for select to authenticated using (public.eh_nanico());
+
+-- quanto paga uma combinação: 3 iguais (bola, moeda ou rosto) ou a quantidade de moedas
+create or replace function public.cassino_slot_mult(a text, b text, c text) returns numeric
+language sql stable security definer set search_path = public as $$
+  select coalesce((select multiplicador from public.cassino_pagamentos where combinacao =
+    case
+      when a = b and b = c then case a when 'bola' then 'tres_bola' when 'moeda' then 'tres_moeda' else 'tres_rosto' end
+      when (a = 'moeda')::int + (b = 'moeda')::int + (c = 'moeda')::int = 2 then 'duas_moedas'
+      when (a = 'moeda')::int + (b = 'moeda')::int + (c = 'moeda')::int = 1 then 'uma_moeda'
+    end), 0);
+$$;
+revoke all on function public.cassino_slot_mult(text, text, text) from public, anon, authenticated;
+
+-- símbolo de um rolo para um número u: anda pelos pesos na ordem dos símbolos
+create or replace function public.cassino_simbolo(p_u numeric) returns text
+language sql stable security definer set search_path = public as $$
+  select simbolo from (
+    select simbolo, sum(peso) over (order by ordem) as acum, sum(peso) over () as total from public.cassino_rolos) t
+   where floor(p_u * total) < acum order by acum limit 1;
+$$;
+revoke all on function public.cassino_simbolo(numeric) from public, anon, authenticated;
+
+-- caça-níquel: 3 números (3 nonces seguidos), um por rolo; paga aposta × multiplicador da tabela (a casa leva 8%)
+create or replace function public.apostar_slot(p_aposta int) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+  r1 record; r2 record; r3 record;
+  s1 text; s2 text; s3 text;
+  v_pg  int := 0;
+  v_sal int;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
+  if p_aposta is null or p_aposta not between 5 and 100 then raise exception 'A aposta vai de 5 a 100 moedas.' using errcode = 'P0001'; end if;
+  perform public.limitar('cassino', 30, interval '1 minute', 'Calma: muitas apostas seguidas. Espere um pouco.');
+  perform public.creditar(v_uid, -p_aposta, 'cassino', 'slot');
+  select * into r1 from public.cassino_numero(v_uid);
+  select * into r2 from public.cassino_numero(v_uid);
+  select * into r3 from public.cassino_numero(v_uid);
+  s1 := public.cassino_simbolo(r1.u); s2 := public.cassino_simbolo(r2.u); s3 := public.cassino_simbolo(r3.u);
+  v_pg := floor(p_aposta * public.cassino_slot_mult(s1, s2, s3))::int;
+  if v_pg > 0 then v_sal := public.creditar(v_uid, v_pg, 'cassino', 'slot');
+  else select saldo into v_sal from public.carteiras where user_id = v_uid; end if;
+  insert into public.cassino_apostas (user_id, jogo, aposta, escolha, resultado, pagou, hash, nonce)
+    values (v_uid, 'slot', p_aposta, '{}'::jsonb, jsonb_build_object('simbolos', jsonb_build_array(s1, s2, s3)), v_pg, r1.hash, r1.nonce);
+  return jsonb_build_object('simbolos', jsonb_build_array(s1, s2, s3), 'pagou', v_pg, 'saldo', v_sal, 'hash', r1.hash, 'nonce', r1.nonce);
+end $$;
+revoke all on function public.apostar_slot(int) from public, anon;
+grant execute on function public.apostar_slot(int) to authenticated;
+
+-- conferência do RTP do caça-níquel: soma exata de todas as combinações com os pesos; tem que dar entre 91,5% e 92,5%
+do $$
+declare
+  v_rtp numeric;
+begin
+  select sum(a.peso::numeric * b.peso * c.peso * public.cassino_slot_mult(a.simbolo, b.simbolo, c.simbolo)) / power((select sum(peso) from public.cassino_rolos), 3)::numeric
+    into v_rtp from public.cassino_rolos a, public.cassino_rolos b, public.cassino_rolos c;
+  if v_rtp < 0.915 or v_rtp > 0.925 then
+    raise exception 'RTP do caça-níquel fora do combinado: % (tem que ficar entre 0,915 e 0,925). Ajuste pesos e multiplicadores.', round(v_rtp, 4);
+  end if;
+  raise notice 'RTP do caça-níquel: %', round(v_rtp, 4);
+end $$;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas e as 6 funções do cassino
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -814,5 +969,5 @@ union all
 select id, 'sala' from public.salas
 union all
 select proname::text, 'cassino' from pg_proc
- where pronamespace = 'public'::regnamespace and proname in ('apostar_roleta', 'trocar_semente', 'cassino_estado')
+ where pronamespace = 'public'::regnamespace and proname in ('apostar_roleta', 'apostar_limbo', 'apostar_dado', 'apostar_slot', 'trocar_semente', 'cassino_estado')
 order by 2, 1;

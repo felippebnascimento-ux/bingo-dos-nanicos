@@ -26,7 +26,7 @@
 .roleta-fora .btn{width:auto;padding-inline:4px}
 .roleta-fora .btn.on{background:var(--accent);color:var(--accent-ink)}
 @media (max-width:700px){.roleta-fora{grid-template-columns:repeat(3,minmax(0,1fr))}}
-.roleta .roleta-fichas{justify-self:start;display:inline-flex;flex-wrap:wrap;width:auto}
+.seg.roleta-fichas{justify-self:start;display:inline-flex;flex-wrap:wrap;width:auto;margin:0}
 .roleta-girar{justify-self:stretch}
 .roleta .hint{margin:0}
 .cassino-lado{display:grid;gap:14px;min-width:0}
@@ -50,3 +50,28 @@
 .casa-mini.verde{background:var(--olive)}
 .cassino-lista .ganhou{color:var(--accent-text);text-align:right}
 .cassino-lista .perdeu{color:var(--muted);text-align:right;font-weight:500}
+
+/* seletor de jogo e os jogos novos (limbo, maior ou menor e caça-níquel) */
+.cassino-jogos{grid-template-columns:repeat(4,minmax(0,1fr));margin:0}
+@media (max-width:520px){.cassino-jogos{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.jogo{display:grid;gap:12px}
+.jogo .hint{margin:0}
+.jogo .seg{margin:0}
+.jogo-btn{justify-self:stretch}
+.limbo-num{justify-self:center;min-width:180px;padding:14px 22px;border-radius:var(--r-md);text-align:center;font:800 44px var(--display);font-variant-numeric:tabular-nums;background:var(--surface-2)}
+.limbo-num.ganhou{color:var(--accent-text)}
+.jogo-linha{display:flex;flex-wrap:wrap;gap:8px}
+.jogo-linha input{flex:1;min-width:90px}
+.jogo-linha .btn{width:auto}
+.dado-n{width:100%;accent-color:var(--accent)}
+.slot-rolos{justify-self:center;display:flex;gap:10px}
+.slot-rolo{width:84px;height:84px;display:grid;place-items:center;border-radius:var(--r-md);background:var(--surface-2);border:3px solid var(--accent);overflow:hidden}
+.slot-rolo.girando .slot-img,.slot-rolo.girando .slot-moeda{filter:blur(1px)}
+.slot-img{width:68px;height:68px;border-radius:50%;object-fit:cover}
+.slot-moeda{width:56px;height:56px;font-size:22px}
+@media (max-width:420px){.slot-rolo{width:72px;height:72px}.slot-img{width:58px;height:58px}}
+.slot-tabela summary{cursor:pointer;font-weight:700}
+.slot-tabela ul{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:4px}
+.slot-tabela li{display:flex;justify-content:space-between;gap:10px;font-size:14px}
+.casa-mini.neutro{background:var(--olive)}
+.cassino-lista small{color:var(--muted);font-size:11px}

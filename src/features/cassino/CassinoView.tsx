@@ -1,22 +1,18 @@
 "use client";
 /*
- * Aba Cassino: moedas fictícias (sem compra e sem saque). O primeiro jogo é a roleta europeia.
- * O banco sorteia (apostar_roleta); aqui só escolhemos a aposta, giramos a roda até a casa que
- * o banco mandou e mostramos como conferir que o resultado não foi trocado.
+ * Aba Cassino: moedas fictícias (sem compra e sem saque): roleta europeia, limbo, maior ou menor
+ * e caça-níquel. O banco sorteia; aqui só escolhemos a aposta, animamos até o resultado que
+ * o banco mandou e mostramos como conferir que nada foi trocado.
  */
 import { useEffect, useRef, useState } from "react";
-import { create } from "zustand";
 import { ajustarSaldo, useCarteira } from "@/lib/carteira";
 import { formatarMoedas } from "@/lib/moedas";
 import { sb } from "@/lib/supabase";
 import { toast } from "@/lib/toast";
 import { reduzMovimento } from "@/lib/util";
-import { casaDaRoleta, conferir, corDa, FICHAS, hashDaSemente, vantagemDaCasa, type TipoAposta } from "./regras";
-
-type Estado = { hash: string; cliente: string; nonce: number };
-type Aposta = { id: number; aposta: number; escolha: { tipo: TipoAposta; valor: number }; resultado: { casa: number; cor: string }; pagou: number; hash: string; nonce: number; em: string };
-type Revelada = { id: number; semente_hex: string; hash: string; semente_cliente: string; ultimo_nonce: number };
-type Feed = { nome: string | null; aposta: number; pagou: number; resultado: { casa: number } };
+import { carregar, msgDe, useCassino, type Aposta, type Jogo, type Revelada } from "./estado";
+import { CacaNiquel, Fichas, Limbo, MaiorMenor } from "./Jogos";
+import { corDa, hashDaSemente, refazer, resultadoGuardado, rtpSlot, vantagemDaCasa, type TipoAposta } from "./regras";
 
 const NUMEROS = Array.from({ length: 36 }, (_, k) => k + 1);
 const FORA: { tipo: TipoAposta; valor: number; nome: string }[] = [
@@ -28,39 +24,27 @@ const FORA: { tipo: TipoAposta; valor: number; nome: string }[] = [
   { tipo: "metade", valor: 1, nome: "19–36" },
 ];
 const nomeAposta = (t: TipoAposta, v: number) => (t === "numero" ? `no ${v}` : `no ${FORA.find((f) => f.tipo === t && f.valor === v)?.nome}`);
-const msgDe = (e: unknown, padrao: string) => {
-  const m = e && typeof e === "object" && "message" in e ? String((e as { message: unknown }).message) : "";
-  return m && m.length < 120 && !/fetch|network/i.test(m) ? m : padrao;
-};
+const JOGOS: { id: Jogo; nome: string }[] = [
+  { id: "roleta", nome: "Roleta" },
+  { id: "limbo", nome: "Limbo" },
+  { id: "dado", nome: "Maior ou menor" },
+  { id: "slot", nome: "Caça-níquel" },
+];
+const NOME_JOGO: Record<Jogo, string> = { roleta: "Roleta", limbo: "Limbo", dado: "Maior ou menor", slot: "Caça-níquel" };
 
-/* o que veio do banco (hash, apostas, sementes reveladas, feed); `ligado` = null enquanto não carregou */
-const useCassino = create<{ ligado: boolean | null; estado: Estado | null; historico: Aposta[]; reveladas: Revelada[]; feed: Feed[] }>()(() => ({
-  ligado: null,
-  estado: null,
-  historico: [],
-  reveladas: [],
-  feed: [],
-}));
-
-async function carregar() {
-  const { data, error } = await sb().rpc("cassino_estado");
-  if (error) return useCassino.setState({ ligado: false });
-  useCassino.setState({ ligado: true, estado: data as Estado });
-  const [h, r, f] = await Promise.all([
-    sb().from("cassino_apostas").select("id,aposta,escolha,resultado,pagou,hash,nonce,em").order("em", { ascending: false }).limit(200),
-    sb().from("cassino_sementes_antigas").select("id,semente_hex,hash,semente_cliente,ultimo_nonce").order("revelada_em", { ascending: false }).limit(10),
-    sb().rpc("cassino_feed"),
-  ]);
-  useCassino.setState({
-    ...(Array.isArray(h.data) ? { historico: h.data as Aposta[] } : {}),
-    ...(Array.isArray(r.data) ? { reveladas: r.data as Revelada[] } : {}),
-    ...(Array.isArray(f.data) ? { feed: f.data as Feed[] } : {}),
-  });
+/** Uma linha do histórico: o que apostou e o que saiu, em poucas palavras. */
+function descreve(a: Aposta): { aposta: string; saiu: string; cor?: string } {
+  const e = a.escolha, r = a.resultado;
+  if (a.jogo === "roleta") return { aposta: `${a.aposta} ${nomeAposta(e.tipo as TipoAposta, Number(e.valor))}`, saiu: String(r.casa), cor: corDa(Number(r.casa)) };
+  if (a.jogo === "limbo") return { aposta: `${a.aposta} no ${String(e.alvo).replace(".", ",")}×`, saiu: `${Number(r.valor).toFixed(2).replace(".", ",")}×` };
+  if (a.jogo === "dado") return { aposta: `${a.aposta} ${e.lado === "abaixo" ? "abaixo" : "acima"} de ${e.n}`, saiu: String(r.numero) };
+  return { aposta: `${a.aposta} no caça-níquel`, saiu: Array.isArray(r.simbolos) ? `${r.simbolos.length} rolos` : "" };
 }
 
 export function CassinoView({ hidden }: { hidden: boolean }) {
   const saldo = useCarteira((s) => s.carteira?.saldo);
-  const { ligado, estado, historico, reveladas, feed } = useCassino();
+  const { ligado, estado, historico, reveladas, feed, rolos, pagamentos } = useCassino();
+  const [jogo, setJogo] = useState<Jogo>("roleta");
   const [escolha, setEscolha] = useState<{ tipo: TipoAposta; valor: number }>({ tipo: "cor", valor: 0 });
   const [ficha, setFicha] = useState<number>(10);
   const [roda, setRoda] = useState<number | null>(null);
@@ -119,7 +103,7 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
     const minhas = historico.filter((a) => a.hash === r.hash);
     const hashOk = (await hashDaSemente(r.semente_hex)) === r.hash;
     let batem = 0;
-    for (const a of minhas) if (casaDaRoleta(await conferir(r.semente_hex, r.semente_cliente, a.nonce)) === a.resultado.casa) batem++;
+    for (const a of minhas) if ((await refazer(a.jogo, a.nonce, r.semente_hex, r.semente_cliente, rolos)) === resultadoGuardado(a.jogo, a.resultado)) batem++;
     setConferencia((c) => ({
       ...c,
       [r.id]: `${hashOk ? "A semente bate com o hash mostrado antes" : "A semente NÃO bate com o hash"} · ${batem} de ${minhas.length} apostas recalculadas batem`,
@@ -127,6 +111,9 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
   };
 
   const corRoda = roda === null ? "" : corDa(roda);
+  /* quanto a casa leva no jogo escolhido */
+  const casaLeva =
+    jogo === "roleta" ? vantagemDaCasa() : jogo === "slot" ? (rolos.length ? Math.round((1 - rtpSlot(rolos, pagamentos)) * 1000) / 10 : 8) : 3;
 
   return (
     <section id="view-cassino" className="inner" hidden={hidden}>
@@ -141,10 +128,20 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
             <span className="cassino-saldo">
               <b>{saldo !== undefined ? formatarMoedas(saldo) : "…"}</b> moedas
             </span>
-            <span className="hint">Moedas de mentira: não dá para comprar nem sacar. A casa leva {String(vantagemDaCasa()).replace(".", ",")}%.</span>
+            <span className="hint">Moedas de mentira: não dá para comprar nem sacar. Neste jogo, a casa leva {String(casaLeva).replace(".", ",")}%.</span>
+          </div>
+          <div className="seg cassino-jogos" role="radiogroup" aria-label="Escolha o jogo">
+            {JOGOS.map((j) => (
+              <button key={j.id} type="button" role="radio" aria-checked={jogo === j.id} className={jogo === j.id ? "on" : undefined} onClick={() => setJogo(j.id)}>
+                {j.nome}
+              </button>
+            ))}
           </div>
           <div className="cassino-grid">
-            <div className="block roleta">
+            {jogo === "limbo" && <Limbo />}
+            {jogo === "dado" && <MaiorMenor />}
+            {jogo === "slot" && <CacaNiquel />}
+            <div className="block roleta" hidden={jogo !== "roleta"}>
               <div className={"roleta-roda " + corRoda + (girando ? " girando" : "")} aria-live="polite" aria-label={roda === null ? "Roleta parada" : `Deu ${roda}`}>
                 {roda ?? "?"}
               </div>
@@ -177,13 +174,7 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
                   </button>
                 ))}
               </div>
-              <div className="seg roleta-fichas" role="radiogroup" aria-label="Valor da aposta">
-                {FICHAS.map((v) => (
-                  <button key={v} type="button" role="radio" aria-checked={ficha === v} className={ficha === v ? "on" : undefined} onClick={() => setFicha(v)}>
-                    {v}
-                  </button>
-                ))}
-              </div>
+              <Fichas ficha={ficha} setFicha={setFicha} />
               <button type="button" className="btn roleta-girar" disabled={girando} onClick={girar}>
                 {girando ? "Girando…" : `Girar: ${ficha} moedas ${nomeAposta(escolha.tipo, escolha.valor)}`}
               </button>
@@ -231,15 +222,18 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
                 <div className="block">
                   <h3>Minhas apostas</h3>
                   <ul className="cassino-lista">
-                    {historico.slice(0, 12).map((a) => (
-                      <li key={a.id}>
-                        <span>
-                          {a.aposta} {nomeAposta(a.escolha.tipo, a.escolha.valor)}
-                        </span>
-                        <span className={"casa-mini " + corDa(a.resultado.casa)}>{a.resultado.casa}</span>
-                        <b className={a.pagou ? "ganhou" : "perdeu"}>{a.pagou ? `+${a.pagou}` : `−${a.aposta}`}</b>
-                      </li>
-                    ))}
+                    {historico.slice(0, 12).map((a) => {
+                      const d = descreve(a);
+                      return (
+                        <li key={a.id}>
+                          <span>
+                            <small>{NOME_JOGO[a.jogo] ?? a.jogo}</small> {d.aposta}
+                          </span>
+                          <span className={"casa-mini " + (d.cor ?? "neutro")}>{d.saiu}</span>
+                          <b className={a.pagou ? "ganhou" : "perdeu"}>{a.pagou ? `+${a.pagou}` : `−${a.aposta}`}</b>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               )}
@@ -250,7 +244,7 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
                     {feed.slice(0, 10).map((f, k) => (
                       <li key={k}>
                         <span>{f.nome ?? "Alguém"}</span>
-                        <span className={"casa-mini " + corDa(f.resultado.casa)}>{f.resultado.casa}</span>
+                        <span className="casa-mini neutro">{NOME_JOGO[f.jogo] ?? f.jogo}</span>
                         <b className={f.pagou ? "ganhou" : "perdeu"}>{f.pagou ? `+${f.pagou}` : `−${f.aposta}`}</b>
                       </li>
                     ))}

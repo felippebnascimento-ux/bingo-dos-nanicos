@@ -63,6 +63,7 @@ Decisões combinadas com o João em 01/11/2026. Vale para qualquer pessoa ou IA 
   - **Links:** op.gg e Steam.
 - **Metade zoeira:** Tilt, Choro, Clutch (CS2), Farm, Sorte e Call, com notas de 0 a 10.
   - O voto é **anônimo**: o site só recebe a média e a contagem, nunca quem votou.
+  - **Sequência e tempo online na ficha (fase 26):** a ficha de qualquer um mostra os dias seguidos, o recorde e o tempo online (hoje, nos últimos 7 dias e no total). Os números saem por uma função do banco que entrega só o resumo; as tabelas continuam fechadas.
   - **A nota é sempre a média de todos os votos, e aparece para todo mundo** (na ficha e na aba Nanicos), mesmo com poucos votos, atualizando na hora (decisão de 02/11/2026).
   - Ninguém vota em si mesmo.
   - Cada um muda o voto em alguém uma vez por semana.
@@ -99,6 +100,12 @@ Decisões combinadas com o João em 01/11/2026. Vale para qualquer pessoa ou IA 
   - Sai-se andando pelo portão K-FOFO.
   - Lá fora: grama, uma árvore grande à direita, bancos (só enfeite por enquanto), céu claro de fundo e cinco carros parados de fundo (Honda Fit verde-escuro, Fiat Fastback branco, Jeep Renegade, Chevrolet Onix branco e Honda HR-V azul-escuro). Os carros são desenhados só com forma e cor, sem logotipos e sem nome.
   - A escolha das salas da fase 5 passa para a porta de vidro.
+### Tela de início (decidido em 02/11/2026, fase 28)
+- **Depois do login,** o site abre no **Início**: uma barra de cima com a marca, as moedas e o perfil, e cartões grandes para Sítio, Truco, Ao vivo, Jogar, Cassino e Nanicadas, cada um com o que está rolando agora.
+- **O Sítio só aparece ao clicar no cartão,** mas todo mundo que loga já entra no hall e aparece para quem está lá.
+- **Modelo:** `planejamento/demo/inicio.html` e `.png`. O desenho do grupo era só um exemplo.
+- **Antes dela vem a correção da fase 27:** um boneco por nanico (o mesmo login em duas abas virava dois bonecos) e a reconexão sozinha da sala (quem deixava a aba em segundo plano parava de ver quem entrava).
+
 ### Para o pessoal querer entrar e ficar (decidido em 02/11/2026)
 A ideia é dar três motivos para abrir o site: zoar os amigos, não perder o que só acontece agora e ver o que o grupo aprontou. Modelo de tudo no hall: `planejamento/demo/hall-zoeira.html` e `.png`.
 - **Zoeira:**
@@ -216,3 +223,6 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | 22 | `22-bolao-da-partida.md` | `bolao-da-partida` | 10 | a fazer |
 | 23 | `23-missoes-do-dia.md` | `missoes-do-dia` | 2 (cada missão liga quando a fase dela existir) | a fazer |
 | 25 | `25-eventos-com-horario.md` | `eventos-com-horario` | 2, 14 | a fazer |
+| 26 | `26-ficha-sequencia-online.md` | `ficha-sequencia-online` | 2, 3 | a fazer (pequena, pode vir logo depois da 3) |
+| 27 | `27-hall-um-por-nanico.md` | `hall-um-por-nanico` | 00 | **urgente** (correção: Pitoco duplicado e quem entra não aparece); fazer antes das outras do hall |
+| 28 | `28-tela-inicio.md` | `tela-inicio` | 27 | a fazer (logo depois da 27) |
