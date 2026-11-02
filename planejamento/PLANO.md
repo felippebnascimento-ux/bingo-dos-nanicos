@@ -189,7 +189,7 @@ A ideia é dar três motivos para abrir o site: zoar os amigos, não perder o qu
 Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 - **Balão do chat no hall:** a mensagem aparece por 5 s em cima do boneco de quem escreveu.
 - **Bicho de estimação do Sítio:** um cachorro no hall que fica feliz quando o grupo aparece e come ração comprada com moedas. Saiu do plano em 02/11/2026 ("não precisa agora"); o prompt antigo (fase 24) foi apagado e o número 24 fica vago.
-- **Acenar e sentar:** acenar com um botão (pode entrar junto dos emotes da fase 19), e sentar nas cadeiras, no colchão do hall e nos bancos da rua. Inclui sentar nos bancos da rua (fica para depois, decisão de 02/11/2026). São mais quadros gerados com IA, no mesmo estilo.
+- **Acenar e sentar:** sentar nos sofás e poltronas do hall já existe (d9b8af7, `ASSENTOS` e `pos.s`); os bancos da rua entram na fase 16. Falta acenar, que entra junto dos emotes da fase 19.
 - **Trocar a senha de novo:** falta saber se o problema é o botão não funcionar ou se a ideia é recuperar uma senha esquecida.
 
 ## Ordem e andamento

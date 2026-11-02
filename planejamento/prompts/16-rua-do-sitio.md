@@ -9,7 +9,7 @@ O modelo está em `planejamento/demo/rua.html` e `rua.png`. Abra os dois antes d
   - grama com uma trilha de pedras saindo do portão;
   - calçada com um poste e uma lixeira;
   - a **árvore grande** à direita, com sombra no chão;
-  - **bancos de praça**, por enquanto só de enfeite (sentar fica para uma atualização futura);
+  - **bancos de praça** onde dá para sentar, do mesmo jeito que nos sofás e poltronas do hall (`ASSENTOS` e `pos.s`, commit d9b8af7);
   - **céu claro de fundo** em volta do cenário, com nuvens e uma fileira de árvores ao longe, no lugar do fundo escuro do site. No tema escuro, vira um céu de fim de tarde, mais fechado, mas nunca preto;
   - de fundo, na rua, **cinco carros estacionados**: Honda Fit verde-escuro, Fiat Fastback branco, Jeep Renegade, Chevrolet Onix branco e Honda HR-V azul-escuro.
 - **Carros:** são desenhados por código, só com o formato (hatch, SUV, fastback, sedã) e a cor, **sem logotipos, marcas nem etiqueta com o nome**. São só paisagem.
@@ -52,7 +52,7 @@ Siga as "Regras de toda sessão" de `planejamento/PLANO.md`. Leia:
 - Não desenhe logotipo, emblema ou marca de carro: só forma e cor.
 - Não crie SQL: o cenário é presença e broadcast.
 - Não use imagens novas para a rua: é SVG desenhado por código.
-- Não faça o sentar agora: ele fica para uma atualização futura (está na fila do `PLANO.md`).
+- Não invente outro jeito de sentar: os bancos da rua entram nos `ASSENTOS` do cenário `rua`, com o mesmo `pos.s` do hall.
 
 ## Pronto quando
 - [ ] Com duas abas, uma sai para a rua e some do hall da outra; a outra sai também e as duas se veem lá fora.

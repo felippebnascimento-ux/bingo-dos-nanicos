@@ -26,8 +26,12 @@
 .boneco::before{content:"";position:absolute;left:20%;right:20%;bottom:-2%;height:9%;border-radius:50%;background:var(--shadow)}
 .boneco-img{position:absolute;inset:0;background-repeat:no-repeat;background-size:500% 200%}
 .boneco-img.espelha{transform:scaleX(-1)}
-.boneco-toque{position:absolute;inset:0;padding:0;border:0;background:none;cursor:pointer;pointer-events:auto}
-.boneco-toque:focus-visible{outline-offset:-2px}
+/* o boneco é um botão, mas sem nada em volta: nem fundo, nem borda, nem o destaque do toque ou do foco
+   (no teclado, quem fica destacado é o nome do boneco) */
+.boneco-toque{position:absolute;inset:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;cursor:pointer;pointer-events:auto;
+  -webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent}
+.boneco-toque:hover,.boneco-toque:active,.boneco-toque:focus{background:none;box-shadow:none;outline:none}
+.boneco:has(.boneco-toque:focus-visible) .boneco-nome{outline:2.5px solid var(--accent);outline-offset:2px}
 .boneco-nome{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-2px);padding:4px 6px;border-radius:6px;font:700 10px/1 var(--display);letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;background:color-mix(in srgb,var(--accent-ink) 85%,transparent);color:var(--accent)}
 .boneco.eu .boneco-nome{background:var(--accent);color:var(--accent-ink)}
 .boneco-pino{position:absolute;left:50%;bottom:4%;transform:translateX(-50%);display:grid;justify-items:center}

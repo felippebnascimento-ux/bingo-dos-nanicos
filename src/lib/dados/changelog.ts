@@ -246,6 +246,10 @@ export const CHANGELOG: EntradaLog[] = [
     data: "02/11/2026",
     itens: ["Dá para sentar nos sofás e nas poltronas do K-FOFO: toque no móvel e o boneco vai até lá e senta"],
   },
+  {
+    data: "02/11/2026",
+    itens: ["Tocar no boneco não deixa mais uma caixa escura em volta dele"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
