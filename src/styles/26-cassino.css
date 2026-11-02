@@ -7,13 +7,6 @@
 .cassino-grid{display:grid;gap:18px}
 @media (min-width:1000px){.cassino-grid{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);align-items:start}}
 .roleta{display:grid;gap:14px}
-.roleta-roda{justify-self:center;width:110px;height:110px;border-radius:50%;display:grid;place-items:center;font:800 40px var(--display);color:var(--stamp-ink);background:var(--muted);border:6px solid var(--accent);box-shadow:inset 0 0 0 4px color-mix(in srgb,var(--accent-ink) 30%,transparent)}
-.roleta-roda.vermelho{background:var(--live)}
-.roleta-roda.preto{background:var(--accent-ink)}
-.roleta-roda.verde{background:var(--olive)}
-.roleta-roda.girando{animation:roleta-gira .6s linear infinite}
-@keyframes roleta-gira{to{transform:rotate(360deg)}}
-@media (prefers-reduced-motion:reduce){.roleta-roda.girando{animation:none}}
 .roleta-mesa{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px}
 .roleta-mesa .casa.verde{grid-column:1 / -1}
 .casa{min-width:0;padding:8px 0;border:2px solid transparent;border-radius:8px;font:700 13px var(--display);color:var(--stamp-ink);cursor:pointer}
@@ -75,3 +68,49 @@
 .slot-tabela li{display:flex;justify-content:space-between;gap:10px;font-size:14px}
 .casa-mini.neutro{background:var(--olive)}
 .cassino-lista small{color:var(--muted);font-size:11px}
+
+/* roleta animada (RodaRoleta.tsx): ilustração com cores próprias --roleta-* (exceção como o hall); o vermelho e o
+   preto das casas são os da mesa (--live e --accent-ink) e o 0 é o verde (--olive) */
+.rr{
+  --roleta-aro0:#E7C88A; --roleta-aro1:#A9793A; --roleta-madeira:#6B4022; --roleta-pista0:#4A2A14; --roleta-pista1:#2E190B;
+  --roleta-cone0:#B07A45; --roleta-cone1:#5E3518; --roleta-ouro0:#FFF1C2; --roleta-ouro1:#B8862C; --roleta-prata:#D9DDE0;
+  --roleta-numero:#F6E7C1; --roleta-bola0:#FFFFFF; --roleta-bola1:#BFC3C7; --roleta-sombra:rgba(0,0,0,.45); --roleta-feltro:#2F6B3A; --roleta-branco:#FFFFFF; --roleta-escuro:#000000;
+  display:grid;justify-items:center;gap:10px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .rr{--roleta-aro0:#CDB078;--roleta-aro1:#8E6531;--roleta-feltro:#24552E}}
+:root[data-theme="dark"] .rr{--roleta-aro0:#CDB078;--roleta-aro1:#8E6531;--roleta-feltro:#24552E}
+.rr-roda-caixa{position:relative;width:min(100%,380px);aspect-ratio:1;padding:12px;border-radius:var(--r-lg);background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--roleta-feltro) 80%,var(--roleta-branco) 20%),var(--roleta-feltro) 70%)}
+.rr-svg{display:block;width:100%;height:100%;filter:drop-shadow(0 8px 14px rgba(0,0,0,.4))}
+.rr-st-aro0{stop-color:var(--roleta-aro0)}.rr-st-aro1{stop-color:var(--roleta-aro1)}
+.rr-st-pista0{stop-color:var(--roleta-pista0)}.rr-st-pista1{stop-color:var(--roleta-pista1)}
+.rr-st-cone0{stop-color:var(--roleta-cone0)}.rr-st-cone1{stop-color:var(--roleta-cone1)}
+.rr-st-ouro0{stop-color:var(--roleta-ouro0)}.rr-st-ouro1{stop-color:var(--roleta-ouro1)}
+.rr-st-bola0{stop-color:var(--roleta-bola0)}.rr-st-bola1{stop-color:var(--roleta-bola1)}
+.rr-aro{stroke:var(--roleta-aro1);stroke-width:2}
+.rr-madeira{fill:var(--roleta-madeira)}
+.rr-pista-borda{fill:none;stroke:var(--roleta-ouro1);stroke-width:1.5;opacity:.7}
+.rr-losango{stroke:var(--roleta-ouro1);stroke-width:.6}
+.rr-casa.rr-vermelho{fill:var(--live)}.rr-casa.rr-preto{fill:var(--accent-ink)}.rr-casa.rr-verde{fill:var(--olive)}
+.rr-bolso.rr-vermelho{fill:color-mix(in srgb,var(--live) 70%,var(--roleta-escuro))}.rr-bolso.rr-preto{fill:color-mix(in srgb,var(--accent-ink) 70%,var(--roleta-escuro))}.rr-bolso.rr-verde{fill:color-mix(in srgb,var(--olive) 70%,var(--roleta-escuro))}
+.rr-num{fill:var(--roleta-numero);font:800 11px var(--display);text-anchor:middle}
+.rr-divisa{stroke:var(--roleta-prata);stroke-width:1.2}
+.rr-fio{fill:none;stroke:var(--roleta-prata);stroke-width:1.4}
+.rr-cone{stroke:var(--roleta-ouro1);stroke-width:1.5}
+.rr-braco{stroke:var(--roleta-ouro1);stroke-width:4;stroke-linecap:round}
+.rr-ponta{stroke:var(--roleta-ouro1);stroke-width:.8}
+.rr-brilho{fill:var(--roleta-branco);opacity:.6}
+.rr-sombra{fill:var(--roleta-sombra)}
+.rr-bola{stroke:rgba(0,0,0,.25);stroke-width:.6}
+.rr-ganhou{fill:none;stroke:var(--roleta-ouro0);stroke-width:3;opacity:0}
+.rr-ganhou.on{opacity:1;animation:rr-pulso 1s ease-in-out 3}
+@keyframes rr-pulso{50%{stroke-width:6;opacity:.6}}
+@media (prefers-reduced-motion:reduce){.rr-ganhou.on{animation:none}}
+.rr-mudo{position:absolute;top:10px;right:10px;width:36px;height:36px;display:grid;place-items:center;border:0;border-radius:50%;background:rgba(0,0,0,.35);color:var(--roleta-branco);cursor:pointer}
+.rr-mudo:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.rr-resultado{margin:0;font:800 18px var(--display);letter-spacing:.02em;color:var(--muted)}
+.rr-resultado b{display:inline-grid;place-items:center;min-width:42px;height:42px;margin-right:6px;border-radius:50%;font-size:20px;color:var(--stamp-ink)}
+.rr-resultado.vermelho{color:var(--live)}.rr-resultado.vermelho b{background:var(--live)}
+.rr-resultado.preto{color:var(--ink)}.rr-resultado.preto b{background:var(--accent-ink)}
+.rr-resultado.verde{color:var(--olive)}.rr-resultado.verde b{background:var(--olive)}
+.rr-ultimos{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.rr-ultimos li{width:28px;height:28px;display:grid;place-items:center;border-radius:50%;font:700 12px var(--display);color:var(--stamp-ink)}
+.rr-ultimos .rr-vermelho{background:var(--live)}.rr-ultimos .rr-preto{background:var(--accent-ink)}.rr-ultimos .rr-verde{background:var(--olive)}

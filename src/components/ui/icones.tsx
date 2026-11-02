@@ -198,6 +198,13 @@ export const IcVolume = (p: P) => (
     <path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" />
   </Base>
 );
+/** Alto-falante cortado (som desligado). */
+export const IcSemSom = (p: P) => (
+  <Base {...p}>
+    <path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z" />
+    <path d="M16 9.5l5 5M21 9.5l-5 5" />
+  </Base>
+);
 export const IcAjustes = (p: P) => (
   <Base {...p}>
     <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />

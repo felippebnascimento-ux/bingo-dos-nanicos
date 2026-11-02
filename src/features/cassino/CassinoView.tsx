@@ -9,9 +9,9 @@ import { ajustarSaldo, useCarteira } from "@/lib/carteira";
 import { formatarMoedas } from "@/lib/moedas";
 import { sb } from "@/lib/supabase";
 import { toast } from "@/lib/toast";
-import { reduzMovimento } from "@/lib/util";
 import { carregar, msgDe, useCassino, type Aposta, type Jogo, type Revelada } from "./estado";
 import { CacaNiquel, Fichas, Limbo, MaiorMenor } from "./Jogos";
+import { RodaRoleta, type Giro } from "./RodaRoleta";
 import { corDa, hashDaSemente, refazer, resultadoGuardado, rtpSlot, vantagemDaCasa, type TipoAposta } from "./regras";
 
 const NUMEROS = Array.from({ length: 36 }, (_, k) => k + 1);
@@ -47,44 +47,43 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
   const [jogo, setJogo] = useState<Jogo>("roleta");
   const [escolha, setEscolha] = useState<{ tipo: TipoAposta; valor: number }>({ tipo: "cor", valor: 0 });
   const [ficha, setFicha] = useState<number>(10);
-  const [roda, setRoda] = useState<number | null>(null);
+  const [giro, setGiro] = useState<Giro | null>(null);
   const [girando, setGirando] = useState(false);
+  /* o que o banco respondeu, para mostrar depois que a bolinha parar */
+  const resposta = useRef<{ casa: number; pagou: number; saldo: number } | null>(null);
   /* null = ainda não mexeu: mostra a semente do cliente atual */
   const [clienteEditado, setCliente] = useState<string | null>(null);
   const cliente = clienteEditado ?? estado?.cliente ?? "";
   const [conferencia, setConferencia] = useState<Record<number, string>>({});
-  const giro = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   const abriu = !hidden;
   useEffect(() => {
     if (abriu) carregar();
   }, [abriu]);
-  useEffect(() => () => clearInterval(giro.current), []);
 
+  /* o banco sorteia primeiro; a roda gira até a casa que ele mandou e só então mostra o resultado */
   const girar = async () => {
     if (girando) return;
     setGirando(true);
-    /* a roda gira enquanto o banco sorteia; para na casa que ele mandou */
-    if (!reduzMovimento()) giro.current = setInterval(() => setRoda(Math.floor(Math.random() * 37)), 70);
-    const inicio = Date.now();
     try {
       const { data, error } = await sb().rpc("apostar_roleta", { p_aposta: ficha, p_tipo: escolha.tipo, p_valor: escolha.valor });
       if (error) throw error;
       const r = data as { casa: number; pagou: number; saldo: number };
-      const falta = reduzMovimento() ? 0 : Math.max(0, 1400 - (Date.now() - inicio));
-      await new Promise((ok) => setTimeout(ok, falta));
-      clearInterval(giro.current);
-      setRoda(r.casa);
-      ajustarSaldo(r.saldo);
-      toast(r.pagou > 0 ? `Deu ${r.casa}! Você ganhou ${formatarMoedas(r.pagou)} moedas` : `Deu ${r.casa}. Perdeu ${ficha} moedas`);
-      carregar();
+      resposta.current = r;
+      setGiro({ id: Date.now(), casa: r.casa });
     } catch (e) {
-      clearInterval(giro.current);
-      setRoda(null);
       toast(msgDe(e, "Não deu para girar. Confira a internet."));
-    } finally {
       setGirando(false);
     }
+  };
+  const fimDoGiro = (casa: number) => {
+    const r = resposta.current;
+    resposta.current = null;
+    setGirando(false);
+    if (!r || r.casa !== casa) return;
+    ajustarSaldo(r.saldo);
+    toast(r.pagou > 0 ? `Deu ${r.casa}! Você ganhou ${formatarMoedas(r.pagou)} moedas` : `Deu ${r.casa}. Perdeu ${ficha} moedas`);
+    carregar();
   };
 
   const trocarSemente = async () => {
@@ -110,7 +109,6 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
     }));
   };
 
-  const corRoda = roda === null ? "" : corDa(roda);
   /* quanto a casa leva no jogo escolhido */
   const casaLeva =
     jogo === "roleta" ? vantagemDaCasa() : jogo === "slot" ? (rolos.length ? Math.round((1 - rtpSlot(rolos, pagamentos)) * 1000) / 10 : 8) : 3;
@@ -142,9 +140,11 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
             {jogo === "dado" && <MaiorMenor />}
             {jogo === "slot" && <CacaNiquel />}
             <div className="block roleta" hidden={jogo !== "roleta"}>
-              <div className={"roleta-roda " + corRoda + (girando ? " girando" : "")} aria-live="polite" aria-label={roda === null ? "Roleta parada" : `Deu ${roda}`}>
-                {roda ?? "?"}
-              </div>
+              <RodaRoleta
+                giro={giro}
+                onFim={fimDoGiro}
+                ultimos={historico.filter((a) => a.jogo === "roleta").map((a) => Number(a.resultado.casa))}
+              />
               <div className="roleta-mesa" role="group" aria-label="Escolha a aposta">
                 <button type="button" className={"casa verde" + (escolha.tipo === "numero" && escolha.valor === 0 ? " on" : "")} onClick={() => setEscolha({ tipo: "numero", valor: 0 })}>
                   0

@@ -198,6 +198,13 @@ export const CHANGELOG: EntradaLog[] = [
     data: "02/11/2026",
     itens: ["Truco com baralho espanhol desenhado: ouros, copas, espadas e bastos de verdade, com sota, cavalo e rei"],
   },
+  {
+    data: "02/11/2026",
+    itens: [
+      "Roleta do Cassino de verdade: a roda gira, a bolinha corre, quica e cai no número sorteado",
+      "Sons da roleta com botão de mudo e os seus últimos 10 números",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
