@@ -187,3 +187,61 @@
   background:linear-gradient(180deg,color-mix(in srgb,var(--rm-ouro) 60%,var(--stamp-ink)),var(--rm-ouro) 45%,var(--rm-ouro2));box-shadow:inset 0 1px 0 rgb(255 255 255 / .6),0 8px 20px var(--shadow)}
 .rm .rm-pe{margin:0;text-align:center;color:color-mix(in srgb,var(--rm-creme) 70%,transparent)}
 @media (max-width:520px){.rm-ficha{width:44px;height:44px}.rm-fichas{gap:6px;padding:6px 8px}.rm-total{margin-left:0;text-align:left}}
+
+/* aviãozinho (Aviaozinho.tsx): usa o feltro e as fichas da roleta (.rm); o céu e o avião são ilustração (--av-*) */
+.aviao{
+  --av-ceu0:#0C1424; --av-ceu1:#13203A; --av-ceu2:#1C1C34; --av-roxo:#3B1D4A; --av-laranja:#FFB347; --av-vermelho:#FF3B3B; --av-area:#FF5A3C;
+  --av-corpo:#E8283D; --av-corpo2:#B5162A; --av-asa:#C81D32; --av-vidro:#9FD8FF; --av-helice:#DDDDDD; --av-cinza:#555555;
+  --av-lo:#7CC4FF; --av-mid:#C79BFF; --av-hi:#FF7AB8; --av-pessego:#FFB38A}
+.av-mudo{position:absolute;top:16px;right:16px;z-index:3;width:38px;height:38px;display:grid;place-items:center;border:0;border-radius:50%;background:rgb(0 0 0 / .35);color:var(--rm-creme);cursor:pointer}
+.av-hist{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:7px}
+.av-hist li{padding:5px 10px;border-radius:20px;background:rgb(0 0 0 / .35);font:800 13px var(--body)}
+.av-hist .av-lo{color:var(--av-lo)}.av-hist .av-mid{color:var(--av-mid)}.av-hist .av-hi{color:var(--av-hi)}
+.av-vazio{opacity:.7;font-weight:600}
+.av-ceu{position:relative;height:clamp(240px,42vw,420px);border-radius:18px;overflow:hidden;
+  background:radial-gradient(ellipse at 70% 110%,var(--av-roxo) 0%,transparent 60%),linear-gradient(180deg,var(--av-ceu0) 0%,var(--av-ceu1) 60%,var(--av-ceu2) 100%);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--rm-ouro) 35%,transparent),inset 0 0 60px rgb(0 0 0 / .6)}
+.av-ceu.caiu{animation:av-treme .45s ease-out}
+@keyframes av-treme{20%{transform:translate(-6px,3px)}40%{transform:translate(5px,-4px)}60%{transform:translate(-3px,2px)}80%{transform:translate(2px,-1px)}}
+.av-svg{position:absolute;inset:0;width:100%;height:100%}
+.av-estrela{fill:var(--stamp-ink)}
+.av-grade{stroke:rgb(255 255 255 / .06)}
+.av-st-area{stop-color:var(--av-area)}.av-st-linha0{stop-color:var(--av-laranja)}.av-st-linha1{stop-color:var(--av-vermelho)}
+.av-aviao{position:absolute;left:4%;top:93%;width:clamp(70px,13%,140px);transform:translate(-30%,-62%) rotate(var(--ang,-10deg));transform-origin:30% 50%;filter:drop-shadow(0 6px 10px rgb(0 0 0 / .5));pointer-events:none}
+.av-aviao svg{display:block;width:100%;height:auto;overflow:visible}
+.av-aviao.foi{transition:left 1.2s ease-in,top 1.2s ease-in,opacity 1.2s;left:120% !important;top:-30% !important;opacity:0}
+.av-corpo{fill:var(--av-corpo)}.av-brilho{fill:var(--av-corpo);opacity:.6;filter:brightness(1.3)}
+.av-asa{fill:var(--av-asa)}.av-asa2{fill:var(--av-corpo2)}.av-vidro{fill:var(--av-vidro);opacity:.9}.av-nariz{fill:var(--av-cinza)}
+.av-helice{fill:var(--av-helice);opacity:.75;transform-origin:128px 42px;animation:av-helice .12s linear infinite}
+@keyframes av-helice{50%{transform:scaleY(.15)}}
+.av-rastro{fill:none;stroke:rgb(255 255 255 / .3);stroke-width:3}
+@media (prefers-reduced-motion:reduce){.av-helice,.av-ceu.caiu{animation:none}.av-aviao.foi{transition:none}}
+.av-mult{position:absolute;left:0;right:0;top:22%;text-align:center;pointer-events:none}
+.av-mult span{display:block;font:800 clamp(44px,9vw,96px)/1 var(--display);color:var(--stamp-ink);text-shadow:0 0 40px color-mix(in srgb,var(--av-area) 55%,transparent);font-variant-numeric:tabular-nums}
+.av-mult small{display:block;margin-top:10px;font:700 14px var(--body);letter-spacing:.2em;color:var(--av-pessego)}
+.av-ceu.caiu .av-mult span{color:var(--av-vermelho);text-shadow:0 0 30px color-mix(in srgb,var(--av-vermelho) 60%,transparent)}
+.av-base{position:absolute;left:18px;bottom:12px;font:700 12px var(--body);opacity:.5}
+.av-grid{display:grid;gap:18px}
+@media (min-width:900px){.av-grid{grid-template-columns:1.1fr .9fr}}
+.av-painel{display:grid;gap:10px;align-content:start;padding:18px;border-radius:18px;background:rgb(0 0 0 / .25);border:1px solid color-mix(in srgb,var(--rm-creme) 15%,transparent)}
+.av-painel .rm-fichas{justify-self:start}
+.av-auto{display:flex;gap:12px;align-items:center}
+.av-auto input{flex:1;min-width:0;padding:12px 14px;border-radius:12px;background:rgb(0 0 0 / .35);border:1px solid color-mix(in srgb,var(--rm-creme) 25%,transparent);color:var(--stamp-ink);font:800 18px var(--body)}
+.av-chave{display:flex;align-items:center;gap:8px;padding:0;border:0;background:none;color:var(--rm-creme);font:700 13px var(--body);cursor:pointer}
+.av-chave i{position:relative;width:46px;height:26px;border-radius:20px;background:rgb(0 0 0 / .4);transition:background .15s}
+.av-chave i::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:var(--stamp-ink);transition:left .15s}
+.av-chave.on i{background:var(--av-verde)}
+.av-chave.on i::after{left:23px}
+.aviao{--av-verde:#22C55E;--av-verde0:#86EFAC;--av-verde1:#15803D;--av-verdetx:#062B14}
+.av-sacar{width:100%;padding:14px;border:0;border-radius:16px;font:800 20px var(--display);color:var(--av-verdetx);cursor:pointer;
+  background:linear-gradient(180deg,var(--av-verde0),var(--av-verde) 55%,var(--av-verde1));box-shadow:inset 0 1px 0 rgb(255 255 255 / .6),0 8px 24px color-mix(in srgb,var(--av-verde) 45%,transparent)}
+.av-sacar small{display:block;font:700 13px var(--body);opacity:.8}
+.av-res{margin:0;font:800 15px var(--body)}
+.av-res.bom{color:var(--rm-verdeclaro)}.av-res.ruim{color:var(--rm-vermelhoclaro)}
+.av-mesa{list-style:none;margin:0;padding:0;display:grid}
+.av-mesa li{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid color-mix(in srgb,var(--rm-creme) 10%,transparent);font:600 14px var(--body)}
+.av-mesa li:last-child{border:0}
+.av-av{width:28px;height:28px;flex:none;border-radius:50%;display:grid;place-items:center;background:rgb(0 0 0 / .3);font:800 13px var(--body)}
+.av-nome{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.av-mesa b{font-weight:800;white-space:nowrap}
+.av-mesa .ok{color:var(--rm-verdeclaro)}.av-mesa .voa{color:var(--av-pessego)}.av-mesa .ruim{color:var(--rm-vermelhoclaro)}

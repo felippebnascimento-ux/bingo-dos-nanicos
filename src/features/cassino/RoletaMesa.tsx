@@ -21,7 +21,7 @@ type Resposta = { casa: number; cor: Cor; pagou: number; saldo: number; fichas: 
 const NOME_COR: Record<Cor, string> = { vermelho: "VERMELHO", preto: "PRETO", verde: "VERDE" };
 
 /** Uma ficha de cassino desenhada em CSS (cor pelo valor). */
-function FichaVisual({ v, mini }: { v: number; mini?: boolean }) {
+export function FichaVisual({ v, mini }: { v: number; mini?: boolean }) {
   /* a cor é a da maior ficha que cabe no valor */
   const cor = [...FICHAS].reverse().find((x) => x <= v) ?? 5;
   return (

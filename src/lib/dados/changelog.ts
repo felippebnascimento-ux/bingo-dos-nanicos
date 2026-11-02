@@ -270,6 +270,14 @@ export const CHANGELOG: EntradaLog[] = [
       "A TV do K-FOFO abre direto a live de quem está transmitindo",
     ],
   },
+  {
+    data: "02/11/2026",
+    itens: [
+      { t: "Limbo no cassino", off: "trocado pelo Aviãozinho na v1.78" },
+      "Aviãozinho no Cassino: o avião decola, o multiplicador sobe e você saca antes dele ir embora",
+      "Saque automático no Aviãozinho, últimos voos e quem está jogando agora",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

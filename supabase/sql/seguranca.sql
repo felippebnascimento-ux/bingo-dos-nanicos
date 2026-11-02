@@ -2960,7 +2960,154 @@ end $$;
 revoke all on function public.apostar_roleta_mesa(jsonb) from public, anon;
 grant execute on function public.apostar_roleta_mesa(jsonb) to authenticated;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas e a roleta de mesa
+-- 29) aviãozinho (crash): o multiplicador sobe até o avião ir embora; saque antes e ganhe aposta × multiplicador ---------
+-- O ponto em que o avião vai embora é o do limbo: max(1, floor(0,97 / (1 − u) × 100) / 100), com u do cassino_numero
+-- (mesmo motor justo, casa leva 3%). Ele fica SÓ no banco até o voo acabar (ninguém lê aviao_voos direto), e o saque é
+-- conferido pelo relógio do banco: multiplicador = floor(e^(0,07 × segundos) × 100) / 100 desde a decolagem.
+-- Saque automático em X×: vale se X ≤ ponto de queda (igual ao limbo). Cada um voa sozinho; a mesa só mostra os voos.
+alter table public.cassino_apostas drop constraint if exists cassino_apostas_jogo_check;
+alter table public.cassino_apostas add constraint cassino_apostas_jogo_check check (jogo in ('roleta', 'limbo', 'dado', 'slot', 'aviao'));
+
+create table if not exists public.aviao_voos (
+  id      bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  aposta  int not null check (aposta between 5 and 100),
+  auto    numeric check (auto is null or auto between 1.01 and 1000),
+  crash   numeric not null,
+  hash    text not null,
+  nonce   int not null,
+  inicio  timestamptz not null default clock_timestamp(),
+  estado  text not null default 'voando' check (estado in ('voando', 'sacou', 'caiu')),
+  sacou   numeric,
+  pagou   int not null default 0,
+  fim     timestamptz
+);
+create index if not exists aviao_voos_meus on public.aviao_voos (user_id, estado);
+create index if not exists aviao_voos_inicio on public.aviao_voos (inicio desc);
+alter table public.aviao_voos enable row level security;
+revoke all on public.aviao_voos from public, anon, authenticated;
+
+-- o multiplicador do voo num instante (o mesmo do site, em aviao.ts)
+create or replace function public.aviao_mult(p_inicio timestamptz, p_agora timestamptz) returns numeric
+language sql immutable as $$
+  select floor(exp(0.07 * least(600, greatest(0, extract(epoch from (p_agora - p_inicio))))) * 100) / 100;
+$$;
+
+-- decide o voo agora: saque automático, saque na mão (p_manual) ou queda; senão, continua voando. Paga e guarda.
+create or replace function public.aviao_fechar(p_id bigint, p_manual boolean) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v      public.aviao_voos;
+  v_m    numeric;
+  v_sac  numeric;
+  v_pg   int := 0;
+  v_est  text;
+  v_sal  int;
+begin
+  select * into v from public.aviao_voos where id = p_id for update;
+  if v.estado <> 'voando' then
+    select saldo into v_sal from public.carteiras where user_id = v.user_id;
+    return jsonb_build_object('id', v.id, 'estado', v.estado, 'mult', coalesce(v.sacou, v.crash), 'sacou', v.sacou,
+                              'crash', v.crash, 'pagou', v.pagou, 'saldo', v_sal);
+  end if;
+  v_m := public.aviao_mult(v.inicio, clock_timestamp());
+  if v.auto is not null and v.auto <= v.crash and v.auto <= v_m then
+    v_sac := v.auto;
+  elsif p_manual and v_m < v.crash then
+    v_sac := greatest(1, v_m);
+  elsif v_m >= v.crash then
+    v_sac := null;
+  else
+    return jsonb_build_object('id', v.id, 'estado', 'voando', 'mult', v_m);
+  end if;
+  v_est := case when v_sac is null then 'caiu' else 'sacou' end;
+  if v_sac is not null then v_pg := floor(v.aposta * v_sac)::int; end if;
+  update public.aviao_voos set estado = v_est, sacou = v_sac, pagou = v_pg, fim = clock_timestamp() where id = v.id;
+  if v_pg > 0 then v_sal := public.creditar(v.user_id, v_pg, 'cassino', 'aviao');
+  else select saldo into v_sal from public.carteiras where user_id = v.user_id; end if;
+  insert into public.cassino_apostas (user_id, jogo, aposta, escolha, resultado, pagou, hash, nonce)
+    values (v.user_id, 'aviao', v.aposta, jsonb_build_object('auto', v.auto, 'sacou', v_sac),
+            jsonb_build_object('valor', v.crash), v_pg, v.hash, v.nonce);
+  return jsonb_build_object('id', v.id, 'estado', v_est, 'mult', coalesce(v_sac, v.crash), 'sacou', v_sac,
+                            'crash', v.crash, 'pagou', v_pg, 'saldo', v_sal);
+end $$;
+revoke all on function public.aviao_fechar(bigint, boolean) from public, anon, authenticated;
+
+-- decolar: cobra a aposta e sorteia o ponto de queda (que só sai daqui no fim do voo)
+create or replace function public.aviao_decolar(p_aposta int, p_auto numeric default null) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid  uuid := auth.uid();
+  r      record;
+  v      record;
+  v_id   bigint;
+  v_sal  int;
+  v_ini  timestamptz;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
+  if p_aposta is null or p_aposta not between 5 and 100 then raise exception 'A aposta vai de 5 a 100 moedas.' using errcode = 'P0001'; end if;
+  if p_auto is not null and (p_auto < 1.01 or p_auto > 1000 or round(p_auto, 2) <> p_auto) then
+    raise exception 'O saque automático vai de 1,01× a 1.000×, com até 2 casas depois da vírgula.' using errcode = 'P0001';
+  end if;
+  -- voo antigo meu que ficou no ar (fechou a aba): fecha agora; se ainda estiver voando, espera
+  for v in select id from public.aviao_voos where user_id = v_uid and estado = 'voando' loop
+    if (public.aviao_fechar(v.id, false))->>'estado' = 'voando' then
+      raise exception 'Seu avião ainda está no ar.' using errcode = 'P0001';
+    end if;
+  end loop;
+  perform public.limitar('cassino', 30, interval '1 minute', 'Calma: muitas apostas seguidas. Espere um pouco.');
+  v_sal := public.creditar(v_uid, -p_aposta, 'cassino', 'aviao');
+  select * into r from public.cassino_numero(v_uid);
+  insert into public.aviao_voos (user_id, aposta, auto, crash, hash, nonce)
+    values (v_uid, p_aposta, p_auto, greatest(1, floor((0.97 / (1 - r.u)) * 100) / 100), r.hash, r.nonce)
+    returning id, inicio into v_id, v_ini;
+  return jsonb_build_object('id', v_id, 'saldo', v_sal, 'hash', r.hash, 'nonce', r.nonce, 'inicio', v_ini);
+end $$;
+revoke all on function public.aviao_decolar(int, numeric) from public, anon;
+grant execute on function public.aviao_decolar(int, numeric) to authenticated;
+
+-- como está o meu voo (o site pergunta algumas vezes por segundo); o ponto de queda só aparece quando acaba
+create or replace function public.aviao_ver(p_id bigint) returns jsonb
+language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from public.aviao_voos where id = p_id and user_id = auth.uid()) then
+    raise exception 'Voo não encontrado.' using errcode = 'P0001';
+  end if;
+  perform public.limitar('aviao_ver', 900, interval '1 minute', 'Calma: perguntas demais.');
+  return public.aviao_fechar(p_id, false);
+end $$;
+revoke all on function public.aviao_ver(bigint) from public, anon;
+grant execute on function public.aviao_ver(bigint) to authenticated;
+
+-- sacar agora: vale o multiplicador do relógio do banco, se o avião ainda não foi embora
+create or replace function public.aviao_sacar(p_id bigint) returns jsonb
+language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from public.aviao_voos where id = p_id and user_id = auth.uid()) then
+    raise exception 'Voo não encontrado.' using errcode = 'P0001';
+  end if;
+  return public.aviao_fechar(p_id, true);
+end $$;
+revoke all on function public.aviao_sacar(bigint) from public, anon;
+grant execute on function public.aviao_sacar(bigint) to authenticated;
+
+-- "na mesa agora": os voos dos últimos 3 minutos de todo mundo (o ponto de queda só dos que já acabaram)
+create or replace function public.aviao_mesa() returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
+  return coalesce((select jsonb_agg(x order by x.inicio desc) from (
+    select v.id, f.name as nome, v.aposta, v.estado, v.sacou, v.pagou, v.inicio,
+           case when v.estado <> 'voando' then v.crash end as crash,
+           case when v.estado = 'voando' and v.auto is not null then v.auto end as alvo
+      from public.aviao_voos v left join public.friends f on f.user_id = v.user_id
+     where v.inicio > now() - interval '3 minutes'
+     order by v.inicio desc limit 12) x), '[]'::jsonb);
+end $$;
+revoke all on function public.aviao_mesa() from public, anon;
+grant execute on function public.aviao_mesa() to authenticated;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa e as 4 do aviãozinho
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -3019,4 +3166,7 @@ select proname::text, 'emblemas' from pg_proc
 union all
 select proname::text, 'roleta' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('apostar_roleta_mesa')
+union all
+select proname::text, 'aviao' from pg_proc
+ where pronamespace = 'public'::regnamespace and proname in ('aviao_decolar', 'aviao_ver', 'aviao_sacar', 'aviao_mesa')
 order by 2, 1;

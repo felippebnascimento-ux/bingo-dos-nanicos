@@ -144,7 +144,8 @@ src/
     cassino/           aba Cassino (moedas fictícias): regras.ts (roleta, limbo, dado, caça-níquel, conferir() e
                        refazer() com HMAC-SHA256; puro e testado), roda.ts (plano do giro da roleta animada: a bolinha termina no centro
                        da casa que o banco mandou; puro e testado), RodaRoleta.tsx (a roda em SVG, animação, sons e mudo),
-                       RoletaMesa.tsx (o feltro: roda, painel do resultado, mesa de fichas deitada no computador e em pé no
+                       Aviaozinho.tsx e aviao.ts (o Aviãozinho, no lugar do Limbo: céu, curva, avião, sacar,
+                       mesa; contas do voo puras e testadas), RoletaMesa.tsx (o feltro: roda, painel do resultado, mesa de fichas deitada no computador e em pé no
                        celular, desfazer/limpar/dobrar/repetir; chama apostar_roleta_mesa),
                        estado.ts (dados do banco), Jogos.tsx (limbo,
                        maior ou menor e caça-níquel) e CassinoView (seletor de jogo, roleta, conferência, histórico)
@@ -360,6 +361,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 - **Cassino (seção 11 do `seguranca.sql`, usa `pgcrypto`):**
   - **O sorteio é no banco:** `u` = primeiros 52 bits de `HMAC-SHA256(semente do servidor, "semente_cliente:nonce")`, feito por `cassino_numero()` (interna, incrementa o nonce com `for update`). O navegador nunca sorteia.
   - **RPCs:** `apostar_roleta_mesa(fichas)` (seção 28: várias fichas numa rodada, um sorteio só; tipos número, cor, paridade, metade, dúzia e coluna; cada ficha 5–100, até 30 fichas e 1.000 por rodada; dúzia e coluna pagam 3×; guarda uma aposta `roleta` com `escolha.fichas`), `apostar_roleta(aposta 5–100, tipo, valor)` (a antiga, de uma ficha), `apostar_limbo(aposta, alvo 1,01–100)`, `apostar_dado(aposta, lado, n)` (chance de 1% a 95%) e `apostar_slot(aposta)` (3 nonces seguidos, um por rolo). Todas debitam com `creditar`, sorteiam com `cassino_numero`, pagam e gravam em `cassino_apostas`. E `cassino_estado()`, `trocar_semente(cliente)` (revela a antiga) e `cassino_feed()`.
+  - **Aviãozinho (seção 29):** `aviao_decolar(aposta, auto)` cobra e sorteia o ponto de queda (a conta do limbo, casa 3%) em `aviao_voos`, que **ninguém lê**: o ponto só sai no fim. `aviao_ver(id)` (o site pergunta 4 vezes por segundo) e `aviao_sacar(id)` decidem pelo relógio do banco (`aviao_mult`: floor(e^(0,07 × segundos) × 100) / 100); o automático vale se o alvo ≤ ponto de queda. Cada voo terminado vira uma aposta `aviao` (conferível como o limbo). `aviao_mesa()` mostra os voos dos últimos 3 min sem revelar a queda de quem está no ar. O Limbo saiu da tela (a função continua no banco).
   - **Quanto a casa leva:** roleta 2,7%, limbo e dado 3%, caça-níquel cerca de 8% (o fim da seção 11b recalcula o RTP exato da tabela e falha fora de 91,5%–92,5%).
   - **Conferência:** `conferir()` e `refazer()` em `features/cassino/regras.ts` refazem a conta de qualquer jogo com `crypto.subtle`.
 - **Atributos votados (seção 9 do `seguranca.sql`):**

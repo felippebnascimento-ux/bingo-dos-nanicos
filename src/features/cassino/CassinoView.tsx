@@ -10,7 +10,8 @@ import { formatarMoedas } from "@/lib/moedas";
 import { sb } from "@/lib/supabase";
 import { toast } from "@/lib/toast";
 import { carregar, msgDe, useCassino, type Aposta, type Jogo, type Revelada } from "./estado";
-import { CacaNiquel, Limbo, MaiorMenor } from "./Jogos";
+import { Aviaozinho } from "./Aviaozinho";
+import { CacaNiquel, MaiorMenor } from "./Jogos";
 import { RoletaMesa } from "./RoletaMesa";
 import { corDa, hashDaSemente, nomeLugar, refazer, resultadoGuardado, rtpSlot, vantagemDaCasa, type TipoAposta } from "./regras";
 
@@ -21,16 +22,18 @@ function apostaDaRoleta(total: number, e: Record<string, unknown>) {
 }
 const JOGOS: { id: Jogo; nome: string }[] = [
   { id: "roleta", nome: "Roleta" },
-  { id: "limbo", nome: "Limbo" },
+  { id: "aviao", nome: "Aviãozinho" },
   { id: "dado", nome: "Maior ou menor" },
   { id: "slot", nome: "Caça-níquel" },
 ];
-const NOME_JOGO: Record<Jogo, string> = { roleta: "Roleta", limbo: "Limbo", dado: "Maior ou menor", slot: "Caça-níquel" };
+const NOME_JOGO: Record<Jogo, string> = { roleta: "Roleta", aviao: "Aviãozinho", limbo: "Limbo", dado: "Maior ou menor", slot: "Caça-níquel" };
 
 /** Uma linha do histórico: o que apostou e o que saiu, em poucas palavras. */
 function descreve(a: Aposta): { aposta: string; saiu: string; cor?: string } {
   const e = a.escolha, r = a.resultado;
   if (a.jogo === "roleta") return { aposta: apostaDaRoleta(a.aposta, e), saiu: String(r.casa), cor: corDa(Number(r.casa)) };
+  if (a.jogo === "aviao")
+    return { aposta: `${a.aposta}${e.auto ? ` · auto ${String(e.auto).replace(".", ",")}×` : ""}`, saiu: e.sacou ? `sacou ${Number(e.sacou).toFixed(2).replace(".", ",")}×` : `voou ${Number(r.valor).toFixed(2).replace(".", ",")}×` };
   if (a.jogo === "limbo") return { aposta: `${a.aposta} no ${String(e.alvo).replace(".", ",")}×`, saiu: `${Number(r.valor).toFixed(2).replace(".", ",")}×` };
   if (a.jogo === "dado") return { aposta: `${a.aposta} ${e.lado === "abaixo" ? "abaixo" : "acima"} de ${e.n}`, saiu: String(r.numero) };
   return { aposta: `${a.aposta} no caça-níquel`, saiu: Array.isArray(r.simbolos) ? `${r.simbolos.length} rolos` : "" };
@@ -100,7 +103,11 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
             ))}
           </div>
           <div className="cassino-grid">
-            {jogo === "limbo" && <Limbo />}
+            {jogo === "aviao" && (
+              <div className="rm-caixa">
+                <Aviaozinho />
+              </div>
+            )}
             {jogo === "dado" && <MaiorMenor />}
             {jogo === "slot" && <CacaNiquel />}
             {/* a roleta fica sempre montada (a roda não pode sumir no meio do giro) */}

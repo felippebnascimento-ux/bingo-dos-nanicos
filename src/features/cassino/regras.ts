@@ -161,7 +161,8 @@ export async function refazer(
 ): Promise<string> {
   const u = await conferir(sementeHex, cliente, nonce);
   if (jogo === "roleta") return String(casaDaRoleta(u));
-  if (jogo === "limbo") return valorLimbo(u).toFixed(2);
+  /* o aviãozinho usa a mesma conta do limbo: o ponto em que o avião vai embora */
+  if (jogo === "limbo" || jogo === "aviao") return valorLimbo(u).toFixed(2);
   if (jogo === "dado") return String(numeroDado(u));
   if (jogo === "slot") {
     const s = [u, await conferir(sementeHex, cliente, nonce + 1), await conferir(sementeHex, cliente, nonce + 2)];
@@ -173,7 +174,7 @@ export async function refazer(
 /** O resultado guardado de uma aposta, no mesmo formato de `refazer`. */
 export function resultadoGuardado(jogo: string, r: Record<string, unknown>): string {
   if (jogo === "roleta") return String(r.casa);
-  if (jogo === "limbo") return Number(r.valor).toFixed(2);
+  if (jogo === "limbo" || jogo === "aviao") return Number(r.valor).toFixed(2);
   if (jogo === "dado") return String(r.numero);
   if (jogo === "slot") return Array.isArray(r.simbolos) ? r.simbolos.join(",") : "";
   return "";
