@@ -145,6 +145,13 @@ export const CHANGELOG: EntradaLog[] = [
       "Botão \"Fechar a partida\" na cartela para começar outra",
     ],
   },
+  {
+    data: "02/11/2026",
+    itens: [
+      "Missões do dia: 3 tarefas por dia que valem moedas, com bônus para quem fizer todas",
+      "As missões aparecem no Sítio, em cima da carteira, e no Perfil",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

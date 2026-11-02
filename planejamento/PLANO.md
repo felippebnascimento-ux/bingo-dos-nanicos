@@ -221,7 +221,7 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | 20 | `20-mesa-de-som.md` | `mesa-de-som` | 14 | a fazer |
 | 21 | `21-trofeus-da-semana.md` | `trofeus-da-semana` | 14 | feito (02/11/2026); SQL da seção 22 aplicado e função `riot-semana` publicada |
 | 22 | `22-bolao-da-partida.md` | `bolao-da-partida` | 10 | a fazer |
-| 23 | `23-missoes-do-dia.md` | `missoes-do-dia` | 2 (cada missão liga quando a fase dela existir) | a fazer |
+| 23 | `23-missoes-do-dia.md` | `missoes-do-dia` | 2 (cada missão liga quando a fase dela existir) | feito (02/11/2026); SQL da seção 23 aplicado; 8 missões ligadas; a "aposta" fica com `fase_ok = false` até a fase 10, que deve ligá-la |
 | 25 | `25-eventos-com-horario.md` | `eventos-com-horario` | 2, 14 | feito (02/11/2026); SQL da seção 25 aplicado |
 | 26 | `26-ficha-sequencia-online.md` | `ficha-sequencia-online` | 2, 3 | feito (02/11/2026); SQL da seção 26 aplicado |
 | 27 | `27-hall-um-por-nanico.md` | `hall-um-por-nanico` | 00 | **feita** e no oficial em 02/11/2026 (um por nanico + reconexão automática) |

@@ -1,0 +1,26 @@
+/* Missões do dia (fase 23): cartão no canto do Sítio (acima da carteira) e no Perfil. */
+.missoes{display:grid;gap:8px}
+.missoes ul{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.missoes li{display:flex;gap:9px;align-items:flex-start}
+.missoes-topo{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 8px;width:100%;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.missoes-topo:disabled{cursor:default}
+.missoes-topo b{font:700 13px var(--display);white-space:nowrap}
+.missoes-topo small{font-size:11px;color:var(--muted)}
+.missao-ck{flex:none;width:18px;height:18px;margin-top:1px;border:1.5px solid var(--line);border-radius:50%;display:grid;place-items:center;font:800 11px var(--body);color:var(--accent-ink)}
+.missoes li.feita .missao-ck{background:var(--accent);border-color:var(--accent)}
+.missao-tx{display:grid;gap:3px;flex:1;min-width:0;font-size:12.5px}
+.missoes li.feita .missao-tx > span{opacity:.75}
+.missao-tx small{font-size:11px;color:var(--muted)}
+.missoes li.nova small{color:var(--accent);font-weight:700}
+.missoes li.nova .missao-ck{animation:missao-feita .5s ease-out}
+.missao-barra{display:block;height:5px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.missao-barra i{display:block;height:100%;border-radius:inherit;background:var(--accent)}
+@keyframes missao-feita{0%{transform:scale(.6)}60%{transform:scale(1.25)}100%{transform:none}}
+@media (prefers-reduced-motion:reduce){.missoes li.nova .missao-ck{animation:none}}
+
+/* no canto do Sítio, em cima da carteira (as cores seguem as placas do hall) */
+.missoes.no-canto{left:16px;bottom:76px;width:250px;padding:10px 12px}
+.missoes.no-canto .missoes-topo small,.missoes.no-canto .missao-tx small{color:color-mix(in srgb,var(--stamp-ink) 70%,transparent)}
+.missoes.no-canto .missao-ck{border-color:color-mix(in srgb,var(--stamp-ink) 40%,transparent)}
+.missoes.no-canto .missao-barra{background:color-mix(in srgb,var(--stamp-ink) 18%,transparent)}
+@media (max-width:760px){.missoes.no-canto{width:auto}}

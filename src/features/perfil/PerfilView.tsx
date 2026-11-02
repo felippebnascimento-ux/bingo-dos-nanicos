@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { riotEmJogo, useRiot } from "@/features/jogar/riot";
 import { MoedasBloco } from "@/features/moedas/Moedas";
+import { Missoes } from "@/features/missoes/Missoes";
 import { carregarFicha, useFicha } from "@/features/ficha/estado";
 import { DicaSteamPrivada } from "@/features/ficha/Ficha";
 import { api, loadFriends } from "@/lib/dados";
@@ -192,6 +193,7 @@ export function PerfilView({ hidden }: { hidden: boolean }) {
             {me ? <MeuPerfil key={me.id} me={me} /> : <p className="status">Carregando…</p>}
           </div>
           <MoedasBloco />
+          <Missoes />
         </div>
         <div className="block">
           <h2>op.gg dos nanicos</h2>

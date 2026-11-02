@@ -242,7 +242,7 @@ create table if not exists public.extrato (
   id      bigint generated always as identity primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
   valor   int not null,
-  motivo  text not null check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco')),
+  motivo  text not null check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco', 'missao')),
   ref     text,
   em      timestamptz not null default now()
 );
@@ -1172,7 +1172,7 @@ grant execute on function public.rodizio_desistir(text) to authenticated;
 --     tempo real da tabela, nunca por broadcast. O alvo não perde nada.
 alter table public.extrato drop constraint if exists extrato_motivo_check;
 alter table public.extrato add constraint extrato_motivo_check
-  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco'));
+  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco', 'missao'));
 
 create table if not exists public.zoeiras (
   id   bigint generated always as identity primary key,
@@ -1258,7 +1258,7 @@ grant execute on function public.placar_zoeira(uuid) to authenticated;
 --     (semana_vez) e o pagamento acontece uma vez só (trofeus_pagar confere o extrato).
 alter table public.extrato drop constraint if exists extrato_motivo_check;
 alter table public.extrato add constraint extrato_motivo_check
-  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco'));
+  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco', 'missao'));
 
 create table if not exists public.trofeus_semana (
   semana    date not null,
@@ -2111,7 +2111,135 @@ grant execute on function public.bingo_cantar(bigint, uuid) to authenticated;
 grant execute on function public.bingo_confirmar(bigint) to authenticated;
 grant execute on function public.bingo_fechar(text) to authenticated;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco e as 6 do bingo
+-- 23) missões do dia: 3 por dia (Brasília), sorteadas para cada um; o progresso é recalculado das tabelas de origem ------
+-- Nenhum gatilho e nenhuma contagem vinda do site: minhas_missoes() olha o que aconteceu hoje (chat, nanicadas, zoeira,
+-- truco, bingo, roleta, tempo online) e paga na hora em que a missão completa, uma vez só (feita_em + ref no extrato).
+-- Missão de fase que ainda não existe fica com fase_ok = false e não é sorteada; o PR da fase liga a missão.
+create table if not exists public.missoes_def (
+  id      text primary key check (id ~ '^[a-z0-9_]{2,20}$'),
+  texto   text not null,
+  meta    int not null check (meta between 1 and 600),
+  valor   int not null check (valor between 1 and 100),
+  fase_ok boolean not null default true,
+  ordem   int not null default 0
+);
+alter table public.missoes_def enable row level security;
+revoke all on public.missoes_def from public, anon, authenticated;
+grant select on public.missoes_def to authenticated;
+drop policy if exists missoes_def_ler on public.missoes_def;
+create policy missoes_def_ler on public.missoes_def for select to authenticated using (public.eh_nanico());
+
+insert into public.missoes_def (id, texto, meta, valor, fase_ok, ordem) values
+  ('online30',  'Fique 30 minutos no site',          30, 10, true,  1),
+  ('chat5',     'Mande 5 mensagens no chat',          5, 10, true,  2),
+  ('nanicada',  'Cadastre uma nanicada nova',         1, 15, true,  3),
+  ('chinelada', 'Dê uma chinelada em alguém',         1, 15, true,  4),
+  ('torta',     'Leve uma torta na cara',             1, 20, true,  5),
+  ('truco',     'Ganhe uma partida de truco valendo moedas', 1, 20, true, 6),
+  ('bingo',     'Faça um bingo',                      1, 20, true,  7),
+  ('roleta',    'Gire a roleta do rodízio',           1, 10, true,  8),
+  ('aposta',    'Aposte numa partida ao vivo',        1, 15, false, 9)
+on conflict (id) do update set texto = excluded.texto, meta = excluded.meta, valor = excluded.valor, ordem = excluded.ordem;
+-- fase_ok não é sobrescrito: quem liga uma missão (o PR da fase dela) faz um update explícito
+
+create table if not exists public.missoes_dia (
+  user_id   uuid not null references auth.users(id) on delete cascade,
+  dia       date not null,
+  missao_id text not null references public.missoes_def(id) on delete cascade,
+  progresso int not null default 0,
+  feita_em  timestamptz,
+  primary key (user_id, dia, missao_id)
+);
+alter table public.missoes_dia enable row level security;
+revoke all on public.missoes_dia from public, anon, authenticated;
+grant select on public.missoes_dia to authenticated;
+drop policy if exists missoes_dia_minhas on public.missoes_dia;
+create policy missoes_dia_minhas on public.missoes_dia for select to authenticated using (user_id = auth.uid());
+
+-- quanto da missão a pessoa já fez hoje, contando direto das tabelas de origem (interna)
+create or replace function public.missao_progresso(p_user uuid, p_dia date, p_missao text)
+returns int language plpgsql stable security definer set search_path = public as $$
+declare
+  v_fid uuid;
+  v_n   int := 0;
+begin
+  select id into v_fid from public.friends where user_id = p_user limit 1;
+  if p_missao = 'online30' then
+    select coalesce(minutos, 0) into v_n from public.online_diario where user_id = p_user and dia = p_dia;
+  elsif p_missao = 'chat5' then
+    select count(*) into v_n from public.chat_messages
+     where user_id = p_user and (created_at at time zone 'America/Sao_Paulo')::date = p_dia;
+  elsif p_missao = 'nanicada' then
+    select count(*) into v_n from public.phrases
+     where created_by = p_user and (created_at at time zone 'America/Sao_Paulo')::date = p_dia;
+  elsif p_missao = 'chinelada' then
+    select count(*) into v_n from public.zoeiras
+     where de = v_fid and tipo = 'chinelo' and (em at time zone 'America/Sao_Paulo')::date = p_dia;
+  elsif p_missao = 'torta' then
+    select count(*) into v_n from public.zoeiras
+     where para = v_fid and tipo = 'torta' and (em at time zone 'America/Sao_Paulo')::date = p_dia;
+  elsif p_missao = 'truco' then
+    select count(*) into v_n from public.extrato
+     where user_id = p_user and motivo = 'truco' and valor > 0 and (em at time zone 'America/Sao_Paulo')::date = p_dia;
+  elsif p_missao = 'bingo' then
+    select count(*) into v_n from public.bingo_premios
+     where user_id = p_user and linhas > 0 and (em at time zone 'America/Sao_Paulo')::date = p_dia;
+  elsif p_missao = 'roleta' then
+    select count(*) into v_n from public.rodizio
+     where sorteado_por = p_user and (girado_em at time zone 'America/Sao_Paulo')::date = p_dia;
+  end if;
+  return coalesce(v_n, 0);
+end $$;
+
+-- as minhas 3 missões de hoje (sorteia se ainda não tem), com o progresso recalculado; paga o que acabou de completar
+create or replace function public.minhas_missoes()
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  v_uid  uuid := auth.uid();
+  v_dia  date := public.hoje_br();
+  r      record;
+  v_prog int;
+  v_ganhou int := 0;
+  v_out  jsonb := '[]'::jsonb;
+  v_bonus boolean;
+begin
+  if v_uid is null or not public.eh_nanico() then return jsonb_build_object('missoes', '[]'::jsonb); end if;
+  -- uma chamada por vez para cada pessoa (duas abas não sorteiam nem pagam duas vezes)
+  perform pg_advisory_xact_lock(hashtext('missoes:' || v_uid::text));
+  if not exists (select 1 from public.missoes_dia where user_id = v_uid and dia = v_dia) then
+    insert into public.missoes_dia (user_id, dia, missao_id)
+    select v_uid, v_dia, id from public.missoes_def where fase_ok order by random() limit 3;
+  end if;
+  for r in select d.missao_id, d.feita_em, m.texto, m.meta, m.valor, m.ordem
+             from public.missoes_dia d join public.missoes_def m on m.id = d.missao_id
+            where d.user_id = v_uid and d.dia = v_dia order by m.ordem loop
+    v_prog := least(r.meta, public.missao_progresso(v_uid, v_dia, r.missao_id));
+    if r.feita_em is not null then v_prog := r.meta; end if;
+    update public.missoes_dia set progresso = v_prog where user_id = v_uid and dia = v_dia and missao_id = r.missao_id and progresso <> v_prog;
+    if r.feita_em is null and v_prog >= r.meta then
+      update public.missoes_dia set feita_em = now() where user_id = v_uid and dia = v_dia and missao_id = r.missao_id;
+      perform public.creditar(v_uid, r.valor, 'missao', v_dia || ':' || r.missao_id);
+      v_ganhou := v_ganhou + r.valor;
+      r.feita_em := now();
+    end if;
+    v_out := v_out || jsonb_build_object('id', r.missao_id, 'texto', r.texto, 'meta', r.meta, 'valor', r.valor,
+                                         'progresso', v_prog, 'feita', r.feita_em is not null);
+  end loop;
+  v_bonus := exists (select 1 from public.extrato where user_id = v_uid and motivo = 'missao' and ref = v_dia || ':bonus');
+  if not v_bonus and jsonb_array_length(v_out) = 3
+     and not exists (select 1 from public.missoes_dia where user_id = v_uid and dia = v_dia and feita_em is null) then
+    perform public.creditar(v_uid, 25, 'missao', v_dia || ':bonus');
+    v_ganhou := v_ganhou + 25;
+    v_bonus := true;
+  end if;
+  return jsonb_build_object('dia', v_dia, 'missoes', v_out, 'bonus', 25, 'bonus_pago', v_bonus, 'ganhou', v_ganhou);
+end $$;
+
+revoke all on function public.missao_progresso(uuid, date, text) from public, anon, authenticated;
+revoke all on function public.minhas_missoes() from public, anon;
+grant execute on function public.minhas_missoes() to authenticated;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo e a das missões
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -2152,4 +2280,7 @@ select proname::text, 'truco' from pg_proc
 union all
 select proname::text, 'bingo' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('bingo_abrir', 'bingo_nova_cartela', 'bingo_montada', 'bingo_cantar', 'bingo_confirmar', 'bingo_fechar')
+union all
+select proname::text, 'missoes' from pg_proc
+ where pronamespace = 'public'::regnamespace and proname in ('minhas_missoes')
 order by 2, 1;

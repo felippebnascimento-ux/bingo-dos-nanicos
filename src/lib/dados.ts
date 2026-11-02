@@ -16,6 +16,7 @@ import { iniciarHall } from "@/features/hall/bonecos";
 import { iniciarTrofeus } from "@/features/trofeus/trofeusDados";
 import { iniciarLoja } from "@/features/loja/lojaDados";
 import { iniciarBingo } from "@/features/jogar/bingoSala";
+import { iniciarMissoes } from "@/features/missoes/missoesDados";
 import { iniciarRiot } from "@/features/jogar/riot";
 import { pararTudoAoVivo } from "@/features/live/live";
 
@@ -261,6 +262,7 @@ export function enterApp() {
   /* loja: vitrine, mochila e o que todo mundo equipou (quarto, título, moldura) */
   iniciarLoja();
   iniciarBingo();
+  iniciarMissoes();
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) {
       later("f", loadFriends);

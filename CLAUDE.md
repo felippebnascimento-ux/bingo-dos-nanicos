@@ -85,6 +85,9 @@ src/
                        consumoSala.ts (tempo real de `consumos`: o boneco fuma ou bebe em todas as telas),
                        Itens.tsx (desenhos dos consumíveis e do escudo, ConsumoCamada do Sítio, TituloNanico) e
                        LojaView.tsx (vitrine com prévia, mochila; `MochilaLista` também aparece na ficha)
+    missoes/           missões do dia: missoesDados.ts (pede minhas_missoes() ao entrar, a cada 2 min e depois das
+                       ações que contam, vistas pelo tempo real; lerMissoes puro e testado) e Missoes.tsx (cartão no
+                       canto do Sítio, acima da carteira e recolhível, e no Perfil)
     trofeus/           aba Troféus (aba `trofeus`, fora do menu; abre pelo quadro do Sítio): trofeus.ts (os 6
                        troféus, pódio, números, enfeites; puro e testado), trofeusDados.ts (lê o pódio e pede o
                        cálculo à riot-semana) e TrofeusView (cartões, seletor de semana, hall da fama)
@@ -148,7 +151,7 @@ src/
     tipos.ts           Friend, Phrase, Card, Presence…
     dados/             campeoes.ts (CHAMPS, LANES, LANE_CAMP), nanicos.ts (NAN_MAP, artOf, bonecoOf), changelog.ts,
                        novidades.ts (o que mostrar no Log depois de uma atualização; puro e testado)
-  styles/              CSS global, numerado: 01-base.css … 30-loja.css (no celular, as abas ficam numa barra embaixo)
+  styles/              CSS global, numerado: 01-base.css … 31-missoes.css (no celular, as abas ficam numa barra embaixo)
 public/arte/           artes dos nanicos (rosto e corpo), bonecos do hall, foto da turma, reações dos Picarétezzi
 planejamento/          PLANO.md (próximas fases e decisões), prompts/ (um por fase), demos e arte pronta
 supabase/
@@ -299,6 +302,8 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 | `riot_semana_meta`, `riot_semana_partidas` | trava e progresso do cálculo da semana (`estado` calculando/parcial/pronta) e as partidas já lidas (só os números dos nanicos) | só a função `riot-semana` (o site lê `estado`) |
 | `jogos_stats` | números da ficha por nanico e fonte (`lol`: elo, vitórias, KDA, main; `steam`: horas) | nanicos leem; só a função `ficha-jogos` grava |
 | `riot_partidas_vistas` | partidas do LoL já lidas (KDA das últimas 20 sem buscar tudo de novo) | só a função `ficha-jogos` |
+| `missoes_def` | as missões possíveis (`id`, `texto`, `meta`, `valor`, `fase_ok`, `ordem`); a semente fica no SQL | nanicos leem; só o admin escreve (o PR de uma fase nova liga a missão dela com `fase_ok = true`) |
+| `missoes_dia` | as 3 missões de cada um por dia (`user_id`, `dia`, `missao_id`, `progresso`, `feita_em`) | cada um lê as suas; só `minhas_missoes()` grava |
 | `bingo_partidas` | uma partida de bingo aberta por sala de LoL (`sala`, `game_id` da Riot, `aberta_em`, `fechada_em`) | nanicos leem; só as funções `bingo_*` |
 | `bingo_cartelas` | a cartela de cada um na partida (`casas` = 25 ids de nanicadas, o meio null = LIVRE; `origem` sorteada/montada) | cada um lê **só a sua**; só as funções `bingo_*` |
 | `bingo_cantos` | "Aconteceu!" (`phrase_id`, `cantado_por`, `confirmado_por`, `confirmado_em`) | nanicos leem; só `bingo_cantar` e `bingo_confirmar` |
@@ -330,6 +335,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
   - **`equipar(item, ligar)`** só aceita o que está na mochila e desliga os outros do mesmo espaço (cadeira, mesa, tapete, pôster, planta, parede, luz, título, moldura). **`usar_item(item)`** gasta 1 consumível e grava em `consumos`; o tempo real dessa tabela anima o boneco em todas as telas (nunca broadcast). **`quarto_de(nanico)`** devolve os equipados.
   - **Escudo de sequência:** o `bater_ponto()` da seção 15 (substitui o da 7) gasta 1 escudo quando a pessoa faltou ontem mas veio anteontem, cria o dia de ontem com valor 0 e devolve `escudo_usado: true`. Dois dias perdidos não salvam.
   - **Itens:** consumíveis de 15 a 60 (cigarrinho, latinha, chimarrão, energético, caipirinha, charuto), escudo 400, quarto de 150 a 1.500, títulos de 250 a 2.000 e molduras de 800 e 1.200.
+- **Missões do dia (seção 23 do `seguranca.sql`):** `minhas_missoes()` sorteia 3 das `fase_ok` (com `random()`) na primeira chamada do dia de Brasília e devolve as 3 com o progresso **recalculado na hora** das tabelas de origem (`missao_progresso`: `online_diario`, `chat_messages`, `phrases.created_by`, `zoeiras`, extrato do truco, `bingo_premios`, `rodizio.sorteado_por`). Paga ao completar com `creditar(valor, 'missao', 'dia:id')` e, com as 3 feitas, o bônus de +25 (`'dia:bonus'`), uma vez só (trava por pessoa com `pg_advisory_xact_lock`). Nenhum progresso vem do site. A "Aposte numa partida ao vivo" espera a fase 10 (`fase_ok = false`).
 - **Bingo no servidor (seção 12a do `seguranca.sql`):**
   - **Cartela:** `bingo_nova_cartela(sala)` sorteia no banco (`bingo_sortear`, com `gen_random_bytes`; até 16 da partida, o resto genéricas, como `sortear()`), e `bingo_montada(sala, casas)` aceita 24 nanicadas que valem (`bingo_valem`, a mesma regra de `eligible()`). Ambas abrem a partida da sala se não houver (`bingo_abrir`). Trocar de cartela só antes do primeiro canto confirmado.
   - **Marcar:** `bingo_cantar(partida, nanicada)` (quem tem cartela; a nanicada tem que estar em alguma cartela; 10 por minuto) e `bingo_confirmar(canto)` por **outro** nanico com cartela. A casa marca em todas as cartelas que a têm.
@@ -363,7 +369,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 - **Mudanças no banco:** chegam por `postgres_changes` em `friends`, `phrases`, `game`, `chat_messages`, `carteiras`, `rodizio`, `mochila` (equipados), `consumos` (o boneco fumando ou bebendo), `truco_mesas`, `truco_maos`, `bingo_partidas`, `bingo_cartelas` e `bingo_cantos` (no DELETE, `aoMudarTabela` entrega a chave da linha apagada). A chinelada e a torta vêm do tempo real de `zoeiras` (pagas, gravadas por `zoar()`), e o sorteio da roleta do rodízio vem do tempo real de `rodizio` (todo mundo anima até o mesmo `girado_em`), **nunca de broadcast**. Os ganhos de moedas de todo mundo no Sítio vêm do tempo real de `carteiras` (gravado por `creditar()`), **nunca de broadcast**.
 
 ### Navegador (`localStorage`, só conveniência de cada pessoa)
-- **Chaves:** `rift-lineup`, `rift-card` (cartela do bingo local; numa sala de LoL com o SQL, a cartela vem do banco), `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `log-visto`, `fome-fechado`, `hall-pos` (último piso no hall), `hall-sala-min` (lista "Na sala agora" do Sítio recolhida), `sala-atual` (última sala; o site sempre abre no lobby), `canais-voz-min` e `canais-texto-min` (categorias de canais recolhidas; no celular começam recolhidas) `membros-min` (lista de membros só com os rostos; abaixo de 1200 px fica assim sempre) e `midia` (microfone, saída de som, câmera, eco e ruído escolhidos nas Configurações) e `evento-visto` (o aviso que explica o happy hour e o churrasco já apareceu).
+- **Chaves:** `rift-lineup`, `rift-card` (cartela do bingo local; numa sala de LoL com o SQL, a cartela vem do banco), `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `log-visto`, `fome-fechado`, `hall-pos` (último piso no hall), `hall-sala-min` (lista "Na sala agora" do Sítio recolhida), `sala-atual` (última sala; o site sempre abre no lobby), `canais-voz-min` e `canais-texto-min` (categorias de canais recolhidas; no celular começam recolhidas) `membros-min` (lista de membros só com os rostos; abaixo de 1200 px fica assim sempre) e `midia` (microfone, saída de som, câmera, eco e ruído escolhidos nas Configurações) e `evento-visto` (o aviso que explica o happy hour e o churrasco já apareceu) e `missoes-min` (cartão das missões recolhido no Sítio).
 - **As do site antigo continuam iguais**, então ninguém perde a cartela na troca.
 - **`sessionStorage`:** `log-auto` (o Log de novidades já abriu sozinho nesta sessão do navegador).
 - Nada importante pode morar só aqui.
