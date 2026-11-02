@@ -5,10 +5,22 @@ Decisões combinadas com o João em 01/11/2026. Vale para qualquer pessoa ou IA 
 
 ## Como usar
 
-1. Cada fase tem um prompt pronto em `planejamento/prompts/NN-nome.md`.
-2. Abra **uma sessão nova por fase** e mande: `Leia planejamento/prompts/NN-nome.md e faça o que ele pede.`
-3. **Uma feature por vez.** A próxima fase só começa depois que a anterior virou PR, foi revisada e juntada na `main`.
-4. Terminou a fase? Marque em **Andamento** (no fim deste arquivo) no mesmo PR.
+### Duas sessões, dois papéis
+- **Sessão de planejamento:** só decide e escreve. Ela atualiza este `PLANO.md`, os prompts (`planejamento/prompts/`), as demos e os arquivos de arte prontos (`planejamento/assets/`). **Não mexe no código do site.**
+- **Sessão de atualizações:** implementa uma fase por vez, seguindo o prompt daquela fase, e abre um PR por fase.
+
+### Como passar uma fase de uma para a outra
+1. **Uma vez:** a pasta `planejamento/` precisa estar na `main` (o PR da branch `planejamento`, que só tem documentos e arte), para toda sessão enxergá-la a partir da `main`.
+2. **Na sessão de atualizações**, para cada fase, mande:
+   > Leia o CLAUDE.md e o planejamento/PLANO.md. Depois leia planejamento/prompts/NN-nome.md e faça o que ele pede, só essa fase, numa branch nova a partir da main.
+3. **A sessão de atualizações:**
+   - mostra o plano curto e espera o "ok";
+   - implementa;
+   - roda `npm run check`;
+   - abre o PR;
+   - marca a fase como feita em **Andamento**.
+4. **Uma feature por vez.** A próxima fase só começa depois que a anterior foi revisada e juntada na `main`.
+5. **Mudou alguma ideia no meio?** Volte para a sessão de planejamento, que corrige o plano e o prompt. A sessão de atualizações não decide sozinha o que não está escrito.
 
 ## Regras de toda sessão (os prompts apontam para cá)
 
@@ -126,16 +138,25 @@ Decisões combinadas com o João em 01/11/2026. Vale para qualquer pessoa ou IA 
 ### Ainda sem decisão
 - **"Poder mudar a senha de novo":** o botão "Trocar senha" já existe. Falta saber se o problema é o botão não funcionar ou se é recuperar uma senha esquecida (hoje só o admin reseta).
 
+## Fila de ideias (ainda sem prompt)
+Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
+- **Balão do chat no hall:** a mensagem aparece por 5 s em cima do boneco de quem escreveu.
+- **Sentar e acenar:** sentar nas cadeiras e no colchão do hall, e acenar com um botão. São mais quadros gerados com IA, no mesmo estilo.
+- **Gramado da Resenha:** a área de fora do Sítio, com as cadeiras de plástico na grama, como sala.
+- **Trocar a senha de novo:** falta saber se o problema é o botão não funcionar ou se a ideia é recuperar uma senha esquecida.
+
 ## Ordem e andamento
 
 | Fase | Prompt | Branch | Depende de | Estado |
 |---|---|---|---|---|
 | 0 | migração Next.js (PR #1) | `nextjs-migracao` | — | em revisão |
+| — | pasta `planejamento/` na `main` | `planejamento` | — | commitada, falta PR |
+| 00 | `00-hall-sitio-bonecos.md` | `hall-sitio` | 0 | **próxima** |
 | 1 | `01-log-novidades.md` | `log-novidades` | 0 | a fazer |
 | 2 | `02-carteira-moedas.md` | `carteira-moedas` | 0 | a fazer |
 | 3 | `03-ficha-dados-reais.md` | `ficha-dados-reais` | 0 | a fazer |
 | 4 | `04-atributos-votados.md` | `atributos-votados` | 3 | a fazer |
-| 5 | `05-salas-lan-house.md` | `salas-lan-house` | 3 | a fazer |
+| 5 | `05-salas-lan-house.md` | `salas-lan-house` | 00, 3 | a fazer |
 | 6 | `06-cassino-roleta.md` | `cassino-roleta` | 2 | a fazer |
 | 7 | `07-cassino-jogos.md` | `cassino-jogos` | 6 | a fazer |
 | 8 | `08-bingo-servidor.md` | `bingo-servidor` | 2, 5 | a fazer |

@@ -64,7 +64,7 @@ Siga as "Regras de toda sessão" de `planejamento/PLANO.md`. Leia:
 ## Não faça
 - Não chame a Riot ou a Steam do navegador. A CSP bloqueia, e a chave não pode sair do servidor.
 - Não guarde a chave em nenhum arquivo.
-- Não crie imagens novas: nesta fase o boneco é a arte que já existe. O boneco estilo Habbo é outra fase; deixe o `Quarto.tsx` recebendo o boneco por props, para trocar depois sem refazer o quarto.
+- Não crie imagens novas. No quarto da ficha, use o **boneco estilo Habbo parado** (`bonecoOf(friend)`, da fase 00, quadro `parado` de `frente`). Se a fase 00 ainda não estiver na `main`, use a arte de corpo inteiro (`artOf(friend).full`) e deixe o `Quarto.tsx` recebendo a imagem por props.
 - Não implemente os votos (fase 4).
 
 ## Pronto quando

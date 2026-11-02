@@ -1,12 +1,12 @@
 # Fase 5: Salas tipo lan house, lobby e chat geral
 
-**Branch:** `salas-lan-house` · **Depende de:** fase 3 (horas e links na ficha) · **Banco:** sim · **É a maior mudança do plano**
+**Branch:** `salas-lan-house` · **Depende de:** fase 00 (hall do Sítio com os bonecos) e fase 3 (horas e links na ficha) · **Banco:** sim · **É a maior mudança do plano**
 
 ## Objetivo (para quem usa)
 A call do Discord se dividiu? Cada grupo entra numa **sala** do site.
-- **Lobby (a tela inicial nova):**
-  - cartões das salas fixas, por enquanto **LoL 1, LoL 2, CS e Resenha**;
-  - cada cartão mostra quem está ali (rosto), quem está **ao vivo** e quem está **em partida**;
+- **Lobby = o hall do Sítio (já feito na fase 00).** Esta fase acrescenta:
+  - o **portão de tábuas** (K-FOFO 2018) abre a escolha das salas fixas, por enquanto **LoL 1, LoL 2 e CS**, e a **porta de vidro** leva à **Resenha** (o gramado lá fora);
+  - cada cartão de sala mostra quem está ali (rosto), quem está **ao vivo** e quem está **em partida**;
   - ao passar o mouse ou tocar num rosto, aparecem as horas daquele jogo (dado da fase 3) e os links do op.gg e da Steam;
   - o **chat geral** fica no lobby.
 - **Dentro de uma sala:**
@@ -53,14 +53,14 @@ Siga as "Regras de toda sessão" de `planejamento/PLANO.md`. **Esta fase é gran
 ### Site
 - **Estado:**
   - `store.ts` ganha `salas`, `minhaSala: string | null` e `onlineSala` (presença do canal da sala);
-  - `Aba` ganha `"lobby"`, que vira a aba inicial;
+  - a aba inicial continua sendo o hall (`"hall"`, da fase 00);
   - a última sala fica em `local` (`sala-atual`), mas o site sempre abre no lobby.
 - **`sala.ts`:**
   - separe "lobby" e "sala atual";
   - `enviar`/`aoReceber` de `rtc`, `reacao` e `risco` passam pelo canal da sala;
   - `truco` continua no lobby;
   - mantenha as conferências da regra 4 (`estaNaSala` passa a olhar a presença do canal certo).
-- **`features/lobby/LobbyView.tsx` (nova):** a grade de cartões de sala (cada um como uma "máquina", no visual do `.block`), o chat geral ao lado no desktop e embaixo no celular, e o botão "Entrar na sala".
+- **No hall (`features/hall/`):** o portão e a porta de vidro aparecem, e clicar neles abre a grade de cartões de sala (cada um como uma "máquina", no visual do `.block`), o chat geral ao lado no desktop e embaixo no celular, e o botão "Entrar na sala".
 - **Menu:**
   - "Na sala agora" mostra quem está na **minha** sala;
   - em cima fica "Você está em: LoL 1 · Trocar".
@@ -82,7 +82,7 @@ Siga as "Regras de toda sessão" de `planejamento/PLANO.md`. **Esta fase é gran
 - [ ] O truco continua funcionando entre pessoas de salas diferentes.
 - [ ] Mensagem de broadcast forjada para `sala:xyz` inexistente é recusada pelo banco.
 - [ ] Com 390 px: lobby, sala e barra de navegação sem rolagem para o lado.
-- [ ] O `CLAUDE.md` foi atualizado (seção "Sala em tempo real", tabelas, chave `sala-atual`, pasta `lobby/`) e o `CHANGELOG` também.
+- [ ] O `CLAUDE.md` foi atualizado (seção "Sala em tempo real", tabelas, chave `sala-atual`, pasta `features/hall` atualizada) e o `CHANGELOG` também.
 
 ## Entrada do CHANGELOG
 `"Salas tipo lan house: LoL 1, LoL 2, CS e Resenha, cada uma com live, câmeras e chat próprios"`, `"Lobby com quem está em cada sala e chat geral"`
