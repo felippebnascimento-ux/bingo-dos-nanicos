@@ -1,0 +1,59 @@
+{
+  "celula": {
+    "largura": 84,
+    "altura": 134
+  },
+  "ancora": {
+    "x": 42,
+    "y": 132,
+    "obs": "ponto do chão embaixo do boneco, alinhado pelo centro da cabeça"
+  },
+  "linhas": {
+    "frente": 0,
+    "costas": 1
+  },
+  "colunas": {
+    "parado": 0,
+    "andar": [
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "sentidos": {
+    "frente-direita": [
+      "frente",
+      false
+    ],
+    "frente-esquerda": [
+      "frente",
+      true
+    ],
+    "costas-direita": [
+      "costas",
+      false
+    ],
+    "costas-esquerda": [
+      "costas",
+      true
+    ]
+  },
+  "obs_sentidos": "o segundo valor diz se espelha na horizontal",
+  "arquivos": {
+    "1": "abreutz.webp",
+    "2": "alemao.webp",
+    "3": "dd.webp",
+    "4": "gamer.webp",
+    "5": "grito.webp",
+    "6": "guiperino.webp",
+    "7": "le-bubu.webp",
+    "8": "henry.webp",
+    "9": "pitoco.webp",
+    "10": "john.webp",
+    "11": "veiao.webp",
+    "12": "max.webp",
+    "13": "gordao.webp",
+    "14": "pin.webp"
+  }
+}

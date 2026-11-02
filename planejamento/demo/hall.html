@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Hall do Sítio</title>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@500;700&family=Unbounded:wght@700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#2E2E2D;width:1240px;height:820px;font-family:Onest,sans-serif;overflow:hidden}
+h1{position:absolute;left:28px;top:20px;margin:0;font:800 20px Unbounded,sans-serif;color:#FAF9F6}
+p.sub{position:absolute;left:28px;top:50px;margin:0;color:#B8B6AC;font-size:13px}
+svg{position:absolute;left:0;top:0}
+</style></head><body>
+<svg id="s" width="1240" height="820"></svg>
+<h1>Hall do Sítio do Mitz</h1>
+<p class="sub">Lobby do site: a tela inicial, onde todo mundo aparece antes de entrar numa sala</p>
+<script>
+const ARTE="../../public/arte/nanicos/";
+const svg=document.getElementById("s"),NS="http://www.w3.org/2000/svg";
+const X0=560,Y0=318,TW=40,TH=20,NI=11,NJ=9,WH=215;
+const p=(i,j,z=0)=>[X0+(i-j)*TW,Y0+(i+j)*TH-z];
+const el=(tag,attrs,pai=svg)=>{const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);pai.appendChild(e);return e};
+const poly=(pts,fill,stroke,sw=1)=>el("polygon",{points:pts.map(q=>q.join(",")).join(" "),fill,stroke:stroke||"none","stroke-width":sw,"stroke-linejoin":"round"});
+let semente=7;const rnd=()=>(semente=(semente*16807)%2147483647)/2147483647;
+const escurece=(h,f)=>{const n=parseInt(h.slice(1),16);const m=v=>Math.max(0,Math.min(255,Math.round(v*f)));return"#"+((1<<24)|(m(n>>16)<<16)|(m(n>>8&255)<<8)|m(n&255)).toString(16).slice(1)};
+// caixa isométrica: i,j,w(largura em i),d(em j),h, z base
+function caixa(i,j,w,d,h,topo,esq,dir,z=0,linha="#3a2e25"){
+  poly([p(i,j+d,z),p(i+w,j+d,z),p(i+w,j+d,z+h),p(i,j+d,z+h)],esq,linha);
+  poly([p(i+w,j,z),p(i+w,j+d,z),p(i+w,j+d,z+h),p(i+w,j,z+h)],dir,linha);
+  poly([p(i,j,z+h),p(i+w,j,z+h),p(i+w,j+d,z+h),p(i,j+d,z+h)],topo,linha);
+}
+// retângulo pintado numa parede: parede "dir" (j=0, ao longo de i) ou "esq" (i=0, ao longo de j)
+const naParede=(lado,a,b,z0,z1,fill,stroke,sw)=>lado==="dir"?poly([p(a,0,z0),p(b,0,z0),p(b,0,z1),p(a,0,z1)],fill,stroke,sw):poly([p(0,a,z0),p(0,b,z0),p(0,b,z1),p(0,a,z1)],fill,stroke,sw);
+
+// ---------- paredes de tijolinho
+const TIJ=["#E6D3A6","#DCC594","#E9D9B3","#D8BF8C","#E2CB9A"],VERM="#C98E6A";
+function tijolos(lado,n){
+  naParede(lado,0,n,0,WH,"#CDBF9F");
+  for(let r=0,z=0;z<WH;r++,z+=9){
+    for(let a=(r%2?-.25:0);a<n;a+=.5){
+      const a0=Math.max(0,a),a1=Math.min(n,a+.5);if(a1<=a0)continue;
+      const cor=rnd()<.08?VERM:TIJ[Math.floor(rnd()*TIJ.length)];
+      naParede(lado,a0+.03,a1-.03,z+1,Math.min(WH,z+8),lado==="dir"?cor:escurece(cor,.93));
+    }
+  }
+  // faixa cinza (viga pintada) e pilares
+  naParede(lado,0,n,150,162,lado==="dir"?"#8D949B":"#7E858C","#5d6268");
+  for(const a of lado==="dir"?[3.6,7.9]:[3.8])naParede(lado,a,a+.32,0,WH,lado==="dir"?"#8D949B":"#7E858C","#5d6268");
+  // rodapé
+  naParede(lado,0,n,0,6,lado==="dir"?"#9A8F7A":"#8E846F");
+}
+tijolos("esq",NJ);tijolos("dir",NI);
+// beiral de madeira (forro inclinado) em cima das paredes
+for(const lado of["esq","dir"]){
+  const n=lado==="dir"?NI:NJ;
+  naParede(lado,0,n,WH,WH+34,lado==="dir"?"#8B5A35":"#7A4E2E","#5b3a22");
+  for(let a=.35;a<n;a+=.35)naParede(lado,a,a+.02,WH,WH+34,"#5b3a22");
+  naParede(lado,0,n,WH+26,WH+38,"#6B4226","#3f2716"); // viga de tronco
+}
+// quina das paredes
+poly([p(0,0,0),p(0,0,WH+38),[p(0,0)[0]+3,p(0,0,WH+38)[1]],[p(0,0)[0]+3,p(0,0)[1]]],"#6d655a");
+
+// ---------- coisas na parede da esquerda (ao longo de j)
+// TV mostrando a live
+naParede("esq",1.0,2.7,92,148,"#111","#000",2);
+naParede("esq",1.08,2.62,96,144,"#4C5FA8");
+naParede("esq",1.08,2.62,96,112,"#7E6BC4");
+naParede("esq",1.6,2.2,110,126,"#C4A06A");
+// quadro de carros
+naParede("esq",3.0,3.7,95,120,"#3b3b3b","#222",2);naParede("esq",3.05,3.65,98,117,"#9DB5CC");naParede("esq",3.05,3.65,98,104,"#6F8A5E");
+// porta de vidro para fora (gramado)
+naParede("esq",4.6,6.8,0,140,"#5B4A3A","#3a2e25",3);
+naParede("esq",4.7,6.7,4,136,"#9FC49A");
+naParede("esq",4.7,6.7,4,60,"#6FA35C");
+naParede("esq",5.2,5.9,60,128,"#4E7F3E");
+naParede("esq",5.7,5.74,4,136,"#5B4A3A");
+// janelas velhas penduradas (decoração), no alto
+for(const[a,b]of[[1.2,2.0],[2.4,3.1]]){naParede("esq",a,b,170,208,"none","#8A6A45",4);naParede("esq",(a+b)/2-.02,(a+b)/2+.02,170,208,"#8A6A45");naParede("esq",a,b,188,190,"#8A6A45")}
+
+// ---------- coisas na parede da direita (ao longo de i)
+for(const[a,b]of[[.9,1.8],[2.2,3.0],[4.3,5.2]]){naParede("dir",a,b,168,210,"none","#8A6A45",4);naParede("dir",(a+b)/2-.02,(a+b)/2+.02,168,210,"#8A6A45");naParede("dir",a,b,189,191,"#8A6A45")}
+naParede("dir",1.2,2.9,96,128,"#2c3a4e","#1d1d1d",2);naParede("dir",1.25,2.85,99,125,"#7C93B5");naParede("dir",1.25,2.85,99,108,"#5B6B85");
+for(const a of[1.5,1.95,2.4])naParede("dir",a,a+.25,100,106,["#C0392B","#F1F1F1","#E8C24A"][Math.round((a-1.5)/.45)]);
+// relógio
+{const[cx,cy]=p(4.6,0,128);el("ellipse",{cx,cy:cy+9,rx:15,ry:17,fill:"#F4F1EA",stroke:"#2b2b2b","stroke-width":3});
+ el("line",{x1:cx,y1:cy+9,x2:cx+1,y2:cy-2,stroke:"#2b2b2b","stroke-width":2});el("line",{x1:cx,y1:cy+9,x2:cx+8,y2:cy+11,stroke:"#2b2b2b","stroke-width":2})}
+// placa K-FOFO 2018
+naParede("dir",8.25,10.6,0,138,"#8B6B4A","#5b3a22",2);
+for(let a=8.45;a<10.6;a+=.22)naParede("dir",a,a+.02,0,138,"#5b3a22");
+naParede("dir",8.9,10.0,144,160,"#5E4630","#3a2a1c",2);
+{const[sx,sy]=p(9.45,0,151);const t=el("text",{x:sx,y:sy+4,"text-anchor":"middle","font-family":"Unbounded,sans-serif","font-weight":"700","font-size":"11",fill:"#F1E8D9",transform:`rotate(26.6 ${sx} ${sy})`});t.textContent="K-FOFO 2018"}
+
+// ---------- piso de lajota clara
+for(let i=0;i<NI;i++)for(let j=0;j<NJ;j++)poly([p(i,j),p(i+1,j),p(i+1,j+1),p(i,j+1)],(i+j)%2?"#E4E1DA":"#D9D5CC","#C4BEB2");
+// tapete listrado perto da porta
+poly([p(1.2,4.4),p(3.2,4.4),p(3.2,7.4),p(1.2,7.4)],"#B9A27A","#8f7a56");
+for(let k=0;k<6;k++)poly([p(1.2,4.6+k*.5),p(3.2,4.6+k*.5),p(3.2,4.8+k*.5),p(1.2,4.8+k*.5)],"#9C845C");
+
+// ---------- móveis (de trás para a frente)
+// churrasqueira de tijolo com coifa
+caixa(5.5,0,2.2,1.1,88,"#B99B78","#C9A57E","#D8B88F");
+poly([p(5.85,1.1,22),p(7.35,1.1,22),p(7.35,1.1,70),p(5.85,1.1,70)],"#141414","#000");
+for(let k=0;k<4;k++)poly([p(5.9,1.1,30+k*9),p(7.3,1.1,30+k*9),p(7.3,1.1,32+k*9),p(5.9,1.1,32+k*9)],"#555");
+// juntas dos tijolos da churrasqueira
+for(let z=9;z<88;z+=9){if(z>20&&z<72)continue;poly([p(5.5,1.1,z),p(7.7,1.1,z)],"none","#A88762");poly([p(7.7,0,z),p(7.7,1.1,z)],"none","#B8966E")}
+for(let z=6;z<60;z+=9)poly([p(7.7,0,z),p(7.7,1.1,z)],"none","#B8966E");
+caixa(5.8,0,1.6,.7,60,"#C9A57E","#C9A57E","#D8B88F",88);
+for(let z=97;z<148;z+=9){poly([p(5.8,.7,z),p(7.4,.7,z)],"none","#A88762");poly([p(7.4,0,z),p(7.4,.7,z)],"none","#B8966E")}
+caixa(6.1,0,1.0,.45,WH-148,"#BFA07C","#BFA07C","#CDAE86",148);
+// geladeira e freezer brancos na parede da esquerda
+caixa(0,7.0,.85,.9,92,"#F4F4F2","#E2E2DF","#F0F0EE",0,"#9a9a96");
+poly([p(0,7.9,60),p(.85,7.9,60)],"none","#9a9a96");
+caixa(0,7.95,.85,.95,58,"#F4F4F2","#E2E2DF","#F0F0EE",0,"#9a9a96");
+// fogão
+// colchão inflável azul
+function colchao(i,j,w,d){caixa(i,j,w,d,9,"#3D5BA9","#2E4689","#34509A",0,"#1f2f5c");for(let a=i+.3;a<i+w;a+=.45)for(let b=j+.25;b<j+d;b+=.4){const[x,y]=p(a,b,9);el("ellipse",{cx:x,cy:y,rx:4,ry:2,fill:"#2E4689"})}}
+colchao(1.4,1.5,2.4,1.0);
+// mesa comprida com toalha xadrez
+function mesa(i,j,w,d,h,toalha,borda){
+  for(const[a,b]of[[i+.1,j+.1],[i+w-.2,j+.1],[i+.1,j+d-.2],[i+w-.2,j+d-.2]])caixa(a,b,.1,.1,h-4,"#555","#444","#666");
+  caixa(i,j,w,d,4,toalha,borda,escurece(borda,1.1),h-4);
+}
+// cadeira de plástico branca
+function cadeira(i,j,vira){
+  for(const[a,b]of[[i,j],[i+.5,j],[i,j+.5],[i+.5,j+.5]])caixa(a,b,.08,.08,22,"#fff","#d9d9d9","#eee",0,"#9a9a9a");
+  caixa(i,j,.58,.58,3,"#FFFFFF","#DCDCDC","#EEEEEE",22,"#9a9a9a");
+  if(vira==="j")caixa(i,j,.58,.08,26,"#FFFFFF","#DCDCDC","#EEEEEE",25,"#9a9a9a");else caixa(i,j,.08,.58,26,"#FFFFFF","#DCDCDC","#EEEEEE",25,"#9a9a9a");
+}
+cadeira(8.0,2.5,"j");
+mesa(7.4,3.1,1.5,1.3,32,"#5FA866","#4A8A50");
+{const[x,y]=p(8.0,3.6,32);el("rect",{x:x-4,y:y-14,width:7,height:14,rx:2,fill:"#4E7F3E"});el("rect",{x:x+8,y:y-10,width:6,height:10,rx:2,fill:"#C4A06A"})}
+cadeira(9.2,3.5,"i");
+// os nanicos: a arte do site em pé no piso
+function nanico(n,i,j,nome,espelho,alt=128){
+  const[x,y]=p(i,j);const larg=alt*190/440;
+  el("ellipse",{cx:x,cy:y,rx:26,ry:9,fill:"rgba(0,0,0,.22)"});
+  const im=el("image",{href:ARTE+n+"-corpo.webp",x:x-larg/2,y:y-alt+4,width:larg,height:alt});
+  if(espelho)im.setAttribute("transform",`translate(${2*x} 0) scale(-1 1)`);
+  const g=el("g",{});const w=nome.length*8+18;
+  el("rect",{x:x-w/2,y:y-alt-18,width:w,height:18,rx:5,fill:"rgba(38,38,38,.85)"},g);
+  const t=el("text",{x,y:y-alt-5,"text-anchor":"middle","font-family":"Unbounded,sans-serif","font-weight":"700","font-size":"10",fill:"#C4A06A"},g);t.textContent=nome.toUpperCase();
+}
+nanico(4,4.2,4.6,"Gamer",false);
+mesa(3.2,6.4,3.4,1.2,30,"#E9DDC2","#C9B48C");
+for(let a=3.4;a<6.5;a+=.5){const[x,y]=p(a,6.9,30);el("circle",{cx:x,cy:y,r:3,fill:"#8A6A39",opacity:.6})}
+{const[x,y]=p(4.4,6.8,30);el("rect",{x:x-5,y:y-20,width:10,height:20,rx:3,fill:"#BFD9E8",opacity:.9})}
+nanico(1,6.6,5.0,"Abreutz",true);
+cadeira(6.9,7.9,"j");
+colchao(7.6,6.3,2.4,1.1);
+nanico(12,9.4,5.0,"Max",true,124);
+// balão de fala
+{const[x,y]=p(4.2,4.6);const g=el("g",{});el("rect",{x:x+34,y:y-176,width:118,height:26,rx:10,fill:"#FAF9F6",stroke:"#262626","stroke-width":2},g);
+ const t=el("text",{x:x+93,y:y-158,"text-anchor":"middle","font-family":"Onest,sans-serif","font-weight":"700","font-size":"12",fill:"#353535"},g);t.textContent="bora uma ranked?"}
+
+// ---------- legenda das portas (salas)
+function placa(txt,x,y,cor){const g=el("g",{});const w=txt.length*7.4+22;el("rect",{x,y,width:w,height:24,rx:12,fill:cor},g);const t=el("text",{x:x+w/2,y:y+16,"text-anchor":"middle","font-family":"Onest,sans-serif","font-weight":"700","font-size":"12",fill:"#262626"},g);t.textContent=txt}
+{const[x,y]=p(0,5.7,150);placa("Lá fora: sala da Resenha",x-150,y-6,"#C4A06A")}
+{const[x,y]=p(9.4,0,175);placa("Portão: salas LoL 1, LoL 2 e CS",x-70,y-40,"#C4A06A")}
+{const[x,y]=p(0,1.85,150);placa("TV: quem está ao vivo",x-150,y-10,"#E0705A")}
+</script>
+</body></html>

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Ficha do nanico</title>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#2E2E2D;--surface:#383836;--surface-2:#4A4E44;--line:#4B4C46;--ink:#FAF9F6;--muted:#B8B6AC;--olive:#5C6154;
+--accent:#C4A06A;--accent-ink:#262626;--accent-soft:#4A4033;--accent-text:#D8B887;--mint:#566B7D;--mint-soft:#3E4C59;--live:#E0705A;
+--display:"Unbounded",system-ui,sans-serif;--body:"Onest",system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);width:1240px;height:760px;padding:28px;display:grid;grid-template-columns:620px 1fr;gap:22px}
+.quarto{background:var(--surface);border:1px solid var(--line);border-radius:22px;position:relative;overflow:hidden}
+.quarto svg{display:block}
+.tag{position:absolute;left:18px;top:16px;font:600 11px var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--accent-text);background:var(--accent-soft);padding:6px 10px;border-radius:999px}
+.balao{position:absolute;left:330px;top:150px;background:#FAF9F6;color:#353535;font:600 13px var(--body);padding:8px 12px;border-radius:12px;border:2px solid #262626;box-shadow:3px 3px 0 #262626}
+.balao:after{content:"";position:absolute;left:18px;bottom:-10px;width:14px;height:14px;background:#FAF9F6;border-right:2px solid #262626;border-bottom:2px solid #262626;transform:rotate(45deg)}
+.ficha{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:22px 24px;display:flex;flex-direction:column;gap:16px}
+.topo{display:flex;gap:14px;align-items:center}
+.topo img{width:64px;height:64px;border-radius:50%;border:3px solid var(--accent);background:var(--surface-2)}
+.topo h1{margin:0;font:800 26px var(--display);letter-spacing:-.01em}
+.topo p{margin:2px 0 0;color:var(--muted);font-size:13.5px}
+.chips{margin-left:auto;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.chip{font:700 12px var(--display);padding:6px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent-text);white-space:nowrap}
+.chip.fogo{background:#4a2f28;color:var(--live)}
+h2{margin:0 0 8px;font:700 12px var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+h2 small{font:500 11.5px var(--body);letter-spacing:0;text-transform:none;color:var(--muted);margin-left:auto}
+.reais{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.st{background:var(--surface-2);border-radius:14px;padding:10px 12px}
+.st b{display:block;font:700 18px var(--display)}
+.st span{font-size:11.5px;color:var(--muted)}
+.links{display:flex;gap:8px;margin-top:8px}
+.lk{font:600 12.5px var(--body);color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:10px;padding:6px 10px}
+.attr{display:grid;grid-template-columns:92px 1fr 34px;align-items:center;gap:10px;margin:7px 0}
+.attr .n{font-weight:600;font-size:13.5px}
+.bar{height:12px;border-radius:6px;background:var(--surface-2);overflow:hidden;position:relative}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:6px}
+.bar i.max{background:var(--live)}
+.attr .v{font:700 13px var(--display);text-align:right}
+.btn{white-space:nowrap}
+.mochila{display:flex;gap:8px;flex-wrap:wrap}
+.item{display:flex;align-items:center;gap:8px;background:var(--surface-2);border-radius:12px;padding:7px 11px;font-size:12.5px;font-weight:600}
+.item i{width:14px;height:14px;border-radius:4px;background:var(--accent);display:inline-block}
+.item.r i{background:var(--mint)}
+.item.l i{background:var(--live)}
+.hoje{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rodape{display:flex;align-items:center;gap:10px;margin-top:auto}
+.btn{font:700 13px var(--body);background:var(--accent);color:var(--accent-ink);border:0;border-radius:12px;padding:10px 16px}
+.hint{font-size:12px;color:var(--muted)}
+</style></head><body>
+<div class="quarto">
+  <span class="tag">Lan do LoL · máquina 3</span>
+  <svg id="sala" width="620" height="704" ></svg>
+  <div class="balao" id="balao">bora mais uma?</div>
+</div>
+<div class="ficha">
+  <div class="topo">
+    <img src="../../public/arte/nanicos/4-rosto.webp" alt="">
+    <div><h1>Gamer</h1><p>“Last hit é sugestão”</p></div>
+    <div class="chips"><span class="chip fogo">12 dias seguidos</span><span class="chip">1.240 moedas</span></div>
+  </div>
+  <div>
+    <h2>No jogo <small>atualizado há 3 min</small></h2>
+    <div class="reais">
+      <div class="st"><b>Ouro II</b><span>elo no LoL</span></div>
+      <div class="st"><b>54%</b><span>vitórias (20 jogos)</span></div>
+      <div class="st"><b>3,1</b><span>KDA médio</span></div>
+      <div class="st"><b>1.284 h</b><span>CS2 na Steam</span></div>
+    </div>
+    <div class="links"><span class="lk">op.gg ↗</span><span class="lk">Steam ↗</span><span class="lk">Main: Yasuo</span></div>
+  </div>
+  <div>
+    <h2>Segundo os nanicos <small>11 votos anônimos</small></h2>
+    <div id="attrs"></div>
+  </div>
+  <div>
+    <h2>Mochila <small>comprado com moedas</small></h2>
+    <div class="mochila"><span class="item"><i></i>Cadeira gamer</span><span class="item r"><i></i>Pôster da cartela</span><span class="item l"><i></i>Título “Rei do tilt”</span><span class="item"><i></i>Tapete dourado</span></div>
+  </div>
+  <div>
+    <h2>Hoje</h2>
+    <div class="hoje">
+      <div class="st"><b>+60</b><span>bônus diário (dia 12 seguido: x2)</span></div>
+      <div class="st"><b>+21</b><span>tempo online (2 h 10)</span></div>
+      <div class="st"><b>−30</b><span>roleta</span></div>
+    </div>
+  </div>
+  <div class="rodape"><button class="btn">Votar no Gamer</button><span class="hint">Ninguém vê quem votou. Você pode mudar seu voto uma vez por semana.</span></div>
+</div>
+<script>
+// atributos zoeiros
+const A=[["Tilt",8.7],["Choro",9.2],["Clutch",6.1],["Farm",4.3],["Sorte",2.8],["Call",7.5]];
+document.getElementById("attrs").innerHTML=A.map(([n,v])=>`<div class="attr"><span class="n">${n}${n==="Clutch"?' <small style="color:var(--muted);font-weight:500">CS2</small>':""}</span><span class="bar"><i class="${v>=9?"max":""}" style="width:${v*10}%"></i></span><span class="v">${v.toFixed(1).replace(".",",")}</span></div>`).join("");
+
+// sala isométrica
+const svg=document.getElementById("sala"),NS="http://www.w3.org/2000/svg";
+const X0=310,Y0=300,TW=46,TH=23,ZS=1.3;
+const p=(i,j,z=0)=>[X0+(i-j)*TW,Y0+(i+j)*TH-z*ZS];
+const poly=(pts,fill,stroke)=>{const e=document.createElementNS(NS,"polygon");e.setAttribute("points",pts.map(q=>q.join(",")).join(" "));e.setAttribute("fill",fill);if(stroke){e.setAttribute("stroke",stroke);e.setAttribute("stroke-width","1")}svg.appendChild(e);return e};
+const N=6,WH=185;
+// paredes
+poly([p(0,0),p(0,N),p(0,N,WH),p(0,0,WH)],"#454843");
+poly([p(0,0),p(N,0),p(N,0,WH),p(0,0,WH)],"#50544c");
+poly([p(0,0,WH),p(0,N,WH),p(0,N,WH+10),p(0,0,WH+10)],"#2b2b2a");
+poly([p(0,0,WH),p(N,0,WH),p(N,0,WH+10),p(0,0,WH+10)],"#333331");
+// rodapé das paredes
+poly([p(0,0),p(0,N),p(0,N,8),p(0,0,8)],"#3a3c37");
+poly([p(0,0),p(N,0),p(N,0,8),p(0,0,8)],"#42453f");
+// janela com o céu na parede esquerda
+poly([p(0,1.2,70),p(0,3.2,70),p(0,3.2,150),p(0,1.2,150)],"#2b3540","#262626");
+poly([p(0,1.35,78),p(0,3.05,78),p(0,3.05,142),p(0,1.35,142)],"#566B7D");
+poly([p(0,2.2,78),p(0,2.25,78),p(0,2.25,142),p(0,2.2,142)],"#262626");
+// pôster da cartela na parede direita
+poly([p(1.3,0,80),p(3.3,0,80),p(3.3,0,160),p(1.3,0,160)],"#FAF9F6","#262626");
+for(let a=0;a<3;a++)for(let b=0;b<3;b++){const i=1.5+a*.6,z=92+b*22;poly([p(i,0,z),p(i+.45,0,z),p(i+.45,0,z+17),p(i,0,z+17)],(a+b)%2?"#3E4C59":"#E0DED5")}
+// piso em xadrez
+for(let i=0;i<N;i++)for(let j=0;j<N;j++)poly([p(i,j),p(i+1,j),p(i+1,j+1),p(i,j+1)],(i+j)%2?"#6f7366":"#7c8073","#5f6358");
+// tapete dourado
+poly([p(1.8,2.4),p(4.8,2.4),p(4.8,5.4),p(1.8,5.4)],"#B08D57");
+poly([p(2.05,2.65),p(4.55,2.65),p(4.55,5.15),p(2.05,5.15)],"#C4A06A");
+// caixa isométrica
+function box(i,j,w,d,h,top,left,right,z=0){
+  poly([p(i,j+d,z),p(i+w,j+d,z),p(i+w,j+d,z+h),p(i,j+d,z+h)],left,"#262626");
+  poly([p(i+w,j,z),p(i+w,j+d,z),p(i+w,j+d,z+h),p(i+w,j,z+h)],right,"#262626");
+  poly([p(i,j,z+h),p(i+w,j,z+h),p(i+w,j+d,z+h),p(i,j+d,z+h)],top,"#262626");
+}
+// mesa da lan com o PC
+box(3.0,0.15,2.7,1.1,44,"#8a6a39","#6b522c","#5a4424");
+box(3.9,0.25,1.2,0.12,46,"#262626","#1e1e1e","#1a1a1a",44);
+poly([p(3.97,0.37,52),p(5.03,0.37,52),p(5.03,0.37,84),p(3.97,0.37,84)],"#566B7D");
+poly([p(4.1,.37,60),p(4.5,.37,60),p(4.5,.37,66),p(4.1,.37,66)],"#C4A06A");
+poly([p(4.1,.37,70),p(4.9,.37,70),p(4.9,.37,74),p(4.1,.37,74)],"#E0705A");
+box(4.0,0.65,1.0,0.3,3,"#353535","#262626","#262626",44); // teclado
+box(5.45,0.3,0.15,0.5,36,"#353535","#262626","#1e1e1e",44); // gabinete
+box(5.45,0.3,0.15,0.5,1,"#E0705A","#E0705A","#E0705A",62);
+// cadeira
+box(4.1,1.55,0.9,0.9,26,"#3E4C59","#2f3a44","#27313a");
+box(4.1,1.55,0.9,0.18,62,"#3E4C59","#2f3a44","#27313a",26);
+// plantinha
+box(0.4,4.8,0.6,0.6,24,"#8a6a39","#6b522c","#5a4424");
+for(const [di,dj,dz] of [[.2,.2,40],[.45,.15,50],[.3,.45,46],[.1,.4,34]])box(0.4+di-.12,4.8+dj-.12,0.3,0.3,14,"#6f9a5a","#557a44","#4a6b3a",24+dz-30);
+
+// boneco: a mesma arte de corpo inteiro do site, em pé no quarto
+const ALT=270,LARG=Math.round(ALT*190/440),[fx,fy]=p(3.3,3.9);
+const sombra=document.createElementNS(NS,"ellipse");
+sombra.setAttribute("cx",fx);sombra.setAttribute("cy",fy-4);sombra.setAttribute("rx",58);sombra.setAttribute("ry",18);sombra.setAttribute("fill","rgba(0,0,0,.32)");svg.appendChild(sombra);
+const oy=fy-ALT+6;
+const img=document.createElementNS(NS,"image");
+img.setAttribute("href","../../public/arte/nanicos/4-corpo.webp");
+img.setAttribute("x",fx-LARG/2);img.setAttribute("y",oy);img.setAttribute("width",LARG);img.setAttribute("height",ALT);
+img.setAttribute("style","filter:drop-shadow(5px 3px 0 rgba(0,0,0,.25))");
+svg.appendChild(img);
+// placa com o nome
+const nome=document.createElementNS(NS,"g");
+nome.innerHTML=`<rect x="${fx-34}" y="${oy-30}" width="68" height="20" rx="4" fill="#262626"/><text x="${fx}" y="${oy-16}" text-anchor="middle" font-family="Unbounded,sans-serif" font-weight="700" font-size="11" fill="#C4A06A">GAMER</text>`;
+svg.appendChild(nome);
+// moedinha girando no chão
+const [mx,my]=p(5.1,4.6);
+const m=document.createElementNS(NS,"g");
+m.innerHTML=`<ellipse cx="${mx}" cy="${my}" rx="12" ry="5" fill="rgba(0,0,0,.25)"/><rect x="${mx-8}" y="${my-26}" width="16" height="20" fill="#C4A06A" stroke="#8a6a39" stroke-width="2"/><rect x="${mx-2}" y="${my-22}" width="4" height="12" fill="#8a6a39"/>`;
+svg.appendChild(m);
+const b=document.getElementById("balao");b.style.left=(fx+40)+"px";b.style.top=(oy-6)+"px";
+</script>
+</body></html>
