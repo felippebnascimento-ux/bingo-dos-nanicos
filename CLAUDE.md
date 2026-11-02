@@ -154,6 +154,21 @@ A versão (`v1.NN`) é **calculada sozinha** pelo tamanho do array `CHANGELOG`. 
 
 ## 6. Como trabalhar
 
+### 0. Antes de qualquer mudança: leia o que os outros fizeram
+Mais de uma pessoa (e mais de uma IA) mexe no site. **Toda tarefa começa assim, sem exceção:**
+
+1. **GitHub:**
+   - `git fetch` e `git pull` na branch principal;
+   - leia os commits novos (`git log --oneline -20` e `git show <commit>`);
+   - leia o diff dos arquivos que você vai tocar.
+   - Se alguém mudou o mesmo trecho, parta da versão nova; nunca sobrescreva com uma cópia antiga.
+2. **Supabase:** confira o estado real do banco antes de escrever SQL:
+   - tabelas, colunas, políticas (`pg_policies`), gatilhos e funções;
+   - as Edge Functions publicadas.
+   - Se o banco tiver algo que não está nos `.sql` do repositório, **pare e pergunte ao Felippe** antes de mudar.
+3. **Vercel:** veja se a última publicação deu certo antes de publicar outra por cima.
+4. Só então planeje e faça a mudança. No fim, diga em uma linha o que encontrou de novo dos outros, se encontrou.
+
 1. Crie uma **branch** (`git checkout -b minha-mudanca`). Não faça commit direto na principal sem combinar com o Felippe.
 2. Faça a mudança **pequena e focada**. Não reformate o arquivo inteiro: o `index.html` é enorme e um diff gigante esconde erro.
 3. Antes do commit, confira:
