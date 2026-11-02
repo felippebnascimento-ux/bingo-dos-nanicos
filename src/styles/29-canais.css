@@ -81,6 +81,7 @@
 .cfg-chk span{display:grid;gap:2px;font-weight:600}
 .cfg-chk small{font-weight:400;font-size:13px;color:var(--muted)}
 .cfg-aviso{margin:0;font-size:14px;color:var(--muted)}
+.cfg-teste-bloco{display:grid;gap:10px}
 .cfg-teste{display:flex;align-items:center;gap:12px}
 .cfg-teste .btn{width:auto;flex:none}
 .cfg-nivel{--nivel:0;flex:1;height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}

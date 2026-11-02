@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     // função da Riot roda no Deno (Supabase), não no Next; legacy é só referência
     "supabase/**",
     "legacy/**",
+    // supressão de ruído: cópia da biblioteca (scripts/copiar-ruido.mjs)
+    "public/ruido/**",
   ]),
 ]);
 

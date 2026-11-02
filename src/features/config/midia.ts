@@ -41,12 +41,17 @@ export function salvarMidia(p: Partial<PrefsMidia>) {
 /** O navegador deixa escolher a saída de som (setSinkId)? Hoje só Chrome e Edge. */
 export const podeEscolherSaida = () => typeof HTMLMediaElement !== "undefined" && "setSinkId" in HTMLMediaElement.prototype;
 
-/** Restrições do microfone da voz (o aparelho escolhido, se ainda existir; senão o padrão). */
+/**
+ * Restrições do microfone da voz (o aparelho escolhido, se ainda existir; senão o padrão).
+ * Com a supressão de ruído ligada, quem filtra é a RNNoise (live/ruido.ts), então a do navegador fica desligada
+ * para não filtrar duas vezes; navegador sem AudioWorklet usa a dele.
+ */
 export function restricoesMic(p: PrefsMidia = useMidia.getState()): MediaTrackConstraints {
+  const forte = p.ruido && typeof AudioWorkletNode !== "undefined";
   return {
     ...(p.mic ? { deviceId: { ideal: p.mic } } : {}),
     echoCancellation: p.eco,
-    noiseSuppression: p.ruido,
+    noiseSuppression: p.ruido && !forte,
     autoGainControl: true,
   };
 }

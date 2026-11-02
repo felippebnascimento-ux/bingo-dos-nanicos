@@ -99,6 +99,14 @@ export const CHANGELOG: EntradaLog[] = [
       "No Ao vivo, o nome da sala onde você está aparece em destaque",
     ],
   },
+  {
+    data: "02/11/2026",
+    itens: [
+      "Supressão de ruído bem mais forte na voz: uma inteligência artificial corta teclado, ventilador e barulho de fundo",
+      "No teste do microfone, dá para se ouvir de fone e comparar com a supressão ligada e desligada",
+      "Quem tem o site aberto em mais de um lugar não some mais da sala nem pula para o lobby",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

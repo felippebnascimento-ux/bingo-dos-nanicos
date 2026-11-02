@@ -5,11 +5,12 @@
  */
 import { useEffect, useRef, useState, type KeyboardEvent as KE } from "react";
 import { IcFechar } from "@/components/ui/icones";
+import { abrirMic, type MicFiltrado } from "@/features/live/ruido";
 import { volumeDe } from "@/features/live/vozRegras";
 import { logout } from "@/lib/dados";
 import { setApp, useApp } from "@/lib/store";
 import { toast } from "@/lib/toast";
-import { acompanharAparelhos, listarAparelhos, podeEscolherSaida, restricoesMic, salvarMidia, useMidia, type Dispositivo } from "./midia";
+import { acompanharAparelhos, aplicarSaida, listarAparelhos, podeEscolherSaida, salvarMidia, useMidia, type Dispositivo } from "./midia";
 
 /** Lista de aparelhos com "Padrão do sistema" no topo. Aparelho salvo que sumiu volta para o padrão. */
 function Escolha({ rotulo, valor, lista, onChange }: { rotulo: string; valor: string; lista: Dispositivo[]; onChange: (id: string) => void }) {
@@ -29,9 +30,13 @@ function Escolha({ rotulo, valor, lista, onChange }: { rotulo: string; valor: st
   );
 }
 
-/** Teste do microfone: uma barra que mexe com a voz (com o aparelho, o eco e o ruído escolhidos). */
+/**
+ * Teste do microfone: uma barra que mexe com a voz e, com "Me ouvir", o som de volta no fone. Usa o mesmo
+ * caminho da voz (aparelho, eco e a supressão de ruído escolhidos), então dá para comparar ligando e desligando.
+ */
 function TesteMic() {
   const [ligado, setLigado] = useState(false);
+  const [ouvir, setOuvir] = useState(false);
   const barra = useRef<HTMLSpanElement>(null);
   const mic = useMidia((s) => s.mic);
   const eco = useMidia((s) => s.eco);
@@ -41,14 +46,21 @@ function TesteMic() {
     if (!ligado) return;
     const el = barra.current;
     let fim = false;
-    let st: MediaStream | null = null;
+    let aberto: MicFiltrado | null = null;
     let ctx: AudioContext | null = null;
+    let eco_: HTMLAudioElement | null = null;
     let quadro = 0;
     (async () => {
       try {
-        st = await navigator.mediaDevices.getUserMedia({ audio: restricoesMic({ ...useMidia.getState(), mic, eco, ruido }), video: false });
-        if (fim) return st.getTracks().forEach((t) => t.stop());
+        aberto = await abrirMic({ ...useMidia.getState(), mic, eco, ruido });
+        if (fim) return aberto.parar();
         listarAparelhos();
+        if (ouvir) {
+          eco_ = new Audio();
+          eco_.srcObject = aberto.stream;
+          aplicarSaida(eco_);
+          eco_.play().catch(() => {});
+        }
         /* só mede, não toca: sem abrir a saída de som */
         try {
           ctx = new AudioContext({ sinkId: { type: "none" } } as AudioContextOptions);
@@ -57,7 +69,7 @@ function TesteMic() {
         }
         const an = ctx.createAnalyser();
         an.fftSize = 512;
-        ctx.createMediaStreamSource(st).connect(an);
+        ctx.createMediaStreamSource(aberto.stream).connect(an);
         const buf = new Float32Array(an.fftSize);
         const passo = () => {
           an.getFloatTimeDomainData(buf);
@@ -76,20 +88,30 @@ function TesteMic() {
     return () => {
       fim = true;
       cancelAnimationFrame(quadro);
-      st?.getTracks().forEach((t) => t.stop());
+      if (eco_) eco_.srcObject = null;
+      aberto?.parar();
       ctx?.close().catch(() => {});
       el?.style.setProperty("--nivel", "0");
     };
-  }, [ligado, mic, eco, ruido]);
+  }, [ligado, ouvir, mic, eco, ruido]);
 
   return (
-    <div className="cfg-teste">
-      <button type="button" className="btn soft sm" aria-pressed={ligado} onClick={() => setLigado(!ligado)}>
-        {ligado ? "Parar o teste" : "Testar o microfone"}
-      </button>
-      <span className="cfg-nivel" ref={barra} aria-hidden="true">
-        <i />
-      </span>
+    <div className="cfg-teste-bloco">
+      <div className="cfg-teste">
+        <button type="button" className="btn soft sm" aria-pressed={ligado} onClick={() => setLigado(!ligado)}>
+          {ligado ? "Parar o teste" : "Testar o microfone"}
+        </button>
+        <span className="cfg-nivel" ref={barra} aria-hidden="true">
+          <i />
+        </span>
+      </div>
+      <label className="cfg-chk">
+        <input type="checkbox" checked={ouvir} onChange={(e) => setOuvir(e.target.checked)} />
+        <span>
+          Me ouvir no teste
+          <small>Use fone. Ligue e desligue a supressão de ruído para comparar.</small>
+        </span>
+      </label>
     </div>
   );
 }
@@ -159,7 +181,7 @@ function ConfigAberta() {
             <input type="checkbox" checked={m.ruido} onChange={(e) => salvarMidia({ ruido: e.target.checked })} />
             <span>
               Supressão de ruído
-              <small>Corta ventilador, teclado e barulho de fundo.</small>
+              <small>Uma inteligência artificial no seu navegador corta teclado, ventilador e barulho de fundo antes da sua voz ir para a sala.</small>
             </span>
           </label>
           <TesteMic />

@@ -12,6 +12,8 @@ Thumbs.db
 /node_modules
 /.next/
 /out/
+# supressão de ruído: copiada do node_modules no npm install (scripts/copiar-ruido.mjs)
+/public/ruido/
 /coverage
 *.tsbuildinfo
 next-env.d.ts

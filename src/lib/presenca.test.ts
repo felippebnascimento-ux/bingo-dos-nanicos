@@ -7,6 +7,7 @@ const p = (key: string, o: Partial<Presence> = {}): Presence => ({ key, name: "P
 describe("umPorNanico", () => {
   it("duas abas do mesmo nanico viram um só, com o at mais novo", () => {
     const r = umPorNanico([p("a", { at: 10, sala: "lol-1" }), p("b", { at: 20, sala: "cs" })], "eu");
+    expect(r[0].lines).toBe(0);
     expect(r).toHaveLength(1);
     expect(r[0].sala).toBe("cs");
     expect(r[0].id).toBe("n:f1");
@@ -44,5 +45,20 @@ describe("umPorNanico", () => {
     const r = umPorNanico([p("a", { at: 10, voz: "sid-voz-1", mudo: true }), p("b", { at: 20 })], "eu");
     expect(r[0].voz).toBe("sid-voz-1");
     expect(r[0].mudo).toBe(true);
+  });
+
+  it("a sala vem da aba na sala, não da aba no lobby que renovou por último", () => {
+    const r = umPorNanico([p("a", { at: 10, sala: "lol-1" }), p("b", { at: 20, sala: null })], "eu");
+    expect(r[0].sala).toBe("lol-1");
+  });
+
+  it("com duas abas em salas, vale a que está na voz", () => {
+    const r = umPorNanico([p("a", { at: 10, sala: "lol-1", voz: "sid-voz-1" }), p("b", { at: 20, sala: "cs" })], "eu");
+    expect(r[0].sala).toBe("lol-1");
+  });
+
+  it("a câmera chega pela aba que tem a câmera", () => {
+    const r = umPorNanico([p("a", { at: 10, cam: "sid-cam-1" }), p("b", { at: 20 })], "eu");
+    expect(r[0].chaveCam).toBe("a");
   });
 });

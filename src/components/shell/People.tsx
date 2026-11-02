@@ -63,9 +63,9 @@ export function useNanicosOnline(): PresencaNanico[] {
   const lista = umPorNanico(online, MY_KEY);
   const meu = { sala, live: live ?? null, cam: cam ?? null, voz, mudo: !!voz && mudo, surdo: !!voz && surdo, texto };
   const i = lista.findIndex((p) => p.chaves.includes(MY_KEY));
-  if (i >= 0) lista[i] = { ...lista[i], ...meu, live: live ?? lista[i].live, cam: cam ?? lista[i].cam };
+  if (i >= 0) lista[i] = { ...lista[i], ...meu, live: live ?? lista[i].live, cam: cam ?? lista[i].cam, chaveCam: cam ? MY_KEY : lista[i].chaveCam };
   else if (myName)
-    lista.unshift({ key: MY_KEY, name: myName, fid: myFid, lines: bingoLines(card), pos: null, at: 0, id: MY_KEY, chaves: [MY_KEY], ...meu });
+    lista.unshift({ key: MY_KEY, name: myName, fid: myFid, lines: bingoLines(card), pos: null, at: 0, id: MY_KEY, chaves: [MY_KEY], chaveCam: cam ? MY_KEY : null, ...meu });
   return lista;
 }
 
@@ -108,7 +108,7 @@ function Membro({ p, f, falando }: { p: PresencaNanico | null; f: Friend | undef
       }}
     >
       {p ? (
-        <CamNaSala personKey={p.key} nome={nome}>
+        <CamNaSala personKey={p.chaveCam ?? p.key} nome={nome}>
           {pic}
         </CamNaSala>
       ) : (

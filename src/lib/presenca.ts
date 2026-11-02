@@ -10,6 +10,8 @@ export type PresencaNanico = Presence & {
   id: string;
   /** todas as chaves (abas) daquele nanico agora */
   chaves: string[];
+  /** a chave da aba com a câmera ligada (a câmera chega por ela), ou null */
+  chaveCam: string | null;
 };
 
 const grupoDe = (p: Presence) => (p.fid ? `n:${p.fid}` : `nome:${p.name.trim().toLowerCase()}`);
@@ -35,6 +37,7 @@ export function umPorNanico(online: readonly Presence[], minhaChave: string): Pr
     const comPos = lista.filter((p) => p.pos).reduce<Presence | null>((a, b) => (!a || b.at > a.at ? b : a), null);
     const naVoz = lista.filter((p) => p.voz).reduce<Presence | null>((a, b) => (!a || b.at > a.at ? b : a), null);
     const lendo = lista.filter((p) => p.texto).reduce<Presence | null>((a, b) => (!a || b.at > a.at ? b : a), null);
+    const numaSala = lista.filter((p) => p.sala).reduce<Presence | null>((a, b) => (!a || b.at > a.at ? b : a), null);
     const base = eu ?? recente;
     out.push({
       ...base,
@@ -48,9 +51,13 @@ export function umPorNanico(online: readonly Presence[], minhaChave: string): Pr
       surdo: naVoz?.surdo ?? false,
       texto: lendo?.texto ?? null,
       pos: (eu ?? comPos ?? recente).pos,
+      /* a sala vem da aba que está na voz ou numa sala, nunca de uma aba no lobby que só renovou a presença por último
+         (senão, com duas abas, a pessoa pula entre a sala e o lobby a cada renovação) */
+      sala: (eu ?? naVoz ?? numaSala ?? recente).sala,
       lines: Math.max(...lista.map((p) => p.lines)),
       id: eu ? minhaChave : g,
       chaves: lista.map((p) => p.key),
+      chaveCam: comCam?.key ?? null,
     });
   }
   return out;

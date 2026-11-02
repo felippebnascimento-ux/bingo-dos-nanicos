@@ -26,6 +26,7 @@ Este arquivo vale para qualquer pessoa ou IA (Claude, Copilot etc.) que mexa no 
 | Estilo | **CSS global** em `src/styles/` | O CSS do site antigo, dividido por área, sem Tailwind. |
 | Fontes | `next/font/google` (Unbounded e Onest) | Servidas pelo próprio site. |
 | Testes | **Vitest** | Regras puras (truco, bingo). |
+| Supressão de ruído | **`@sapphi-red/web-noise-suppressor`** (0.4.1, fixa) | RNNoise em WebAssembly para a voz; a do navegador é fraca. Os arquivos vão para `public/ruido/` pelo `postinstall` (`scripts/copiar-ruido.mjs`) e não entram no git. |
 
 ```bash
 npm install          # primeira vez
@@ -93,7 +94,8 @@ src/
     perfil/            PerfilView, opgg.ts e steam.ts (limpar link, nick)
     live/              live.ts (liga tudo à sala), rtc.ts (WebRTC comum), tela.ts (transmissão), camera.ts,
                        voz.ts (voz da sala: um par WebRTC só de áudio com cada um na voz, microfone, fone, quem
-                       está falando), vozRegras.ts (quem oferece, volume, anel de fala; puro e testado),
+                       está falando), ruido.ts (abrirMic: microfone passado pela RNNoise; sem ela, a supressão
+                       do navegador), vozRegras.ts (quem oferece, volume, anel de fala; puro e testado),
                        reacoes.ts, desenho.ts, estado.ts (store + preferências), pip.ts;
                        telas: LiveView, Palco, Painel, Cameras, Video, Voos, Rosto, CamNaSala, CamBotoes e
                        CamadaReacoesMinha (reações que chegam na minha transmissão, fora das abas)
@@ -161,7 +163,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
    - confere o tipo e o tamanho de cada campo;
    - confere se o remetente está na sala (`estaNaSala(m.from)`);
    - tem limite de mensagens por pessoa (`limitePorPessoa(max, janelaMs)`).
-5. **Não quebrar a CSP** (`vercel.json`). Script só do próprio site, conexões só com o Supabase do projeto. Imagem externa só de `ddragon.leagueoflegends.com` e `raw.communitydragon.org`. Para liberar outro domínio, edite o `vercel.json` e explique o motivo no commit. Teste o build (`npm run build && npm start`) com o console aberto.
+5. **Não quebrar a CSP** (`vercel.json`). Script só do próprio site, conexões só com o Supabase do projeto. `'wasm-unsafe-eval'` está liberado só para a RNNoise da voz (compila `.wasm`, não libera `eval`). Imagem externa só de `ddragon.leagueoflegends.com` e `raw.communitydragon.org`. Para liberar outro domínio, edite o `vercel.json` e explique o motivo no commit. Teste o build (`npm run build && npm start`) com o console aberto.
 6. **Não trocar a versão do `@supabase/supabase-js`** (fixa em 2.45.4 no `package.json`) sem testar login, sala, chat, transmissão e truco.
 7. **Não deixar dados reais em teste.** Não use senhas reais em exemplos, prints ou issues.
 8. **Dependência nova só com motivo.** Antes de `npm install` de algo, veja se dá para resolver com o que já existe. Nada de CDN, fonte nova ou biblioteca de componentes.
@@ -303,7 +305,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 - **Uma sala por vez:** `minhaSala` no store (null = lobby). Trocar de sala passa por `entrarSala()` (`features/salas/trocar.ts`). `onlineSala` é quem está na minha sala, e a live, as câmeras, as reações e o desenho usam essa lista e `naMinhaSala(from)` no lugar de `estaNaSala(from)`.
 - **Presença:** `{name, fid, lines, live, cam, pos, sala, voz, mudo, surdo, texto, at}`, conferida por `cleanPresence()` (`sala` só vale se estiver na lista de salas; `voz` é um sid; `texto` é o canal de texto aberto, `"geral"` ou o id de uma sala).
 - **Voz:** entrar num canal de voz é `entrarSala(id)` + `entrarVoz()` (`features/live/voz.ts`). Cada par na voz da sala tem uma conexão WebRTC só de áudio; a chave menor oferece. A sinalização vai no `rtc` do canal da sala (`vo`/`va`/`vi`/`vb`, conferida em `live.ts` como o resto). Outra aba do mesmo nanico não conecta (ouviria a si mesmo). Trocar de sala ou sair do site encerra a voz, e o botão de desligar do menu é sair da sala (`entrarSala(null)`). A câmera é da voz: só quem está na voz da mesma sala se vê (`syncCams` e `camOnWatch` conferem `naVoz()` e o `voz` da presença); trocar de sala (`pararAoTrocarDeSala`) mantém a câmera ligada e fecha só as conexões da sala antiga, e voltar para o lobby desliga. A transmissão de tela pede `restrictOwnAudio` para a voz não voltar pelo som do sistema. Não tem servidor TURN: rede muito fechada pode não conectar.
-- **Um por nanico:** a chave da presença é uma por aba (`MY_KEY`), então o mesmo nanico com duas abas, PC e celular, ou uma presença antiga, aparece várias vezes na lista crua. Toda tela que lista gente (hall, "Na sala agora") passa por `umPorNanico()` (`src/lib/presenca.ts`), que junta por `fid`, fica com o `at` mais novo e mantém `live`/`cam` de qualquer aba que transmita. O boneco tem o id `n:<fid>`, e o broadcast de qualquer aba daquele nanico move o mesmo boneco. **Não troque a chave da presença pelo `fid`**: duas abas brigariam pela mesma chave.
+- **Um por nanico:** a chave da presença é uma por aba (`MY_KEY`), então o mesmo nanico com duas abas, PC e celular, ou uma presença antiga, aparece várias vezes na lista crua. Toda tela que lista gente (hall, canais, membros) passa por `umPorNanico()` (`src/lib/presenca.ts`), que junta por `fid`, fica com o `at` mais novo e mantém `live`/`cam`/`voz` de qualquer aba que transmita. A `sala` vem da aba na voz, depois de qualquer aba numa sala e só então da mais recente (senão a pessoa pula entre a sala e o lobby a cada renovação), e `chaveCam` diz por qual aba chega a câmera. O boneco tem o id `n:<fid>`, e o broadcast de qualquer aba daquele nanico move o mesmo boneco. **Não troque a chave da presença pelo `fid`**: duas abas brigariam pela mesma chave.
 - **Reconexão:** se o canal do lobby cair (`CHANNEL_ERROR`, `TIMED_OUT`, `CLOSED`), o site mostra "Reconectando…" e monta o canal de novo sozinho (1 s, 2 s, 5 s, 10 s, até 30 s), junto com o canal da sala. Ao voltar para a aba, reconecta na hora (ou renova a presença), e a presença se renova a cada 60 s. Os handlers de `aoReceber`/`aoMudarPresenca`/`aoMudarTabela` ficam guardados no módulo e valem no canal novo. `pos` é o piso do boneco no hall (`{i, j}`, conferido por `posValida`); só muda quando o boneco chega.
 - **Eventos de broadcast:**
   - `rtc`: sinalização da tela, da câmera e da voz;

@@ -6,11 +6,12 @@
  * Em cada par, a chave menor oferece (`euOfereco`), então os dois nunca oferecem juntos.
  */
 import { create } from "zustand";
-import { aplicarSaida, restricoesMic, useMidia } from "@/features/config/midia";
+import { aplicarSaida, useMidia } from "@/features/config/midia";
 import { toast } from "@/lib/toast";
 import { getApp, MY_KEY, setApp } from "@/lib/store";
 import { newId } from "@/lib/util";
 import { ajustarSender, canCam, novaConexao, sendRtc, type MsgRtc } from "./rtc";
+import { abrirMic, type MicFiltrado } from "./ruido";
 import { euOfereco, falandoAgora, LIMIAR_FALA, mesmaLista, volumeDe } from "./vozRegras";
 
 type Par = {
@@ -30,7 +31,10 @@ export const useVoz = create<{ falando: string[] }>()(() => ({ falando: [] }));
 
 const VOZ = {
   sid: null as string | null,
+  /** o áudio que vai para a sala (já sem ruído, se a supressão estiver ligada) */
   stream: null as MediaStream | null,
+  /** o microfone aberto, com o filtro (`parar()` desliga os dois) */
+  mic: null as MicFiltrado | null,
   pares: new Map<string, Par>(),
   /** se estava mudo antes de ficar surdo (ao voltar a ouvir, o microfone volta como estava) */
   mudoAntes: false,
@@ -44,14 +48,16 @@ export async function entrarVoz() {
   if (!getApp().minhaSala) return toast("Entre numa sala para falar.");
   if (!canCam) return toast("Seu navegador não liberou o microfone.");
   try {
-    const st = await navigator.mediaDevices.getUserMedia({ audio: restricoesMic(), video: false });
+    const mic = await abrirMic();
     /* trocou de sala (ou saiu) enquanto o navegador pedia o microfone */
     if (!getApp().minhaSala || VOZ.sid) {
-      st.getTracks().forEach((t) => t.stop());
+      mic.parar();
       return;
     }
-    st.getAudioTracks()[0]?.addEventListener("ended", () => sairVoz());
+    mic.fonte?.addEventListener("ended", () => sairVoz());
     ligarPrefs();
+    const st = mic.stream;
+    VOZ.mic = mic;
     VOZ.stream = st;
     VOZ.sid = newId();
     VOZ.mudoAntes = false;
@@ -77,7 +83,8 @@ export async function entrarVoz() {
 export function sairVoz() {
   if (!VOZ.sid) return;
   for (const key of [...VOZ.pares.keys()]) fechar(key, false);
-  VOZ.stream?.getTracks().forEach((t) => t.stop());
+  VOZ.mic?.parar();
+  VOZ.mic = null;
   VOZ.stream = null;
   VOZ.sid = null;
   esquecerMedidas();
@@ -100,19 +107,20 @@ function ligarPrefs() {
 async function trocarMicrofone() {
   if (!VOZ.sid || !VOZ.stream) return;
   try {
-    const novo = await navigator.mediaDevices.getUserMedia({ audio: restricoesMic(), video: false });
-    const faixa = novo.getAudioTracks()[0];
+    const mic = await abrirMic();
+    const faixa = mic.stream.getAudioTracks()[0];
     if (!VOZ.sid || !faixa) {
-      novo.getTracks().forEach((t) => t.stop());
+      mic.parar();
       return;
     }
     faixa.enabled = !getApp().vozMudo;
-    faixa.addEventListener("ended", () => sairVoz());
+    mic.fonte?.addEventListener("ended", () => sairVoz());
     for (const par of VOZ.pares.values())
       for (const sd of par.pc.getSenders()) if (sd.track?.kind === "audio") await sd.replaceTrack(faixa).catch(() => {});
-    VOZ.stream.getTracks().forEach((t) => t.stop());
-    VOZ.stream = novo;
-    medir(MY_KEY, novo);
+    VOZ.mic?.parar();
+    VOZ.mic = mic;
+    VOZ.stream = mic.stream;
+    medir(MY_KEY, mic.stream);
   } catch (e) {
     console.warn(e);
     toast("Não deu para trocar o microfone. Confira se ele está ligado.");
