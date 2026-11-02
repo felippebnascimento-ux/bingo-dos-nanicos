@@ -59,3 +59,80 @@ export async function hashDaSemente(sementeHex: string): Promise<string> {
   const h = new Uint8Array(await crypto.subtle.digest("SHA-256", hexParaBytes(sementeHex)));
   return [...h].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
+
+/* ---------- limbo: resultado = max(1, floor(0,97 / (1 − u) × 100) / 100) ---------- */
+export const ALVO_MIN = 1.01;
+export const ALVO_MAX = 100;
+/** O resultado do limbo para um número u (a mesma conta do SQL). */
+export const valorLimbo = (u: number) => Math.max(1, Math.floor((0.97 / (1 - u)) * 100) / 100);
+/** Chance de o resultado passar do alvo: 0,97 / alvo. */
+export const chanceLimbo = (alvo: number) => Math.min(1, 0.97 / alvo);
+export const pagamentoLimbo = (alvo: number, resultado: number, aposta: number) => (resultado >= alvo ? Math.floor(aposta * alvo) : 0);
+
+/* ---------- maior ou menor: número de 0 a 9999 ---------- */
+export type Lado = "abaixo" | "acima";
+export const chanceDado = (lado: Lado, n: number) => (lado === "abaixo" ? n / 10000 : (9999 - n) / 10000);
+/** Quanto volta se ganhar (aposta × 0,97 / chance). */
+export const pagamentoDado = (lado: Lado, n: number, aposta: number) => Math.floor((aposta * 0.97) / chanceDado(lado, n));
+export const numeroDado = (u: number) => Math.floor(u * 10000);
+export const chanceValida = (c: number) => c >= 0.01 && c <= 0.95;
+
+/* ---------- caça-níquel: pesos e pagamentos vêm do banco (cassino_rolos e cassino_pagamentos) ---------- */
+export type Rolo = { simbolo: string; peso: number; ordem: number };
+export type Pagamentos = Record<string, number>;
+
+/** Quanto paga uma combinação (a mesma regra de cassino_slot_mult). */
+export function multSlot(a: string, b: string, c: string, tabela: Pagamentos): number {
+  if (a === b && b === c) return tabela[a === "bola" ? "tres_bola" : a === "moeda" ? "tres_moeda" : "tres_rosto"] ?? 0;
+  const moedas = [a, b, c].filter((s) => s === "moeda").length;
+  return moedas === 2 ? (tabela.duas_moedas ?? 0) : moedas === 1 ? (tabela.uma_moeda ?? 0) : 0;
+}
+
+/** O símbolo de um rolo para um número u: anda pelos pesos na ordem (a mesma regra de cassino_simbolo). */
+export function simboloSlot(u: number, rolos: readonly Rolo[]): string {
+  const ord = [...rolos].sort((x, y) => x.ordem - y.ordem);
+  const total = ord.reduce((s, r) => s + r.peso, 0);
+  const x = Math.floor(u * total);
+  let acum = 0;
+  for (const r of ord) {
+    acum += r.peso;
+    if (x < acum) return r.simbolo;
+  }
+  return ord[ord.length - 1]?.simbolo ?? "";
+}
+
+/** RTP exato do caça-níquel: soma de todas as combinações com os pesos. */
+export function rtpSlot(rolos: readonly Rolo[], tabela: Pagamentos): number {
+  const total = rolos.reduce((s, r) => s + r.peso, 0);
+  let soma = 0;
+  for (const a of rolos) for (const b of rolos) for (const c of rolos) soma += a.peso * b.peso * c.peso * multSlot(a.simbolo, b.simbolo, c.simbolo, tabela);
+  return soma / total ** 3;
+}
+
+/** Refaz o resultado de uma aposta com a semente revelada (para a conferência), como texto comparável. */
+export async function refazer(
+  jogo: string,
+  nonce: number,
+  sementeHex: string,
+  cliente: string,
+  rolos: readonly Rolo[],
+): Promise<string> {
+  const u = await conferir(sementeHex, cliente, nonce);
+  if (jogo === "roleta") return String(casaDaRoleta(u));
+  if (jogo === "limbo") return valorLimbo(u).toFixed(2);
+  if (jogo === "dado") return String(numeroDado(u));
+  if (jogo === "slot") {
+    const s = [u, await conferir(sementeHex, cliente, nonce + 1), await conferir(sementeHex, cliente, nonce + 2)];
+    return s.map((x) => simboloSlot(x, rolos)).join(",");
+  }
+  return "";
+}
+
+/** O resultado guardado de uma aposta, no mesmo formato de `refazer`. */
+export function resultadoGuardado(jogo: string, r: Record<string, unknown>): string {
+  if (jogo === "roleta") return String(r.casa);
+  if (jogo === "limbo") return Number(r.valor).toFixed(2);
+  if (jogo === "dado") return String(r.numero);
+  if (jogo === "slot") return Array.isArray(r.simbolos) ? r.simbolos.join(",") : "";
+  return "";
+}

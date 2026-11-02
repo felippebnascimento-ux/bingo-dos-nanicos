@@ -198,7 +198,7 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | 4 | `04-atributos-votados.md` | `atributos-votados` | 3 | **feita**, PR aberto (em cima da `ficha-dados-reais`); SQL da seção 9 aplicado em 01/11/2026 |
 | 5 | `05-salas-lan-house.md` | `salas-lan-house` | 00, 3 | **feita**, PR aberto (em cima da `hall-v2`); SQL da seção 10 aplicado em 02/11/2026 |
 | 6 | `06-cassino-roleta.md` | `cassino-roleta` | 2 | a fazer |
-| 7 | `07-cassino-jogos.md` | `cassino-jogos` | 6 | a fazer |
+| 7 | `07-cassino-jogos.md` | `cassino-jogos` | 6 | **feita**, PR aberto (em cima da `cassino-roleta`); SQL da seção 11b aplicado em 02/11/2026 (RTP do caça-níquel 92,12%) |
 | 8 | `08-bingo-servidor.md` | `bingo-servidor` | 2, 5 | a fazer |
 | 9 | `09-truco-servidor.md` | `truco-servidor` | 2 | a fazer |
 | 10 | `10-apostas-ao-vivo.md` | `apostas-ao-vivo` | 6 | a fazer |

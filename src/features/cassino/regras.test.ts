@@ -41,3 +41,52 @@ describe("conferência", () => {
     expect(await hashDaSemente(semente)).toBe(createHash("sha256").update(Buffer.from(semente, "hex")).digest("hex"));
   });
 });
+
+/* a mesma semente do SQL (seção 11b): os 14 rostos com peso 10, bola 4 e moeda 6 */
+const ROLOS = [...Array.from({ length: 14 }, (_, k) => ({ simbolo: `n${k + 1}`, peso: 10, ordem: k + 1 })), { simbolo: "bola", peso: 4, ordem: 15 }, { simbolo: "moeda", peso: 6, ordem: 16 }];
+const PAGAMENTOS = { tres_bola: 1000, tres_moeda: 200, tres_rosto: 80, duas_moedas: 25, uma_moeda: 4 };
+
+describe("limbo, maior ou menor e caça-níquel", async () => {
+  const r = await import("./regras");
+
+  it("limbo devolve 97% em qualquer alvo (integração exata: chance × alvo)", () => {
+    for (const alvo of [1.01, 1.5, 2, 10, 33.33, 100]) expect(r.chanceLimbo(alvo) * alvo).toBeCloseTo(0.97, 12);
+    expect(r.valorLimbo(0)).toBe(1);
+    expect(r.valorLimbo(0.5)).toBe(1.94);
+    expect(r.pagamentoLimbo(2, 2, 10)).toBe(20);
+    expect(r.pagamentoLimbo(2, 1.99, 10)).toBe(0);
+  });
+
+  it("maior ou menor devolve 97% (chance × pagamento) e só aceita chance de 1% a 95%", () => {
+    for (const [lado, n] of [["abaixo", 5000], ["acima", 5000], ["abaixo", 100], ["acima", 500]] as const) {
+      const c = r.chanceDado(lado, n);
+      expect(c * (0.97 / c)).toBeCloseTo(0.97, 12);
+    }
+    expect(r.pagamentoDado("abaixo", 5000, 10)).toBe(19);
+    expect(r.chanceValida(r.chanceDado("abaixo", 0))).toBe(false);
+    expect(r.chanceValida(r.chanceDado("abaixo", 9900))).toBe(false);
+    expect(r.numeroDado(0.99995)).toBe(9999);
+  });
+
+  it("o RTP exato do caça-níquel fica em 92% com a tabela do banco", () => {
+    const rtp = r.rtpSlot(ROLOS, PAGAMENTOS);
+    expect(rtp).toBeGreaterThan(0.915);
+    expect(rtp).toBeLessThan(0.925);
+    expect(r.multSlot("bola", "bola", "bola", PAGAMENTOS)).toBe(1000);
+    expect(r.multSlot("n3", "n3", "n3", PAGAMENTOS)).toBe(80);
+    expect(r.multSlot("moeda", "n1", "moeda", PAGAMENTOS)).toBe(25);
+    expect(r.multSlot("n1", "n2", "moeda", PAGAMENTOS)).toBe(4);
+    expect(r.multSlot("n1", "n2", "n3", PAGAMENTOS)).toBe(0);
+    expect(r.simboloSlot(0, ROLOS)).toBe("n1");
+    expect(r.simboloSlot(0.9999, ROLOS)).toBe("moeda");
+  });
+
+  it("refazer() reproduz cada jogo a partir da semente revelada", async () => {
+    const semente = "1a".repeat(32);
+    const uDe = (n: number) => parseInt(createHmac("sha256", Buffer.from(semente, "hex")).update(`x:${n}`).digest("hex").slice(0, 13), 16) / 2 ** 52;
+    expect(await r.refazer("dado", 5, semente, "x", ROLOS)).toBe(String(Math.floor(uDe(5) * 10000)));
+    expect(await r.refazer("limbo", 6, semente, "x", ROLOS)).toBe(r.valorLimbo(uDe(6)).toFixed(2));
+    expect(await r.refazer("slot", 7, semente, "x", ROLOS)).toBe([7, 8, 9].map((n) => r.simboloSlot(uDe(n), ROLOS)).join(","));
+    expect(r.resultadoGuardado("slot", { simbolos: ["n1", "bola", "moeda"] })).toBe("n1,bola,moeda");
+  });
+});

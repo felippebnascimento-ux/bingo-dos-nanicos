@@ -73,8 +73,9 @@ src/
                        reacoes.ts, desenho.ts, estado.ts (store + preferências), pip.ts;
                        telas: LiveView, Palco, Painel, Cameras, Video, Voos, Rosto, CamNaSala, CamBotoes
     chat/              chat.ts (um chat por sala: "geral" no lobby e o id da sala dentro dela) e ChatPainel
-    cassino/           aba Cassino (moedas fictícias): regras.ts (roleta europeia e conferir() com HMAC-SHA256;
-                       puro e testado) e CassinoView (mesa, roda, "Como conferir que é justo", histórico, feed)
+    cassino/           aba Cassino (moedas fictícias): regras.ts (roleta, limbo, dado, caça-níquel, conferir() e
+                       refazer() com HMAC-SHA256; puro e testado), estado.ts (dados do banco), Jogos.tsx (limbo,
+                       maior ou menor e caça-níquel) e CassinoView (seletor de jogo, roleta, conferência, histórico)
     salas/             salas tipo lan house: trocar.ts (entrarSala: encerra tela e câmera, troca o canal,
                        carrega escalação e chat) e Salas.tsx (janela das salas com cartões e chat geral; "Você está em")
     truco/             engine.ts (regras, puro e testado), valida.ts (confere mesa vinda da sala),
@@ -220,6 +221,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 | `cassino_sementes` | semente do servidor de cada um (`semente` secreta, `hash`, `semente_cliente`, `nonce`) | cada um lê só `hash`, `semente_cliente` e `nonce` da sua; **ninguém lê `semente`** |
 | `cassino_sementes_antigas` | sementes reveladas (em hex), para conferir as apostas | cada um lê as suas |
 | `cassino_apostas` | apostas (`jogo`, `aposta`, `escolha`, `resultado`, `pagou`, `hash`, `nonce`) | cada um lê as suas; o feed das últimas 20 vem de `cassino_feed()` |
+| `cassino_rolos`, `cassino_pagamentos` | pesos dos símbolos e tabela de pagamentos do caça-níquel (o banco é a fonte; RTP conferido no SQL) | nanicos leem; ninguém grava pelo site |
 | `salas` | salas tipo lan house (`id`, `nome`, `jogo` lol/cs/outro, `discord`, `ordem`): `lol-1`, `lol-2`, `cs`, `resenha` | ninguém pelo site (só o admin cria) |
 | `chat_messages` | chat (`sala` = `'geral'` no lobby ou o id da sala; apaga sozinho após 30 dias) | enviar (o autor é sempre quem está logado; sala que não existe é recusada) |
 | `limites` | contador anti-spam | ninguém |
@@ -241,8 +243,9 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
   - **Se o SQL não rodou,** o site esconde as moedas e só deixa um aviso no console.
 - **Cassino (seção 11 do `seguranca.sql`, usa `pgcrypto`):**
   - **O sorteio é no banco:** `u` = primeiros 52 bits de `HMAC-SHA256(semente do servidor, "semente_cliente:nonce")`, feito por `cassino_numero()` (interna, incrementa o nonce com `for update`). O navegador nunca sorteia.
-  - **RPCs:** `apostar_roleta(aposta 5–100, tipo, valor)` (debita com `creditar`, sorteia, paga e grava), `cassino_estado()`, `trocar_semente(cliente)` (revela a antiga) e `cassino_feed()`.
-  - **Conferência:** `conferir()` em `features/cassino/regras.ts` refaz a conta com `crypto.subtle`. A roleta devolve 36/37 (a casa leva 2,7%).
+  - **RPCs:** `apostar_roleta(aposta 5–100, tipo, valor)`, `apostar_limbo(aposta, alvo 1,01–100)`, `apostar_dado(aposta, lado, n)` (chance de 1% a 95%) e `apostar_slot(aposta)` (3 nonces seguidos, um por rolo). Todas debitam com `creditar`, sorteiam com `cassino_numero`, pagam e gravam em `cassino_apostas`. E `cassino_estado()`, `trocar_semente(cliente)` (revela a antiga) e `cassino_feed()`.
+  - **Quanto a casa leva:** roleta 2,7%, limbo e dado 3%, caça-níquel cerca de 8% (o fim da seção 11b recalcula o RTP exato da tabela e falha fora de 91,5%–92,5%).
+  - **Conferência:** `conferir()` e `refazer()` em `features/cassino/regras.ts` refazem a conta de qualquer jogo com `crypto.subtle`.
 - **Atributos votados (seção 9 do `seguranca.sql`):**
   - **Anonimato:** `atributos_votos` não tem `select` para ninguém. O site só recebe média e contagem por `atributos_de(nanico)` e `atributos_todos()`. Com menos de 3 votos, a média sai `null` ("poucos votos").
   - **Votar:** `votar_atributos(nanico, notas)` exige as 6 notas inteiras de 0 a 10, não deixa votar em si mesmo e só deixa mudar o voto em alguém uma vez a cada 7 dias (o erro diz a data).

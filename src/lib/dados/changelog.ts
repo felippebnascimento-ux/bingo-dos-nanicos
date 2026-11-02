@@ -65,6 +65,7 @@ export const CHANGELOG: EntradaLog[] = [
     ],
   },
   { data: "02/11/2026", itens: ["Cassino com moedas: roleta europeia, com a vantagem da casa à mostra e resultado que dá para conferir"] },
+  { data: "02/11/2026", itens: ["Cassino: limbo, maior ou menor e caça-níquel com o rosto dos nanicos"] },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
