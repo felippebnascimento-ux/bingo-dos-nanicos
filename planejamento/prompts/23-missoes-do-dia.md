@@ -21,7 +21,6 @@
 | "Faça um bingo" | bingo conferido pelo servidor | 8 |
 | "Gire a roleta do rodízio" | `rodizio.sorteado_por` | 17 |
 | "Aposte numa partida ao vivo" | `apostas` | 10 |
-| "Dê ração para o Pirulito" | `pet_racoes` | 24 |
 
 ## Antes de começar
 Siga as "Regras de toda sessão" de `planejamento/PLANO.md`. Leia a seção 7 do `seguranca.sql` (`creditar`, `hoje_br`, `bater_ponto`) e veja quais fases da tabela acima já estão na `main`.

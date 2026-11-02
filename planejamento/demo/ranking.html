@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Ranking das moedas</title>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@500;700&family=Unbounded:wght@700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0;width:760px;height:860px;overflow:hidden;font-family:Onest,sans-serif;background:radial-gradient(ellipse at 50% 40%,#FBF4E6,#E4D4B6);position:relative}
+.painel{position:absolute;left:24px;bottom:24px;width:400px;background:rgba(30,30,29,.95);color:#FAF9F6;border-radius:18px;padding:16px 16px 12px;box-shadow:0 12px 30px rgba(0,0,0,.35)}
+.cab{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.moeda{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#F3D58B,#C99A3E 60%,#9C7428);box-shadow:inset 0 0 0 2px #9C7428;display:grid;place-items:center;font:800 13px Unbounded,sans-serif;color:#7A5A1E}
+.cab b{font:800 20px Unbounded,sans-serif;display:block}
+.cab small{color:#B8B6AC;font-size:12px}
+.fechar{margin-left:auto;background:none;border:0;color:#B8B6AC;font-size:20px}
+.seg{display:flex;background:rgba(255,255,255,.07);border-radius:999px;padding:3px;margin-bottom:10px}
+.seg span{flex:1;text-align:center;font:700 12px Onest,sans-serif;padding:7px;border-radius:999px;color:#B8B6AC}
+.seg span.on{background:#B08D57;color:#262626}
+ol{list-style:none;margin:0;padding:0;display:grid;gap:3px}
+li{display:grid;grid-template-columns:30px 30px 1fr auto;gap:10px;align-items:center;padding:5px 8px;border-radius:10px;font-size:13.5px}
+li .pos{font:800 12px Unbounded,sans-serif;color:#8F8C84;text-align:center}
+li img{width:30px;height:30px;border-radius:50%;object-fit:cover}
+li .s{font:700 12.5px Unbounded,sans-serif;color:#E8C77E}
+li.top{background:linear-gradient(90deg,rgba(226,181,75,.28),rgba(226,181,75,.05))}
+li.top .pos{color:#E8C77E}
+li.eu{outline:1.5px solid #B08D57;background:rgba(176,141,87,.15)}
+li.eu .nm{color:#E8C77E;font-weight:700}
+li .sobe{color:#7BC47F;font-size:11px;margin-left:6px}
+.coroa{position:relative}
+.coroa svg{position:absolute;left:4px;top:-11px}
+.carteira{position:absolute;left:24px;top:24px;display:flex;align-items:center;gap:10px;background:rgba(30,30,29,.88);color:#FAF9F6;padding:9px 16px 9px 10px;border-radius:999px;font-size:12px}
+.carteira b{font:800 15px Unbounded,sans-serif}
+.nota{position:absolute;left:470px;top:40px;width:260px;color:#4A4E44;font-size:13px;line-height:1.5}
+.nota h1{font:800 18px Unbounded,sans-serif;color:#353535;margin:0 0 8px}
+</style></head><body>
+
+<div class="nota"><h1>Ranking das moedas</h1>Clique na carteira (canto do Sítio) para abrir. A lista muda na hora quando alguém ganha ou gasta moedas. Empatados dividem a posição. Clique num nome para ver a ficha.</div>
+<div class="painel">
+  <div class="cab"><span class="moeda">$</span><div><b>1.284</b><small>suas moedas · 1º lugar</small></div><button class="fechar" aria-label="Fechar">×</button></div>
+  <div class="seg"><span class="on">Ranking</span><span>Meu extrato</span></div>
+  <ol id="r"></ol>
+</div>
+<script>
+const R="../../public/arte/nanicos/";
+const L=[[4,"Gamer",1284],[9,"Pitoco",1102],[2,"Alemão",987],[1,"Abreutz",940],[12,"Max",812],[10,"John",812],[8,"Henry",705],[3,"DD",640],[7,"Le Bubu",533],[5,"Grito",498],[14,"Pin",410],[11,"Veião",372],[13,"Gordão",290],[6,"Guiperino",201]];
+const ol=document.getElementById("r");let pos=0,ant=null;
+L.forEach(([n,nm,s],k)=>{if(s!==ant){pos=k+1;ant=s}
+ const li=document.createElement("li");li.className=(k===0?"top ":"")+(n===4?"eu":"");
+ const coroa=k===0?'<svg width="22" height="12" viewBox="0 0 22 12"><path d="M1 11 V3 L6 7 L11 0 L16 7 L21 3 V11 Z" fill="#E2B54B" stroke="#9C7428" stroke-width="1.2"/></svg>':"";
+ li.innerHTML=`<span class="pos">${pos}º</span><span class="coroa">${coroa}<img src="${R}${n}-rosto.webp" alt=""></span><span class="nm">${nm}${n===2?'<span class="sobe">▲ subiu</span>':""}</span><span class="s">${s.toLocaleString("pt-BR")}</span>`;
+ ol.appendChild(li)});
+</script>
+</body></html>

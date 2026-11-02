@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Troféus da semana</title>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@500;700&family=Unbounded:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FAF9F6;--ink:#353535;--muted:#7A776F;--accent:#B08D57;--olive:#4A4E44;--mint:#3E4C59;--live:#B4442F;--line:#E4E0D6;--card:#FFFFFF}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Onest,sans-serif;width:1240px;height:1000px;overflow:hidden}
+.wrap{padding:24px 36px}
+.topo{display:flex;align-items:center;gap:16px}
+.linkish{color:var(--accent);font-weight:700;font-size:13px;text-decoration:none}
+h1{margin:6px 0 4px;font:800 24px Unbounded,sans-serif}
+.sub{margin:0 0 16px;color:var(--muted);font-size:14px}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:999px;padding:3px;gap:2px;background:#fff;margin-bottom:18px}
+.seg span{font:700 12px Onest,sans-serif;padding:7px 13px;border-radius:999px;color:var(--muted)}
+.seg span.on{background:var(--olive);color:#fff}
+.grade{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.block{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
+.cab{display:flex;gap:12px;align-items:center}
+.ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:#F3EDE1}
+.ic.ruim{background:#F8E7E3}
+.cab h2{margin:0;font:800 14px Unbounded,sans-serif}
+.cab p{margin:2px 0 0;font-size:12px;color:var(--muted)}
+.um{display:flex;gap:12px;align-items:center;margin:14px 0 10px;padding:10px;border-radius:12px;background:#FBF5EA;border:1.5px solid var(--accent)}
+.ruimc .um{background:#FBEDEA;border-color:var(--live)}
+.um img{width:52px;height:52px;border-radius:50%;object-fit:cover;border:3px solid var(--accent)}
+.ruimc .um img{border-color:var(--live)}
+.um b{font:800 15px Unbounded,sans-serif;display:block}
+.um small{font-size:12px;color:var(--muted)}
+.pos{font:800 18px Unbounded,sans-serif;color:var(--accent);margin-left:auto}
+.ruimc .pos{color:var(--live)}
+.outros{display:grid;gap:6px}
+.outros div{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.outros img{width:24px;height:24px;border-radius:50%;object-fit:cover}
+.outros span{margin-left:auto;color:var(--muted);font-size:12px}
+.outros i{font:700 11px Unbounded,sans-serif;font-style:normal;color:var(--muted);width:16px}
+.premio{margin-top:12px;font-size:12px;font-weight:700;padding:6px 10px;border-radius:8px;background:#F3EDE1;display:inline-block}
+.ruimc .premio{background:#F8E7E3;color:var(--live)}
+.agora{font:700 9px Unbounded,sans-serif;background:var(--mint);color:#fff;border-radius:5px;padding:2px 6px;margin-left:6px;vertical-align:2px}
+.fama{margin-top:16px}
+.fama h2{margin:0 0 10px;font:800 14px Unbounded,sans-serif}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th{font:700 10px Unbounded,sans-serif;color:var(--muted);text-align:center;padding:6px;border-bottom:1px solid var(--line)}
+th:first-child{text-align:left}
+td{padding:5px 6px;text-align:center;border-bottom:1px solid #F0ECE3}
+td:first-child{text-align:left;display:flex;align-items:center;gap:8px}
+td img{width:22px;height:22px;border-radius:50%}
+td.z{color:#CFCAC0}
+td b{color:var(--accent)}
+</style></head><body><div class="wrap">
+<div class="topo"><a class="linkish" href="#">← Voltar ao Sítio</a></div>
+<h1>Troféus da semana</h1>
+<p class="sub">Calculados pelas partidas de LoL de cada um, toda segunda-feira. Clique num rosto para ver a ficha.</p>
+<div class="seg"><span class="on">27/10 a 02/11</span><span>20/10 a 26/10</span><span>13/10 a 19/10</span><span>06/10 a 12/10</span><span>Mais antigas</span></div>
+<div class="grade" id="grade"></div>
+<div class="block fama"><h2>Hall da fama</h2><table id="fama"></table></div>
+</div>
+<script>
+const R="../../public/arte/nanicos/";
+const ICO={
+ feeder:'<svg width="26" height="26" viewBox="0 0 26 26"><ellipse cx="13" cy="15" rx="11" ry="6" fill="#fff" stroke="#B4442F" stroke-width="2"/><ellipse cx="13" cy="14" rx="6" ry="3" fill="none" stroke="#B4442F" stroke-width="1.5"/><path d="M5 5 l3 4 M21 5 l-3 4" stroke="#B4442F" stroke-width="2" stroke-linecap="round"/></svg>',
+ turista:'<svg width="26" height="26" viewBox="0 0 26 26"><path d="M3 6 l6-2 l8 3 l6-2 v15 l-6 2 l-8-3 l-6 2 z" fill="#fff" stroke="#B4442F" stroke-width="2" stroke-linejoin="round"/><path d="M9 4 v15 M17 7 v15" stroke="#B4442F" stroke-width="1.5"/></svg>',
+ piano:'<svg width="26" height="26" viewBox="0 0 26 26"><rect x="3" y="7" width="20" height="13" rx="2" fill="#fff" stroke="#B08D57" stroke-width="2"/><path d="M8 7 v8 M13 7 v8 M18 7 v8" stroke="#353535" stroke-width="3"/></svg>',
+ viciado:'<svg width="26" height="26" viewBox="0 0 26 26"><rect x="3" y="8" width="20" height="11" rx="5.5" fill="#fff" stroke="#B08D57" stroke-width="2"/><path d="M8 11 v5 M5.5 13.5 h5" stroke="#353535" stroke-width="2"/><circle cx="17" cy="12" r="1.4" fill="#353535"/><circle cx="19.5" cy="15" r="1.4" fill="#353535"/></svg>',
+ sumido:'<svg width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="13" r="10" fill="#fff" stroke="#B4442F" stroke-width="2"/><path d="M10 10 q0-3 3-3 q3 0 3 3 q0 2-3 3 v2" stroke="#B4442F" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="13" cy="19" r="1.3" fill="#B4442F"/></svg>',
+ rico:'<svg width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="13" r="10" fill="#E2B54B" stroke="#9C7428" stroke-width="2"/><text x="13" y="17.5" text-anchor="middle" font-family="Unbounded" font-weight="800" font-size="11" fill="#7A5A1E">$</text></svg>'
+};
+const T=[
+ ["feeder","Feeder da semana","Mais mortes por partida",1,[[12,"Max","9,1 mortes por partida"],[7,"Le Bubu","8,4"],[5,"Grito","7,9"]],"Chapéu de burro a semana inteira"],
+ ["piano","Carregou o piano","Melhor KDA (mín. 5 partidas)",0,[[9,"Pitoco","KDA 4,8"],[10,"John","3,9"],[8,"Henry","3,6"]],"+50 moedas e coroa dourada"],
+ ["viciado","Viciado","Quem mais jogou",0,[[4,"Gamer","23 partidas"],[3,"DD","19"],[1,"Abreutz","17"]],"+20 moedas"],
+ ["turista","Turista","Menor placar de visão por minuto",1,[[7,"Le Bubu","0,31 por minuto"],[12,"Max","0,38"],[14,"Pin","0,42"]],"Só a vergonha"],
+ ["sumido","Sumido","Jogou, mas nunca com o grupo",1,[[6,"Guiperino","4 partidas sozinho"],[13,"Gordão","2"],[11,"Veião","1"]],"Só a vergonha"],
+ ["rico","Mais rico","Maior saldo de moedas",0,[[4,"Gamer","1.284 moedas"],[9,"Pitoco","1.102"],[2,"Alemão","987"]],"Coroa de moedas enquanto for o mais rico"],
+];
+const g=document.getElementById("grade");
+for(const[id,nome,frase,ruim,pod,premio]of T){
+ const[a,...outros]=pod;
+ g.insertAdjacentHTML("beforeend",`<div class="block ${ruim?"ruimc":""}"><div class="cab"><div class="ic ${ruim?"ruim":""}">${ICO[id]}</div><div><h2>${nome}${id==="rico"?'<span class="agora">AGORA</span>':""}</h2><p>${frase}</p></div></div>
+ <div class="um"><img src="${R}${a[0]}-rosto.webp" alt=""><div><b>${a[1]}</b><small>${a[2]}</small></div><span class="pos">1º</span></div>
+ <div class="outros">${outros.map((o,k)=>`<div><i>${k+2}º</i><img src="${R}${o[0]}-rosto.webp" alt="">${o[1]}<span>${o[2]}</span></div>`).join("")}</div>
+ <span class="premio">${premio}</span></div>`);
+}
+const F=[[12,"Max",[5,0,1,2,0]],[9,"Pitoco",[0,4,2,0,0]],[4,"Gamer",[1,2,5,0,0]],[7,"Le Bubu",[2,0,0,4,1]],[6,"Guiperino",[0,1,0,1,3]]];
+const f=document.getElementById("fama");
+f.innerHTML=`<tr><th>Nanico</th><th>Feeder</th><th>Piano</th><th>Viciado</th><th>Turista</th><th>Sumido</th></tr>`+F.map(([n,nm,v])=>`<tr><td><img src="${R}${n}-rosto.webp" alt="">${nm}</td>${v.map(x=>`<td class="${x?"":"z"}">${x===Math.max(...F.map(r=>r[2][v.indexOf(x)]))&&x?`<b>${x}</b>`:x}</td>`).join("")}</tr>`).join("");
+</script>
+</body></html>
