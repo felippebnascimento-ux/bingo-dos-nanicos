@@ -17,6 +17,8 @@ import { cambalear } from "./zoeira";
 import { iniciarZoeira, useZoeira } from "./zoeiraSala";
 import { MenuBoneco, Revidar, ZoeiraCamada } from "./ZoeiraTela";
 import { BotaoQuadro, QuadroTrofeus } from "./QuadroTrofeus";
+import { iniciarEventos } from "./eventosSala";
+import { ChurrascoCamada, FaixaEvento, LuzHappy, PlacaChurrasco } from "./EventosTela";
 import { useRanking } from "@/features/moedas/Ranking";
 import { enfeites } from "@/features/trofeus/trofeus";
 import { useTrofeus } from "@/features/trofeus/trofeusDados";
@@ -48,6 +50,9 @@ function noSvg(e: { clientX: number; clientY: number; currentTarget: Element }, 
   return [vb.x + ((e.clientX - r.left) / r.width) * vb.w, vb.y + ((e.clientY - r.top) / r.height) * vb.h] as const;
 }
 
+/* a brasa e a fumaça ficam na mesma camada da churrasqueira (quem passa na frente cobre) */
+const CHURRASQUEIRA = MOVEIS.findIndex((m) => m.id === "churrasqueira");
+
 const mesmoPiso = (a: Piso | null, b: Piso | null) => a === b || (!!a && !!b && a.i === b.i && a.j === b.j);
 
 export function HallView({ hidden }: { hidden: boolean }) {
@@ -75,6 +80,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
     iniciarHall();
     iniciarGanhos();
     iniciarZoeira();
+    iniciarEventos();
   }, []);
 
   /* z-index de cada móvel e boneco, do fundo para a frente */
@@ -125,6 +131,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
       <header className="hero">
         <h1>Sítio do Mitz</h1>
       </header>
+      <FaixaEvento />
       <div className="hall hall-area">
         <div
           className="hall-palco"
@@ -156,7 +163,9 @@ export function HallView({ hidden }: { hidden: boolean }) {
               enfeite={b.fid ? enfeite[b.fid] : undefined}
             />
           ))}
+          <ChurrascoCamada vb={vb} z={z[CHURRASQUEIRA]} />
           <ZoeiraCamada bonecos={bonecos} vb={vb} />
+          <LuzHappy />
           <button
             type="button"
             className="hall-tv"
@@ -169,6 +178,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
             }}
           />
           <BotaoQuadro vb={vb} />
+          <PlacaChurrasco vb={vb} />
           {CLICAVEIS.filter((c) => (c.id !== "salas" || temSalas) && (c.id !== "trofeus" || temTrofeus)).map((c) => {
             const pos = emPorcento(vb, c.rotulo.i, c.rotulo.j, c.rotulo.z);
             const rotulo = c.id === "tv" ? "Ao vivo" : c.id === "truco" ? "Truco" : c.id === "salas" ? "Salas" : c.id === "trofeus" ? "Troféus" : "Loja";

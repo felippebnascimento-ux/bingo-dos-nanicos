@@ -75,7 +75,9 @@ src/
                        zoeira.ts (arco do voo e cambaleio; puro e testado), zoeiraSala.ts (chama zoar(), recebe
                        a tabela zoeiras, anima) e ZoeiraTela.tsx (menu do boneco, voo, PLAFT!, revidar);
                        QuadroTrofeus.tsx (quadro na parede da esquerda, abre a aba Troféus) e Chapeu.tsx
-                       (chapéu de burro, coroa dourada e coroa de moedas na cabeça do boneco)
+                       (chapéu de burro, coroa dourada e coroa de moedas na cabeça do boneco); eventos com
+                       horário: eventosSala.ts (relógio, espetinho já pego, chama churrasco_pegar()) e EventosTela.tsx
+                       (faixa em cima do cômodo, luz do happy hour, brasa e fumaça, placa "Pegar espetinho")
     trofeus/           aba Troféus (aba `trofeus`, fora do menu; abre pelo quadro do Sítio): trofeus.ts (os 6
                        troféus, pódio, números, enfeites; puro e testado), trofeusDados.ts (lê o pódio e pede o
                        cálculo à riot-semana) e TrofeusView (cartões, seletor de semana, hall da fama)
@@ -124,6 +126,8 @@ src/
     dados.ts           carregar e gravar no banco, login → sessão → sala, sair
     bingo.ts           regras da cartela (quais nanicadas valem, sorteio, marcar)
     moedas.ts          números das moedas (bônus, sequência, teto), só para mostrar; puro e testado
+    eventos.ts         happy hour e churrasco de sábado: eventoAgora, happyAgora, fimDoEvento (hora de Brasília
+                       por Intl, nunca a do aparelho); só para mostrar; puro e testado
     carteira.ts        carteira do nanico logado: bater_ponto no login, pulso a cada minuto, extrato; ranking:
                        `carregarRanking()` lê o saldo de todas as carteiras uma vez e o tempo real das carteiras mantém
                        `todas` (e o "▲ subiu" em `subiram`); a ordem vem de `ranking()` em moedas.ts (empate divide a posição)
@@ -281,7 +285,8 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 - **Quem é nanico:** `public.eh_nanico()` diz se o usuário logado está ligado a um nanico.
 - **Moedas (seção 7 do `seguranca.sql`):**
   - **O saldo só muda por `public.creditar()`**, que é interna (o site não chama) e é usada por outras funções do banco. Toda fase que dá ou tira moedas (cassino, bingo, truco, loja) chama `creditar` de dentro de uma função do banco. O navegador nunca decide ganho nem perda.
-  - **RPCs do site:** `bater_ponto()` (bônus do dia, uma vez por dia, com a sequência), `pulso()` (um por minuto; conta 1 minuto se o último pulso que valeu foi entre 55 s e 150 s atrás; +1 moeda a cada 6 minutos, até 40 por dia) e `minha_carteira()`.
+  - **RPCs do site:** `bater_ponto()` (bônus do dia, uma vez por dia, com a sequência), `pulso()` (um por minuto; conta 1 minuto se o último pulso que valeu foi entre 55 s e 150 s atrás; +1 moeda a cada 6 minutos, até 40 por dia; no happy hour, +1 a cada 3 minutos e o dia sobe até 60 só pelo que o happy hour pagou) e `minha_carteira()`.
+- **Eventos com horário (seção 25 do `seguranca.sql`):** não há tabela de "evento ligado": quem decide é o relógio do banco. `agora_br()` é a hora de Brasília e `evento_em(hora)` diz `'happy'` (todo dia, 22h à meia-noite) ou `'churrasco'` (sábado, 18h às 23h; no sábado das 22h às 23h vale o churrasco, mas o `pulso` confere a hora e paga o happy hour junto). O `pulso` guarda em `online_diario` os `happy_min` e `happy_ganho` do dia. `churrasco_pegar()` só aceita no horário, uma vez por pessoa por sábado (`ref` = data no `extrato`), sorteia de 10 a 60 com `random()` e paga com `creditar(…, 'churrasco', data)`; o aviso para todo mundo vem do tempo real das carteiras.
   - **O dia é o de Brasília** (`public.hoje_br()`). Os números estão espelhados em `src/lib/moedas.ts`, só para mostrar.
   - **Tempo online:** conta mesmo com a aba escondida (decisão do grupo, 01/11/2026).
   - **Se o SQL não rodou,** o site esconde as moedas e só deixa um aviso no console.
@@ -317,7 +322,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 - **Mudanças no banco:** chegam por `postgres_changes` em `friends`, `phrases`, `game`, `chat_messages`, `carteiras` e `rodizio`. A chinelada e a torta vêm do tempo real de `zoeiras` (pagas, gravadas por `zoar()`), e o sorteio da roleta do rodízio vem do tempo real de `rodizio` (todo mundo anima até o mesmo `girado_em`), **nunca de broadcast**. Os ganhos de moedas de todo mundo no Sítio vêm do tempo real de `carteiras` (gravado por `creditar()`), **nunca de broadcast**.
 
 ### Navegador (`localStorage`, só conveniência de cada pessoa)
-- **Chaves:** `rift-lineup`, `rift-card`, `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `truco-mesa`, `log-visto`, `fome-fechado`, `hall-pos` (último piso no hall), `hall-sala-min` (lista "Na sala agora" do Sítio recolhida), `sala-atual` (última sala; o site sempre abre no lobby), `canais-voz-min` e `canais-texto-min` (categorias de canais recolhidas; no celular começam recolhidas) `membros-min` (lista de membros só com os rostos; abaixo de 1200 px fica assim sempre) e `midia` (microfone, saída de som, câmera, eco e ruído escolhidos nas Configurações).
+- **Chaves:** `rift-lineup`, `rift-card`, `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `truco-mesa`, `log-visto`, `fome-fechado`, `hall-pos` (último piso no hall), `hall-sala-min` (lista "Na sala agora" do Sítio recolhida), `sala-atual` (última sala; o site sempre abre no lobby), `canais-voz-min` e `canais-texto-min` (categorias de canais recolhidas; no celular começam recolhidas) `membros-min` (lista de membros só com os rostos; abaixo de 1200 px fica assim sempre) e `midia` (microfone, saída de som, câmera, eco e ruído escolhidos nas Configurações) e `evento-visto` (o aviso que explica o happy hour e o churrasco já apareceu).
 - **As do site antigo continuam iguais**, então ninguém perde a cartela na troca.
 - **`sessionStorage`:** `log-auto` (o Log de novidades já abriu sozinho nesta sessão do navegador).
 - Nada importante pode morar só aqui.

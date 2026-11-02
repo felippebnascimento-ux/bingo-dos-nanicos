@@ -108,6 +108,7 @@
   --hall-perna2:#666666; --hall-verde0:#5FA866; --hall-verde1:#4A8A50; --hall-verde2:#519858; --hall-carta:#FAF9F6; --hall-cartal:#999999;
   --hall-bege0:#EFE3C8; --hall-bege1:#CDB78E; --hall-bege2:#E2C99C; --hall-ponto:#8A6A39; --hall-cad0:#FFFFFF; --hall-cad1:#D9D9D9;
   --hall-cad2:#EEEEEE; --hall-cad3:#DCDCDC; --hall-cadl:#9A9A9A;
+  --hall-luz-happy:rgba(255,166,64,.14); --hall-brasa0:#3A1A0E; --hall-brasa1:#FF8A2A; --hall-brasa2:#FFC861; --hall-fumaca:#C9C3BA;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .hall{
   --hall-fundo-1:#5A4734; --hall-fundo-2:#463728; --hall-fundo-3:#35291E;
@@ -129,6 +130,7 @@
   --hall-perna2:#565656; --hall-verde0:#508D56; --hall-verde1:#3E7443; --hall-verde2:#44804A; --hall-carta:#D2D1CF; --hall-cartal:#818181;
   --hall-bege0:#C9BFA8; --hall-bege1:#AC9A77; --hall-bege2:#BEA983; --hall-ponto:#745930; --hall-cad0:#D6D6D6; --hall-cad1:#B6B6B6;
   --hall-cad2:#C8C8C8; --hall-cad3:#B9B9B9; --hall-cadl:#818181;
+  --hall-luz-happy:rgba(255,150,50,.12); --hall-brasa0:#2A130A; --hall-brasa1:#E8792A; --hall-brasa2:#E6B256; --hall-fumaca:#8D8780;
 }}
 :root[data-theme="dark"] .hall{
   --hall-fundo-1:#5A4734; --hall-fundo-2:#463728; --hall-fundo-3:#35291E;
@@ -150,6 +152,7 @@
   --hall-perna2:#565656; --hall-verde0:#508D56; --hall-verde1:#3E7443; --hall-verde2:#44804A; --hall-carta:#D2D1CF; --hall-cartal:#818181;
   --hall-bege0:#C9BFA8; --hall-bege1:#AC9A77; --hall-bege2:#BEA983; --hall-ponto:#745930; --hall-cad0:#D6D6D6; --hall-cad1:#B6B6B6;
   --hall-cad2:#C8C8C8; --hall-cad3:#B9B9B9; --hall-cadl:#818181;
+  --hall-luz-happy:rgba(255,150,50,.12); --hall-brasa0:#2A130A; --hall-brasa1:#E8792A; --hall-brasa2:#E6B256; --hall-fumaca:#8D8780;
 }
 /* cada cor vira uma classe de preenchimento (f-) e de traço (s-) para os desenhos do SVG; o céu é um degradê */
 .hall .f-rejunte{fill:var(--hall-rejunte)}
@@ -407,3 +410,25 @@
 .ch-pedra{fill:var(--live)}
 .ch-moeda{fill:var(--accent);stroke:var(--accent-text);stroke-width:1.2}
 .ch-cifrao{font:800 7px var(--display);fill:var(--accent-ink)}
+
+/* ---------- eventos com horário (fase 25): faixa, luz do happy hour, brasa e fumaça do churrasco ---------- */
+.hall-luz-happy{position:absolute;inset:0;z-index:99;pointer-events:none;background:var(--hall-luz-happy);mix-blend-mode:multiply}
+.hall-faixa{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;gap:2px 8px;width:fit-content;max-width:100%;margin:0 auto 10px;padding:6px 14px;border:1.5px solid var(--accent);border-radius:99px;background:var(--accent-ink);color:var(--stamp-ink);box-shadow:0 3px 10px var(--shadow);text-align:center}
+.hall-faixa b{font:800 11px var(--display);letter-spacing:.04em;color:var(--accent)}
+.hall-faixa span{font:500 12px var(--body)}
+.hall-faixa small{font:600 11px var(--display);color:color-mix(in srgb,var(--stamp-ink) 75%,transparent)}
+.hall-faixa.churrasco{border-color:var(--live)}
+.hall-faixa.churrasco b{color:var(--live)}
+@media (max-width:760px){.hall-faixa{border-radius:14px;padding:5px 12px}.hall-faixa b{font-size:10px}.hall-faixa span,.hall-faixa small{font-size:11px}}
+.hall-churrasco .brasa-fundo{fill:var(--hall-brasa0)}
+.hall-churrasco .brasa{fill:var(--hall-brasa1);animation:brasa 1.6s ease-in-out infinite alternate}
+.hall-churrasco .fumaca{fill:var(--hall-fumaca);opacity:0;animation:fumaca 3.3s ease-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes brasa{from{fill:var(--hall-brasa1)}to{fill:var(--hall-brasa2)}}
+@keyframes fumaca{0%{opacity:0;transform:translateY(0) scale(.6)}20%{opacity:.55}100%{opacity:0;transform:translateY(-70px) scale(1.6)}}
+@media (prefers-reduced-motion:reduce){
+  .hall-churrasco .brasa{animation:none}
+  .hall-churrasco .fumaca{display:none}
+}
+.hall-placa-churrasco{border-color:var(--live)}
+.hall-placa-churrasco.pegou{cursor:default;opacity:.85;border-color:var(--accent)}
+.hall-placa-churrasco:disabled:hover{background:color-mix(in srgb,var(--accent-ink) 90%,transparent)}

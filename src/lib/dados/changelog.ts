@@ -115,6 +115,10 @@ export const CHANGELOG: EntradaLog[] = [
       "Em Canais de texto fica só o #geral, o chat de todo mundo",
     ],
   },
+  {
+    data: "02/11/2026",
+    itens: ["Happy hour das 22h à meia-noite com moedas em dobro", "Churrasco de sábado no Sítio: pegue seu espetinho surpresa"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

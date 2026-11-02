@@ -44,6 +44,7 @@ export const MOTIVO_GANHO: Readonly<Record<string, string>> = {
   cassino: "ganhou no cassino",
   aposta: "acertou a aposta",
   trofeu: "troféu da semana",
+  churrasco: "pegou um espetinho",
   admin: "presente do admin",
 };
 export const motivoGanho = (m: string | null | undefined) => (m && MOTIVO_GANHO[m]) || "";
@@ -62,6 +63,7 @@ export const MOTIVOS: Readonly<Record<string, string>> = {
   admin: "Ajuste do admin",
   zoeira: "Zoeira no Sítio",
   trofeu: "Troféu da semana",
+  churrasco: "Espetinho do churrasco",
 };
 
 /* ---------- ranking ---------- */

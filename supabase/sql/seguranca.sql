@@ -242,7 +242,7 @@ create table if not exists public.extrato (
   id      bigint generated always as identity primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
   valor   int not null,
-  motivo  text not null check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu')),
+  motivo  text not null check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco')),
   ref     text,
   em      timestamptz not null default now()
 );
@@ -1172,7 +1172,7 @@ grant execute on function public.rodizio_desistir(text) to authenticated;
 --     tempo real da tabela, nunca por broadcast. O alvo não perde nada.
 alter table public.extrato drop constraint if exists extrato_motivo_check;
 alter table public.extrato add constraint extrato_motivo_check
-  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu'));
+  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco'));
 
 create table if not exists public.zoeiras (
   id   bigint generated always as identity primary key,
@@ -1258,7 +1258,7 @@ grant execute on function public.placar_zoeira(uuid) to authenticated;
 --     (semana_vez) e o pagamento acontece uma vez só (trofeus_pagar confere o extrato).
 alter table public.extrato drop constraint if exists extrato_motivo_check;
 alter table public.extrato add constraint extrato_motivo_check
-  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu'));
+  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco'));
 
 create table if not exists public.trofeus_semana (
   semana    date not null,
@@ -1351,7 +1351,97 @@ do $$ begin
   end if;
 end $$;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira e as 3 dos troféus
+-- 25) eventos com horário: happy hour (todo dia, 22h à meia-noite) e churrasco de sábado (18h às 23h) ----
+--     Não tem tabela de "evento ligado": quem decide é o relógio do banco, na hora de Brasília.
+create or replace function public.agora_br() returns timestamp language sql stable as $$
+  select (now() at time zone 'America/Sao_Paulo');
+$$;
+
+-- 'happy', 'churrasco' ou null (o mesmo que eventoAgora() em src/lib/eventos.ts); no sábado das 22h às 23h vale o churrasco,
+-- mas o pulso confere a hora sozinho e paga o happy hour também
+create or replace function public.evento_em(p timestamp) returns text language sql immutable as $$
+  select case
+    when extract(isodow from p) = 6 and extract(hour from p) >= 18 and extract(hour from p) < 23 then 'churrasco'
+    when extract(hour from p) >= 22 then 'happy'
+    else null end;
+$$;
+
+-- minutos de happy hour do dia e as moedas que ele já pagou (o resto dos minutos segue a regra normal)
+alter table public.online_diario add column if not exists happy_min   int not null default 0;
+alter table public.online_diario add column if not exists happy_ganho int not null default 0;
+
+-- o mesmo pulso da seção 7 (55 a 150 s entre pulsos), agora com o happy hour:
+--   fora dele: +1 a cada 6 minutos normais, até 40 por dia;
+--   no happy hour: +1 a cada 3 minutos, e o teto do dia sobe até 60 só pelo que o happy hour pagou.
+create or replace function public.pulso() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid   uuid := auth.uid();
+  v_hoje  date := public.hoje_br();
+  v_happy boolean := extract(hour from public.agora_br()) >= 22;   -- todo dia, sábado também (o churrasco termina às 23h)
+  v_min   int;
+  v_hmin  int;
+  v_hgan  int;
+  v_ult   timestamptz;
+  v_norm  int;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos ganham moedas.' using errcode = 'P0001'; end if;
+  perform public.limitar('pulso', 6, interval '1 minute', 'Calma: muitos pulsos seguidos.');
+  insert into public.online_diario (user_id, dia) values (v_uid, v_hoje) on conflict (user_id, dia) do nothing;
+  select minutos, happy_min, happy_ganho, ultimo_pulso into v_min, v_hmin, v_hgan, v_ult from public.online_diario
+   where user_id = v_uid and dia = v_hoje for update;
+  if v_ult is null or now() - v_ult > interval '150 seconds' then
+    update public.online_diario set ultimo_pulso = now() where user_id = v_uid and dia = v_hoje;
+  elsif now() - v_ult >= interval '55 seconds' then
+    v_min := v_min + 1;
+    if v_happy then v_hmin := v_hmin + 1; end if;
+    v_norm := v_min - v_hmin;   -- minutos fora do happy hour
+    if v_happy then
+      -- o normal pagou no máximo 40; o happy hour completa até 60
+      if v_hmin % 3 = 0 and least(40, v_norm / 6) + v_hgan < 60 then
+        v_hgan := v_hgan + 1;
+        perform public.creditar(v_uid, 1, 'online', v_hoje::text);
+      end if;
+    elsif v_norm % 6 = 0 and v_norm <= 240 then
+      perform public.creditar(v_uid, 1, 'online', v_hoje::text);
+    end if;
+    update public.online_diario set minutos = v_min, happy_min = v_hmin, happy_ganho = v_hgan, ultimo_pulso = now()
+     where user_id = v_uid and dia = v_hoje;
+  end if;
+  return public.minha_carteira();
+end $$;
+revoke all on function public.pulso() from public, anon;
+grant execute on function public.pulso() to authenticated;
+
+-- espetinho do churrasco: uma vez por sábado, de 10 a 60 moedas sorteadas aqui
+create or replace function public.churrasco_pegar() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid   uuid := auth.uid();
+  v_agora timestamp := public.agora_br();
+  v_dia   text := v_agora::date::text;
+  v_valor int;
+  v_saldo int;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos pegam espetinho.' using errcode = 'P0001'; end if;
+  if public.evento_em(v_agora) is distinct from 'churrasco' then
+    raise exception 'A churrasqueira só acende no sábado, das 18h às 23h.' using errcode = 'P0001';
+  end if;
+  -- uma pessoa por vez: dois cliques ao mesmo tempo não pegam dois espetinhos
+  perform pg_advisory_xact_lock(hashtext('churrasco:' || v_uid::text));
+  if exists (select 1 from public.extrato where user_id = v_uid and motivo = 'churrasco' and ref = v_dia) then
+    raise exception 'Você já pegou seu espetinho. Volte sábado que vem.' using errcode = 'P0001';
+  end if;
+  v_valor := 10 + floor(random() * 51)::int;
+  v_saldo := public.creditar(v_uid, v_valor, 'churrasco', v_dia);
+  return jsonb_build_object('valor', v_valor, 'saldo', v_saldo);
+end $$;
+revoke all on function public.churrasco_pegar() from public, anon;
+grant execute on function public.churrasco_pegar() to authenticated;
+revoke all on function public.evento_em(timestamp) from public, anon;
+grant execute on function public.evento_em(timestamp) to authenticated;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus e as 2 dos eventos
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -1380,4 +1470,7 @@ select proname::text, 'zoeira' from pg_proc
 union all
 select proname::text, 'trofeus' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('semana_vez', 'trofeus_pagar', 'hall_da_fama')
+union all
+select proname::text, 'eventos' from pg_proc
+ where pronamespace = 'public'::regnamespace and proname in ('agora_br', 'churrasco_pegar')
 order by 2, 1;
