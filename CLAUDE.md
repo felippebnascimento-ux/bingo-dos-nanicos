@@ -78,6 +78,12 @@ src/
                        (chapéu de burro, coroa dourada e coroa de moedas na cabeça do boneco); eventos com
                        horário: eventosSala.ts (relógio, espetinho já pego, chama churrasco_pegar()) e EventosTela.tsx
                        (faixa em cima do cômodo, luz do happy hour, brasa e fumaça, placa "Pegar espetinho")
+    loja/              aba Loja (aba `loja`, fora do menu; abre pela geladeira do Sítio e pelo chip "Loja" do Início):
+                       loja.ts (espaços, vitrine, equipados, podeComprar, balanço do boneco; puro e testado),
+                       lojaDados.ts (vitrine, mochila, equipados de todos; comprar, equipar, usar; `useEquipados`),
+                       consumoSala.ts (tempo real de `consumos`: o boneco fuma ou bebe em todas as telas),
+                       Itens.tsx (desenhos dos consumíveis e do escudo, ConsumoCamada do Sítio, TituloNanico) e
+                       LojaView.tsx (vitrine com prévia, mochila; `MochilaLista` também aparece na ficha)
     trofeus/           aba Troféus (aba `trofeus`, fora do menu; abre pelo quadro do Sítio): trofeus.ts (os 6
                        troféus, pódio, números, enfeites; puro e testado), trofeusDados.ts (lê o pódio e pede o
                        cálculo à riot-semana) e TrofeusView (cartões, seletor de semana, hall da fama)
@@ -136,7 +142,7 @@ src/
     tipos.ts           Friend, Phrase, Card, Presence…
     dados/             campeoes.ts (CHAMPS, LANES, LANE_CAMP), nanicos.ts (NAN_MAP, artOf, bonecoOf), changelog.ts,
                        novidades.ts (o que mostrar no Log depois de uma atualização; puro e testado)
-  styles/              CSS global, numerado: 01-base.css … 29-canais.css (no celular, as abas ficam numa barra embaixo)
+  styles/              CSS global, numerado: 01-base.css … 30-loja.css (no celular, as abas ficam numa barra embaixo)
 public/arte/           artes dos nanicos (rosto e corpo), bonecos do hall, foto da turma, reações dos Picarétezzi
 planejamento/          PLANO.md (próximas fases e decisões), prompts/ (um por fase), demos e arte pronta
 supabase/
@@ -203,7 +209,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 - **Botões:** `.btn` (principal, ouro), `.btn.soft` (secundário), `.btn.sm` e `.linkish` (link discreto).
 - **Seleção:** `.seg` com `role="radio"`, para escolhas tipo "1080p / 1440p".
 - **Blocos e etiquetas:** `.block` (cartão de seção), `.hint` e `.status` (texto apagado), `.live-pill` (AO VIVO).
-- **Rosto:** `<Avatar f={friend} size="xs" | "lg" />`.
+- **Rosto:** `<Avatar f={friend} size="xs" | "lg" />` (já mostra a moldura comprada na loja, pelo `user_id`). O título comprado: `<TituloNanico userId={f.user_id} />`.
 - **Seletor de nanico:** `<FriendPicker value onChange emptyLabel ariaLabel />` ou com `multi values`.
 - **Aviso rápido:** `toast("texto")`.
 - **Confirmação:** ação destrutiva pede **segundo toque** com `useSure()` (classe `.sure`, texto "Confirmar"). Nunca `confirm()` ou `alert()`.
@@ -226,7 +232,8 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 
 - **Sempre** use as variáveis (`var(--accent)` etc.), nunca hex solto, para o tema claro e escuro continuarem funcionando. Alguns hex vieram do site antigo (`#fff` e `#FAF9F6` sobre fundo escuro, o palco e as câmeras em `07`, `13` e `19`, o feltro e as cartas do truco em `20`). Não acrescente outros; quem mexer naquele trecho troca por variável.
 - Novas cores só se entrarem na paleta acima.
-- **Exceção: o quarto da ficha** (`24-ficha.css`) segue a mesma regra do hall, com as variáveis `--quarto-*` e as classes `q-<nome>`.
+- **Exceção: o quarto da ficha** (`24-ficha.css`) segue a mesma regra do hall, com as variáveis `--quarto-*` e as classes `q-<nome>` (valem também nas prévias da loja, `.loja-previa` e `.mochila-previa`).
+- **Exceção: os desenhos dos itens da loja** (`30-loja.css`): cigarro, latas, cuia, copo e fumaça usam as variáveis `--loja-*` (com tema escuro) e as classes `l-<nome>`.
 - **Exceção: o cômodo do hall** (`22-hall.css`). Ele é uma ilustração com cores próprias (tijolo, madeira, lajota), definidas como variáveis `--hall-*` em `.hall`, cada uma com uma versão mais escura no tema escuro. O SVG usa as classes `f-<nome>` (preenchimento) e `s-<nome>` (traço). A interface em volta (placas com nome, TV, botões) continua com a paleta acima.
 
 ### Tipografia
@@ -276,6 +283,9 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 | `riot_contas`, `riot_ao_vivo`, `riot_meta` | cache da API da Riot | só a Edge Function |
 | `rodizio` | roleta do rodízio, uma linha por sala de LoL (`fila`, `rodada`, `ja_entraram`, `sorteado`, `girado_em`, `giro`, `trocas`, `no_time`) | ninguém direto: só `rodizio_fila`, `rodizio_girar` (o banco sorteia com `random()`), `rodizio_colocar` (troca a rota na `game` e passa pelo `escalacao_protecao`) e `rodizio_desistir` (seção 19) |
 | `zoeiras` | chinelada, torta e revide no Sítio (`de`, `para` = friend ids, `tipo`, `em`; apaga com 30 dias) | ninguém direto: só `zoar(nanico, tipo)` (cobra 5/25 com `creditar`, revide grátis em 30 s, limites) e `placar_zoeira(nanico)` (seção 20); nanicos leem as das últimas 24 h |
+| `loja_itens` | a vitrine (`id`, `nome`, `descricao`, `espaco`, `preco` 10–5000, `dados` com cor/texto/animação, `ativo`, `ordem`); a semente fica no SQL | nanicos leem; só o admin escreve |
+| `mochila` | o que cada um comprou (`user_id`, `item_id`, `qtd`, `equipado`) | ninguém grava direto; **todos leem os equipados** (quarto, título e moldura dos outros) e cada um lê a mochila inteira só a sua |
+| `consumos` | consumível usado no Sítio (`de` = friend id, `item_id`, `em`; apaga com 30 dias) | ninguém grava direto (só `usar_item`); nanicos leem as das últimas 24 h |
 | `trofeus_semana` | pódio de cada troféu por semana (`semana` = segunda, `trofeu`, `posicao` 1–3, `friend_id`, `valor`, `partidas`) | nanicos leem; só a função `riot-semana` grava |
 | `riot_semana_meta`, `riot_semana_partidas` | trava e progresso do cálculo da semana (`estado` calculando/parcial/pronta) e as partidas já lidas (só os números dos nanicos) | só a função `riot-semana` (o site lê `estado`) |
 | `jogos_stats` | números da ficha por nanico e fonte (`lol`: elo, vitórias, KDA, main; `steam`: horas) | nanicos leem; só a função `ficha-jogos` grava |
@@ -299,6 +309,11 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
   - **Anonimato:** `atributos_votos` não tem `select` para ninguém. O site só recebe média e contagem por `atributos_de(nanico)` e `atributos_todos()`. Com menos de 3 votos, a média sai `null` ("poucos votos").
   - **Votar:** `votar_atributos(nanico, notas)` exige as 6 notas inteiras de 0 a 10, não deixa votar em si mesmo e só deixa mudar o voto em alguém uma vez a cada 7 dias (o erro diz a data).
   - **`meu_voto(nanico)`** devolve só as notas de quem chamou e quando dá para mudar.
+- **Loja (seção 15 do `seguranca.sql`):**
+  - **O preço vem sempre da `loja_itens`.** `comprar(item)` debita com `creditar(-preco, 'loja', item)`: sem saldo, falha e não muda nada. Escudo (até 3) e consumíveis (até 20) acumulam; o resto só se compra uma vez.
+  - **`equipar(item, ligar)`** só aceita o que está na mochila e desliga os outros do mesmo espaço (cadeira, mesa, tapete, pôster, planta, parede, luz, título, moldura). **`usar_item(item)`** gasta 1 consumível e grava em `consumos`; o tempo real dessa tabela anima o boneco em todas as telas (nunca broadcast). **`quarto_de(nanico)`** devolve os equipados.
+  - **Escudo de sequência:** o `bater_ponto()` da seção 15 (substitui o da 7) gasta 1 escudo quando a pessoa faltou ontem mas veio anteontem, cria o dia de ontem com valor 0 e devolve `escudo_usado: true`. Dois dias perdidos não salvam.
+  - **Itens:** consumíveis de 15 a 60 (cigarrinho, latinha, chimarrão, energético, caipirinha, charuto), escudo 400, quarto de 150 a 1.500, títulos de 250 a 2.000 e molduras de 800 e 1.200.
 - **Presença pública (seção 26 do `seguranca.sql`):** `bonus_diario` e `online_diario` continuam fechadas (cada um lê só as suas). O resumo de qualquer nanico sai por `presenca_de(nanico)` (sequência de hoje ou de ontem, recorde, minutos de hoje, 7 dias e total) e a chama da lista por `presenca_todos()` (só `seq` e `hoje_min`). Não calcule sequência no navegador.
 - **Gatilhos:** `chat_protecao`, `chat_sala_protecao` (recusa sala que não existe), `limpar_chat` (apaga o que tem mais de 30 dias), `nanicada_protecao`, `nanicada_remocao`, `escalacao_protecao` e `perfil_protecao`.
 - **"Já vi" do Log:** fica na conta, em `user_metadata.log_visto` (índice da entrada no `CHANGELOG`), gravado com `auth.updateUser({ data })` por `marcarLogVisto()` (`src/lib/dados.ts`). Vale em todos os aparelhos e não precisa de SQL. O `localStorage` (`log-visto`) fica de reserva.
@@ -319,7 +334,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
   - `risco`: desenho na live;
   - `truco`: mesas, jogadas e mão de cada um;
   - `hall`: `{ para: {i, j} }`, o destino do boneco. Cada navegador calcula o caminho e anima sozinho (limite de 8 a cada 2 s).
-- **Mudanças no banco:** chegam por `postgres_changes` em `friends`, `phrases`, `game`, `chat_messages`, `carteiras` e `rodizio`. A chinelada e a torta vêm do tempo real de `zoeiras` (pagas, gravadas por `zoar()`), e o sorteio da roleta do rodízio vem do tempo real de `rodizio` (todo mundo anima até o mesmo `girado_em`), **nunca de broadcast**. Os ganhos de moedas de todo mundo no Sítio vêm do tempo real de `carteiras` (gravado por `creditar()`), **nunca de broadcast**.
+- **Mudanças no banco:** chegam por `postgres_changes` em `friends`, `phrases`, `game`, `chat_messages`, `carteiras`, `rodizio`, `mochila` (equipados) e `consumos` (o boneco fumando ou bebendo). A chinelada e a torta vêm do tempo real de `zoeiras` (pagas, gravadas por `zoar()`), e o sorteio da roleta do rodízio vem do tempo real de `rodizio` (todo mundo anima até o mesmo `girado_em`), **nunca de broadcast**. Os ganhos de moedas de todo mundo no Sítio vêm do tempo real de `carteiras` (gravado por `creditar()`), **nunca de broadcast**.
 
 ### Navegador (`localStorage`, só conveniência de cada pessoa)
 - **Chaves:** `rift-lineup`, `rift-card`, `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `truco-mesa`, `log-visto`, `fome-fechado`, `hall-pos` (último piso no hall), `hall-sala-min` (lista "Na sala agora" do Sítio recolhida), `sala-atual` (última sala; o site sempre abre no lobby), `canais-voz-min` e `canais-texto-min` (categorias de canais recolhidas; no celular começam recolhidas) `membros-min` (lista de membros só com os rostos; abaixo de 1200 px fica assim sempre) e `midia` (microfone, saída de som, câmera, eco e ruído escolhidos nas Configurações) e `evento-visto` (o aviso que explica o happy hour e o churrasco já apareceu).

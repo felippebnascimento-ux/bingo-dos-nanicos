@@ -1,5 +1,6 @@
 "use client";
 /* Aba Nanicos: os 14 com a arte de corpo inteiro. Tocar num nanico abre a ficha dele (features/ficha). */
+import { TituloNanico } from "@/features/loja/Itens";
 import { ChamaNome } from "@/features/ficha/NoSitio";
 import { Avatar } from "@/components/ui/Avatar";
 import { fecharSeletores } from "@/components/ui/FriendPicker";
@@ -41,6 +42,7 @@ export function NanicosView({ hidden }: { hidden: boolean }) {
                   <strong>
                     {f.name}
                     <ChamaNome fid={f.id} />
+                    <TituloNanico userId={f.user_id} />
                   </strong>
                   {art ? (
                     // eslint-disable-next-line @next/next/no-img-element

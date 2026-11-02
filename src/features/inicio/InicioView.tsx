@@ -112,6 +112,11 @@ export function InicioView({ hidden }: { hidden: boolean }) {
               {posicao && <span>· {posicao}</span>}
             </button>
           )}
+          {carteira && (
+            <button type="button" className="inicio-chip" onClick={ir("loja")}>
+              <b>Loja</b>
+            </button>
+          )}
           {eu && (
             <button type="button" className="inicio-chip" aria-label="Abrir a minha ficha" onClick={() => setApp({ fichaAberta: eu.id })}>
               <Avatar f={eu} size="xs" />

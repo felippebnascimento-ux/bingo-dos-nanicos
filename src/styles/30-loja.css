@@ -1,0 +1,101 @@
+/* Loja e mochila (fase 11): vitrine, prévias, mochila, título, moldura e os consumíveis no Sítio.
+   Os desenhos dos itens (cigarro, latas, cuia, copo, escudo) são ilustrações com cores próprias, as variáveis
+   --loja-*, cada uma com uma versão mais escura no tema escuro (mesma exceção do hall e do quarto). */
+:root{
+  --loja-papel:#F4F1EA; --loja-filtro:#D9A35A; --loja-brasa:#FF7A2A; --loja-charuto:#7A4E2E; --loja-anel:#C9A66B;
+  --loja-lata:#C9CDD2; --loja-rotulo:#B08D57; --loja-lata2:#262626; --loja-raio:#7FC96B; --loja-tampa:#9AA0A6;
+  --loja-cuia:#6B4428; --loja-erva:#6F9A5A; --loja-bomba:#C9CDD2; --loja-copo:rgba(220,235,240,.55);
+  --loja-bebida:rgba(225,240,200,.85); --loja-limao:#7FB33A; --loja-canudo:#E0705A; --loja-fumaca:#C9C3BA;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --loja-papel:#D6D3CC; --loja-lata:#A9ADB2; --loja-cuia:#5B3A22; --loja-fumaca:#8D8780;
+}}
+:root[data-theme="dark"]{ --loja-papel:#D6D3CC; --loja-lata:#A9ADB2; --loja-cuia:#5B3A22; --loja-fumaca:#8D8780; }
+
+.l-papel{fill:var(--loja-papel)} .l-filtro{fill:var(--loja-filtro)} .l-brasa{fill:var(--loja-brasa)}
+.l-charuto{fill:var(--loja-charuto)} .l-anel{fill:var(--loja-anel)}
+.l-lata{fill:var(--loja-lata)} .l-rotulo{fill:var(--loja-rotulo)} .l-lata2{fill:var(--loja-lata2)} .l-raio{fill:var(--loja-raio)}
+.l-tampa{fill:var(--loja-tampa)} .l-cuia{fill:var(--loja-cuia)} .l-erva{fill:var(--loja-erva)} .l-bomba{fill:var(--loja-bomba)}
+.l-copo{fill:var(--loja-copo);stroke:var(--muted);stroke-width:.6} .l-bebida{fill:var(--loja-bebida)} .l-limao{fill:var(--loja-limao)}
+.l-canudo{fill:var(--loja-canudo)}
+.l-escudo{fill:var(--accent)} .l-escudo2{fill:var(--accent-ink)} .l-check{fill:none;stroke:var(--accent);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- aba Loja ---------- */
+#view-loja{grid-template-columns:minmax(0,1fr)}
+#view-loja>*{min-width:0}
+.loja-topo{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.loja-saldo{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1.5px solid var(--accent);border-radius:99px;font:500 13px var(--body)}
+.loja-saldo b{font:700 15px var(--display)}
+.loja-abas{width:fit-content}
+.loja-grupo h2{margin:18px 0 10px;font:700 16px var(--display)}
+.loja-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.loja-item{display:flex;flex-direction:column;gap:6px;margin:0;padding:10px}
+.loja-item.equipado{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.loja-item h3{margin:2px 0 0;font:700 13px var(--display)}
+.loja-item .hint{margin:0;font-size:12px;flex:1}
+.loja-previa{position:relative;display:grid;place-items:center;aspect-ratio:4/3;overflow:hidden;border-radius:var(--r-md,10px);background:var(--surface-2)}
+.loja-qtd{position:absolute;top:6px;right:8px;font:700 12px var(--display);color:var(--accent)}
+.loja-acoes{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px}
+.loja-preco{display:inline-flex;align-items:center;gap:5px;font:700 14px var(--display)}
+.loja-preco .hall-moeda{width:18px;height:18px;font-size:10px}
+.quarto.quarto-previa{width:100%;height:100%}
+.loja-desenho{display:grid;place-items:center;height:72%}
+.loja-desenho svg{height:100%;width:auto}
+.loja-titulo-previa{padding:6px 12px;border:1.5px solid var(--accent);border-radius:99px;background:var(--accent-ink);color:var(--accent);font:700 12px var(--display);text-align:center}
+.loja-moldura-previa{display:grid;place-items:center}
+@media (max-width:420px){.loja-grade{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.loja-item{padding:8px}.loja-acoes{flex-wrap:wrap}}
+
+/* ---------- mochila ---------- */
+.mochila{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.mochila li{display:flex;align-items:center;gap:10px;padding:6px;border:1px solid var(--line);border-radius:10px}
+.mochila li.equipado{border-color:var(--accent)}
+.mochila-previa{display:grid;place-items:center;flex:0 0 64px;height:48px;overflow:hidden;border-radius:8px;background:var(--surface-2)}
+.mochila-previa .loja-titulo-previa{padding:2px 4px;font-size:8px}
+.mochila-previa .av.lg{width:40px;height:40px}
+.mochila-nome{display:flex;flex-direction:column;flex:1;min-width:0}
+.mochila-nome b{font:600 13px var(--body);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mochila-nome small{color:var(--muted);font-size:11px}
+.ficha-mochila summary{cursor:pointer;font:700 13px var(--display)}
+.ficha-mochila .mochila{margin:10px 0}
+
+/* ---------- título e moldura ---------- */
+.titulo-nanico{display:block;font:600 11px var(--body);color:var(--accent);letter-spacing:.01em}
+.av.mold-ouro{box-shadow:0 0 0 2px var(--accent),0 0 0 4px color-mix(in srgb,var(--accent) 35%,transparent)}
+.av.mold-fogo{box-shadow:0 0 0 2px var(--live),0 0 8px 2px color-mix(in srgb,var(--live) 55%,transparent)}
+
+/* ---------- consumíveis no Sítio ---------- */
+.consumo-camada{position:absolute;inset:0;z-index:901;pointer-events:none}
+.consumo{position:absolute;width:1.7%;transform:translate(-50%,-50%)}
+.consumo.bebe{width:2.1%}
+.consumo-item{display:block;transform-origin:50% 80%;filter:drop-shadow(0 1px 1px var(--shadow))}
+.consumo-item svg{display:block;width:100%;height:auto}
+.consumo.bebe .consumo-item{animation:gole var(--dura,4500ms) ease-in-out both}
+.consumo.fuma .consumo-item{animation:trago var(--dura,6000ms) ease-in-out both}
+@keyframes gole{
+  0%{opacity:0;transform:translate(60%,190%) rotate(0)}
+  8%{opacity:1;transform:translate(60%,190%) rotate(0)}
+  22%,40%{transform:translate(0,0) rotate(-62deg)}
+  52%{transform:translate(60%,190%) rotate(0)}
+  64%,82%{transform:translate(0,0) rotate(-62deg)}
+  94%{opacity:1;transform:translate(60%,190%) rotate(0)}
+  100%{opacity:0;transform:translate(60%,190%) rotate(0)}
+}
+@keyframes trago{
+  0%{opacity:0;transform:translate(80%,170%) rotate(30deg)}
+  8%{opacity:1;transform:translate(80%,170%) rotate(30deg)}
+  20%,34%{transform:translate(0,30%) rotate(70deg)}
+  46%,60%{transform:translate(80%,170%) rotate(30deg)}
+  70%,80%{transform:translate(0,30%) rotate(70deg)}
+  92%{opacity:1;transform:translate(80%,170%) rotate(30deg)}
+  100%{opacity:0;transform:translate(80%,170%) rotate(30deg)}
+}
+.consumo-fumaca{position:absolute;left:-40%;top:-20%;width:100%;height:100%}
+.consumo-fumaca i{position:absolute;left:0;top:0;width:110%;aspect-ratio:1;border-radius:50%;background:var(--loja-fumaca);opacity:0;animation:baforada 2.2s ease-out infinite;animation-delay:1.6s}
+.consumo-fumaca i:nth-child(2){animation-delay:2.3s}
+.consumo-fumaca i:nth-child(3){animation-delay:3s}
+.consumo.grosso .consumo-fumaca i{width:170%}
+@keyframes baforada{0%{opacity:0;transform:translate(0,0) scale(.5)}20%{opacity:.7}100%{opacity:0;transform:translate(-60%,-420%) scale(2.2)}}
+@media (prefers-reduced-motion:reduce){
+  .consumo .consumo-item{animation:none;transform:rotate(-30deg)}
+  .consumo-fumaca{display:none}
+}

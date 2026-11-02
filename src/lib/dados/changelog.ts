@@ -119,6 +119,15 @@ export const CHANGELOG: EntradaLog[] = [
     data: "02/11/2026",
     itens: ["Happy hour das 22h à meia-noite com moedas em dobro", "Churrasco de sábado no Sítio: pegue seu espetinho surpresa"],
   },
+  {
+    data: "02/11/2026",
+    itens: [
+      "Loja: gaste moedas em itens para o seu quarto, títulos, molduras e escudo de sequência",
+      "Cigarrinho, latinha, chimarrão, energético, caipirinha e charuto: use no Sítio e todo mundo vê o seu boneco fumando ou bebendo",
+      "Mochila na sua ficha: equipe e tire os itens; o quarto, o título e a moldura aparecem para todo mundo",
+      "A geladeira do Sítio agora abre a Loja",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

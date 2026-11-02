@@ -27,7 +27,7 @@
 .dica-steam p{margin:6px 0 0;font-size:13px;color:var(--muted)}
 
 /* ---------- quarto ---------- */
-.ficha-quarto{
+.ficha-quarto,.loja-previa,.mochila-previa{
   --quarto-parede1:#D9D5CA; --quarto-parede2:#E3DFD5; --quarto-topo1:#A9A497; --quarto-topo2:#B5B0A3;
   --quarto-rodape1:#C3BEB1; --quarto-rodape2:#CCC7BA; --quarto-piso0:#C9C5B8; --quarto-piso1:#D4D0C4;
   --quarto-janela:#2B3540; --quarto-ceu:#7C93B5; --quarto-poster:#FAF9F6; --quarto-cartela0:#E0DED5; --quarto-cartela1:#3E4C59;
@@ -35,14 +35,22 @@
   --quarto-preto0:#262626; --quarto-preto1:#1E1E1E; --quarto-preto2:#1A1A1A; --quarto-teclado:#353535; --quarto-luz:#E0705A;
   --quarto-cadeira0:#3E4C59; --quarto-cadeira1:#2F3A44; --quarto-cadeira2:#27313A;
   --quarto-planta0:#6F9A5A; --quarto-planta1:#557A44; --quarto-planta2:#4A6B3A; --quarto-linha:#262626;
+  /* itens da loja (fase 11) */
+  --quarto-oliva1:#4A4E44; --quarto-oliva2:#565A4F; --quarto-ardosia1:#3E4C59; --quarto-ardosia2:#4A5967;
+  --quarto-roxo0:#3E2C55; --quarto-roxo1:#7A57A3; --quarto-rift0:#4E7A44; --quarto-rift1:#5E8F52; --quarto-rift2:#C9B98A;
+  --quarto-pelucia0:#B4442F; --quarto-pelucia1:#C9583F; --quarto-ouro0:#C9A66B; --quarto-ouro1:#B08D57; --quarto-ouro2:#8F713F;
+  --quarto-neon-ouro:#F2C46B; --quarto-neon-vermelho:#FF5A4A; --quarto-rgb1:#E0705A; --quarto-rgb2:#6FBF73; --quarto-rgb3:#6F8FE0;
+  --quarto-cacto0:#5E8F4A; --quarto-cacto1:#4B7A3A;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .ficha-quarto{
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .ficha-quarto,:root:not([data-theme="light"]) .loja-previa,:root:not([data-theme="light"]) .mochila-previa{
   --quarto-parede1:#454843; --quarto-parede2:#50544C; --quarto-topo1:#2B2B2A; --quarto-topo2:#333331;
   --quarto-rodape1:#3A3C37; --quarto-rodape2:#42453F; --quarto-piso0:#6F7366; --quarto-piso1:#7C8073; --quarto-ceu:#566B7D;
+  --quarto-oliva1:#3A3D35; --quarto-oliva2:#44473E; --quarto-ardosia1:#313C46; --quarto-ardosia2:#3A4753;
 }}
-:root[data-theme="dark"] .ficha-quarto{
+:root[data-theme="dark"] .ficha-quarto,:root[data-theme="dark"] .loja-previa,:root[data-theme="dark"] .mochila-previa{
   --quarto-parede1:#454843; --quarto-parede2:#50544C; --quarto-topo1:#2B2B2A; --quarto-topo2:#333331;
   --quarto-rodape1:#3A3C37; --quarto-rodape2:#42453F; --quarto-piso0:#6F7366; --quarto-piso1:#7C8073; --quarto-ceu:#566B7D;
+  --quarto-oliva1:#3A3D35; --quarto-oliva2:#44473E; --quarto-ardosia1:#313C46; --quarto-ardosia2:#3A4753;
 }
 .quarto .q-linha{stroke:var(--quarto-linha);stroke-width:1;stroke-linejoin:round}
 .quarto .q-parede1{fill:var(--quarto-parede1)} .quarto .q-parede2{fill:var(--quarto-parede2)}
@@ -58,6 +66,16 @@
 .quarto .q-cadeira0{fill:var(--quarto-cadeira0)} .quarto .q-cadeira1{fill:var(--quarto-cadeira1)} .quarto .q-cadeira2{fill:var(--quarto-cadeira2)}
 .quarto .q-planta0{fill:var(--quarto-planta0)} .quarto .q-planta1{fill:var(--quarto-planta1)} .quarto .q-planta2{fill:var(--quarto-planta2)}
 .quarto .q-sombra{fill:var(--shadow)}
+.quarto .q-oliva1{fill:var(--quarto-oliva1)} .quarto .q-oliva2{fill:var(--quarto-oliva2)}
+.quarto .q-ardosia1{fill:var(--quarto-ardosia1)} .quarto .q-ardosia2{fill:var(--quarto-ardosia2)}
+.quarto .q-roxo0{fill:var(--quarto-roxo0)} .quarto .q-roxo1{fill:var(--quarto-roxo1)}
+.quarto .q-rift0{fill:var(--quarto-rift0)} .quarto .q-rift1{fill:var(--quarto-rift1)} .quarto .q-rift2{fill:var(--quarto-rift2)}
+.quarto .q-pelucia0{fill:var(--quarto-pelucia0)} .quarto .q-pelucia1{fill:var(--quarto-pelucia1)}
+.quarto .q-ouro0{fill:var(--quarto-ouro0)} .quarto .q-ouro1{fill:var(--quarto-ouro1)} .quarto .q-ouro2{fill:var(--quarto-ouro2)}
+.quarto .q-rgb1{fill:var(--quarto-rgb1)} .quarto .q-rgb2{fill:var(--quarto-rgb2)} .quarto .q-rgb3{fill:var(--quarto-rgb3)}
+.quarto .q-cacto0{fill:var(--quarto-cacto0)} .quarto .q-cacto1{fill:var(--quarto-cacto1)}
+.quarto .q-neon-ouro{fill:var(--quarto-neon-ouro);filter:drop-shadow(0 0 5px var(--quarto-neon-ouro))}
+.quarto .q-neon-vermelho{fill:var(--quarto-neon-vermelho);filter:drop-shadow(0 0 5px var(--quarto-neon-vermelho))}
 .quarto .q-placa{fill:var(--accent-ink)}
 .quarto .q-nome{fill:var(--accent);font:700 11px var(--display)}
 .me-block #steamForm{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}

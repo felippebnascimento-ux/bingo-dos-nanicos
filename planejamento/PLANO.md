@@ -209,7 +209,7 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | 8 | `08-bingo-servidor.md` | `bingo-servidor` | 2, 5 | a fazer |
 | 9 | `09-truco-servidor.md` | `truco-servidor` | 2 | a fazer |
 | 10 | `10-apostas-ao-vivo.md` | `apostas-ao-vivo` | 6 | a fazer |
-| 11 | `11-loja-quarto.md` | `loja-quarto` | 2, 3 | a fazer |
+| 11 | `11-loja-quarto.md` | `loja-quarto` | 2, 3 | feito (02/11/2026, antes da fila a pedido do João); SQL da seção 15 aplicado; acrescentei os consumíveis (cigarrinho, latinha, chimarrão, energético, caipirinha, charuto) com animação no Sítio |
 | 12 | `12-midias-links.md` | `midias-links` | 5 | a fazer |
 | 13 | `13-login-convidado.md` | `login-convidado` | 5 | a fazer |
 | 14 | `14-hall-v2.md` | `hall-v2` | 00, 2, 3 | **feita**, PR aberto (em cima da `atributos-votados`); SQL da seção 7b aplicado em 02/11/2026 |

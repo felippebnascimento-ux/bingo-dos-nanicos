@@ -93,6 +93,8 @@ function onCarteira(row: Record<string, unknown> | null) {
 
 /** Aviso de zoeira no mesmo canto ("Gamer deu uma chinelada no Max"). */
 export const avisarZoeira = (fid: string | null, texto: string) => mostrar({ fid, nome: "", valor: 0, motivo: "zoeira", eu: false, texto });
+/** Aviso só com texto no mesmo canto ("Pitoco acendeu um cigarrinho"). */
+export const avisarTexto = (fid: string | null, texto: string) => mostrar({ fid, nome: "", valor: 0, motivo: "", eu: false, texto });
 
 let ligado = false;
 /** Começa a ouvir as carteiras (uma vez só). */

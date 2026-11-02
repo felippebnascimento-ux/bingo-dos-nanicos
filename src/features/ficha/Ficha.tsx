@@ -3,9 +3,12 @@
  * Ficha do nanico (abre ao tocar num nanico na aba Nanicos): o boneco no quarto, à esquerda,
  * e os números reais do LoL e da Steam e os atributos votados, à direita. Fecha com Esc ou no X; o foco fica preso dentro.
  */
-import { useEffect, useRef, type KeyboardEvent as KE } from "react";
+import { useEffect, useMemo, useRef, type KeyboardEvent as KE } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { IcFechar } from "@/components/ui/icones";
+import { TituloNanico } from "@/features/loja/Itens";
+import { MochilaLista } from "@/features/loja/LojaView";
+import { useEquipados } from "@/features/loja/lojaDados";
 import { verNanicadas } from "@/features/nanicos/NanicosView";
 import { opggNick, opggOf } from "@/features/perfil/opgg";
 import { steamNome, steamOf } from "@/features/perfil/steam";
@@ -17,7 +20,7 @@ import { eloTexto, haQuanto, horasTexto, kdaTexto, taxaVitoria, type NumerosFich
 import { AtributosFicha } from "./AtributosFicha";
 import { NoSitio } from "./NoSitio";
 import { PlacarZoeira } from "./PlacarZoeira";
-import { Quarto } from "./Quarto";
+import { Quarto, type EquipQuarto } from "./Quarto";
 
 /** Como deixar as horas da Steam visíveis (usado aqui e no Perfil). */
 export function DicaSteamPrivada() {
@@ -140,24 +143,37 @@ function FichaAberta({ f }: { f: Friend }) {
   };
 
   const art = artOf(f);
+  const eu = f.id === getApp().myFid;
   return (
     <div className="gate ficha-gate" role="dialog" aria-modal="true" aria-labelledby="fichaNome" onKeyDown={tecla} onClick={(e) => e.target === e.currentTarget && fechar()}>
       <div className="ficha-card" ref={caixa}>
         <div className="ficha-quarto">
-          <Quarto nome={f.name} boneco={bonecoOf(f)} arte={art ? { src: art.full, w: art.w, h: art.h } : null} />
+          <QuartoDe f={f} arte={art ? { src: art.full, w: art.w, h: art.h } : null} />
         </div>
         <div className="ficha">
           <div className="ficha-topo">
             <Avatar f={f} size="lg" />
-            <h2 id="fichaNome">{f.name}</h2>
+            <h2 id="fichaNome">
+              {f.name}
+              <TituloNanico userId={f.user_id} />
+            </h2>
             <button className="ficha-fechar" type="button" ref={fecharRef} aria-label="Fechar a ficha" title="Fechar" onClick={fechar}>
               <IcFechar />
             </button>
           </div>
-          <NoSitio fid={f.id} eu={f.id === getApp().myFid} />
+          <NoSitio fid={f.id} eu={eu} />
           <Numeros f={f} num={num} carregando={carregando} falhou={falhou} />
-          <AtributosFicha f={f} eu={f.id === getApp().myFid} />
+          <AtributosFicha f={f} eu={eu} />
           <PlacarZoeira fid={f.id} />
+          {eu && (
+            <details className="ficha-sec ficha-mochila">
+              <summary>Minha mochila</summary>
+              <MochilaLista />
+              <button type="button" className="linkish" onClick={() => setApp({ aba: "loja", fichaAberta: null })}>
+                Abrir a loja
+              </button>
+            </details>
+          )}
           <button
             className="linkish"
             type="button"
@@ -172,4 +188,15 @@ function FichaAberta({ f }: { f: Friend }) {
       </div>
     </div>
   );
+}
+
+/** O quarto com os itens que o nanico equipou na loja (a RLS deixa todo mundo ver os equipados). */
+function QuartoDe({ f, arte }: { f: Friend; arte: { src: string; w: number; h: number } | null }) {
+  const eq = useEquipados(f.user_id);
+  const equip = useMemo(() => {
+    const out: EquipQuarto = {};
+    for (const k of ["cadeira", "mesa", "tapete", "poster", "planta", "parede", "luz"] as const) if (eq[k]?.dados.cor) out[k] = eq[k]!.dados.cor;
+    return out;
+  }, [eq]);
+  return <Quarto nome={f.name} boneco={bonecoOf(f)} arte={arte} equip={equip} />;
 }

@@ -62,7 +62,8 @@ export async function iniciarCarteira() {
     const r = await chamar("bater_ponto");
     useCarteira.setState({ carteira: lerCarteira(r) });
     const ganhou = num(r.ganhou);
-    if (ganhou) toast(textoBonus(ganhou, num(r.bonus_extra), num(r.seq)));
+    if (r.escudo_usado === true) toast("Escudo usado: sua sequência continua");
+    if (ganhou) setTimeout(() => toast(textoBonus(ganhou, num(r.bonus_extra), num(r.seq))), r.escudo_usado === true ? 3500 : 0);
     carregarExtrato();
   } catch (e) {
     const err = e as { code?: string; message?: string };

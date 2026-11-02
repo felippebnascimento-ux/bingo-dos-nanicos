@@ -14,6 +14,7 @@ import { carregarChat } from "@/features/chat/chat";
 import { iniciarCarteira } from "./carteira";
 import { iniciarHall } from "@/features/hall/bonecos";
 import { iniciarTrofeus } from "@/features/trofeus/trofeusDados";
+import { iniciarLoja } from "@/features/loja/lojaDados";
 import { iniciarRiot } from "@/features/jogar/riot";
 import { pararTudoAoVivo } from "@/features/live/live";
 
@@ -256,6 +257,8 @@ export function enterApp() {
   setTimeout(iniciarRiot, 1500);
   /* troféus da semana: lê e, se a semana passada não estiver pronta, pede o cálculo */
   setTimeout(iniciarTrofeus, 3000);
+  /* loja: vitrine, mochila e o que todo mundo equipou (quarto, título, moldura) */
+  iniciarLoja();
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) {
       later("f", loadFriends);

@@ -1441,7 +1441,225 @@ grant execute on function public.churrasco_pegar() to authenticated;
 revoke all on function public.evento_em(timestamp) from public, anon;
 grant execute on function public.evento_em(timestamp) to authenticated;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus e as 2 dos eventos
+-- 15) loja e mochila: itens do quarto, títulos, molduras, escudo de sequência e consumíveis (fumar, beber) -------
+--     O preço vem SEMPRE desta tabela (nunca do navegador); comprar e usar passam por creditar().
+create table if not exists public.loja_itens (
+  id        text primary key check (id ~ '^[a-z0-9-]{2,30}$'),
+  nome      text not null check (char_length(nome) between 2 and 40),
+  descricao text not null default '' check (char_length(descricao) <= 140),
+  espaco    text not null check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel')),
+  preco     int not null check (preco between 10 and 5000),
+  dados     jsonb not null default '{}'::jsonb check (octet_length(dados::text) <= 500),
+  ativo     boolean not null default true,
+  ordem     int not null default 0
+);
+alter table public.loja_itens enable row level security;
+revoke all on public.loja_itens from public, anon, authenticated;
+grant select on public.loja_itens to authenticated;
+drop policy if exists "nanicos leem a loja" on public.loja_itens;
+create policy "nanicos leem a loja" on public.loja_itens for select to authenticated using (public.eh_nanico());
+
+-- a vitrine (idempotente: rodar de novo atualiza nome, preço e ordem)
+insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem) values
+  ('cigarro',        'Cigarrinho',             'Uma tragada no Sítio. Some depois de usar.',                 'consumivel', 15,   '{"anim":"fumar"}', 10),
+  ('cerveja',        'Latinha gelada',          'Um gole bem gelado. Some depois de usar.',                   'consumivel', 20,   '{"anim":"beber","cor":"lata"}', 11),
+  ('chimarrao',      'Chimarrão',               'Mate amargo, de gaudério. Some depois de usar.',             'consumivel', 25,   '{"anim":"beber","cor":"cuia"}', 12),
+  ('energetico',     'Energético',              'Dá a tremedeira de quem vai jogar a noite toda.',            'consumivel', 30,   '{"anim":"tremer","cor":"lata2"}', 13),
+  ('caipirinha',     'Caipirinha',              'Bebe e fica meio tonto por uns segundos.',                   'consumivel', 40,   '{"anim":"tonto","cor":"copo"}', 14),
+  ('charuto',        'Charuto do patrão',       'Fumaça grossa de quem está rico.',                           'consumivel', 60,   '{"anim":"charuto"}', 15),
+  ('escudo',         'Escudo de sequência',     'Salva um dia perdido da sequência. É gasto sozinho.',        'escudo',     400,  '{}', 20),
+  ('planta-samambaia','Samambaia',              'A planta da vó, no canto do quarto.',                        'planta',     150,  '{"cor":"verde"}', 30),
+  ('planta-cacto',   'Cacto',                   'Pouca água, igual a quem joga de suporte.',                  'planta',     180,  '{"cor":"cacto"}', 31),
+  ('poster-baron',   'Pôster do Barão',         'Na parede, o bicho roxo do Rift.',                           'poster',     250,  '{"cor":"roxo"}', 40),
+  ('poster-sitio',   'Pôster do Sítio',         'A foto do portão do Sítio do Mitz.',                         'poster',     350,  '{"cor":"sitio"}', 41),
+  ('tapete-rift',    'Tapete do Rift',          'Verde com as três rotas.',                                   'tapete',     300,  '{"cor":"rift"}', 50),
+  ('tapete-pelucia', 'Tapete de pelúcia',       'Fofo e vermelho, de quem tem estilo.',                       'tapete',     450,  '{"cor":"pelucia"}', 51),
+  ('parede-oliva',   'Parede verde-oliva',      'Pinta o quarto com o verde do pano do truco.',               'parede',     400,  '{"cor":"oliva"}', 60),
+  ('parede-ardosia', 'Parede ardósia',          'Pinta o quarto de cinza-azulado.',                           'parede',     400,  '{"cor":"ardosia"}', 61),
+  ('cadeira-gamer',  'Cadeira gamer',           'Encosto alto, preta e vermelha.',                            'cadeira',    600,  '{"cor":"gamer"}', 70),
+  ('cadeira-trono',  'Trono dourado',           'Para quem carrega o time nas costas.',                       'cadeira',    1500, '{"cor":"trono"}', 71),
+  ('luz-ouro',       'Neon dourado',            'Uma faixa de luz no alto da parede.',                        'luz',        700,  '{"cor":"ouro"}', 80),
+  ('luz-vermelha',   'Neon vermelho',           'Luz de lan house às 3 da manhã.',                            'luz',        700,  '{"cor":"vermelho"}', 81),
+  ('mesa-rgb',       'PC gamer RGB',            'Monitor duplo e um gabinete que brilha.',                    'mesa',       1200, '{"cor":"rgb"}', 90),
+  ('titulo-tilt',    'Título: Rei do tilt',     'Aparece embaixo do seu nome.',                               'titulo',     300,  '{"texto":"Rei do tilt"}', 100),
+  ('titulo-alface',  'Título: Mão de alface',   'Aparece embaixo do seu nome.',                               'titulo',     250,  '{"texto":"Mão de alface"}', 101),
+  ('titulo-piano',   'Título: Carregador de piano','Aparece embaixo do seu nome.',                            'titulo',     500,  '{"texto":"Carregador de piano"}', 102),
+  ('titulo-lenda',   'Título: Lenda do Sítio',  'O título mais caro da loja.',                                'titulo',     2000, '{"texto":"Lenda do Sítio"}', 103),
+  ('moldura-ouro',   'Moldura dourada',         'Um aro de ouro em volta do seu rosto.',                      'moldura',    800,  '{"cor":"ouro"}', 110),
+  ('moldura-fogo',   'Moldura de fogo',         'Um aro vermelho em volta do seu rosto.',                     'moldura',    1200, '{"cor":"fogo"}', 111)
+on conflict (id) do update set nome = excluded.nome, descricao = excluded.descricao, espaco = excluded.espaco,
+  preco = excluded.preco, dados = excluded.dados, ordem = excluded.ordem;
+
+create table if not exists public.mochila (
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  item_id     text not null references public.loja_itens(id) on delete cascade,
+  qtd         int not null default 1 check (qtd >= 0),
+  equipado    boolean not null default false,
+  comprado_em timestamptz not null default now(),
+  primary key (user_id, item_id)
+);
+alter table public.mochila enable row level security;
+revoke all on public.mochila from public, anon, authenticated;
+grant select on public.mochila to authenticated;
+-- todo mundo vê o que está equipado (o quarto, o título e a moldura dos outros); a mochila inteira, só a própria
+drop policy if exists "equipados para todos e a mochila para o dono" on public.mochila;
+create policy "equipados para todos e a mochila para o dono" on public.mochila for select to authenticated
+  using (public.eh_nanico() and (equipado or user_id = auth.uid()));
+
+-- consumíveis usados no Sítio: todo mundo vê o boneco fumando ou bebendo pelo tempo real desta tabela
+create table if not exists public.consumos (
+  id      bigint generated always as identity primary key,
+  de      uuid not null references public.friends(id) on delete cascade,
+  item_id text not null references public.loja_itens(id) on delete cascade,
+  em      timestamptz not null default now()
+);
+create index if not exists consumos_em on public.consumos (em);
+alter table public.consumos enable row level security;
+revoke all on public.consumos from public, anon, authenticated;
+grant select on public.consumos to authenticated;
+drop policy if exists "nanicos veem os consumos recentes" on public.consumos;
+create policy "nanicos veem os consumos recentes" on public.consumos for select to authenticated
+  using (public.eh_nanico() and em > now() - interval '1 day');
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.consumos; exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.mochila;  exception when duplicate_object then null; end;
+end $$;
+
+-- comprar: o preço vem da loja; escudo e consumíveis acumulam (escudo até 3), o resto só se compra uma vez
+create or replace function public.comprar(p_item text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid   uuid := auth.uid();
+  v_it    public.loja_itens;
+  v_qtd   int;
+  v_saldo int;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos compram na loja.' using errcode = 'P0001'; end if;
+  perform public.limitar('loja', 20, interval '1 minute', 'Calma: muitas compras seguidas.');
+  select * into v_it from public.loja_itens where id = p_item and ativo;
+  if not found then raise exception 'Esse item não está à venda.' using errcode = 'P0001'; end if;
+  select qtd into v_qtd from public.mochila where user_id = v_uid and item_id = p_item for update;
+  if v_it.espaco not in ('escudo', 'consumivel') and coalesce(v_qtd, 0) > 0 then
+    raise exception 'Você já tem esse item. Ele está na sua mochila.' using errcode = 'P0001';
+  end if;
+  if v_it.espaco = 'escudo' and coalesce(v_qtd, 0) >= 3 then
+    raise exception 'Dá para guardar no máximo 3 escudos.' using errcode = 'P0001';
+  end if;
+  if v_it.espaco = 'consumivel' and coalesce(v_qtd, 0) >= 20 then
+    raise exception 'A mochila já tem 20 desse. Use antes de comprar mais.' using errcode = 'P0001';
+  end if;
+  v_saldo := public.creditar(v_uid, -v_it.preco, 'loja', p_item);   -- falha sem saldo e desfaz tudo
+  insert into public.mochila (user_id, item_id, qtd) values (v_uid, p_item, 1)
+    on conflict (user_id, item_id) do update set qtd = public.mochila.qtd + 1, comprado_em = now();
+  return jsonb_build_object('saldo', v_saldo, 'item', p_item);
+end $$;
+revoke all on function public.comprar(text) from public, anon;
+grant execute on function public.comprar(text) to authenticated;
+
+-- equipar: liga um item da mochila e desliga os outros do mesmo espaço (só os que se equipam)
+create or replace function public.equipar(p_item text, p_ligar boolean) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+  v_esp text;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos.' using errcode = 'P0001'; end if;
+  perform public.limitar('equipar', 30, interval '1 minute', 'Calma: muitas trocas seguidas.');
+  select i.espaco into v_esp from public.mochila m join public.loja_itens i on i.id = m.item_id
+   where m.user_id = v_uid and m.item_id = p_item and m.qtd > 0;
+  if v_esp is null then raise exception 'Esse item não está na sua mochila.' using errcode = 'P0001'; end if;
+  if v_esp in ('escudo', 'consumivel') then raise exception 'Esse item não se equipa.' using errcode = 'P0001'; end if;
+  if p_ligar then
+    update public.mochila m set equipado = false from public.loja_itens i
+     where m.user_id = v_uid and i.id = m.item_id and i.espaco = v_esp and m.item_id <> p_item and m.equipado;
+  end if;
+  update public.mochila set equipado = p_ligar where user_id = v_uid and item_id = p_item;
+  return jsonb_build_object('item', p_item, 'equipado', p_ligar);
+end $$;
+revoke all on function public.equipar(text, boolean) from public, anon;
+grant execute on function public.equipar(text, boolean) to authenticated;
+
+-- usar um consumível: gasta 1 da mochila e grava em consumos (o Sítio inteiro vê a animação)
+create or replace function public.usar_item(p_item text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+  v_fid uuid;
+  v_qtd int;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos.' using errcode = 'P0001'; end if;
+  select id into v_fid from public.friends where user_id = v_uid limit 1;
+  perform public.limitar('usar', 6, interval '1 minute', 'Calma: um de cada vez.');
+  select m.qtd into v_qtd from public.mochila m join public.loja_itens i on i.id = m.item_id
+   where m.user_id = v_uid and m.item_id = p_item and i.espaco = 'consumivel' for update of m;
+  if coalesce(v_qtd, 0) < 1 then raise exception 'Você não tem esse item. Compre na loja.' using errcode = 'P0001'; end if;
+  if v_qtd = 1 then delete from public.mochila where user_id = v_uid and item_id = p_item;
+  else update public.mochila set qtd = qtd - 1 where user_id = v_uid and item_id = p_item; end if;
+  insert into public.consumos (de, item_id) values (v_fid, p_item);
+  delete from public.consumos where em < now() - interval '30 days';
+  return jsonb_build_object('item', p_item, 'resta', v_qtd - 1);
+end $$;
+revoke all on function public.usar_item(text) from public, anon;
+grant execute on function public.usar_item(text) to authenticated;
+
+-- o quarto de um nanico: os itens equipados (o site também lê direto da mochila, pela RLS)
+create or replace function public.quarto_de(p_friend uuid) returns jsonb
+language sql stable security definer set search_path = public as $$
+  select coalesce(jsonb_agg(jsonb_build_object('item', m.item_id, 'espaco', i.espaco) order by i.ordem), '[]'::jsonb)
+    from public.friends f
+    join public.mochila m on m.user_id = f.user_id and m.equipado
+    join public.loja_itens i on i.id = m.item_id
+   where f.id = p_friend and public.eh_nanico();
+$$;
+revoke all on function public.quarto_de(uuid) from public, anon;
+grant execute on function public.quarto_de(uuid) to authenticated;
+
+-- o mesmo bater_ponto da seção 7, agora com o escudo: se faltou ontem mas pegou anteontem e tem escudo,
+-- gasta 1 escudo, cria o dia de ontem (valor 0) e a sequência continua
+create or replace function public.bater_ponto() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid    uuid := auth.uid();
+  v_hoje   date := public.hoje_br();
+  v_seq    int;
+  v_valor  int;
+  v_extra  int := 0;
+  v_escudo boolean := false;
+  v_ante   int;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos ganham o bônus.' using errcode = 'P0001'; end if;
+  perform public.limitar('ponto', 20, interval '1 minute', 'Calma: espere um pouco e recarregue a página.');
+  if not exists (select 1 from public.bonus_diario where user_id = v_uid and dia = v_hoje) then
+    select seq into v_ante from public.bonus_diario where user_id = v_uid and dia = v_hoje - 2;
+    if v_ante is not null
+       and not exists (select 1 from public.bonus_diario where user_id = v_uid and dia = v_hoje - 1)
+       and exists (select 1 from public.mochila where user_id = v_uid and item_id = 'escudo' and qtd > 0) then
+      update public.mochila set qtd = qtd - 1 where user_id = v_uid and item_id = 'escudo';
+      delete from public.mochila where user_id = v_uid and item_id = 'escudo' and qtd = 0;
+      insert into public.bonus_diario (user_id, dia, seq, valor) values (v_uid, v_hoje - 1, v_ante + 1, 0)
+        on conflict (user_id, dia) do nothing;
+      v_escudo := true;
+    end if;
+  end if;
+  select seq + 1 into v_seq from public.bonus_diario where user_id = v_uid and dia = v_hoje - 1;
+  v_seq := coalesce(v_seq, 1);
+  v_valor := round(30 * least(1 + 0.1 * (v_seq - 1), 2));
+  insert into public.bonus_diario (user_id, dia, seq, valor) values (v_uid, v_hoje, v_seq, v_valor)
+    on conflict (user_id, dia) do nothing;
+  if not found then
+    return public.minha_carteira() || jsonb_build_object('ganhou', 0, 'bonus_extra', 0, 'escudo_usado', false);
+  end if;
+  perform public.creditar(v_uid, v_valor, 'diario', v_hoje::text);
+  if v_seq = 7 then v_extra := 100; elsif v_seq = 30 then v_extra := 500; end if;
+  if v_extra > 0 then perform public.creditar(v_uid, v_extra, 'sequencia', v_seq || ' dias seguidos'); end if;
+  return public.minha_carteira() || jsonb_build_object('ganhou', v_valor, 'bonus_extra', v_extra, 'escudo_usado', v_escudo);
+end $$;
+revoke all on function public.bater_ponto() from public, anon;
+grant execute on function public.bater_ponto() to authenticated;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos e as 4 da loja
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -1473,4 +1691,7 @@ select proname::text, 'trofeus' from pg_proc
 union all
 select proname::text, 'eventos' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('agora_br', 'churrasco_pegar')
+union all
+select proname::text, 'loja' from pg_proc
+ where pronamespace = 'public'::regnamespace and proname in ('comprar', 'equipar', 'usar_item', 'quarto_de')
 order by 2, 1;

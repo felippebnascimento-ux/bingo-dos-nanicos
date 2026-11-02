@@ -53,9 +53,9 @@ export function aoConectar(fn: () => void) {
   return () => void conectarFns.delete(fn);
 }
 
-/** Mudança numa tabela do banco (`friends`, `phrases`, `game`, `chat_messages`, `carteiras`, `rodizio`, `zoeiras`). */
+/** Mudança numa tabela do banco (`friends`, `phrases`, `game`, `chat_messages`, `carteiras`, `rodizio`, `zoeiras`, `mochila`, `consumos`). */
 export const aoMudarTabela = (
-  tabela: "friends" | "phrases" | "game" | "chat_messages" | "carteiras" | "rodizio" | "zoeiras",
+  tabela: "friends" | "phrases" | "game" | "chat_messages" | "carteiras" | "rodizio" | "zoeiras" | "mochila" | "consumos",
   fn: (row: Record<string, unknown> | null, ev: string) => void,
 ) => add(tabelaFns, tabela, fn);
 
@@ -276,6 +276,13 @@ function conectar() {
   /* chinelada e torta: pagas, então vêm da tabela (gravada por zoar()), nunca de broadcast */
   ch = ch.on("postgres_changes", { event: "INSERT", schema: "public", table: "zoeiras" }, (pl) => {
     tabelaFns.get("zoeiras")?.forEach((fn) => fn((pl?.new as Record<string, unknown>) || null, "INSERT"));
+  });
+  /* loja: o que cada um equipou (quarto, título, moldura) e o boneco fumando ou bebendo (pago, então da tabela) */
+  ch = ch.on("postgres_changes", { event: "*", schema: "public", table: "mochila" }, (pl) => {
+    tabelaFns.get("mochila")?.forEach((fn) => fn((pl?.new as Record<string, unknown>) || null, pl?.eventType || ""));
+  });
+  ch = ch.on("postgres_changes", { event: "INSERT", schema: "public", table: "consumos" }, (pl) => {
+    tabelaFns.get("consumos")?.forEach((fn) => fn((pl?.new as Record<string, unknown>) || null, "INSERT"));
   });
   room = ch;
   ch.subscribe((st) => {

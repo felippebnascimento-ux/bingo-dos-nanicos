@@ -8,7 +8,6 @@
 import { useEffect, useMemo, useState, useSyncExternalStore, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
 import { useTruco } from "@/features/truco/mesa";
 import { friendDaPresenca, MY_KEY, setApp, useApp } from "@/lib/store";
-import { toast } from "@/lib/toast";
 import { andarAte, andarUmPiso, iniciarHall, useHall } from "./bonecos";
 import { Boneco } from "./Boneco";
 import { CarteiraCanto, Dica, Ganhos, NaSala } from "./Cantos";
@@ -18,6 +17,9 @@ import { iniciarZoeira, useZoeira } from "./zoeiraSala";
 import { MenuBoneco, Revidar, ZoeiraCamada } from "./ZoeiraTela";
 import { BotaoQuadro, QuadroTrofeus } from "./QuadroTrofeus";
 import { iniciarEventos } from "./eventosSala";
+import { ConsumoCamada } from "@/features/loja/Itens";
+import { balanco } from "@/features/loja/loja";
+import { iniciarConsumo, useConsumo } from "@/features/loja/consumoSala";
 import { ChurrascoCamada, FaixaEvento, LuzHappy, PlacaChurrasco } from "./EventosTela";
 import { useRanking } from "@/features/moedas/Ranking";
 import { enfeites } from "@/features/trofeus/trofeus";
@@ -75,12 +77,16 @@ export function HallView({ hidden }: { hidden: boolean }) {
   const enfeite = useMemo(() => enfeites(trofeus ?? [], trofeus?.[0]?.semana ?? null, maisRico), [trofeus, maisRico]);
   const pancada = useZoeira((s) => s.pancada);
   const agora = useZoeira((s) => s.agora);
+  /* quem tomou energético treme e quem tomou caipirinha fica tonto */
+  const consumos = useConsumo((s) => s.ativos);
+  const agoraC = useConsumo((s) => s.agora);
 
   useEffect(() => {
     iniciarHall();
     iniciarGanhos();
     iniciarZoeira();
     iniciarEventos();
+    iniciarConsumo();
   }, []);
 
   /* z-index de cada móvel e boneco, do fundo para a frente */
@@ -122,7 +128,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
     else if (c === "tv") setApp({ aba: "live" });
     else if (c === "truco") setApp({ aba: "truco" });
     else if (c === "trofeus") setApp({ aba: "trofeus" });
-    else toast("A loja abre em breve");
+    else setApp({ aba: "loja" });
   };
   const tv = tvCaixa(vb);
 
@@ -159,12 +165,18 @@ export function HallView({ hidden }: { hidden: boolean }) {
               eu={b.key === MY_KEY}
               z={z[MOVEIS.length + k]}
               vb={vb}
-              rot={b.fid && pancada[b.fid] ? cambalear(agora - pancada[b.fid]) : 0}
+              rot={(() => {
+                if (!b.fid) return 0;
+                if (pancada[b.fid]) return cambalear(agora - pancada[b.fid]);
+                const c = consumos.find((x) => x.fid === b.fid);
+                return c ? balanco(c.anim, agoraC - c.inicio) : 0;
+              })()}
               enfeite={b.fid ? enfeite[b.fid] : undefined}
             />
           ))}
           <ChurrascoCamada vb={vb} z={z[CHURRASQUEIRA]} />
           <ZoeiraCamada bonecos={bonecos} vb={vb} />
+          <ConsumoCamada bonecos={bonecos} vb={vb} />
           <LuzHappy />
           <button
             type="button"
@@ -188,7 +200,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
                 type="button"
                 className="hall-placa"
                 style={{ left: pct(pos.left), top: pct(pos.top) }}
-                aria-label={c.id === "loja" ? "Loja (abre em breve)" : `Abrir o ${rotulo}`}
+                aria-label={c.id === "loja" ? "Abrir a Loja" : `Abrir o ${rotulo}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   abrir(c.id);
