@@ -2,9 +2,10 @@
 /* Cartela compacta: painel do Ao vivo e janela flutuante (Document Picture-in-Picture). */
 import { createPortal } from "react-dom";
 import { create } from "zustand";
-import { linhasFeitas, toggleCell } from "@/lib/bingo";
+import { linhasFeitas } from "@/lib/bingo";
 import { setApp, useApp } from "@/lib/store";
 import { toast } from "@/lib/toast";
+import { tocarCasa, useBingo } from "./bingoSala";
 
 type DocPip = { requestWindow(o: { width: number; height: number }): Promise<Window> };
 const docPip = () => (window as unknown as { documentPictureInPicture?: DocPip }).documentPictureInPicture;
@@ -45,6 +46,8 @@ async function abrirPip() {
 /** A cartela compacta (a mesma no painel e na janela flutuante). */
 function MiniCard() {
   const card = useApp((s) => s.card);
+  const b = useBingo();
+  const servidor = b.sql === true && !!b.sala;
   if (!card)
     return (
       <div className="mempty">
@@ -86,10 +89,12 @@ function MiniCard() {
             <button
               key={i}
               type="button"
-              className={"mcell" + (card.marked[i] ? " on" : "") + (inLine.has(i) ? " line" : "")}
+              className={
+                "mcell" + (card.marked[i] ? " on" : "") + (inLine.has(i) ? " line" : "") + (servidor && !card.marked[i] && b.casas?.[i] && b.cantos[b.casas[i]!] ? " cant" : "")
+              }
               aria-pressed={!!card.marked[i]}
               title={c.text}
-              onClick={() => toggleCell(i)}
+              onClick={() => void tocarCasa(i)}
             >
               <span>{c.text}</span>
             </button>

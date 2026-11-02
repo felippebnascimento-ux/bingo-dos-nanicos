@@ -1,0 +1,37 @@
+{
+  "explicacao": "Mesmo exemplo para as duas versões da regra 'quais nanicadas valem': eligible() em src/lib/bingo.ts (bingo.test.ts) e public.bingo_valem() no seguranca.sql (teste do SQL num Postgres local). A rota com friendId vazio é 'Random': o campeão dela não conta.",
+  "nanicos": {
+    "a": "0a0a0a0a-0000-4000-8000-00000000000a",
+    "b": "0b0b0b0b-0000-4000-8000-00000000000b",
+    "c": "0c0c0c0c-0000-4000-8000-00000000000c"
+  },
+  "escalacao": [
+    { "friendId": "0a0a0a0a-0000-4000-8000-00000000000a", "champion": "Garen" },
+    { "friendId": "0b0b0b0b-0000-4000-8000-00000000000b", "champion": "Ahri" },
+    { "friendId": "", "champion": "Jinx" },
+    { "friendId": "", "champion": "" },
+    { "friendId": "", "champion": "" }
+  ],
+  "nanicadas": [
+    { "id": "f1000000-0000-4000-8000-000000000001", "text": "genérica", "friendIds": [], "champions": [], "modo": "qualquer" },
+    { "id": "f1000000-0000-4000-8000-000000000002", "text": "a jogando", "friendIds": ["0a0a0a0a-0000-4000-8000-00000000000a"], "champions": [], "modo": "qualquer" },
+    { "id": "f1000000-0000-4000-8000-000000000003", "text": "c não joga", "friendIds": ["0c0c0c0c-0000-4000-8000-00000000000c"], "champions": [], "modo": "qualquer" },
+    { "id": "f1000000-0000-4000-8000-000000000004", "text": "tem garen", "friendIds": [], "champions": ["garen"], "modo": "qualquer" },
+    { "id": "f1000000-0000-4000-8000-000000000005", "text": "jinx só no random", "friendIds": [], "champions": ["Jinx"], "modo": "qualquer" },
+    { "id": "f1000000-0000-4000-8000-000000000006", "text": "a de ahri", "friendIds": ["0a0a0a0a-0000-4000-8000-00000000000a"], "champions": ["Ahri"], "modo": "qualquer" },
+    { "id": "f1000000-0000-4000-8000-000000000007", "text": "b de ahri", "friendIds": ["0b0b0b0b-0000-4000-8000-00000000000b"], "champions": ["AHRI"], "modo": "qualquer" },
+    { "id": "f1000000-0000-4000-8000-000000000008", "text": "a e b juntos", "friendIds": ["0a0a0a0a-0000-4000-8000-00000000000a", "0b0b0b0b-0000-4000-8000-00000000000b"], "champions": [], "modo": "todos" },
+    { "id": "f1000000-0000-4000-8000-000000000009", "text": "a e c juntos", "friendIds": ["0a0a0a0a-0000-4000-8000-00000000000a", "0c0c0c0c-0000-4000-8000-00000000000c"], "champions": [], "modo": "todos" },
+    { "id": "f1000000-0000-4000-8000-000000000010", "text": "garen e ahri", "friendIds": [], "champions": ["Garen", "Ahri"], "modo": "todos" }
+  ],
+  "esperado": {
+    "partida": [
+      "f1000000-0000-4000-8000-000000000002",
+      "f1000000-0000-4000-8000-000000000004",
+      "f1000000-0000-4000-8000-000000000007",
+      "f1000000-0000-4000-8000-000000000008",
+      "f1000000-0000-4000-8000-000000000010"
+    ],
+    "genericas": ["f1000000-0000-4000-8000-000000000001"]
+  }
+}

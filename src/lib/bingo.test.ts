@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { cellsDe, eligible, linhasFeitas, matchPhrase, sortear } from "./bingo";
 import type { Card, LineupSlot, Phrase } from "./tipos";
+import fixture from "./bingo-valem.fixture.json";
 
 const ph = (id: string, friendIds: string[] = [], champions: string[] = [], modo: Phrase["modo"] = "qualquer"): Phrase => ({
   id,
@@ -65,5 +66,15 @@ describe("cartela", () => {
     const card: Card = { cells: [], marked };
     expect(linhasFeitas(card)).toHaveLength(2);
     expect(linhasFeitas(null)).toEqual([]);
+  });
+});
+
+/* o mesmo exemplo roda contra public.bingo_valem() (a regra em SQL do bingo no servidor) */
+describe("nanicadas que valem: igual ao SQL", () => {
+  it("bate com o esperado do fixture", () => {
+    const phrases: Phrase[] = fixture.nanicadas.map((p) => ({ ...p, modo: p.modo as Phrase["modo"], createdAt: 0 }));
+    const { spec, gen } = eligible(phrases, fixture.escalacao);
+    expect(spec.map((p) => p.id).sort()).toEqual([...fixture.esperado.partida].sort());
+    expect(gen.map((p) => p.id)).toEqual(fixture.esperado.genericas);
   });
 });

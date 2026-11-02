@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { FriendPicker } from "@/components/ui/FriendPicker";
 import { IcEstrela } from "@/components/ui/icones";
-import { cellsDe, eligible, limparMarcacoes, linhasFeitas, novaCartela, sortear, toggleCell } from "@/lib/bingo";
+import { useSure } from "@/components/ui/useSure";
+import { cellsDe, eligible, limparMarcacoes, linhasFeitas, novaCartela, sortear } from "@/lib/bingo";
 import { salvarEscalacao } from "@/lib/dados";
 import { LANES } from "@/lib/dados/campeoes";
 import { friendName, getApp, useApp } from "@/lib/store";
@@ -14,6 +15,7 @@ import { CellTag } from "./CellTag";
 import { CartelaFlutuante } from "./MiniCartela";
 import { RiotBox } from "./RiotBox";
 import { Roleta } from "./Roleta";
+import { fecharPartida, sortearCartela, tocarCasa, usarMontada, useBingo, useBingoNoServidor } from "./bingoSala";
 
 /* ---------- escalação ---------- */
 
@@ -81,6 +83,7 @@ function Montar({
     slots.push(sel[k++] || "");
   }
   const busca = norm(mt.busca);
+  const servidor = useBingoNoServidor();
   const todos = [...M.values()];
   const lista = todos
     .filter(
@@ -112,11 +115,13 @@ function Montar({
     muda({ sel: sel.concat(add.map((p) => p.id)).slice(0, 24) });
   };
 
-  const pronto = () => {
+  const pronto = async () => {
     if (sel.length < 24) return;
-    novaCartela(cellsDe(sel.map((id) => M.get(id)!), friends));
-    setMt(null);
-    toast("Cartela montada");
+    const ok = await usarMontada(sel, () => {
+      novaCartela(cellsDe(sel.map((id) => M.get(id)!), friends));
+      toast("Cartela montada");
+    });
+    if (ok) setMt(null);
   };
 
   return (
@@ -130,6 +135,7 @@ function Montar({
       <p className="hint" style={{ margin: "0 0 10px" }}>
         Toque nas nanicadas da lista para colocar na cartela, na ordem em que escolher. Toque numa casa para tirar.
       </p>
+      {servidor && <p className="hint bingo-aviso">Cartela montada não vale moedas.</p>}
       <div className="letters" aria-hidden="true">
         <span>B</span>
         <span>I</span>
@@ -230,7 +236,7 @@ function Montar({
         <button type="button" className="btn soft" onClick={() => setMt(null)}>
           Cancelar
         </button>
-        <button type="button" className="btn" disabled={n < 24} onClick={pronto}>
+        <button type="button" className="btn" disabled={n < 24} onClick={() => void pronto()}>
           {n < 24 ? `Faltam ${24 - n}` : "Usar esta cartela"}
         </button>
       </div>
@@ -241,11 +247,18 @@ function Montar({
 /* ---------- cartela ---------- */
 function Cartela({ friends }: { friends: Friend[] }) {
   const card = useApp((s) => s.card);
+  const myUid = useApp((s) => s.myUid);
+  const b = useBingo();
+  const servidor = b.sql === true && !!b.sala;
+  const fechar = useSure(3000);
   if (!card)
     return (
       <div className="empty">
         <b>Sua cartela aparece aqui</b>
-        <span>Monte a escalação e toque em “Sortear minha cartela”. Cada pessoa na sala recebe uma diferente.</span>
+        <span>
+          Monte a escalação e toque em “Sortear minha cartela”. Cada pessoa na sala recebe uma diferente.
+          {servidor && " A sorteada vale +25 moedas a quem fechar uma linha."}
+        </span>
       </div>
     );
   const done = linhasFeitas(card);
@@ -260,7 +273,10 @@ function Cartela({ friends }: { friends: Friend[] }) {
       )}
       <div className="card-head">
         <h2>Minha cartela</h2>
-        <span className="status">{marked} de 24 marcadas</span>
+        <span className="status">
+          {marked} de 24 marcadas
+          {servidor && b.origem === "montada" && " · montada, não vale moedas"}
+        </span>
       </div>
       <div className="letters" aria-hidden="true">
         <span>B</span>
@@ -280,26 +296,44 @@ function Cartela({ friends }: { friends: Friend[] }) {
             );
           const rot = c.rot || 0;
           const estilo = { "--rot": `${rot}deg`, "--dx": `${rot % 4}px`, "--dy": `${(rot * 7) % 4}px` } as CSSProperties;
+          /* no servidor: cantada e esperando outro nanico confirmar */
+          const canto = servidor && !card.marked[i] && b.casas?.[i] ? b.cantos[b.casas[i]!] : undefined;
+          const meu = !!canto && canto.por === myUid;
           return (
             <button
               key={i}
-              className={"cell" + (card.marked[i] ? " on" : "") + (inLine.has(i) ? " line" : "")}
+              className={"cell" + (card.marked[i] ? " on" : "") + (inLine.has(i) ? " line" : "") + (canto ? " cant" : "")}
               aria-pressed={!!card.marked[i]}
+              aria-label={canto ? `${c.text}: ${meu ? "esperando alguém confirmar" : "aconteceu? confirmar"}` : undefined}
               style={estilo}
-              onClick={() => toggleCell(i)}
+              disabled={servidor && b.ocupado}
+              onClick={() => void tocarCasa(i)}
             >
               <span className="t">{c.text}</span>
-              <CellTag c={c} friends={friends} />
+              {canto ? (
+                <span className="cant-tag">{meu ? "Esperando…" : "Confirmar?"}</span>
+              ) : (
+                <CellTag c={c} friends={friends} />
+              )}
             </button>
           );
         })}
       </div>
-      <div className="row" style={{ marginTop: 16, justifyContent: "space-between" }}>
-        <span className="status">Toque numa casa quando a nanicada acontecer.</span>
-        <button className="btn soft" id="limpar" onClick={limparMarcacoes}>
-          Limpar marcações
-        </button>
-      </div>
+      {servidor ? (
+        <div className="row bingo-rodape">
+          <span className="status">Aconteceu? Toque na casa. Ela marca quando outro nanico confirmar.</span>
+          <button className={"btn soft" + (fechar.sure ? " sure" : "")} id="fecharPartida" onClick={() => fechar.pedir() && void fecharPartida()}>
+            {fechar.sure ? "Confirmar: fechar a partida" : "Fechar a partida"}
+          </button>
+        </div>
+      ) : (
+        <div className="row" style={{ marginTop: 16, justifyContent: "space-between" }}>
+          <span className="status">Toque numa casa quando a nanicada acontecer.</span>
+          <button className="btn soft" id="limpar" onClick={limparMarcacoes}>
+            Limpar marcações
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -331,10 +365,12 @@ export function JogarView({ hidden }: { hidden: boolean }) {
     rolarAte(area.current);
   };
 
-  const gerar = () => {
+  const gerar = async () => {
     setMontando(null);
-    novaCartela(cellsDe(sortear(spec, gen), friends));
-    toast("Cartela sorteada");
+    await sortearCartela(() => {
+      novaCartela(cellsDe(sortear(spec, gen), friends));
+      toast("Cartela sorteada");
+    });
     rolarAte(area.current);
   };
 
@@ -378,7 +414,7 @@ export function JogarView({ hidden }: { hidden: boolean }) {
               <button className="btn soft" id="montar" disabled={tot < 24} onClick={montar}>
                 Montar minha cartela
               </button>
-              <button className="btn" id="gerar" disabled={tot < 24} onClick={gerar}>
+              <button className="btn" id="gerar" disabled={tot < 24} onClick={() => void gerar()}>
                 Sortear minha cartela
               </button>
             </div>

@@ -80,6 +80,7 @@ function onCarteira(row: Record<string, unknown> | null) {
   const eu = g.userId === s.myUid;
   if (eu) ajustarSaldo(g.saldo);
   if (eu && g.motivo === "truco" && g.valor > 0) toast(`+${g.valor} moedas: vitória no truco`);
+  if (eu && g.motivo === "bingo" && g.valor > 0) toast(`+${g.valor} moedas: bingo!`);
   /* gastos (valor negativo) não aparecem para os outros */
   if (g.valor <= 0) return;
   const f = s.friends.find((x) => x.user_id === g.userId);

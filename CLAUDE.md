@@ -91,7 +91,10 @@ src/
     jogar/             JogarView (escalação, cartela, montar cartela), MiniCartela (painel do Ao vivo e
                        cartela flutuante), riot.ts (consulta a função riot-ao-vivo), partida.ts (lanes, puro),
                        RiotBox, CellTag; roleta do rodízio: rodizio.ts (fatias, ângulo, "seguidas"; puro e
-                       testado), rodizioSala.ts (linha da sala, tempo real, animação, chama as funções) e Roleta.tsx
+                       testado), rodizioSala.ts (linha da sala, tempo real, animação, chama as funções) e Roleta.tsx;
+                       bingoSala.ts (bingo no servidor numa sala de LoL: partida, minha cartela e cantos do banco,
+                       `tocarCasa` canta ou confirma, `sortearCartela`, `usarMontada`, `fecharPartida`; sem o SQL ou
+                       fora de uma sala de LoL, cai na cartela local de antes)
     nanicadas/         NanicadasView: cadastro, edição, filtros e lista
     nanicos/           NanicosView: os 14 nanicos com a arte de corpo inteiro (tocar abre a ficha);
                        atributos.ts (os 6 atributos votados, conferir notas, médias; puro e testado)
@@ -132,7 +135,8 @@ src/
     sala.ts            canal em tempo real: presença, broadcast, mudanças no banco
     presenca.ts        umPorNanico(): junta as abas de um mesmo nanico num item só; puro e testado
     dados.ts           carregar e gravar no banco, login → sessão → sala, sair
-    bingo.ts           regras da cartela (quais nanicadas valem, sorteio, marcar)
+    bingo.ts           regras da cartela (quais nanicadas valem, sorteio, marcar); a mesma regra de "quais valem"
+                       está em SQL (`bingo_valem`), conferida com o exemplo `bingo-valem.fixture.json` nos dois lados
     moedas.ts          números das moedas (bônus, sequência, teto), só para mostrar; puro e testado
     eventos.ts         happy hour e churrasco de sábado: eventoAgora, happyAgora, fimDoEvento (hora de Brasília
                        por Intl, nunca a do aparelho); só para mostrar; puro e testado
@@ -197,7 +201,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 ### Estado
 - `useApp(s => s.campo)` dentro de componente (assine só o que usa). `getApp()` / `setApp({...})` fora do React.
 - Dados do banco (`friends`, `phrases`, `lineup`) só mudam por `src/lib/dados.ts`. A escalação se salva com `salvarEscalacao(lineup)`.
-- A cartela muda por `src/lib/bingo.ts` (`novaCartela`, `toggleCell`, `limparMarcacoes`).
+- A cartela muda por `src/lib/bingo.ts` (`novaCartela`, `toggleCell`, `limparMarcacoes`) só no bingo local. Numa sala de LoL com o SQL, ela vem do banco: a tela chama `tocarCasa`, `sortearCartela` e `usarMontada` (`features/jogar/bingoSala.ts`) e o `card` do store é montado a partir da cartela e dos cantos confirmados.
 - A presença (`trackMe`) acompanha sozinha `card`, `myLiveSid`, `myCamSid` e `hallPos`: basta mudar o estado.
 
 ### Sala em tempo real (`src/lib/sala.ts`)
@@ -295,6 +299,10 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 | `riot_semana_meta`, `riot_semana_partidas` | trava e progresso do cálculo da semana (`estado` calculando/parcial/pronta) e as partidas já lidas (só os números dos nanicos) | só a função `riot-semana` (o site lê `estado`) |
 | `jogos_stats` | números da ficha por nanico e fonte (`lol`: elo, vitórias, KDA, main; `steam`: horas) | nanicos leem; só a função `ficha-jogos` grava |
 | `riot_partidas_vistas` | partidas do LoL já lidas (KDA das últimas 20 sem buscar tudo de novo) | só a função `ficha-jogos` |
+| `bingo_partidas` | uma partida de bingo aberta por sala de LoL (`sala`, `game_id` da Riot, `aberta_em`, `fechada_em`) | nanicos leem; só as funções `bingo_*` |
+| `bingo_cartelas` | a cartela de cada um na partida (`casas` = 25 ids de nanicadas, o meio null = LIVRE; `origem` sorteada/montada) | cada um lê **só a sua**; só as funções `bingo_*` |
+| `bingo_cantos` | "Aconteceu!" (`phrase_id`, `cantado_por`, `confirmado_por`, `confirmado_em`) | nanicos leem; só `bingo_cantar` e `bingo_confirmar` |
+| `bingo_premios` | quem fechou linha em cada partida (`linhas`, `pago` 25 ou 0) | nanicos leem; só `bingo_pagar` |
 | `truco_mesas` | mesa de truco como todos veem (`id`, `criada_por`, `opcoes`, `publico` = `trPublica`, `fase`, `atualizada_em`) | nanicos leem; só a função `truco-mesa` grava (pelas funções `truco_*`) |
 | `truco_estado` | a mesa completa, com o baralho e as mãos (`estado` = `{M, partida, fimEm}`, `versao`) | **ninguém** (nem leitura, nem tempo real); só as funções `truco_*` |
 | `truco_maos` | as cartas de cada lugar (`mesa_id`, `lugar`, `user_id`, `cartas`, `mao_n`) | cada um lê **só a sua** (o RLS filtra também o tempo real); só a função grava |
@@ -322,6 +330,11 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
   - **`equipar(item, ligar)`** só aceita o que está na mochila e desliga os outros do mesmo espaço (cadeira, mesa, tapete, pôster, planta, parede, luz, título, moldura). **`usar_item(item)`** gasta 1 consumível e grava em `consumos`; o tempo real dessa tabela anima o boneco em todas as telas (nunca broadcast). **`quarto_de(nanico)`** devolve os equipados.
   - **Escudo de sequência:** o `bater_ponto()` da seção 15 (substitui o da 7) gasta 1 escudo quando a pessoa faltou ontem mas veio anteontem, cria o dia de ontem com valor 0 e devolve `escudo_usado: true`. Dois dias perdidos não salvam.
   - **Itens:** consumíveis de 15 a 60 (cigarrinho, latinha, chimarrão, energético, caipirinha, charuto), escudo 400, quarto de 150 a 1.500, títulos de 250 a 2.000 e molduras de 800 e 1.200.
+- **Bingo no servidor (seção 12a do `seguranca.sql`):**
+  - **Cartela:** `bingo_nova_cartela(sala)` sorteia no banco (`bingo_sortear`, com `gen_random_bytes`; até 16 da partida, o resto genéricas, como `sortear()`), e `bingo_montada(sala, casas)` aceita 24 nanicadas que valem (`bingo_valem`, a mesma regra de `eligible()`). Ambas abrem a partida da sala se não houver (`bingo_abrir`). Trocar de cartela só antes do primeiro canto confirmado.
+  - **Marcar:** `bingo_cantar(partida, nanicada)` (quem tem cartela; a nanicada tem que estar em alguma cartela; 10 por minuto) e `bingo_confirmar(canto)` por **outro** nanico com cartela. A casa marca em todas as cartelas que a têm.
+  - **Prêmio:** cada confirmação chama `bingo_pagar` (interna): cartela **sorteada** com 1 linha ou mais ganha `creditar(25, 'bingo', partida)` uma vez por partida, até 3 prêmios pagos por dia. Montada não paga.
+  - **Fechar:** `bingo_fechar(sala)`, qualquer nanico (botão "Fechar a partida"). Ainda não fecha sozinho pelo fim do jogo na Riot.
 - **Truco no servidor (seção 13 do `seguranca.sql`):**
   - **O juiz é a função `truco-mesa`.** Ações: `abrir` (modo, alvo, flor), `sentar` (lugar), `sair`, `comecar` (também a revanche), `jogar`/`truco`/`envido`/`quero`/`naoquero`/`mazo` (com `arg`), `nova_mao` (n) e `fechar`. A resposta é só `{ ok }` ou `{ erro }`, nunca cartas.
   - **Cada ação:** `truco_vez(user)` (30 a cada 10 s) → `truco_carregar(mesa)` → regras do `engine.ts` → `truco_salvar(..., versao)`, que só grava se ninguém gravou no meio (senão a função tenta de novo). Embaralha com `crypto.getRandomValues`.
@@ -347,10 +360,10 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
   - `reacao`: emojis e fotos;
   - `risco`: desenho na live;
   - `hall`: `{ para: {i, j} }`, o destino do boneco. Cada navegador calcula o caminho e anima sozinho (limite de 8 a cada 2 s).
-- **Mudanças no banco:** chegam por `postgres_changes` em `friends`, `phrases`, `game`, `chat_messages`, `carteiras`, `rodizio`, `mochila` (equipados), `consumos` (o boneco fumando ou bebendo), `truco_mesas` e `truco_maos` (no DELETE, `aoMudarTabela` entrega a chave da linha apagada). A chinelada e a torta vêm do tempo real de `zoeiras` (pagas, gravadas por `zoar()`), e o sorteio da roleta do rodízio vem do tempo real de `rodizio` (todo mundo anima até o mesmo `girado_em`), **nunca de broadcast**. Os ganhos de moedas de todo mundo no Sítio vêm do tempo real de `carteiras` (gravado por `creditar()`), **nunca de broadcast**.
+- **Mudanças no banco:** chegam por `postgres_changes` em `friends`, `phrases`, `game`, `chat_messages`, `carteiras`, `rodizio`, `mochila` (equipados), `consumos` (o boneco fumando ou bebendo), `truco_mesas`, `truco_maos`, `bingo_partidas`, `bingo_cartelas` e `bingo_cantos` (no DELETE, `aoMudarTabela` entrega a chave da linha apagada). A chinelada e a torta vêm do tempo real de `zoeiras` (pagas, gravadas por `zoar()`), e o sorteio da roleta do rodízio vem do tempo real de `rodizio` (todo mundo anima até o mesmo `girado_em`), **nunca de broadcast**. Os ganhos de moedas de todo mundo no Sítio vêm do tempo real de `carteiras` (gravado por `creditar()`), **nunca de broadcast**.
 
 ### Navegador (`localStorage`, só conveniência de cada pessoa)
-- **Chaves:** `rift-lineup`, `rift-card`, `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `log-visto`, `fome-fechado`, `hall-pos` (último piso no hall), `hall-sala-min` (lista "Na sala agora" do Sítio recolhida), `sala-atual` (última sala; o site sempre abre no lobby), `canais-voz-min` e `canais-texto-min` (categorias de canais recolhidas; no celular começam recolhidas) `membros-min` (lista de membros só com os rostos; abaixo de 1200 px fica assim sempre) e `midia` (microfone, saída de som, câmera, eco e ruído escolhidos nas Configurações) e `evento-visto` (o aviso que explica o happy hour e o churrasco já apareceu).
+- **Chaves:** `rift-lineup`, `rift-card` (cartela do bingo local; numa sala de LoL com o SQL, a cartela vem do banco), `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `log-visto`, `fome-fechado`, `hall-pos` (último piso no hall), `hall-sala-min` (lista "Na sala agora" do Sítio recolhida), `sala-atual` (última sala; o site sempre abre no lobby), `canais-voz-min` e `canais-texto-min` (categorias de canais recolhidas; no celular começam recolhidas) `membros-min` (lista de membros só com os rostos; abaixo de 1200 px fica assim sempre) e `midia` (microfone, saída de som, câmera, eco e ruído escolhidos nas Configurações) e `evento-visto` (o aviso que explica o happy hour e o churrasco já apareceu).
 - **As do site antigo continuam iguais**, então ninguém perde a cartela na troca.
 - **`sessionStorage`:** `log-auto` (o Log de novidades já abriu sozinho nesta sessão do navegador).
 - Nada importante pode morar só aqui.

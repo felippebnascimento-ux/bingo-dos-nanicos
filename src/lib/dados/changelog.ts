@@ -136,6 +136,15 @@ export const CHANGELOG: EntradaLog[] = [
       "Recarregou a página no meio do truco? Seu lugar e suas cartas continuam lá",
     ],
   },
+  {
+    data: "02/11/2026",
+    itens: [
+      "Bingo valendo moedas: a cartela é sorteada pelo site e cada nanicada precisa de outro nanico confirmando",
+      "Fechou uma linha com a cartela sorteada: +25 moedas (até 3 bingos pagos por dia)",
+      "Cartela montada continua valendo para brincar, mas não dá moedas",
+      "Botão \"Fechar a partida\" na cartela para começar outra",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

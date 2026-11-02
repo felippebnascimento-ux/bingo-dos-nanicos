@@ -1812,7 +1812,306 @@ grant execute on function public.truco_salvar(text, int, jsonb, jsonb, text, jso
 grant execute on function public.truco_fechar(text, uuid) to service_role;
 grant execute on function public.truco_premiar(text) to service_role;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja e as 5 do truco
+-- 12a) bingo no servidor: cartela sorteada pelo banco, cada nanicada cantada por um e confirmada por outro, prêmio ---
+-- bingo_partidas: uma partida aberta por sala de LoL (abre sozinha na primeira cartela; qualquer nanico fecha).
+-- bingo_cartelas: a cartela de cada um (25 ids de nanicadas; a 13ª, o meio, é null = LIVRE). Cada um lê só a sua.
+-- bingo_cantos: "Aconteceu!" de alguém; vale quando OUTRO nanico com cartela confirma. Todos leem.
+-- bingo_premios: quem fechou linha em cada partida e quanto recebeu (+25, até 3 por dia; montada não recebe).
+create table if not exists public.bingo_partidas (
+  id         bigint generated always as identity primary key,
+  sala       text not null references public.salas(id) on delete cascade,
+  game_id    bigint,
+  aberta_em  timestamptz not null default now(),
+  fechada_em timestamptz
+);
+create unique index if not exists bingo_uma_aberta on public.bingo_partidas (sala) where fechada_em is null;
+
+create table if not exists public.bingo_cartelas (
+  id         bigint generated always as identity primary key,
+  partida_id bigint not null references public.bingo_partidas(id) on delete cascade,
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  casas      uuid[] not null check (array_length(casas, 1) = 25),
+  origem     text not null check (origem in ('sorteada', 'montada')),
+  criada_em  timestamptz not null default now(),
+  unique (partida_id, user_id)
+);
+
+create table if not exists public.bingo_cantos (
+  id             bigint generated always as identity primary key,
+  partida_id     bigint not null references public.bingo_partidas(id) on delete cascade,
+  phrase_id      uuid not null references public.phrases(id) on delete cascade,
+  cantado_por    uuid not null references auth.users(id) on delete cascade,
+  cantado_em     timestamptz not null default now(),
+  confirmado_por uuid references auth.users(id) on delete set null,
+  confirmado_em  timestamptz,
+  unique (partida_id, phrase_id)
+);
+
+create table if not exists public.bingo_premios (
+  partida_id bigint not null references public.bingo_partidas(id) on delete cascade,
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  linhas     int not null,
+  pago       int not null,
+  em         timestamptz not null default now(),
+  primary key (partida_id, user_id)
+);
+
+alter table public.bingo_partidas enable row level security;
+alter table public.bingo_cartelas enable row level security;
+alter table public.bingo_cantos   enable row level security;
+alter table public.bingo_premios  enable row level security;
+revoke all on public.bingo_partidas, public.bingo_cartelas, public.bingo_cantos, public.bingo_premios from public, anon, authenticated;
+grant select on public.bingo_partidas, public.bingo_cartelas, public.bingo_cantos, public.bingo_premios to authenticated;
+drop policy if exists bingo_partidas_ler on public.bingo_partidas;
+create policy bingo_partidas_ler on public.bingo_partidas for select to authenticated using (public.eh_nanico());
+drop policy if exists bingo_cartelas_minha on public.bingo_cartelas;
+create policy bingo_cartelas_minha on public.bingo_cartelas for select to authenticated using (user_id = auth.uid());
+drop policy if exists bingo_cantos_ler on public.bingo_cantos;
+create policy bingo_cantos_ler on public.bingo_cantos for select to authenticated using (public.eh_nanico());
+drop policy if exists bingo_premios_ler on public.bingo_premios;
+create policy bingo_premios_ler on public.bingo_premios for select to authenticated using (public.eh_nanico());
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.bingo_partidas; exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.bingo_cartelas; exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.bingo_cantos;   exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.bingo_premios;  exception when duplicate_object then null; end;
+end $$;
+
+-- quais nanicadas valem para a escalação da sala: a mesma regra de matchPhrase/eligible em src/lib/bingo.ts
+-- (conferida com o mesmo exemplo nos dois lados: src/lib/bingo-valem.fixture.json)
+--   sem nanico e sem campeão: genérica;
+--   "todos": todos os nanicos jogando e todos os campeões na partida;
+--   "qualquer" com nanicos e campeões: um desses nanicos jogando com um desses campeões;
+--   "qualquer" só com nanicos (ou só com campeões): um deles na partida.
+-- Só contam as rotas com nanico (o campeão de uma rota "Random" não entra), e campeão compara sem maiúsculas.
+create or replace function public.bingo_valem(p_sala text)
+returns table (phrase_id uuid, da_partida boolean)
+language sql stable security definer set search_path = public as $$
+  with pl as (
+    select x->>'friendId' as fid, lower(btrim(coalesce(x->>'champion', ''))) as champ
+      from public.game g, jsonb_array_elements(case when jsonb_typeof(g.players) = 'array' then g.players else '[]'::jsonb end) x
+     where g.sala = p_sala and coalesce(x->>'friendId', '') <> ''
+  ),
+  ph as (
+    select p.id, coalesce(p.modo, 'qualquer') as modo,
+      case when coalesce(array_length(p.friend_ids, 1), 0) > 0
+           then coalesce((select array_agg(distinct u::text) from unnest(p.friend_ids) u where u is not null), '{}'::text[])
+           when p.friend_id is not null then array[p.friend_id::text]
+           else '{}'::text[] end as n,
+      coalesce((select array_agg(lower(btrim(c))) from unnest(p.champions) c where btrim(coalesce(c, '')) <> ''), '{}'::text[]) as c
+      from public.phrases p
+  )
+  select ph.id, not (cardinality(ph.n) = 0 and cardinality(ph.c) = 0)
+    from ph
+   where (cardinality(ph.n) = 0 and cardinality(ph.c) = 0)
+      or (ph.modo = 'todos'
+          and ph.n <@ coalesce((select array_agg(fid) from pl), '{}'::text[])
+          and ph.c <@ coalesce((select array_agg(champ) from pl where champ <> ''), '{}'::text[]))
+      or (ph.modo <> 'todos' and cardinality(ph.n) > 0 and cardinality(ph.c) > 0
+          and exists (select 1 from pl where pl.fid = any(ph.n) and pl.champ = any(ph.c)))
+      or (ph.modo <> 'todos' and cardinality(ph.n) > 0 and cardinality(ph.c) = 0
+          and exists (select 1 from pl where pl.fid = any(ph.n)))
+      or (ph.modo <> 'todos' and cardinality(ph.n) = 0 and cardinality(ph.c) > 0
+          and exists (select 1 from pl where pl.champ <> '' and pl.champ = any(ph.c)))
+$$;
+
+-- sorteia 24 nanicadas como sortear() do site (até 16 da partida, o resto genéricas) com gen_random_bytes; o meio é LIVRE
+create or replace function public.bingo_sortear(p_sala text)
+returns uuid[] language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_spec uuid[];
+  v_gen  uuid[];
+  v_pick uuid[];
+begin
+  select coalesce(array_agg(phrase_id order by extensions.gen_random_bytes(8)), '{}') into v_spec from public.bingo_valem(p_sala) where da_partida;
+  select coalesce(array_agg(phrase_id order by extensions.gen_random_bytes(8)), '{}') into v_gen  from public.bingo_valem(p_sala) where not da_partida;
+  v_pick := v_spec[1:16];
+  v_pick := v_pick || v_gen[1:24 - cardinality(v_pick)];
+  if cardinality(v_pick) < 24 then v_pick := v_pick || v_spec[17:16 + 24 - cardinality(v_pick)]; end if;
+  if cardinality(v_pick) < 24 then
+    raise exception 'Faltam nanicadas para esta escalação: são precisas 24.' using errcode = 'P0001';
+  end if;
+  select array_agg(x order by extensions.gen_random_bytes(8)) into v_pick from unnest(v_pick) x;
+  return v_pick[1:12] || array[null::uuid] || v_pick[13:24];
+end $$;
+
+-- a partida aberta da sala (abre se não tiver), guardando o jogo da Riot se alguém da escalação está em partida
+create or replace function public.bingo_abrir(p_sala text)
+returns bigint language plpgsql security definer set search_path = public as $$
+declare
+  v_id   bigint;
+  v_game bigint;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos jogam o bingo.' using errcode = 'P0001'; end if;
+  if not exists (select 1 from public.salas where id = p_sala and jogo = 'lol') then
+    raise exception 'O bingo é só nas salas de LoL.' using errcode = 'P0001';
+  end if;
+  select id into v_id from public.bingo_partidas where sala = p_sala and fechada_em is null;
+  if v_id is not null then return v_id; end if;
+  select r.game_id into v_game from public.riot_ao_vivo r
+   where r.game_id is not null and r.friend_id::text in (
+     select x->>'friendId' from public.game g, jsonb_array_elements(case when jsonb_typeof(g.players) = 'array' then g.players else '[]'::jsonb end) x
+      where g.sala = p_sala)
+   limit 1;
+  insert into public.bingo_partidas (sala, game_id) values (p_sala, v_game)
+    on conflict (sala) where fechada_em is null do nothing returning id into v_id;
+  if v_id is null then select id into v_id from public.bingo_partidas where sala = p_sala and fechada_em is null; end if;
+  return v_id;
+end $$;
+
+-- grava a minha cartela da partida (trocar só enquanto nenhum canto foi confirmado)
+create or replace function public.bingo_gravar(p_sala text, p_casas uuid[], p_origem text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  v_uid     uuid := auth.uid();
+  v_partida bigint;
+begin
+  perform public.limitar('bingo_cartela', 20, interval '1 minute', 'Calma: cartelas demais em pouco tempo.');
+  v_partida := public.bingo_abrir(p_sala);
+  if exists (select 1 from public.bingo_cartelas where partida_id = v_partida and user_id = v_uid)
+     and exists (select 1 from public.bingo_cantos where partida_id = v_partida and confirmado_em is not null) then
+    raise exception 'A partida já começou: sua cartela não muda mais. Feche a partida para jogar outra.' using errcode = 'P0001';
+  end if;
+  insert into public.bingo_cartelas (partida_id, user_id, casas, origem) values (v_partida, v_uid, p_casas, p_origem)
+    on conflict (partida_id, user_id) do update set casas = excluded.casas, origem = excluded.origem, criada_em = now();
+  return jsonb_build_object('partida', v_partida, 'casas', to_jsonb(p_casas), 'origem', p_origem);
+end $$;
+
+create or replace function public.bingo_nova_cartela(p_sala text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos jogam o bingo.' using errcode = 'P0001'; end if;
+  return public.bingo_gravar(p_sala, public.bingo_sortear(p_sala), 'sorteada');
+end $$;
+
+-- cartela montada à mão: 24 nanicadas diferentes que valem para a escalação (o meio, null, é o LIVRE); não paga
+create or replace function public.bingo_montada(p_sala text, p_casas uuid[])
+returns jsonb language plpgsql security definer set search_path = public as $$
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos jogam o bingo.' using errcode = 'P0001'; end if;
+  if p_casas is null or array_length(p_casas, 1) <> 25 or p_casas[13] is not null
+     or (select count(distinct x) from unnest(p_casas) x where x is not null) <> 24 then
+    raise exception 'A cartela precisa de 24 nanicadas diferentes e o LIVRE no meio.' using errcode = 'P0001';
+  end if;
+  if exists (select 1 from unnest(p_casas) x where x is not null
+              and x not in (select phrase_id from public.bingo_valem(p_sala))) then
+    raise exception 'Tem nanicada que não vale para esta escalação.' using errcode = 'P0001';
+  end if;
+  return public.bingo_gravar(p_sala, p_casas, 'montada');
+end $$;
+
+-- "Aconteceu!": quem tem cartela na partida canta uma nanicada que está em alguma cartela dela
+create or replace function public.bingo_cantar(p_partida bigint, p_phrase uuid)
+returns bigint language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+  v_id  bigint;
+begin
+  if not exists (select 1 from public.bingo_partidas where id = p_partida and fechada_em is null) then
+    raise exception 'Essa partida já foi fechada.' using errcode = 'P0001';
+  end if;
+  if not exists (select 1 from public.bingo_cartelas where partida_id = p_partida and user_id = v_uid) then
+    raise exception 'Pegue uma cartela para cantar.' using errcode = 'P0001';
+  end if;
+  if not exists (select 1 from public.bingo_cartelas where partida_id = p_partida and p_phrase = any(casas)) then
+    raise exception 'Essa nanicada não está em nenhuma cartela.' using errcode = 'P0001';
+  end if;
+  select id into v_id from public.bingo_cantos where partida_id = p_partida and phrase_id = p_phrase;
+  if v_id is not null then return v_id; end if;
+  perform public.limitar('cantar', 10, interval '1 minute', 'Calma: muitas nanicadas cantadas seguidas.');
+  insert into public.bingo_cantos (partida_id, phrase_id, cantado_por) values (p_partida, p_phrase, v_uid)
+    on conflict (partida_id, phrase_id) do nothing returning id into v_id;
+  if v_id is null then select id into v_id from public.bingo_cantos where partida_id = p_partida and phrase_id = p_phrase; end if;
+  return v_id;
+end $$;
+
+-- paga quem fechou linha (interna): só cartela sorteada, uma vez por partida, até 3 prêmios por dia (de Brasília)
+create or replace function public.bingo_pagar(p_partida bigint)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  r      record;
+  v_conf uuid[];
+  v_marc boolean[];
+  v_lin  int;
+  v_hoje int;
+  i      int;
+begin
+  select coalesce(array_agg(phrase_id), '{}') into v_conf from public.bingo_cantos where partida_id = p_partida and confirmado_em is not null;
+  for r in select c.user_id, c.casas from public.bingo_cartelas c
+            where c.partida_id = p_partida and c.origem = 'sorteada'
+              and not exists (select 1 from public.bingo_premios p where p.partida_id = p_partida and p.user_id = c.user_id) loop
+    v_marc := '{}';
+    for i in 1..25 loop v_marc := v_marc || (i = 13 or coalesce(r.casas[i] = any(v_conf), false)); end loop;
+    -- as 12 linhas (LINES em bingo.ts, aqui contando de 1): 5 linhas, 5 colunas e 2 diagonais
+    select count(*) into v_lin from (values
+      (array[1,2,3,4,5]), (array[6,7,8,9,10]), (array[11,12,13,14,15]), (array[16,17,18,19,20]), (array[21,22,23,24,25]),
+      (array[1,6,11,16,21]), (array[2,7,12,17,22]), (array[3,8,13,18,23]), (array[4,9,14,19,24]), (array[5,10,15,20,25]),
+      (array[1,7,13,19,25]), (array[5,9,13,17,21])) l(ix)
+     where (select bool_and(v_marc[k]) from unnest(l.ix) k);
+    continue when v_lin < 1;
+    select count(*) into v_hoje from public.bingo_premios
+     where user_id = r.user_id and pago > 0 and (em at time zone 'America/Sao_Paulo')::date = public.hoje_br();
+    if v_hoje < 3 then
+      perform public.creditar(r.user_id, 25, 'bingo', p_partida::text);
+      insert into public.bingo_premios (partida_id, user_id, linhas, pago) values (p_partida, r.user_id, v_lin, 25);
+    else
+      insert into public.bingo_premios (partida_id, user_id, linhas, pago) values (p_partida, r.user_id, v_lin, 0);
+    end if;
+  end loop;
+end $$;
+
+-- confirma o canto de outro nanico: marca em todas as cartelas e paga quem fechou linha
+create or replace function public.bingo_confirmar(p_canto bigint)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+  v_c   public.bingo_cantos;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos confirmam.' using errcode = 'P0001'; end if;
+  select * into v_c from public.bingo_cantos where id = p_canto for update;
+  if v_c.id is null then raise exception 'Esse canto não existe.' using errcode = 'P0001'; end if;
+  if v_c.confirmado_em is not null then return; end if;
+  if v_c.cantado_por = v_uid then
+    raise exception 'Quem cantou não confirma: espere outro nanico.' using errcode = 'P0001';
+  end if;
+  if not exists (select 1 from public.bingo_partidas where id = v_c.partida_id and fechada_em is null) then
+    raise exception 'Essa partida já foi fechada.' using errcode = 'P0001';
+  end if;
+  if not exists (select 1 from public.bingo_cartelas where partida_id = v_c.partida_id and user_id = v_uid) then
+    raise exception 'Pegue uma cartela para confirmar.' using errcode = 'P0001';
+  end if;
+  update public.bingo_cantos set confirmado_por = v_uid, confirmado_em = now() where id = p_canto;
+  perform public.bingo_pagar(v_c.partida_id);
+end $$;
+
+-- fecha a partida da sala (qualquer nanico; a próxima cartela abre outra)
+create or replace function public.bingo_fechar(p_sala text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos jogam o bingo.' using errcode = 'P0001'; end if;
+  update public.bingo_partidas set fechada_em = now() where sala = p_sala and fechada_em is null;
+end $$;
+
+revoke all on function public.bingo_valem(text) from public, anon, authenticated;
+revoke all on function public.bingo_sortear(text) from public, anon, authenticated;
+revoke all on function public.bingo_gravar(text, uuid[], text) from public, anon, authenticated;
+revoke all on function public.bingo_pagar(bigint) from public, anon, authenticated;
+revoke all on function public.bingo_abrir(text) from public, anon;
+revoke all on function public.bingo_nova_cartela(text) from public, anon;
+revoke all on function public.bingo_montada(text, uuid[]) from public, anon;
+revoke all on function public.bingo_cantar(bigint, uuid) from public, anon;
+revoke all on function public.bingo_confirmar(bigint) from public, anon;
+revoke all on function public.bingo_fechar(text) from public, anon;
+grant execute on function public.bingo_abrir(text) to authenticated;
+grant execute on function public.bingo_nova_cartela(text) to authenticated;
+grant execute on function public.bingo_montada(text, uuid[]) to authenticated;
+grant execute on function public.bingo_cantar(bigint, uuid) to authenticated;
+grant execute on function public.bingo_confirmar(bigint) to authenticated;
+grant execute on function public.bingo_fechar(text) to authenticated;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco e as 6 do bingo
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -1850,4 +2149,7 @@ select proname::text, 'loja' from pg_proc
 union all
 select proname::text, 'truco' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('truco_vez', 'truco_carregar', 'truco_salvar', 'truco_fechar', 'truco_premiar')
+union all
+select proname::text, 'bingo' from pg_proc
+ where pronamespace = 'public'::regnamespace and proname in ('bingo_abrir', 'bingo_nova_cartela', 'bingo_montada', 'bingo_cantar', 'bingo_confirmar', 'bingo_fechar')
 order by 2, 1;

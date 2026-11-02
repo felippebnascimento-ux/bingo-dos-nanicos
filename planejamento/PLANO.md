@@ -206,7 +206,7 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | 5 | `05-salas-lan-house.md` | `salas-lan-house` | 00, 3 | **feita**, PR aberto (em cima da `hall-v2`); SQL da seção 10 aplicado em 02/11/2026 |
 | 6 | `06-cassino-roleta.md` | `cassino-roleta` | 2 | **feita** e no oficial (SQL da seção 11 aplicado) |
 | 7 | `07-cassino-jogos.md` | `cassino-jogos` | 6 | **feita** e no oficial (SQL da seção 11b aplicado) |
-| 8 | `08-bingo-servidor.md` | `bingo-servidor` | 2, 5 | a fazer |
+| 8 | `08-bingo-servidor.md` | `bingo-servidor` | 2, 5 | feito (02/11/2026); SQL da seção 12a aplicado; regra "quais valem" em SQL conferida com `src/lib/bingo-valem.fixture.json`; falta fechar a partida sozinho quando a Riot diz que o jogo acabou (hoje é o botão "Fechar a partida") |
 | 9 | `09-truco-servidor.md` | `truco-servidor` | 2 | feito (02/11/2026); função `truco-mesa` publicada (cópia do engine gerada por `npm run sincronizar:truco`), SQL da seção 13 aplicado; o evento `truco` saiu do broadcast |
 | 10 | `10-apostas-ao-vivo.md` | `apostas-ao-vivo` | 6 | a fazer |
 | 11 | `11-loja-quarto.md` | `loja-quarto` | 2, 3 | feito (02/11/2026, antes da fila a pedido do João); SQL da seção 15 aplicado; acrescentei os consumíveis (cigarrinho, latinha, chimarrão, energético, caipirinha, charuto) com animação no Sítio |
