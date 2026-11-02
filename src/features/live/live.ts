@@ -3,7 +3,7 @@
  * `iniciarLive()` é chamado uma vez pela aba (LiveView); o resto do site usa
  * `assistir` (lista da sala) e `pararTudoAoVivo` (ao sair).
  */
-import { aoMudarPresenca, aoReceber, estaNaSala, limitePorPessoa, sidValido } from "@/lib/sala";
+import { aoMudarPresenca, aoReceber, naMinhaSala, limitePorPessoa, sidValido } from "@/lib/sala";
 import { MY_KEY } from "@/lib/store";
 import { camOnAnswer, camOnBye, camOnIce, camOnOffer, camOnWatch, closeAllCams, stopCam, syncCams } from "./camera";
 import { onRisco, pintar } from "./desenho";
@@ -47,7 +47,7 @@ function onRtc(m: Record<string, unknown>, tentativa = 0) {
   if (m.to !== MY_KEY || m.from === MY_KEY || !rtcOk(m)) return;
   if (!tentativa && !rtcLimite(m.from)) return;
   /* só aceita de quem está na sala; se a lista ainda não atualizou, espera um pouco antes de descartar */
-  if (!estaNaSala(m.from)) {
+  if (!naMinhaSala(m.from)) {
     if (tentativa < 4) setTimeout(() => onRtc(m, tentativa + 1), 750);
     return;
   }

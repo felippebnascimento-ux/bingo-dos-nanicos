@@ -9,7 +9,7 @@ import { VideoMudo } from "./Video";
 /** Faixa de câmeras embaixo da live (sempre visível quando alguém está com a câmera ligada). */
 export function FaixaCameras() {
   useLive((s) => s.v);
-  useApp((s) => s.online);
+  useApp((s) => s.onlineSala);
   useApp((s) => s.friends);
   const list = activeCams();
   return (
@@ -42,7 +42,7 @@ export function FaixaCameras() {
 /** Conteúdo da janela flutuante das câmeras (todas, ou só a de uma pessoa). */
 export function JanelaCameras() {
   useLive((s) => s.v);
-  useApp((s) => s.online);
+  useApp((s) => s.onlineSala);
   useApp((s) => s.friends);
   const win = CAM.win;
   if (!win || win.closed) return null;

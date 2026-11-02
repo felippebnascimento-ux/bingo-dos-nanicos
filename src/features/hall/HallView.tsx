@@ -50,6 +50,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
   const aoVivo = useApp((s) => !!s.myLiveSid || s.online.some((p) => p.live && p.key !== MY_KEY));
   const naMesa = useTruco((s) => s.mesas.reduce((n, m) => n + m.lugares.filter(Boolean).length, 0));
   const vb = useVB();
+  const temSalas = useApp((s) => s.salas.length > 0);
   const [destaque, setDestaque] = useState<Piso | null>(null);
   const [pisca, setPisca] = useState(0);
 
@@ -93,7 +94,8 @@ export function HallView({ hidden }: { hidden: boolean }) {
   };
 
   const abrir = (c: Clicavel["id"]) => {
-    if (c === "tv") setApp({ aba: "live" });
+    if (c === "salas") setApp({ salasAberto: true });
+    else if (c === "tv") setApp({ aba: "live" });
     else if (c === "truco") setApp({ aba: "truco" });
     else toast("A loja abre em breve");
   };
@@ -136,9 +138,9 @@ export function HallView({ hidden }: { hidden: boolean }) {
               abrir("tv");
             }}
           />
-          {CLICAVEIS.map((c) => {
+          {CLICAVEIS.filter((c) => c.id !== "salas" || temSalas).map((c) => {
             const pos = emPorcento(vb, c.rotulo.i, c.rotulo.j, c.rotulo.z);
-            const rotulo = c.id === "tv" ? "Ao vivo" : c.id === "truco" ? "Truco" : "Loja";
+            const rotulo = c.id === "tv" ? "Ao vivo" : c.id === "truco" ? "Truco" : c.id === "salas" ? "Salas" : "Loja";
             return (
               <button
                 key={c.id}

@@ -1,6 +1,8 @@
 /*
- * Sala em tempo real (canal privado do Supabase): presença de quem está no site,
- * mensagens entre navegadores (broadcast) e aviso de mudanças no banco.
+ * Sala em tempo real (canais privados do Supabase):
+ *   - lobby, canal "bingo-dos-nanicos": presença de todo mundo (com a sala de cada um), truco, hall
+ *     e mudanças no banco;
+ *   - canal da minha sala, "sala:<id>": a live, as câmeras, as reações e o desenho só de quem está nela.
  *
  * Tudo que chega daqui vem de outros navegadores: NÃO é confiável.
  * Cada handler confere tipo e tamanho dos dados, se o remetente está em `online`
@@ -14,14 +16,17 @@ import type { Presence } from "./tipos";
 import { bingoLines } from "./bingo";
 import { posValida } from "@/features/hall/hall";
 
-/** Eventos de broadcast da sala. Evento novo: acrescente aqui e escreva o handler com as conferências. */
+/** Eventos de broadcast. Evento novo: acrescente aqui e escreva o handler com as conferências. */
 export const EVENTOS = ["rtc", "reacao", "risco", "truco", "hall"] as const;
 export type Evento = (typeof EVENTOS)[number];
+/** Estes vão pelo canal da minha sala; o resto, pelo lobby. */
+const EVENTOS_SALA: readonly Evento[] = ["rtc", "reacao", "risco"];
 
 type Payload = Record<string, unknown> & { from?: unknown };
 type Handler = (payload: Payload) => void;
 
 let room: RealtimeChannel | null = null;
+let canalSala: RealtimeChannel | null = null;
 const handlers = new Map<Evento, Set<Handler>>();
 const presencaFns = new Set<() => void>();
 const conectarFns = new Set<() => void>();
@@ -56,14 +61,46 @@ export const aoMudarTabela = (
 
 /** Manda um evento para a sala. `from` (MY_KEY) é acrescentado sozinho. */
 export function enviar(ev: Evento, payload: Record<string, unknown>) {
-  room?.send({ type: "broadcast", event: ev, payload: { ...payload, from: MY_KEY } }).catch(() => {});
+  const ch = EVENTOS_SALA.includes(ev) ? canalSala : room;
+  ch?.send({ type: "broadcast", event: ev, payload: { ...payload, from: MY_KEY } }).catch(() => {});
 }
 
 export const salaConectada = () => !!room;
 
-/** O remetente está na sala agora? Mensagem de quem não está é descartada. */
+/** O remetente está no site agora? Mensagem de quem não está é descartada. */
 export const estaNaSala = (key: unknown) =>
   typeof key === "string" && getApp().online.some((p) => p.key === key);
+
+/** O remetente está na MINHA sala? (live, câmeras, reações e desenho só aceitam de quem está nela) */
+export const naMinhaSala = (key: unknown) =>
+  typeof key === "string" && !!getApp().minhaSala && getApp().onlineSala.some((p) => p.key === key);
+
+/** Quem está na minha sala, a partir da presença do lobby. */
+function atualizarOnlineSala() {
+  const s = getApp();
+  setApp({ onlineSala: s.minhaSala ? s.online.filter((p) => p.sala === s.minhaSala) : [] });
+}
+
+/** Troca o canal da sala (null = só o lobby). Quem chama encerra antes a tela e a câmera. */
+export function entrarCanalSala(id: string | null) {
+  if (canalSala) {
+    sb().removeChannel(canalSala).catch(() => {});
+    canalSala = null;
+  }
+  setApp({ minhaSala: id });
+  atualizarOnlineSala();
+  presencaFns.forEach((fn) => fn());
+  if (!id) return;
+  let ch = sb().channel("sala:" + id, { config: { broadcast: { self: false }, private: true } });
+  for (const ev of EVENTOS_SALA) {
+    ch = ch.on("broadcast", { event: ev }, ({ payload }) => {
+      if (!payload || typeof payload !== "object") return;
+      handlers.get(ev)?.forEach((fn) => fn(payload as Payload));
+    });
+  }
+  canalSala = ch;
+  ch.subscribe();
+}
 
 /**
  * Limite de mensagens por pessoa numa janela de tempo. Devolve false quando passou do limite.
@@ -101,16 +138,17 @@ export function cleanPresence(key: unknown, d: unknown): Presence | null {
     live: sidValido(o.live) ? o.live : null,
     cam: sidValido(o.cam) ? o.cam : null,
     pos: posValida(o.pos) ? { i: o.pos.i, j: o.pos.j } : null,
+    sala: typeof o.sala === "string" && getApp().salas.some((x) => x.id === o.sala) ? o.sala : null,
     at: Number(o.at) || 0,
   };
 }
 
-/** Atualiza a minha presença (nome, linhas de bingo, transmissão, câmera e piso do hall). */
+/** Atualiza a minha presença (nome, linhas de bingo, transmissão, câmera, piso do hall e sala). */
 export function trackMe() {
   const s = getApp();
   if (!room || !s.myName) return;
   room
-    .track({ name: s.myName, fid: s.myFid, lines: bingoLines(s.card), live: s.myLiveSid, cam: s.myCamSid, pos: s.hallPos, at: Date.now() })
+    .track({ name: s.myName, fid: s.myFid, lines: bingoLines(s.card), live: s.myLiveSid, cam: s.myCamSid, pos: s.hallPos, sala: s.minhaSala, at: Date.now() })
     .catch(() => {});
 }
 
@@ -127,9 +165,10 @@ export function joinRoom(onTabela: (tabela: string) => void) {
       .map(([key, arr]) => cleanPresence(key, Array.isArray(arr) ? arr[arr.length - 1] : null))
       .filter((p): p is Presence => !!p);
     setApp({ online });
+    atualizarOnlineSala();
     presencaFns.forEach((fn) => fn());
   });
-  for (const ev of EVENTOS) {
+  for (const ev of EVENTOS.filter((e) => !EVENTOS_SALA.includes(e))) {
     ch = ch.on("broadcast", { event: ev }, ({ payload }) => {
       if (!payload || typeof payload !== "object") return;
       handlers.get(ev)?.forEach((fn) => fn(payload as Payload));
@@ -161,7 +200,7 @@ export function joinRoom(onTabela: (tabela: string) => void) {
 
   /* a presença acompanha sozinha a cartela (linhas de bingo), a transmissão, a câmera e o piso do hall */
   useApp.subscribe((s, p) => {
-    if (s.myLiveSid !== p.myLiveSid || s.myCamSid !== p.myCamSid || s.myName !== p.myName || s.hallPos !== p.hallPos || bingoLines(s.card) !== bingoLines(p.card))
+    if (s.myLiveSid !== p.myLiveSid || s.myCamSid !== p.myCamSid || s.myName !== p.myName || s.hallPos !== p.hallPos || s.minhaSala !== p.minhaSala || bingoLines(s.card) !== bingoLines(p.card))
       trackMe();
   });
 }

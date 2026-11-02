@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Aba, Card, Friend, LineupSlot, Phrase, Presence, RailTab } from "./tipos";
+import type { Aba, Card, Friend, LineupSlot, Phrase, Presence, RailTab, Sala } from "./tipos";
 import { LANES } from "./dados/campeoes";
 
 /** Identifica esta aba do navegador na sala (muda a cada recarga). */
@@ -36,7 +36,16 @@ export type AppState = {
 
   /* deste navegador */
   card: Card | null;
+  /** todo mundo no site (presença do lobby, com a sala de cada um) */
   online: Presence[];
+  /** salas tipo lan house (vazio se o SQL das salas ainda não rodou) */
+  salas: Sala[];
+  /** a minha sala (null = no lobby) */
+  minhaSala: string | null;
+  /** quem está na MINHA sala (a live, as câmeras e as reações usam esta lista) */
+  onlineSala: Presence[];
+  /** janela de escolher a sala aberta */
+  salasAberto: boolean;
   /** id da minha transmissão de tela (vai na presença) */
   myLiveSid: string | null;
   /** id da minha câmera (vai na presença) */
@@ -83,6 +92,10 @@ export const useApp = create<AppState>()(() => ({
   lineup: lineupVazia(),
   card: null,
   online: [],
+  salas: [],
+  minhaSala: null,
+  onlineSala: [],
+  salasAberto: false,
   myLiveSid: null,
   myCamSid: null,
   hallPos: null,
@@ -120,3 +133,6 @@ export const friendDaPresenca = (
   friends.find((x) => x.name.trim().toLowerCase() === p.name.trim().toLowerCase());
 
 export const irPara = (aba: Aba) => setApp({ aba });
+
+/** A minha sala, se for uma sala de LoL (só elas têm escalação e bingo). */
+export const salaLol = (s = getApp()) => s.salas.find((x) => x.id === s.minhaSala && x.jogo === "lol") ?? null;

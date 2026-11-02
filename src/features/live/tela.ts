@@ -44,7 +44,7 @@ const liveCap = () => {
 const liveBudget = () => ({ 1080: 30e6, 1440: 40e6 })[getLive().res];
 
 /** Quem está transmitindo agora (menos eu), em ordem de nome. */
-export const liveStreams = (online: Presence[] = getApp().online) =>
+export const liveStreams = (online: Presence[] = getApp().onlineSala) =>
   online
     .filter((p) => p.live && p.key !== MY_KEY)
     .sort((a, b) => String(a.name).localeCompare(String(b.name), "pt-BR"));
@@ -261,7 +261,7 @@ export function closeAllWatches() {
 
 /** Abre a tela de quem está ao vivo; `asMain` = vira a tela principal, com som. */
 export function watch(key: string, asMain: boolean) {
-  const p = getApp().online.find((x) => x.key === key && x.live);
+  const p = getApp().onlineSala.find((x) => x.key === key && x.live);
   if (!p) return;
   let w = LIVE.watching.get(key);
   if (w && (w.sid !== p.live || w.state === "failed")) {
@@ -317,7 +317,7 @@ export function onBye(m: MsgRtc) {
 
 /** Presença mudou: fecha o que acabou, reconecta quem reiniciou a transmissão. */
 export function syncLive() {
-  const online = getApp().online;
+  const online = getApp().onlineSala;
   for (const [key, w] of [...LIVE.watching]) {
     const p = online.find((x) => x.key === key);
     if (!p || !p.live) {

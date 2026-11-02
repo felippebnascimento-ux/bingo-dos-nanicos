@@ -12,7 +12,7 @@ O modelo está em `planejamento/demo/rua.html` e `rua.png`. Abra os dois antes d
   - **bancos de praça**, por enquanto só de enfeite (sentar fica para uma atualização futura);
   - **céu claro de fundo** em volta do cenário, com nuvens e uma fileira de árvores ao longe, no lugar do fundo escuro do site. No tema escuro, vira um céu de fim de tarde, mais fechado, mas nunca preto;
   - de fundo, na rua, **cinco carros estacionados**: Honda Fit verde-escuro, Fiat Fastback branco, Jeep Renegade, Chevrolet Onix branco e Honda HR-V azul-escuro.
-- **Carros:** são desenhados por código, só com o formato (hatch, SUV, fastback, sedã) e a cor, **sem logotipos nem marcas desenhadas**. Passar o mouse mostra o nome do carro numa etiqueta.
+- **Carros:** são desenhados por código, só com o formato (hatch, SUV, fastback, sedã) e a cor, **sem logotipos, marcas nem etiqueta com o nome**. São só paisagem.
 - **Quem está onde:**
   - cada pessoa só vê, no cenário, os bonecos que estão no mesmo lugar (hall ou rua);
   - o "Na sala agora" (fase 14) continua com todo mundo, com a etiqueta "na rua" para quem está lá fora;
@@ -45,7 +45,7 @@ Siga as "Regras de toda sessão" de `planejamento/PLANO.md`. Leia:
 - **Cores:** variáveis `--hall-*` novas (`--hall-grama`, `--hall-asfalto`, `--hall-calcada`, `--hall-ceu-1`/`--hall-ceu-2`, as cores de cada carro…), com versão escura.
 - **Céu:** um degradê em CSS no fundo do palco (`.hall-palco.rua`), com as nuvens e as árvores distantes no próprio SVG, atrás de tudo.
 - **`HallView`:** mostra o cenário em que **você** está. A troca tem um fade curto, que não acontece com `prefers-reduced-motion`.
-- **Rótulos:** "Voltar ao Sítio" no portão e o nome do carro embaixo do mouse.
+- **Rótulos:** só "Voltar ao Sítio", no portão.
 - **Teclado:** as setas andam no cenário atual.
 
 ## Não faça

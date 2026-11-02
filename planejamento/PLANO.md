@@ -96,8 +96,13 @@ Decisões combinadas com o João em 01/11/2026. Vale para qualquer pessoa ou IA 
   - **Fundo claro** em volta do cômodo (creme quente), em vez do escuro do site.
 - **Rua do Sítio (fase 16):** modelo em `planejamento/demo/rua.html` e `.png`.
   - Sai-se andando pelo portão K-FOFO.
-  - Lá fora: grama, uma árvore grande à direita, bancos (só enfeite por enquanto), céu claro de fundo e cinco carros parados de fundo (Honda Fit verde-escuro, Fiat Fastback branco, Jeep Renegade, Chevrolet Onix branco e Honda HR-V azul-escuro). Os carros são desenhados só com forma e cor, sem logotipos.
+  - Lá fora: grama, uma árvore grande à direita, bancos (só enfeite por enquanto), céu claro de fundo e cinco carros parados de fundo (Honda Fit verde-escuro, Fiat Fastback branco, Jeep Renegade, Chevrolet Onix branco e Honda HR-V azul-escuro). Os carros são desenhados só com forma e cor, sem logotipos e sem nome.
   - A escolha das salas da fase 5 passa para a porta de vidro.
+- **Roleta do rodízio (fase 17):** modelo em `planejamento/demo/roleta.html` e `.png`.
+  - Quem está de fora entra na roleta, e ela sorteia quem entra no time.
+  - Quem já entrou fica de fora até todos jogarem na rodada.
+  - O banco sorteia, e todo mundo vê a roleta girar e parar no mesmo nome.
+  - A sugestão de quem sai é quem está há mais partidas seguidas.
 - **Celular e rede social nanica (fase 15):**
   - é um item da loja, por **3.000 moedas** (cerca de um mês de presença), para ser a meta grande da economia;
   - quem compra posta, curte e comenta na rede do grupo, com imagens no bucket `midias`;
@@ -174,7 +179,7 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | 2 | `02-carteira-moedas.md` | `carteira-moedas` | 0 | **feita**, PR aberto (em cima da `log-novidades`); SQL da seção 7 já aplicado no Supabase em 01/11/2026 |
 | 3 | `03-ficha-dados-reais.md` | `ficha-dados-reais` | 0 | **feita**, PR aberto (em cima da `carteira-moedas`); SQL da seção 8 aplicado e função `ficha-jogos` publicada em 01/11/2026; falta o segredo `STEAM_API_KEY` |
 | 4 | `04-atributos-votados.md` | `atributos-votados` | 3 | **feita**, PR aberto (em cima da `ficha-dados-reais`); SQL da seção 9 aplicado em 01/11/2026 |
-| 5 | `05-salas-lan-house.md` | `salas-lan-house` | 00, 3 | a fazer |
+| 5 | `05-salas-lan-house.md` | `salas-lan-house` | 00, 3 | **feita**, PR aberto (em cima da `hall-v2`); SQL da seção 10 aplicado em 02/11/2026 |
 | 6 | `06-cassino-roleta.md` | `cassino-roleta` | 2 | a fazer |
 | 7 | `07-cassino-jogos.md` | `cassino-jogos` | 6 | a fazer |
 | 8 | `08-bingo-servidor.md` | `bingo-servidor` | 2, 5 | a fazer |
@@ -186,3 +191,4 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | 14 | `14-hall-v2.md` | `hall-v2` | 00, 2, 3 | **feita**, PR aberto (em cima da `atributos-votados`); SQL da seção 7b aplicado em 02/11/2026 |
 | 15 | `15-celular-rede-nanica.md` | `celular-rede-nanica` | 11, 12 | a fazer |
 | 16 | `16-rua-do-sitio.md` | `rua-do-sitio` | 14 | a fazer |
+| 17 | `17-roleta-rodizio.md` | `roleta-rodizio` | 0 (se a 5 existir, a roleta é por sala) | a fazer (independente, pode entrar cedo) |

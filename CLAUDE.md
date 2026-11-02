@@ -72,7 +72,9 @@ src/
     live/              live.ts (liga tudo à sala), rtc.ts (WebRTC comum), tela.ts (transmissão), camera.ts,
                        reacoes.ts, desenho.ts, estado.ts (store + preferências), pip.ts;
                        telas: LiveView, Palco, Painel, Cameras, Video, Voos, Rosto, CamNaSala, CamBotoes
-    chat/              chat.ts (carregar, receber, enviar) e ChatPainel
+    chat/              chat.ts (um chat por sala: "geral" no lobby e o id da sala dentro dela) e ChatPainel
+    salas/             salas tipo lan house: trocar.ts (entrarSala: encerra tela e câmera, troca o canal,
+                       carrega escalação e chat) e Salas.tsx (janela das salas com cartões e chat geral; "Você está em")
     truco/             engine.ts (regras, puro e testado), valida.ts (confere mesa vinda da sala),
                        mesa.ts (mesa online: o navegador do anfitrião manda), TrucoView, Lobby, MesaTela, Carta
   lib/
@@ -89,7 +91,7 @@ src/
     tipos.ts           Friend, Phrase, Card, Presence…
     dados/             campeoes.ts (CHAMPS, LANES, LANE_CAMP), nanicos.ts (NAN_MAP, artOf, bonecoOf), changelog.ts,
                        novidades.ts (o que mostrar no Log depois de uma atualização; puro e testado)
-  styles/              CSS global, numerado: 01-base.css … 24-ficha.css
+  styles/              CSS global, numerado: 01-base.css … 25-salas.css (no celular, as abas ficam numa barra embaixo)
 public/arte/           artes dos nanicos (rosto e corpo), bonecos do hall, foto da turma, reações dos Picarétezzi
 planejamento/          PLANO.md (próximas fases e decisões), prompts/ (um por fase), demos e arte pronta
 supabase/
@@ -212,8 +214,9 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 | `friends` | os 14 nanicos (`name`, `user_id`, `username`, `opgg`, `steam`) | cada um só o próprio `opgg` e `steam` |
 | `phrases` | nanicadas (`text`, `friend_ids uuid[]`, `champions text[]`, `modo 'qualquer'\|'todos'`) | criar, editar e remover (com limite e histórico) |
 | `nanicadas_historico` | cópia de toda nanicada editada ou removida | ninguém pelo site (só o admin) |
-| `game` | escalação compartilhada (`players` = 5 rotas `{friendId, champion}`) | atualizar (formato conferido) |
-| `chat_messages` | chat da live (apaga sozinho após 30 dias) | enviar (o autor é sempre quem está logado) |
+| `game` | escalação por sala de LoL (`sala`, `players` = 5 rotas `{friendId, champion}`; a linha 1 é a da `lol-1`) | atualizar (formato conferido) |
+| `salas` | salas tipo lan house (`id`, `nome`, `jogo` lol/cs/outro, `discord`, `ordem`): `lol-1`, `lol-2`, `cs`, `resenha` | ninguém pelo site (só o admin cria) |
+| `chat_messages` | chat (`sala` = `'geral'` no lobby ou o id da sala; apaga sozinho após 30 dias) | enviar (o autor é sempre quem está logado; sala que não existe é recusada) |
 | `limites` | contador anti-spam | ninguém |
 | `carteiras` | saldo de moedas de cada um (`user_id`, `saldo >= 0`) e o último ganho (`ultimo_valor`, `ultimo_motivo`, `ultimo_em`) | ninguém grava; nanicos leem todas (ranking e ganhos no Sítio) |
 | `extrato` | cada entrada e saída de moedas (`valor`, `motivo`, `ref`) | ninguém grava; cada um lê o seu |
@@ -240,8 +243,11 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 - **Logins:** são criados só pelo admin, com `criar_login_nanico(nome, usuario, senha)` e `resetar_senha_nanico(usuario, senha)`. O e-mail interno é `usuario@nanicos.app`.
 - **SQL que ainda não rodou:** o site segue funcionando. `phrasesV2` e `opggOk` no estado dizem se as colunas novas existem.
 
-### Sala em tempo real (canal privado `bingo-dos-nanicos`)
-- **Presença:** `{name, fid, lines, live, cam, pos, at}`, conferida por `cleanPresence()`. `pos` é o piso do boneco no hall (`{i, j}`, conferido por `posValida`); só muda quando o boneco chega.
+### Sala em tempo real (canais privados)
+- **Lobby, canal `bingo-dos-nanicos`** (o mesmo de antes, então quem está com a versão antiga segue funcionando): presença de todo mundo, os eventos `truco` e `hall` e as mudanças do banco.
+- **Canal da minha sala, `sala:<id>`:** os eventos `rtc`, `reacao` e `risco`, só de quem está nela. O banco (RLS de `realtime.messages`) só aceita `sala:<id>` de uma sala que existe.
+- **Uma sala por vez:** `minhaSala` no store (null = lobby). Trocar de sala passa por `entrarSala()` (`features/salas/trocar.ts`). `onlineSala` é quem está na minha sala, e a live, as câmeras, as reações e o desenho usam essa lista e `naMinhaSala(from)` no lugar de `estaNaSala(from)`.
+- **Presença:** `{name, fid, lines, live, cam, pos, sala, at}`, conferida por `cleanPresence()` (`sala` só vale se estiver na lista de salas). `pos` é o piso do boneco no hall (`{i, j}`, conferido por `posValida`); só muda quando o boneco chega.
 - **Eventos de broadcast:**
   - `rtc`: sinalização da tela e da câmera;
   - `reacao`: emojis e fotos;
@@ -251,7 +257,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 - **Mudanças no banco:** chegam por `postgres_changes` em `friends`, `phrases`, `game`, `chat_messages` e `carteiras`. Os ganhos de moedas de todo mundo no Sítio vêm do tempo real de `carteiras` (gravado por `creditar()`), **nunca de broadcast**.
 
 ### Navegador (`localStorage`, só conveniência de cada pessoa)
-- **Chaves:** `rift-lineup`, `rift-card`, `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `truco-mesa`, `log-visto`, `fome-fechado`, `hall-pos` (último piso no hall) e `hall-sala-min` (lista "Na sala agora" do Sítio recolhida).
+- **Chaves:** `rift-lineup`, `rift-card`, `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `truco-mesa`, `log-visto`, `fome-fechado`, `hall-pos` (último piso no hall), `hall-sala-min` (lista "Na sala agora" do Sítio recolhida) e `sala-atual` (última sala; o site sempre abre no lobby).
 - **As do site antigo continuam iguais**, então ninguém perde a cartela na troca.
 - **`sessionStorage`:** `log-auto` (o Log de novidades já abriu sozinho nesta sessão do navegador).
 - Nada importante pode morar só aqui.

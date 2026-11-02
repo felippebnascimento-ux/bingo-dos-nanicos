@@ -5,7 +5,7 @@
  * tamanho da tela. Cada risco some ~3 s depois do último ponto.
  */
 import type { PointerEvent as ReactPointerEvent } from "react";
-import { enviar, estaNaSala, limitePorPessoa, salaConectada } from "@/lib/sala";
+import { enviar, naMinhaSala, limitePorPessoa, salaConectada } from "@/lib/sala";
 import { friendDaPresenca, getApp, MY_KEY } from "@/lib/store";
 import { local, newId } from "@/lib/util";
 import { getLive, setLive } from "./estado";
@@ -151,7 +151,7 @@ export function onRisco(m: Record<string, unknown>) {
     (p): p is Ponto =>
       Array.isArray(p) && p.length === 2 && p.every((n) => typeof n === "number" && n >= -0.1 && n <= 1.1),
   );
-  if (!estaNaSala(m.from)) return;
+  if (!naMinhaSala(m.from)) return;
   if (!limDeles(m.from)) return;
   if (m.alvo !== LIVE.main) return;
   const agora = Date.now(),
@@ -159,7 +159,7 @@ export function onRisco(m: Record<string, unknown>) {
   let r = D.riscos.get(k);
   if (!r) {
     if (D.riscos.size > 80) return;
-    const p = getApp().online.find((x) => x.key === m.from)!;
+    const p = getApp().onlineSala.find((x) => x.key === m.from)!;
     const f = friendDaPresenca(p);
     r = { alvo: m.alvo, c, w, pts: [], nome: f ? f.name : p.name, ult: agora };
     D.riscos.set(k, r);

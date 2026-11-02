@@ -18,17 +18,21 @@ export function goWatch(key: string) {
   if (ehCelular()) setTimeout(() => rolarAte(document.getElementById("stage")), 0);
 }
 
-/** Quem está na sala agora, comigo primeiro e o resto em ordem alfabética (usado aqui e no Sítio). */
-export function usePessoasNaSala(): Presence[] {
+/**
+ * Quem está na sala agora, comigo primeiro e o resto em ordem alfabética.
+ * Na barra lateral, só quem está na minha sala (ou no lobby, se eu estiver nele); no Sítio, `todos`.
+ */
+export function usePessoasNaSala(todos = false): Presence[] {
   const online = useApp((s) => s.online);
+  const minhaSala = useApp((s) => s.minhaSala);
   const myName = useApp((s) => s.myName);
   const myFid = useApp((s) => s.myFid);
   const card = useApp((s) => s.card);
   const myLiveSid = useApp((s) => s.myLiveSid);
   const myCamSid = useApp((s) => s.myCamSid);
-  const list: Presence[] = online.slice();
+  const list: Presence[] = todos ? online.slice() : online.filter((p) => p.sala === minhaSala || p.key === MY_KEY);
   if (myName && !list.some((p) => p.key === MY_KEY))
-    list.unshift({ key: MY_KEY, name: myName, fid: myFid, lines: bingoLines(card), live: myLiveSid, cam: myCamSid, pos: null, at: 0 });
+    list.unshift({ key: MY_KEY, name: myName, fid: myFid, lines: bingoLines(card), live: myLiveSid, cam: myCamSid, pos: null, sala: minhaSala, at: 0 });
   return list.sort((a, b) => (a.key === MY_KEY ? -1 : b.key === MY_KEY ? 1 : String(a.name).localeCompare(String(b.name), "pt-BR")));
 }
 

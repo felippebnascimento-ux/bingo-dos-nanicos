@@ -17,7 +17,7 @@ vi.mock("@/lib/sala", async () => {
 const { setApp } = await import("@/lib/store");
 const { iniciarHall, useHall } = await import("./bonecos");
 
-const pessoa = (key: string, name: string, pos: Presence["pos"]): Presence => ({ key, name, fid: null, lines: 0, live: null, cam: null, pos, at: 0 });
+const pessoa = (key: string, name: string, pos: Presence["pos"]): Presence => ({ key, name, fid: null, lines: 0, live: null, cam: null, pos, sala: null, at: 0 });
 const ondeEsta = (key: string) => {
   const b = useHall.getState().bonecos.find((x) => x.key === key);
   return b && { i: b.i, j: b.j };

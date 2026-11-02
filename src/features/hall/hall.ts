@@ -55,8 +55,10 @@ export const MOVEIS: readonly Movel[] = [
 ];
 
 /** Móveis que abrem alguma coisa, e o ponto (i, j, z) onde fica a placa com o nome. */
-export type Clicavel = { id: "tv" | "truco" | "loja"; rotulo: { i: number; j: number; z: number } };
+export type Clicavel = { id: "tv" | "truco" | "loja" | "salas"; rotulo: { i: number; j: number; z: number } };
 export const CLICAVEIS: readonly Clicavel[] = [
+  /* a porta de vidro leva às salas tipo lan house (fase 05) */
+  { id: "salas", rotulo: { i: 0, j: 6.5, z: 150 } },
   { id: "tv", rotulo: { i: 0, j: 2.05, z: 160 } },
   { id: "truco", rotulo: { i: 11.1, j: 4.3, z: 72 } },
   { id: "loja", rotulo: { i: 0.45, j: 9.9, z: 118 } },

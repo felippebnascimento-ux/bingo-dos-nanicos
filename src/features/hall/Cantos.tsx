@@ -16,7 +16,7 @@ import { useGanhos } from "./ganhos";
 /** "Na sala agora": tocar num nome abre a ficha; quem está ao vivo tem "Assistir". Dá para recolher. */
 export function NaSala() {
   const friends = useApp((s) => s.friends);
-  const lista = usePessoasNaSala();
+  const lista = usePessoasNaSala(true);
   const [min, setMin] = useState(() => local.get("hall-sala-min") === "1");
   const alternar = () => {
     setMin(!min);
