@@ -62,7 +62,7 @@ export function MoedasBloco() {
         <summary>Como ganhar moedas</summary>
         <p>
           Todo dia que você entra ganha um bônus, maior a cada dia seguido (até 60 por dia), com prêmio de +100 no 7º dia e +500 no 30º. Com o site
-          aberto, ganha 1 moeda a cada 6 minutos, sem limite por dia. No happy hour, das 22h à meia-noite, é 1 a cada 3 minutos. No sábado, das 18h às 23h, tem espetinho surpresa na churrasqueira do Nanico Hotel. Faltou um dia, a sequência recomeça.
+          aberto, ganha 1 moeda a cada 6 minutos, sem limite por dia. No happy hour, das 22h à meia-noite, é 1 a cada 3 minutos. No sábado, das 18h às 23h, tem espetinho surpresa na churrasqueira do K-FOFO. Faltou um dia, a sequência recomeça.
         </p>
       </details>
       {extrato.length > 0 && (

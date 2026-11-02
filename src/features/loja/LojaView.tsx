@@ -127,7 +127,7 @@ export function MochilaLista() {
           </span>
           {it.espaco === "consumivel" ? (
             <button type="button" className="btn sm" disabled={!!ocupado} onClick={() => void usar(it)}>
-              Usar no Nanico Hotel
+              Usar no K-FOFO
             </button>
           ) : it.espaco === "celular" ? (
             <button type="button" className="btn sm" onClick={abrirCelular}>
@@ -157,12 +157,12 @@ export function LojaView({ hidden }: { hidden: boolean }) {
   return (
     <section id="view-loja" className="inner" hidden={hidden}>
       <button type="button" className="linkish trofeus-voltar" onClick={() => setApp({ aba: "hall" })}>
-        <IcVoltar tam={14} /> Voltar ao Nanico Hotel
+        <IcVoltar tam={14} /> Voltar ao K-FOFO
       </button>
       <header className="hero loja-topo">
         <div>
           <h1>Loja</h1>
-          <p>Itens para o seu quarto, títulos, molduras e coisas para usar no Nanico Hotel.</p>
+          <p>Itens para o seu quarto, títulos, molduras e coisas para usar no K-FOFO.</p>
         </div>
         {saldo !== null && (
           <span className="loja-saldo">

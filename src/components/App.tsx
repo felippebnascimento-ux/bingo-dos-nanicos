@@ -37,7 +37,7 @@ export default function App() {
   useEffect(() => {
     boot();
   }, []);
-  /* a lista de membros some no Nanico Hotel (ele tem a própria lista no canto) */
+  /* a lista de membros some no K-FOFO (ele tem a própria lista no canto) */
   useEffect(() => {
     document.body.classList.toggle("sem-membros", aba === "hall");
   }, [aba]);

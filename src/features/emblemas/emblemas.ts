@@ -9,7 +9,7 @@ export type Emblema = { id: IdEmblema; nivel: 1 | 2 | 3; valor: number };
 
 type Def = { nome: string; metas: [number, number, number]; texto: (n: number) => string };
 export const EMBLEMAS: Readonly<Record<IdEmblema, Def>> = {
-  online: { nome: "Morador do Hotel", metas: [10, 50, 200], texto: (n) => `${n} h de site aberto` },
+  online: { nome: "Morador do K-FOFO", metas: [10, 50, 200], texto: (n) => `${n} h de site aberto` },
   sequencia: { nome: "Fiel", metas: [7, 30, 100], texto: (n) => `recorde de ${n} dias seguidos` },
   tela: { nome: "Transmissor", metas: [1, 10, 50], texto: (n) => `${n} h de tela compartilhada` },
   coroa: { nome: "Realeza", metas: [1, 24, 100], texto: (n) => `${n} h de coroa ou chapéu na cabeça` },
@@ -39,7 +39,7 @@ export function lerEmblemas(d: unknown): Emblema[] {
   return out.sort((a, b) => ordem.indexOf(a.id) - ordem.indexOf(b.id));
 }
 
-/** "Morador do Hotel · prata: 63 h de site aberto (ouro com 200)". */
+/** "Morador do K-FOFO · prata: 63 h de site aberto (ouro com 200)". */
 export function descreverEmblema(e: Emblema) {
   const d = EMBLEMAS[e.id];
   const prox = e.nivel < 3 ? ` (${NIVEL[e.nivel + 1]} com ${d.metas[e.nivel as 1 | 2]})` : "";

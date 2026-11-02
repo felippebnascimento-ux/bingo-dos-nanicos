@@ -49,12 +49,12 @@ src/
   app/                 layout.tsx (fontes, CSS na ordem certa), page.tsx (monta o App só no navegador), ícones
   components/
     App.tsx            casca do site em 3 colunas: menu, as 12 abas (sempre montadas, só escondidas; abre no Nanico
-                       Hotel, a aba `hall`) e a lista de membros; portas, toast. No Nanico Hotel somem os membros
+                       Hotel, a aba `hall`) e a lista de membros; portas, toast. No K-FOFO somem os membros
                        (`sem-membros`). O Chat fica fora do menu; no computador, Ao vivo e Perfil saem do menu (abrem
                        pelos canais de voz e pela linha "eu" embaixo) e continuam na barra de abas do celular.
                        A tela de Início (fase 28) saiu na v1.68, a pedido do Felippe
     shell/             Sidebar (parte de cima rola: marca, navegação em grupos `GRUPOS` que recolhem como as categorias
-                       de canais (Jogos: Nanico Hotel, Ao vivo só no celular, Truco, Cassino, Loja; Bingo: Nanicadas e
+                       de canais (Jogos: K-FOFO, Ao vivo só no celular, Truco, Cassino, Loja; Bingo: Nanicadas e
                        Jogar, sempre à vista; Turma: Nanicos, Mídias, Troféus, Perfil; recolhidos em `menu-min`; no
                        celular a barra de baixo fica sem títulos, sem Loja e sem Troféus; o Ranking fica só na carteira),
                        canais; embaixo, fixos: voz, câmera, eu com as
@@ -68,9 +68,9 @@ src/
     Fome.tsx           easter egg das 18h às 22h
   features/            uma pasta por aba / assunto
     moedas/            Moedas.tsx: selinho do saldo no menu (CarteiraChip) e quadro do Perfil (MoedasBloco);
-                       Ranking.tsx: painel da carteira (abas Ranking e Meu extrato), aberto pela carteira do Nanico Hotel
+                       Ranking.tsx: painel da carteira (abas Ranking e Meu extrato), aberto pela carteira do K-FOFO
                        (`abrirCarteira`), e `useMinhaPosicao()` ("3º lugar")
-    hall/              aba Nanico Hotel (antes "Sítio do Mitz"; no código continua `hall` e "Sítio" nos nomes), sala de 14×11: hall.ts (grade, móveis, CLICAVEIS, caminho, ordem
+    hall/              aba K-FOFO (antes "Sítio do Mitz" e, por um dia, "K-FOFO"; no código continua `hall` e "Sítio" nos nomes), sala de 14×11: hall.ts (grade, móveis, CLICAVEIS, caminho, ordem
                        de desenho; puro e testado), bonecos.ts (movimento, evento `hall`, presença), Sala.tsx
                        (cômodo em SVG com janelão e porta do banheiro, um móvel por camada, destaque do piso; a disposição segue a
                        planta do grupo de 02/11/2026: entrada pelo vão da frente, sem o portão K-FOFO), Boneco.tsx
@@ -82,7 +82,7 @@ src/
                        (chapéu de burro, coroa dourada e coroa de moedas na cabeça do boneco); eventos com
                        horário: eventosSala.ts (relógio, espetinho já pego, chama churrasco_pegar()) e EventosTela.tsx
                        (faixa em cima do cômodo, luz do happy hour, brasa e fumaça, placa "Pegar espetinho")
-    loja/              aba Loja (aba `loja`, no grupo Jogos do menu; abre também pela geladeira do Nanico Hotel):
+    loja/              aba Loja (aba `loja`, no grupo Jogos do menu; abre também pela geladeira do K-FOFO):
                        loja.ts (espaços, vitrine, equipados, podeComprar, balanço do boneco; puro e testado),
                        lojaDados.ts (vitrine, mochila, equipados de todos; comprar, equipar, usar; `useEquipados`),
                        consumoSala.ts (tempo real de `consumos`: o boneco fuma ou bebe em todas as telas),
@@ -116,7 +116,7 @@ src/
     ficha/             ficha do nanico: Ficha.tsx (janela), Quarto.tsx (quarto isométrico com o boneco),
                        AtributosFicha.tsx ("Segundo os nanicos": barras e votar, em ordem alfabética), estado.ts
                        (números da função ficha-jogos, usados no Perfil e nas Salas, e atributos), numeros.ts (conferir
-                       e escrever; puro e testado), NoSitio.tsx (bloco "No Nanico Hotel": dias seguidos, recorde,
+                       e escrever; puro e testado), NoSitio.tsx (bloco "No K-FOFO": dias seguidos, recorde,
                        tempo online; `ChamaNome` ao lado do nome com 3+ dias) e presenca.ts (presenca_de e
                        presenca_todos). A ficha mostra em "No jogo" só os links (op.gg, smurf, Steam e os do perfil):
                        sem elo, KDA, main e horas, e sem o placar da zoeira (decisão do Felippe, v1.68)

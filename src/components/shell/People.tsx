@@ -153,7 +153,7 @@ function useEstreita() {
 /**
  * Membros (barra da direita, como no Discord): os 14 nanicos, primeiro quem está online e depois
  * quem está offline. Com a câmera no círculo, AO VIVO (clica para assistir), BINGO e onde cada um está.
- * Some no Nanico Hotel (ele tem a própria lista no canto).
+ * Some no K-FOFO (ele tem a própria lista no canto).
  */
 export function Membros() {
   const friends = useApp((s) => s.friends);

@@ -61,7 +61,7 @@ export const MOTIVOS: Readonly<Record<string, string>> = {
   aposta: "Aposta",
   loja: "Loja",
   admin: "Ajuste do admin",
-  zoeira: "Zoeira no Nanico Hotel",
+  zoeira: "Zoeira no K-FOFO",
   trofeu: "Troféu da semana",
   churrasco: "Espetinho do churrasco",
   missao: "Missão do dia",

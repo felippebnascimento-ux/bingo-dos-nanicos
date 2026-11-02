@@ -78,7 +78,7 @@ body.side-min .nav-grupo{display:none}
 body.side-min .nav .nav-recolhido:not(.so-celular){display:flex}
 @media (max-width:860px){.nav .nav-grupo,.nav .so-computador{display:none}}
 
-/* nome curto na barra de baixo do celular ("Hotel"); a barra rola de lado se não couber */
+/* nome curto na barra de baixo do celular ("K-FOFO"); a barra rola de lado se não couber */
 .nav .t-curto{display:none}
 @media (max-width:860px){
   .nav .t-longo{display:none}

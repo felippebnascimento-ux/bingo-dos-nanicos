@@ -25,7 +25,7 @@ const GRUPOS: { id: string; titulo: string; itens: ItemMenu[] }[] = [
     id: "jogos",
     titulo: "Jogos",
     itens: [
-      { aba: "hall", t: "Nanico Hotel", curto: "Hotel", Ic: IcSitio },
+      { aba: "hall", t: "K-FOFO", curto: "K-FOFO", Ic: IcSitio },
       { aba: "live", t: "Ao vivo", Ic: IcAoVivo },
       { aba: "truco", t: "Truco", Ic: IcTruco },
       { aba: "cassino", t: "Cassino", Ic: IcCassino },
@@ -202,8 +202,8 @@ export function Sidebar() {
       <div className="side-rolagem">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="brand-mini" id="brandMini" src={MARCA} alt="Bingo dos Nanicos" onClick={() => setApp({ aba: "hall" })} />
-        {/* a marca leva de volta ao Nanico Hotel */}
-        <button type="button" className="brand" aria-label="Bingo dos Nanicos: voltar ao Nanico Hotel" onClick={() => setApp({ aba: "hall" })}>
+        {/* a marca leva de volta ao K-FOFO */}
+        <button type="button" className="brand" aria-label="Bingo dos Nanicos: voltar ao K-FOFO" onClick={() => setApp({ aba: "hall" })}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className="brand-img" src={CREW} alt="Os Nanicos" width={1100} height={681} decoding="async" />
           <div className="brand-txt">

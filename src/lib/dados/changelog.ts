@@ -231,11 +231,15 @@ export const CHANGELOG: EntradaLog[] = [
   },
   {
     data: "02/11/2026",
+    itens: ["O Nanico Hotel voltou a se chamar K-FOFO no menu e no resto do site"],
+  },
+  {
+    data: "02/11/2026",
     itens: [
-      "Tocar num boneco no Hotel (inclusive o seu) abre o cartão do perfil no canto, com emblemas e respeitos",
+      "Tocar num boneco no K-FOFO (inclusive o seu) abre o cartão do perfil no canto, com emblemas e respeitos",
       "Respeitos: cada nanico tem 3 por dia para dar aos outros",
       "Emblemas conquistados: tempo no site, sequência, tela compartilhada, coroa, respeitos, elo, CS, troféus, truco, bingo, cassino e nanicadas",
-      "Cigarrinho, latinha e os outros duram minutos, com um contador do seu efeito embaixo do Hotel",
+      "Cigarrinho, latinha e os outros duram minutos, com um contador do seu efeito embaixo do K-FOFO",
     ],
   },
 ];
