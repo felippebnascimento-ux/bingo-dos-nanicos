@@ -145,11 +145,13 @@ src/
                        refazer() com HMAC-SHA256; puro e testado), roda.ts (plano do giro da roleta animada: a bolinha termina no centro
                        da casa que o banco mandou; puro e testado), RodaRoleta.tsx (a roda em SVG, animação, sons e mudo),
                        MaiorMenor.tsx (o maior ou menor no feltro: placas de dígitos, lados, barra, ½ ×2 Máx),
+                       CacaNiquel.tsx (a máquina: gabinete, lâmpadas, 3 rolos que param no que o banco sorteou,
+                       alavanca, LED, giro automático ×10, rápido e a tabela de pagamentos; `comboSlot` em regras.ts),
                        Aviaozinho.tsx e aviao.ts (o Aviãozinho, no lugar do Limbo: céu, curva, avião, sacar,
                        mesa; contas do voo puras e testadas), RoletaMesa.tsx (o feltro: roda, painel do resultado, mesa de fichas deitada no computador e em pé no
                        celular, desfazer/limpar/dobrar/repetir; chama apostar_roleta_mesa),
-                       estado.ts (dados do banco), Jogos.tsx (limbo,
-                       maior ou menor e caça-níquel) e CassinoView (seletor de jogo, roleta, conferência, histórico)
+                       estado.ts (dados do banco), Jogos.tsx (o limbo antigo,
+                       fora da tela, e as fichas simples) e CassinoView (seletor de jogo, roleta, conferência, histórico)
     salas/             salas tipo lan house: trocar.ts (entrarSala: encerra tela e voz, mantém a câmera, troca o canal,
                        carrega escalação e chat; encerra a voz) e Salas.tsx (janela das salas com cartões e chat geral,
                        aberta pela porta do Sítio)
@@ -273,7 +275,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 - **Sempre** use as variáveis (`var(--accent)` etc.), nunca hex solto, para o tema claro e escuro continuarem funcionando. Alguns hex vieram do site antigo (`#fff` e `#FAF9F6` sobre fundo escuro, o palco e as câmeras em `07`, `13` e `19`, o feltro e as cartas do truco em `20`). Não acrescente outros; quem mexer naquele trecho troca por variável.
 - Novas cores só se entrarem na paleta acima.
 - **Exceção: o quarto da ficha** (`24-ficha.css`) segue a mesma regra do hall, com as variáveis `--quarto-*` e as classes `q-<nome>` (valem também nas prévias da loja, `.loja-previa` e `.mochila-previa`).
-- **Exceção: a roleta animada do Cassino** (`26-cassino.css`): madeira, ouro, prata e feltro usam as variáveis `--roleta-*` (em `.rr`, com tema escuro), e a mesa usa `--rm-*` e as fichas `--ficha-*` (em `.rm`); vermelho, preto e verde das casas são `--live`, `--accent-ink` e `--olive`.
+- **Exceção: a roleta animada do Cassino** (`26-cassino.css`): madeira, ouro, prata e feltro usam as variáveis `--roleta-*` (em `.rr`, com tema escuro), e a mesa usa `--rm-*` e as fichas `--ficha-*` (em `.rm`); o caça-níquel usa `--cn-*` (em `.cn`: vinho, lâmpadas, rolos, LED, alavanca, moedas); vermelho, preto e verde das casas são `--live`, `--accent-ink` e `--olive`.
 - **Exceção: as cartas do truco** (`20-truco.css`): o baralho desenhado usa as variáveis `--carta-*` (definidas em `.tc`; o papel fica claro também no tema escuro, só mais apagado) e as classes `cf-<nome>`.
 - **Exceção: os desenhos dos itens da loja** (`30-loja.css`): cigarro, latas, cuia, copo e fumaça usam as variáveis `--loja-*` (com tema escuro) e as classes `l-<nome>`.
 - **Exceção: o cômodo do hall** (`22-hall.css`). Ele é uma ilustração com cores próprias (tijolo, madeira, lajota), definidas como variáveis `--hall-*` em `.hall`, cada uma com uma versão mais escura no tema escuro. O SVG usa as classes `f-<nome>` (preenchimento) e `s-<nome>` (traço). A interface em volta (placas com nome, TV, botões) continua com a paleta acima.

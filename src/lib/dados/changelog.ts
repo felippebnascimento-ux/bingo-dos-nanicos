@@ -286,6 +286,10 @@ export const CHANGELOG: EntradaLog[] = [
     data: "02/11/2026",
     itens: ["CS na ficha: o Premier atual e o nível da GC de cada nanico, vindos do Leetify (também ao passar o mouse nos rostos da sala de CS)"],
   },
+  {
+    data: "02/11/2026",
+    itens: ["Caça-níquel de cara nova: máquina com lâmpadas, alavanca, rolos que param um de cada vez, painel de LED, giro automático ×10 e modo rápido"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

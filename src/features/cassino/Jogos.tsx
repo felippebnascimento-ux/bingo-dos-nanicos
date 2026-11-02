@@ -4,13 +4,12 @@
  * Quem sorteia é o banco (apostar_limbo, apostar_dado, apostar_slot); aqui só animamos até o resultado.
  */
 import { useEffect, useRef, useState } from "react";
-import { MARCA } from "@/lib/dados/nanicos";
 import { ajustarSaldo } from "@/lib/carteira";
 import { formatarMoedas } from "@/lib/moedas";
 import { sb } from "@/lib/supabase";
 import { toast } from "@/lib/toast";
 import { reduzMovimento } from "@/lib/util";
-import { carregar, msgDe, useCassino } from "./estado";
+import { carregar, msgDe } from "./estado";
 import { ALVO_MAX, ALVO_MIN, chanceLimbo, FICHAS } from "./regras";
 
 const pct = (c: number) => `${(c * 100).toFixed(c < 0.1 ? 2 : 1).replace(".", ",")}%`;
@@ -100,92 +99,6 @@ export function Limbo() {
         {jogando ? "Subindo…" : `Apostar ${ficha} moedas no ${virgula(valido ? alvo : 2)}×`}
       </button>
       <p className="hint">O número sobe a partir de 1×; se passar do seu alvo, você ganha alvo × aposta. A casa leva 3%.</p>
-    </div>
-  );
-}
-
-/** Um símbolo do caça-níquel: o rosto do nanico n1…n14 (a arte que já existe), a bola de bingo ou a moeda. */
-function Simbolo({ s }: { s: string }) {
-  if (s === "moeda")
-    return (
-      <span className="hall-moeda slot-moeda" role="img" aria-label="moeda">
-        $
-      </span>
-    );
-  const src = s === "bola" ? MARCA : `/arte/nanicos/${Number(s.slice(1))}-rosto.webp`;
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img className="slot-img" src={src} alt={s === "bola" ? "bola de bingo" : "rosto de um nanico"} />;
-}
-
-export function CacaNiquel() {
-  const { rolos, pagamentos } = useCassino();
-  const [ficha, setFicha] = useState(10);
-  const [rolo, setRolo] = useState<string[]>(["n1", "bola", "moeda"]);
-  const [parados, setParados] = useState(3);
-  const [jogando, setJogando] = useState(false);
-  const anim = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
-  /* quantos rolos já pararam (lido dentro do intervalo da animação) */
-  const paradosRef = useRef(3);
-  useEffect(() => () => clearInterval(anim.current), []);
-
-  const girar = async () => {
-    if (jogando || !rolos.length) return;
-    setJogando(true);
-    const simbolos = rolos.map((r) => r.simbolo);
-    const sorteio = (k: number) => simbolos[(Date.now() / 70 + k * 5) % simbolos.length | 0];
-    if (!reduzMovimento()) {
-      setParados(0);
-      anim.current = setInterval(() => setRolo((v) => v.map((x, k) => (k >= paradosRef.current ? sorteio(k) : x))), 80);
-    }
-    const r = await jogar<{ simbolos: string[]; pagou: number; saldo: number }>("apostar_slot", { p_aposta: ficha });
-    if (r) {
-      /* os rolos param um por um */
-      for (let k = 0; k < 3; k++) {
-        if (!reduzMovimento()) await new Promise((ok) => setTimeout(ok, 450));
-        paradosRef.current = k + 1;
-        setParados(k + 1);
-        setRolo((v) => v.map((x, i) => (i === k ? r.simbolos[k] : x)));
-      }
-      toast(r.pagou ? `Você ganhou ${formatarMoedas(r.pagou)} moedas!` : `Não foi dessa vez. Perdeu ${ficha} moedas`);
-      carregar();
-    }
-    clearInterval(anim.current);
-    paradosRef.current = 3;
-    setParados(3);
-    setJogando(false);
-  };
-
-  const LINHAS: [string, string][] = [
-    ["tres_bola", "3 bolas de bingo"],
-    ["tres_moeda", "3 moedas"],
-    ["tres_rosto", "3 rostos iguais"],
-    ["duas_moedas", "2 moedas"],
-    ["uma_moeda", "1 moeda"],
-  ];
-  return (
-    <div className="block jogo">
-      <div className="slot-rolos" aria-live="polite" aria-label={parados === 3 ? `Rolos: ${rolo.join(", ")}` : "Rolos girando"}>
-        {rolo.map((s, k) => (
-          <span key={k} className={"slot-rolo" + (k >= parados ? " girando" : "")}>
-            <Simbolo s={s} />
-          </span>
-        ))}
-      </div>
-      <Fichas ficha={ficha} setFicha={setFicha} />
-      <button type="button" className="btn jogo-btn" disabled={jogando || !rolos.length} onClick={girar}>
-        {jogando ? "Girando…" : `Girar: ${ficha} moedas`}
-      </button>
-      <details className="slot-tabela">
-        <summary>Tabela de pagamentos (a casa leva 8%)</summary>
-        <ul>
-          {LINHAS.map(([k, t]) => (
-            <li key={k}>
-              <span>{t}</span>
-              <b>{pagamentos[k] ? `${pagamentos[k]}× a aposta` : "…"}</b>
-            </li>
-          ))}
-        </ul>
-      </details>
     </div>
   );
 }

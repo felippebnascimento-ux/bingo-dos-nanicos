@@ -76,6 +76,9 @@ describe("limbo, maior ou menor e caça-níquel", async () => {
     expect(r.multSlot("n3", "n3", "n3", PAGAMENTOS)).toBe(80);
     expect(r.multSlot("moeda", "n1", "moeda", PAGAMENTOS)).toBe(25);
     expect(r.multSlot("n1", "n2", "moeda", PAGAMENTOS)).toBe(4);
+    expect(r.comboSlot("moeda", "moeda", "moeda")).toBe("tres_moeda");
+    expect(r.comboSlot("n2", "n2", "n2")).toBe("tres_rosto");
+    expect(r.comboSlot("n1", "n2", "bola")).toBeNull();
     expect(r.multSlot("n1", "n2", "n3", PAGAMENTOS)).toBe(0);
     expect(r.simboloSlot(0, ROLOS)).toBe("n1");
     expect(r.simboloSlot(0.9999, ROLOS)).toBe("moeda");

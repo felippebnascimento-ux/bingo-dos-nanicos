@@ -292,3 +292,76 @@
 .mm-caixas b.verde{color:var(--mm-verde)}
 .mm-aviso{margin:0;text-align:center;font:700 13px var(--body);color:var(--mm-vermelho)}
 @media (max-width:520px){.mm-caixas{grid-template-columns:1fr}}
+
+/* caça-níquel (CacaNiquel.tsx): no feltro da roleta (.rm); o gabinete, os rolos, o LED e a alavanca são ilustração (--cn-*) */
+.cn{--cn-vinho0:#7A1A2C; --cn-vinho1:#4A0B18; --cn-vinho2:#2C0610; --cn-rolo:#FFFDF6; --cn-sombra:#2A1A12; --cn-lampada:#FFE7A0; --cn-apagada:#6E5636;
+  --cn-led0:#050805; --cn-led:#39FF6A; --cn-bola:#E0303C; --cn-bola2:#8E1018; --cn-haste:#BFC4C8; --cn-moeda:#F6C744; --cn-moeda2:#B9861C; --cn-h:88px}
+.cn-grid{display:grid;gap:22px;align-items:start}
+@media (min-width:980px){.cn-grid{grid-template-columns:minmax(0,1fr) 270px}}
+.cn-maq-caixa{position:relative;justify-self:center;width:min(100%,520px);padding-right:44px}
+.cn-maq{position:relative;display:grid;gap:12px;padding:16px 18px 18px;border-radius:26px 26px 18px 18px;
+  background:linear-gradient(180deg,var(--cn-vinho0),var(--cn-vinho1) 55%,var(--cn-vinho2));
+  box-shadow:0 0 0 5px var(--rm-ouro),0 0 0 9px var(--rm-ouro2),0 0 0 11px color-mix(in srgb,var(--rm-ouro2) 50%,var(--ink)),0 22px 40px rgb(0 0 0 / .55),inset 0 2px 0 rgb(255 255 255 / .18)}
+.cn-letreiro{margin:0;padding:8px 10px;border-radius:12px;text-align:center;font:800 clamp(20px,5vw,30px)/1 var(--display);letter-spacing:.08em;
+  color:var(--rm-ouro);background:rgb(0 0 0 / .35);text-shadow:0 0 14px color-mix(in srgb,var(--rm-ouro) 70%,transparent),0 2px 0 var(--rm-ouro2);
+  box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--rm-ouro) 60%,transparent)}
+.cn-lampadas{display:flex;justify-content:space-between;padding:0 4px}
+.cn-lampadas i{width:11px;height:11px;border-radius:50%;background:var(--cn-apagada);animation:cn-pisca 1.2s steps(1) infinite;animation-delay:calc(var(--i) * -.6s)}
+.cn-lampadas.baixo i{animation-delay:calc(var(--i) * -.6s - .6s)}
+@keyframes cn-pisca{0%{background:var(--cn-lampada);box-shadow:0 0 10px var(--cn-lampada)}50%{background:var(--cn-apagada);box-shadow:none}}
+.cn.festa .cn-lampadas i{animation-duration:.24s}
+/* a janela com os 3 rolos brancos (sombra curva = cilindro) e a linha do meio em ouro */
+.cn-janela{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:10px;border-radius:14px;background:var(--ink);box-shadow:inset 0 0 0 3px var(--rm-ouro2),inset 0 6px 14px rgb(0 0 0 / .8)}
+.cn-rolo{position:relative;height:calc(var(--cn-h) * 3);overflow:hidden;border-radius:8px;background:var(--cn-rolo)}
+.cn-rolo::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--cn-sombra) 75%,transparent),transparent 30%,transparent 70%,color-mix(in srgb,var(--cn-sombra) 75%,transparent)),
+  linear-gradient(90deg,rgb(0 0 0 / .18),transparent 18%,transparent 82%,rgb(0 0 0 / .18))}
+.cn-tira{display:flex;flex-direction:column;transform:translateY(calc(var(--y) * -1 * var(--cn-h)))}
+.cn-tira.parando{transition:transform var(--dur) cubic-bezier(.12,.62,.3,1.1);filter:blur(1.2px)}
+.cn-tira.parado{filter:none;animation:cn-tranco .18s ease-out}
+.cn-tira.loop{animation:cn-gira .32s linear infinite;filter:blur(2.5px)}
+.cn.rapido .cn-tira.loop{animation-duration:.2s}
+@keyframes cn-gira{from{transform:translateY(0)}to{transform:translateY(-50%)}}
+@keyframes cn-tranco{40%{translate:0 5px}}
+.cn-janela.suspense .cn-rolo:last-child{box-shadow:0 0 0 3px var(--rm-ouro),0 0 22px var(--rm-ouro)}
+.cn-casa{flex:none;height:var(--cn-h);display:grid;place-items:center}
+.cn-img{width:calc(var(--cn-h) * .74);height:calc(var(--cn-h) * .74);border-radius:50%;object-fit:cover;box-shadow:0 2px 6px rgb(0 0 0 / .3)}
+.cn-moeda{width:calc(var(--cn-h) * .66);height:calc(var(--cn-h) * .66);border-radius:50%;display:grid;place-items:center;font:800 calc(var(--cn-h) * .34) var(--display);color:var(--cn-moeda2);
+  background:radial-gradient(circle at 35% 30%,var(--cn-lampada),var(--cn-moeda) 55%,var(--cn-moeda2));box-shadow:inset 0 0 0 3px var(--cn-moeda2),0 2px 6px rgb(0 0 0 / .3)}
+.cn-img.mini{width:24px;height:24px;box-shadow:none}
+.cn-moeda.mini{width:22px;height:22px;font-size:12px;box-shadow:inset 0 0 0 2px var(--cn-moeda2)}
+.cn-casa.vence > *{animation:cn-pulsa .5s ease-in-out 4}
+@keyframes cn-pulsa{50%{transform:scale(1.14)}}
+.cn-linha{position:absolute;left:4px;right:4px;top:50%;height:calc(var(--cn-h) + 6px);transform:translateY(-50%);border-radius:10px;pointer-events:none;
+  box-shadow:0 0 0 3px var(--rm-ouro),0 0 18px color-mix(in srgb,var(--rm-ouro) 70%,transparent),inset 0 0 18px color-mix(in srgb,var(--rm-ouro) 35%,transparent)}
+.cn-maq.ganhou .cn-linha{animation:cn-linha .3s steps(1) 8}
+@keyframes cn-linha{50%{box-shadow:0 0 0 4px var(--cn-lampada),0 0 34px var(--cn-lampada)}}
+/* o painel de LED */
+.cn-led{margin:0;padding:10px 12px;border-radius:10px;text-align:center;font:800 clamp(16px,4vw,22px) var(--display);letter-spacing:.12em;font-variant-numeric:tabular-nums;
+  color:color-mix(in srgb,var(--cn-led) 55%,transparent);background:var(--cn-led0);box-shadow:inset 0 0 0 2px rgb(255 255 255 / .08),inset 0 4px 12px rgb(0 0 0 / .8)}
+.cn-led.ganhou{color:var(--cn-led);text-shadow:0 0 12px var(--cn-led)}
+/* a alavanca do lado direito: haste prateada e bola vermelha */
+.cn-alavanca{position:absolute;right:-42px;top:22%;width:34px;height:150px;padding:0;border:0;background:none;cursor:pointer;transform-origin:50% 100%;transition:transform .2s}
+.cn-alavanca i{position:absolute;left:13px;top:22px;bottom:0;width:8px;border-radius:4px;background:linear-gradient(90deg,var(--cn-haste),var(--stamp-ink),var(--cn-haste));box-shadow:0 2px 4px rgb(0 0 0 / .4)}
+.cn-alavanca b{position:absolute;left:0;top:0;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--stamp-ink),var(--cn-bola) 40%,var(--cn-bola2));box-shadow:0 4px 8px rgb(0 0 0 / .5)}
+.cn-alavanca::after{content:"";position:absolute;left:4px;bottom:-8px;width:26px;height:16px;border-radius:6px;background:var(--rm-ouro2)}
+.cn-alavanca.puxa{transform:scaleY(-.55)}
+.cn-alavanca:disabled{cursor:default}
+.cn-alavanca:focus-visible{outline:3px solid var(--rm-ouro);outline-offset:4px;border-radius:8px}
+/* moedas saindo da máquina; no prêmio máximo, chuva de moedas */
+.cn-moedas{position:absolute;inset:0;pointer-events:none;overflow:visible}
+.cn-moedas i{position:absolute;left:var(--x);bottom:12%;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font:800 13px var(--display);font-style:normal;color:var(--cn-moeda2);
+  background:radial-gradient(circle at 35% 30%,var(--cn-lampada),var(--cn-moeda) 55%,var(--cn-moeda2));opacity:0;animation:cn-pula 1.1s ease-out var(--d) forwards}
+@keyframes cn-pula{0%{opacity:1;transform:translate(0,0)}60%{opacity:1;transform:translate(var(--dx),-170px) rotate(240deg)}100%{opacity:0;transform:translate(calc(var(--dx) * 1.4),-40px) rotate(400deg)}}
+.cn-moedas.chuva i{top:-30px;bottom:auto;animation:cn-chove 1.6s ease-in var(--d) 2 forwards}
+@keyframes cn-chove{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translate(var(--dx),520px) rotate(540deg)}}
+/* a tabela de pagamentos, com a linha do prêmio acesa */
+.cn-tabela{display:grid;gap:8px;align-content:start;padding:16px;border-radius:18px;background:rgb(0 0 0 / .25);border:1px solid color-mix(in srgb,var(--rm-creme) 15%,transparent)}
+.cn-tabela ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.cn-tabela li{display:grid;grid-template-columns:84px minmax(0,1fr) auto;align-items:center;gap:8px;padding:7px 10px;border-radius:10px;font:600 14px var(--body)}
+.cn-tabela li b{font:800 16px var(--display);color:var(--rm-ouro)}
+.cn-tabela li.on{background:color-mix(in srgb,var(--rm-ouro) 22%,transparent);box-shadow:inset 0 0 0 2px var(--rm-ouro);animation:cn-linha .3s steps(1) 6}
+.cn-sims{display:flex;gap:3px}
+.cn-auto.on,.cn-rapido.on{box-shadow:inset 0 0 0 2px var(--rm-ouro)}
+@media (max-width:520px){.cn{--cn-h:66px}.cn-maq-caixa{padding-right:34px}.cn-alavanca{right:-34px;width:28px;height:120px}.cn-alavanca b{width:28px;height:28px}.cn-alavanca i{left:10px}}
+@media (prefers-reduced-motion:reduce){.cn-lampadas i,.cn-tira.loop,.cn-tira.parado,.cn-casa.vence > *,.cn-maq.ganhou .cn-linha,.cn-tabela li.on{animation:none}.cn-tira.parando{transition:none}.cn-moedas{display:none}}

@@ -125,9 +125,15 @@ export type Pagamentos = Record<string, number>;
 
 /** Quanto paga uma combinação (a mesma regra de cassino_slot_mult). */
 export function multSlot(a: string, b: string, c: string, tabela: Pagamentos): number {
-  if (a === b && b === c) return tabela[a === "bola" ? "tres_bola" : a === "moeda" ? "tres_moeda" : "tres_rosto"] ?? 0;
+  const k = comboSlot(a, b, c);
+  return k ? (tabela[k] ?? 0) : 0;
+}
+
+/** Qual linha da tabela de pagamentos os 3 símbolos fazem (a mesma regra de cassino_slot_mult), ou null se nenhuma. */
+export function comboSlot(a: string, b: string, c: string): string | null {
+  if (a === b && b === c) return a === "bola" ? "tres_bola" : a === "moeda" ? "tres_moeda" : "tres_rosto";
   const moedas = [a, b, c].filter((s) => s === "moeda").length;
-  return moedas === 2 ? (tabela.duas_moedas ?? 0) : moedas === 1 ? (tabela.uma_moeda ?? 0) : 0;
+  return moedas === 2 ? "duas_moedas" : moedas === 1 ? "uma_moeda" : null;
 }
 
 /** O símbolo de um rolo para um número u: anda pelos pesos na ordem (a mesma regra de cassino_simbolo). */
