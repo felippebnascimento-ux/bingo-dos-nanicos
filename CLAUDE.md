@@ -46,8 +46,9 @@ npm start            # serve out/ localmente para testar o build
 src/
   app/                 layout.tsx (fontes, CSS na ordem certa), page.tsx (monta o App só no navegador), ícones
   components/
-    App.tsx            casca do site: barra lateral, as 8 abas (sempre montadas, só escondidas; abre no Início),
-                       portas, toast; no Início a barra lateral some (classe `no-inicio` no body)
+    App.tsx            casca do site: barra lateral, as 10 abas (sempre montadas, só escondidas; abre no Início),
+                       portas, toast; no Início a barra lateral some (classe `no-inicio` no body). O menu mostra 9:
+                       Troféus fica fora, e Jogar só aparece numa sala de LoL (ou sem a tabela de salas)
     shell/             Sidebar (marca, navegação, rodapé; Perfil com o rosto) e People ("Na sala agora";
                        `usePessoasNaSala()` também serve o Sítio, e a lista da barra some na aba Sítio)
     portas/            login, primeira senha, trocar senha, log de versões (modo "tudo" e modo "novidades")
@@ -82,11 +83,13 @@ src/
                        AtributosFicha.tsx ("Segundo os nanicos": barras e votar), estado.ts (números da função
                        ficha-jogos e atributos), numeros.ts (conferir e escrever; puro e testado), NoSitio.tsx
                        (bloco "No Sítio": dias seguidos, recorde, tempo online; `ChamaNome` ao lado do nome com 3+
-                       dias) e presenca.ts (presenca_de e presenca_todos)
+                       dias), presenca.ts (presenca_de e presenca_todos) e PlacarZoeira.tsx (chineladas e tortas
+                       dadas e levadas nos últimos 7 dias)
     perfil/            PerfilView, opgg.ts e steam.ts (limpar link, nick)
     live/              live.ts (liga tudo à sala), rtc.ts (WebRTC comum), tela.ts (transmissão), camera.ts,
                        reacoes.ts, desenho.ts, estado.ts (store + preferências), pip.ts;
-                       telas: LiveView, Palco, Painel, Cameras, Video, Voos, Rosto, CamNaSala, CamBotoes
+                       telas: LiveView, Palco, Painel, Cameras, Video, Voos, Rosto, CamNaSala, CamBotoes e
+                       CamadaReacoesMinha (reações que chegam na minha transmissão, fora das abas)
     chat/              chat.ts (um chat por sala: "geral" no lobby e o id da sala dentro dela) e ChatPainel
     cassino/           aba Cassino (moedas fictícias): regras.ts (roleta, limbo, dado, caça-níquel, conferir() e
                        refazer() com HMAC-SHA256; puro e testado), estado.ts (dados do banco), Jogos.tsx (limbo,
@@ -100,6 +103,7 @@ src/
     supabase.ts        cliente (sb()), q(), errMsg()
     store.ts           estado global (useApp, setApp, getApp, friendOf…)
     sala.ts            canal em tempo real: presença, broadcast, mudanças no banco
+    presenca.ts        umPorNanico(): junta as abas de um mesmo nanico num item só; puro e testado
     dados.ts           carregar e gravar no banco, login → sessão → sala, sair
     bingo.ts           regras da cartela (quais nanicadas valem, sorteio, marcar)
     moedas.ts          números das moedas (bônus, sequência, teto), só para mostrar; puro e testado
@@ -189,7 +193,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 
 ## 5. Padrão visual
 
-### Cores (variáveis em `src/styles/01-base.css`, com versão escura em `prefers-color-scheme` e `[data-theme]`)
+### Cores (variáveis em `src/styles/01-base.css`, com versão escura em `prefers-color-scheme` e `[data-theme]`; o `--live` fica em `06-portas.css`)
 | Nome | Hex | Uso |
 |---|---|---|
 | Oliva | `#4A4E44` | aba ativa, pano do truco (`--olive`) |
@@ -199,7 +203,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 | Ardósia | `#3E4C59` | carimbo da cartela (`--mint`) |
 | Vermelho | `#B4442F` / escuro `#E0705A` | AO VIVO, alertas, Truco! (`--live`) |
 
-- **Sempre** use as variáveis (`var(--accent)` etc.), nunca hex solto, para o tema claro e escuro continuarem funcionando.
+- **Sempre** use as variáveis (`var(--accent)` etc.), nunca hex solto, para o tema claro e escuro continuarem funcionando. Alguns hex vieram do site antigo (`#fff` e `#FAF9F6` sobre fundo escuro, o palco e as câmeras em `07`, `13` e `19`, o feltro e as cartas do truco em `20`). Não acrescente outros; quem mexer naquele trecho troca por variável.
 - Novas cores só se entrarem na paleta acima.
 - **Exceção: o quarto da ficha** (`24-ficha.css`) segue a mesma regra do hall, com as variáveis `--quarto-*` e as classes `q-<nome>`.
 - **Exceção: o cômodo do hall** (`22-hall.css`). Ele é uma ilustração com cores próprias (tijolo, madeira, lajota), definidas como variáveis `--hall-*` em `.hall`, cada uma com uma versão mais escura no tema escuro. O SVG usa as classes `f-<nome>` (preenchimento) e `s-<nome>` (traço). A interface em volta (placas com nome, TV, botões) continua com a paleta acima.
@@ -274,7 +278,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
   - **Votar:** `votar_atributos(nanico, notas)` exige as 6 notas inteiras de 0 a 10, não deixa votar em si mesmo e só deixa mudar o voto em alguém uma vez a cada 7 dias (o erro diz a data).
   - **`meu_voto(nanico)`** devolve só as notas de quem chamou e quando dá para mudar.
 - **Presença pública (seção 26 do `seguranca.sql`):** `bonus_diario` e `online_diario` continuam fechadas (cada um lê só as suas). O resumo de qualquer nanico sai por `presenca_de(nanico)` (sequência de hoje ou de ontem, recorde, minutos de hoje, 7 dias e total) e a chama da lista por `presenca_todos()` (só `seq` e `hoje_min`). Não calcule sequência no navegador.
-- **Gatilhos:** `chat_protecao`, `nanicada_protecao`, `nanicada_remocao`, `escalacao_protecao` e `perfil_protecao`.
+- **Gatilhos:** `chat_protecao`, `chat_sala_protecao` (recusa sala que não existe), `limpar_chat` (apaga o que tem mais de 30 dias), `nanicada_protecao`, `nanicada_remocao`, `escalacao_protecao` e `perfil_protecao`.
 - **"Já vi" do Log:** fica na conta, em `user_metadata.log_visto` (índice da entrada no `CHANGELOG`), gravado com `auth.updateUser({ data })` por `marcarLogVisto()` (`src/lib/dados.ts`). Vale em todos os aparelhos e não precisa de SQL. O `localStorage` (`log-visto`) fica de reserva.
 - **Logins:** são criados só pelo admin, com `criar_login_nanico(nome, usuario, senha)` e `resetar_senha_nanico(usuario, senha)`. O e-mail interno é `usuario@nanicos.app`.
 - **SQL que ainda não rodou:** o site segue funcionando. `phrasesV2` e `opggOk` no estado dizem se as colunas novas existem.
