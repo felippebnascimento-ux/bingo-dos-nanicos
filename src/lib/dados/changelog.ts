@@ -167,6 +167,13 @@ export const CHANGELOG: EntradaLog[] = [
       "A loja mostra quanto falta para o celular, com uma barra de progresso",
     ],
   },
+  {
+    data: "02/11/2026",
+    itens: [
+      "Apostas com moedas na partida ao vivo: escolha o time e divida o bolo com quem acertou",
+      "Nova missão do dia: apostar numa partida ao vivo",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

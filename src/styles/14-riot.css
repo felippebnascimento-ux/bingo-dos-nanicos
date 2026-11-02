@@ -26,3 +26,20 @@
 .riot-note{font-size:12px;color:var(--muted);margin:0}
 .ingame-pill{font:700 10px var(--display);letter-spacing:.04em;color:#fff;background:var(--olive);padding:3px 7px;border-radius:99px;white-space:nowrap;flex:none}
 
+
+/* apostas na partida (fase 10): os dois lados, o bolo, o valor e o retorno estimado */
+.aposta{display:grid;gap:10px;margin:0 0 12px;padding:12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--bg)}
+.aposta-prazo{margin:0;font-size:14px}
+.aposta-lados{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.aposta-lado{display:grid;gap:2px;justify-items:start;text-align:left;padding:10px;border:1.5px solid var(--line);border-left-width:5px;border-radius:var(--r-md);background:var(--surface);color:var(--ink);font:inherit;cursor:pointer;min-width:0}
+.aposta-lado.l100{border-left-color:var(--mint)}
+.aposta-lado.l200{border-left-color:var(--live)}
+.aposta-lado.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.aposta-lado:disabled{cursor:default}
+.aposta-lado:disabled:not(.on){opacity:.6}
+.aposta-lado b{font:700 14px var(--display)}
+.aposta-lado small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--muted)}
+.aposta-lado span{font-size:13px}
+.seg.aposta-valores{display:flex;flex-wrap:wrap;width:auto;justify-self:start;margin:0}
+.seg.aposta-valores button{min-width:44px}
+.aposta-fim{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}

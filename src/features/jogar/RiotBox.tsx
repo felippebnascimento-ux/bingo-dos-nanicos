@@ -1,9 +1,12 @@
 "use client";
-/* Caixa "EM PARTIDA" da aba Jogar: os dois times, bans, tempo de jogo e o botão de usar na escalação. */
+/* Caixa "EM PARTIDA" da aba Jogar: os dois times, bans, tempo de jogo, o botão de usar na escalação e as apostas. */
 import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
+import { useCarteira } from "@/lib/carteira";
 import { friendOf, useApp } from "@/lib/store";
 import { mmss } from "@/lib/util";
+import { APOSTA_MAX, APOSTA_MIN, nomeLado, retornoEstimado, type Lado } from "./apostas";
+import { apostaAberta, apostar, useApostas } from "./apostasDados";
 import { riotNossoTime, type RiotJogo, type RiotParticipante, type RiotPartida } from "./partida";
 import { riotPreencher, setRiotAuto, useRelogio, useRiot } from "./riot";
 
@@ -54,7 +57,119 @@ function RgTempo({ j, em }: { j: RiotJogo; em: number }) {
   return <span className="rg-time">{mmss(ini > 0 ? (agora - ini) / 1000 : (Number(j.duracao) || 0) + (agora - em) / 1000)}</span>;
 }
 
+const VALORES = [5, 10, 25, 50, 100];
+
+/** Painel "Apostar": escolhe o time e o valor, mostra o bolo de cada lado, o retorno estimado e o prazo. */
+function Apostas({ g, aberto, times }: { g: RiotPartida; aberto: boolean; times: number[] }) {
+  const game = Number(g.id);
+  const m = useApostas((s) => s.mercados[game]);
+  const minha = useApostas((s) => s.minhas[game]);
+  const enviando = useApostas((s) => s.enviando);
+  const saldo = useCarteira((s) => s.carteira?.saldo ?? null);
+  const friends = useApp((s) => s.friends);
+  const myFid = useApp((s) => s.myFid);
+  const agora = useRelogio();
+  const [lado, setLado] = useState<Lado | null>(null);
+  const [valor, setValor] = useState(25);
+  if (!m || !aberto) return null;
+  /* quem está jogando só aposta no próprio time */
+  const meu = (myFid && (m.nanicos[myFid] ?? g.jogo.participantes.find((p) => p && p.fid === myFid)?.time)) || null;
+  const nomes = (l: Lado) =>
+    friends.filter((f) => g.fids.has(f.id) && g.jogo.participantes.some((p) => p && p.fid === f.id && p.time === l)).map((f) => f.name);
+  const bolo = (l: Lado) => (l === 100 ? m.bolo100 : m.bolo200);
+  const falta = Math.max(0, (m.fechaEm - agora) / 1000);
+  const pode = apostaAberta(m, agora);
+  return (
+    <div className="aposta">
+      <p className="aposta-prazo">
+        {minha ? (
+          <>
+            Você apostou <b>{minha.valor}</b> no time {nomeLado(minha.lado)}. Se vencer, volta cerca de{" "}
+            <b>{retornoEstimado(minha.valor, minha.lado, m.bolo100, m.bolo200, true)}</b>.
+          </>
+        ) : pode ? (
+          <>
+            As apostas fecham em <b className="rg-time">{mmss(falta)}</b>. A casa leva 5%.
+          </>
+        ) : (
+          "As apostas desta partida fecharam."
+        )}
+      </p>
+      <div className="aposta-lados" role={minha || !pode ? undefined : "radiogroup"} aria-label="Time da aposta">
+        {([100, 200] as const).filter((l) => times.includes(l)).map((l) => {
+          const n = nomes(l);
+          const bloqueado = !!meu && meu !== l;
+          const escolhido = minha ? minha.lado === l : lado === l;
+          return (
+            <button
+              key={l}
+              type="button"
+              role={minha || !pode ? undefined : "radio"}
+              aria-checked={minha || !pode ? undefined : lado === l}
+              className={"aposta-lado l" + l + (escolhido ? " on" : "")}
+              disabled={!!minha || !pode || bloqueado}
+              onClick={() => setLado(l)}
+            >
+              <b>Time {nomeLado(l)}</b>
+              <small>{n.length ? n.join(", ") : "sem nanicos"}</small>
+              <span>
+                bolo <b>{bolo(l)}</b>
+              </span>
+              {bloqueado && <small>você joga do outro lado</small>}
+            </button>
+          );
+        })}
+      </div>
+      {!minha && pode && (
+        <>
+          <div className="seg aposta-valores" role="radiogroup" aria-label="Valor da aposta">
+            {VALORES.map((v) => (
+              <button key={v} type="button" role="radio" aria-checked={valor === v} className={valor === v ? "on" : undefined} onClick={() => setValor(v)}>
+                {v}
+              </button>
+            ))}
+          </div>
+          <div className="aposta-fim">
+            <span className="hint">
+              {lado ? (
+                <>
+                  Se o time {nomeLado(lado)} vencer, volta cerca de <b>{retornoEstimado(valor, lado, m.bolo100, m.bolo200)}</b>.
+                </>
+              ) : (
+                "Escolha um time."
+              )}
+            </span>
+            <button
+              type="button"
+              className="btn sm"
+              disabled={!lado || enviando || valor < APOSTA_MIN || valor > APOSTA_MAX || (saldo !== null && saldo < valor)}
+              onClick={() => lado && void apostar(game, lado, valor)}
+            >
+              {saldo !== null && saldo < valor ? "Sem moedas" : `Apostar ${valor}`}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Botão "Apostar" do cabeçalho: só aparece com o mercado aberto ou com a minha aposta feita. */
+function BotaoApostar({ g, aberto, onClick }: { g: RiotPartida; aberto: boolean; onClick: () => void }) {
+  const game = Number(g.id);
+  const m = useApostas((s) => s.mercados[game]);
+  const minha = useApostas((s) => !!s.minhas[game]);
+  const agora = useRelogio();
+  if (!m || (!minha && !apostaAberta(m, agora))) return null;
+  return (
+    <button className={"btn sm" + (aberto ? "" : " soft")} type="button" aria-expanded={aberto} onClick={onClick}>
+      {minha ? "Minha aposta" : "Apostar"}
+    </button>
+  );
+}
+
 function Partida({ g }: { g: RiotPartida }) {
+  const [apostas, setApostas] = useState(false);
   const friends = useApp((s) => s.friends);
   const auto = useRiot((s) => s.auto);
   const j = g.jogo,
@@ -95,7 +210,9 @@ function Partida({ g }: { g: RiotPartida }) {
         <button className="btn sm" type="button" onClick={() => riotPreencher(g, true)}>
           Usar na escalação
         </button>
+        <BotaoApostar g={g} aberto={apostas} onClick={() => setApostas((v) => !v)} />
       </div>
+      <Apostas g={g} aberto={apostas} times={times} />
       <div className="rg-teams">
         {times.map((t) => (
           <div key={t} className="rg-team">

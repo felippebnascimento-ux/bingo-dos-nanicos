@@ -2187,6 +2187,9 @@ begin
   elsif p_missao = 'roleta' then
     select count(*) into v_n from public.rodizio
      where sorteado_por = p_user and (girado_em at time zone 'America/Sao_Paulo')::date = p_dia;
+  elsif p_missao = 'aposta' then
+    select count(*) into v_n from public.apostas
+     where user_id = p_user and (em at time zone 'America/Sao_Paulo')::date = p_dia;
   end if;
   return coalesce(v_n, 0);
 end $$;
@@ -2503,7 +2506,180 @@ begin
   begin alter publication supabase_realtime add table public.rede_comentarios; exception when duplicate_object then null; end;
 end $$;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links e as 3 da rede nanica
+-- 14) apostas na partida ao vivo: nanico contra nanico, no time azul (100) ou vermelho (200) -----------------------
+-- A função riot-ao-vivo abre o mercado quando vê a partida (fecha 5 min depois do início) e, quando a partida some,
+-- pergunta à Riot quem venceu e chama apostas_liquidar. O bolo dos dois lados vai para quem acertou, proporcional à
+-- aposta (pari-mútuo), e a casa leva 5%. Remake, partida sem resultado ou ninguém do outro lado devolve tudo.
+-- Quem está jogando só aposta no próprio time. Ninguém escreve direto nas tabelas: só apostar_partida().
+create table if not exists public.apostas_mercados (
+  game_id    bigint primary key check (game_id > 0),
+  plataforma text not null default '' check (plataforma ~ '^[A-Za-z0-9]{0,8}$'),
+  -- nanicos na partida (friend id → time), para quem joga só apostar no próprio lado
+  nanicos    jsonb not null default '{}'::jsonb,
+  aberto_em  timestamptz not null default now(),
+  fecha_em   timestamptz not null,
+  estado     text not null default 'aberto' check (estado in ('aberto', 'fechado', 'pago', 'devolvido')),
+  vencedor   int check (vencedor in (100, 200)),
+  fim        text check (fim in ('remake', 'sem_contra', 'sem_resultado')),
+  bolo_100   int not null default 0 check (bolo_100 >= 0),
+  bolo_200   int not null default 0 check (bolo_200 >= 0),
+  casa       int not null default 0 check (casa >= 0),
+  liquidado_em timestamptz
+);
+create table if not exists public.apostas (
+  id      bigint generated always as identity primary key,
+  game_id bigint not null references public.apostas_mercados(game_id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  lado    int not null check (lado in (100, 200)),
+  valor   int not null check (valor between 5 and 100),
+  pago    int check (pago >= 0),
+  em      timestamptz not null default now(),
+  unique (game_id, user_id)
+);
+create index if not exists apostas_user on public.apostas (user_id, em desc);
+alter table public.apostas_mercados enable row level security;
+alter table public.apostas          enable row level security;
+revoke all on public.apostas_mercados, public.apostas from public, anon, authenticated;
+grant select on public.apostas_mercados, public.apostas to authenticated;
+drop policy if exists apostas_mercados_ler on public.apostas_mercados;
+create policy apostas_mercados_ler on public.apostas_mercados for select to authenticated using (public.eh_nanico());
+drop policy if exists apostas_minhas on public.apostas;
+create policy apostas_minhas on public.apostas for select to authenticated using (user_id = auth.uid());
+
+-- abre o mercado da partida (ou atualiza quem está nela e o início). Só a função riot-ao-vivo chama.
+create or replace function public.apostas_abrir(p_game bigint, p_plataforma text, p_inicio_ms bigint, p_nanicos jsonb)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  v_nan jsonb := '{}'::jsonb;
+  k text;
+begin
+  if p_game is null or p_game <= 0 then return; end if;
+  -- só friend ids conhecidos e times 100/200
+  for k in select jsonb_object_keys(case when jsonb_typeof(p_nanicos) = 'object' then p_nanicos else '{}'::jsonb end) loop
+    if exists (select 1 from public.friends where id::text = k) and (p_nanicos->>k) in ('100', '200') then
+      v_nan := v_nan || jsonb_build_object(k, (p_nanicos->>k)::int);
+    end if;
+  end loop;
+  insert into public.apostas_mercados (game_id, plataforma, nanicos, fecha_em)
+  values (p_game, left(coalesce(p_plataforma, ''), 8), v_nan,
+          case when p_inicio_ms > 0 then to_timestamp(p_inicio_ms / 1000.0) else now() end + interval '5 minutes')
+  on conflict (game_id) do update
+     set nanicos  = apostas_mercados.nanicos || excluded.nanicos,
+         -- na tela de carregamento a Riot ainda não dá o início: acerta o prazo quando ele aparece
+         fecha_em = case when p_inicio_ms > 0 then to_timestamp(p_inicio_ms / 1000.0) + interval '5 minutes' else apostas_mercados.fecha_em end
+   where apostas_mercados.estado = 'aberto';
+end $$;
+
+-- apostar num lado da partida: 5 a 100 moedas, uma aposta por partida, só até 5 min depois do início
+create or replace function public.apostar_partida(p_game bigint, p_lado int, p_valor int)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  v_uid  uuid := auth.uid();
+  v_fid  uuid;
+  m      public.apostas_mercados%rowtype;
+  v_meu  int;
+  v_saldo int;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos apostam.' using errcode = 'P0001'; end if;
+  if p_lado not in (100, 200) then raise exception 'Escolha o time azul ou o vermelho.' using errcode = 'P0001'; end if;
+  if p_valor is null or p_valor < 5 or p_valor > 100 then raise exception 'Aposte de 5 a 100 moedas.' using errcode = 'P0001'; end if;
+  select * into m from public.apostas_mercados where game_id = p_game for update;
+  if not found then raise exception 'Essa partida não tem apostas.' using errcode = 'P0001'; end if;
+  if m.estado <> 'aberto' or now() >= m.fecha_em then
+    raise exception 'As apostas desta partida já fecharam.' using errcode = 'P0001';
+  end if;
+  if exists (select 1 from public.apostas where game_id = p_game and user_id = v_uid) then
+    raise exception 'Você já apostou nesta partida.' using errcode = 'P0001';
+  end if;
+  -- quem está jogando só aposta no próprio time (pelo mercado ou pelo que a Riot mostrou agora)
+  select id into v_fid from public.friends where user_id = v_uid limit 1;
+  v_meu := (m.nanicos->>v_fid::text)::int;
+  if v_meu is null then
+    select (p->>'time')::int into v_meu from public.riot_ao_vivo r, jsonb_array_elements(r.jogo->'participantes') p
+     where r.game_id = p_game and p->>'fid' = v_fid::text limit 1;
+  end if;
+  if v_meu is not null and v_meu <> p_lado then
+    raise exception 'Você está nessa partida: só pode apostar no seu time.' using errcode = 'P0001';
+  end if;
+  v_saldo := public.creditar(v_uid, -p_valor, 'aposta', p_game::text);
+  insert into public.apostas (game_id, user_id, lado, valor) values (p_game, v_uid, p_lado, p_valor);
+  update public.apostas_mercados
+     set bolo_100 = bolo_100 + case when p_lado = 100 then p_valor else 0 end,
+         bolo_200 = bolo_200 + case when p_lado = 200 then p_valor else 0 end
+   where game_id = p_game returning * into m;
+  return jsonb_build_object('saldo', v_saldo, 'bolo_100', m.bolo_100, 'bolo_200', m.bolo_200);
+end $$;
+
+-- paga a partida (interna: só a função riot-ao-vivo). Remake, sem resultado ou um lado vazio devolve tudo.
+-- Cada acertador recebe floor((total − casa) × aposta / bolo do vencedor); o que sobra do arredondamento fica na casa.
+-- Rodar de novo não paga de novo: o mercado já está 'pago' ou 'devolvido'.
+create or replace function public.apostas_liquidar(p_game bigint, p_vencedor int, p_remake boolean, p_fim text default null)
+returns text language plpgsql security definer set search_path = public as $$
+declare
+  m       public.apostas_mercados%rowtype;
+  a       record;
+  v_total int;
+  v_casa  int;
+  v_bolo  int;
+  v_pago  int;
+  v_soma  int := 0;
+begin
+  select * into m from public.apostas_mercados where game_id = p_game for update;
+  if not found then return 'sem_mercado'; end if;
+  if m.estado in ('pago', 'devolvido') then return m.estado; end if;
+  v_total := m.bolo_100 + m.bolo_200;
+  if coalesce(p_remake, false) or p_vencedor is null or p_vencedor not in (100, 200) or m.bolo_100 = 0 or m.bolo_200 = 0 then
+    for a in select id, user_id, valor from public.apostas where game_id = p_game order by id loop
+      perform public.creditar(a.user_id, a.valor, 'aposta', p_game || ':devolvida');
+      update public.apostas set pago = a.valor where id = a.id;
+    end loop;
+    update public.apostas_mercados
+       set estado = 'devolvido', liquidado_em = now(), vencedor = case when p_vencedor in (100, 200) and not coalesce(p_remake, false) then p_vencedor end,
+           fim = case when coalesce(p_remake, false) then coalesce(p_fim, 'remake')
+                      when p_vencedor is null or p_vencedor not in (100, 200) then 'sem_resultado'
+                      else 'sem_contra' end
+     where game_id = p_game;
+    return 'devolvido';
+  end if;
+  v_casa := floor(v_total * 0.05);
+  v_bolo := case when p_vencedor = 100 then m.bolo_100 else m.bolo_200 end;
+  for a in select id, user_id, lado, valor from public.apostas where game_id = p_game order by id loop
+    if a.lado = p_vencedor then
+      v_pago := floor((v_total - v_casa)::numeric * a.valor / v_bolo);
+      if v_pago > 0 then perform public.creditar(a.user_id, v_pago, 'aposta', p_game || ':premio'); end if;
+    else
+      v_pago := 0;
+    end if;
+    v_soma := v_soma + v_pago;
+    update public.apostas set pago = v_pago where id = a.id;
+  end loop;
+  update public.apostas_mercados set estado = 'pago', vencedor = p_vencedor, casa = v_total - v_soma, liquidado_em = now()
+   where game_id = p_game;
+  return 'pago';
+end $$;
+
+revoke all on function public.apostas_abrir(bigint, text, bigint, jsonb) from public, anon, authenticated;
+revoke all on function public.apostas_liquidar(bigint, int, boolean, text) from public, anon, authenticated;
+revoke all on function public.apostar_partida(bigint, int, int) from public, anon;
+grant execute on function public.apostar_partida(bigint, int, int) to authenticated;
+do $$ begin
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    grant all on public.apostas_mercados, public.apostas to service_role;
+    grant execute on function public.apostas_abrir(bigint, text, bigint, jsonb) to service_role;
+    grant execute on function public.apostas_liquidar(bigint, int, boolean, text) to service_role;
+  end if;
+end $$;
+
+-- a missão "Aposte numa partida ao vivo" passa a valer
+update public.missoes_def set fase_ok = true where id = 'aposta' and not fase_ok;
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.apostas_mercados; exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.apostas;          exception when duplicate_object then null; end;
+end $$;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica e as 3 funções das apostas
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -2553,4 +2729,7 @@ select tablename::text, 'midias' from pg_tables
 union all
 select tablename::text, 'rede' from pg_tables
  where schemaname = 'public' and tablename in ('rede_posts', 'rede_curtidas', 'rede_comentarios')
+union all
+select proname::text, 'apostas' from pg_proc
+ where pronamespace = 'public'::regnamespace and proname in ('apostas_abrir', 'apostar_partida', 'apostas_liquidar')
 order by 2, 1;

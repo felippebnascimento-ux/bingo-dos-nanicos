@@ -42,7 +42,7 @@ export const MOTIVO_GANHO: Readonly<Record<string, string>> = {
   truco: "venceu no truco",
   bingo: "bingo!",
   cassino: "ganhou no cassino",
-  aposta: "acertou a aposta",
+  aposta: "aposta na partida",
   trofeu: "troféu da semana",
   churrasco: "pegou um espetinho",
   missao: "missão do dia",

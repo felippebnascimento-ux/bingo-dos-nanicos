@@ -18,6 +18,7 @@ import { iniciarLoja } from "@/features/loja/lojaDados";
 import { iniciarBingo } from "@/features/jogar/bingoSala";
 import { iniciarMissoes } from "@/features/missoes/missoesDados";
 import { iniciarMidias } from "@/features/midias/midiasDados";
+import { iniciarApostas } from "@/features/jogar/apostasDados";
 import { iniciarRiot } from "@/features/jogar/riot";
 import { pararTudoAoVivo } from "@/features/live/live";
 
@@ -258,6 +259,8 @@ export function enterApp() {
   /* o boneco aparece no Sítio para todo mundo mesmo sem abrir a aba */
   iniciarHall();
   setTimeout(iniciarRiot, 1500);
+  /* apostas da partida ao vivo: o bolo e as minhas apostas, pelo tempo real */
+  iniciarApostas();
   /* troféus da semana: lê e, se a semana passada não estiver pronta, pede o cálculo */
   setTimeout(iniciarTrofeus, 3000);
   /* loja: vitrine, mochila e o que todo mundo equipou (quarto, título, moldura) */

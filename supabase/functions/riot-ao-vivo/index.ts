@@ -4,7 +4,8 @@
 //   1. confere se quem chamou é um nanico logado;
 //   2. no máximo uma vez a cada 55 s (para todo mundo junto), pergunta à Riot
 //      quem dos nanicos com op.gg salvo está em partida agora;
-//   3. devolve as partidas guardadas no banco.
+//   3. abre as apostas de cada partida nova e, quando a partida acaba, pergunta à Riot quem venceu e paga;
+//   4. devolve as partidas guardadas no banco.
 // A chave da Riot fica só aqui, no segredo RIOT_API_KEY do Supabase. Nunca no site.
 
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
@@ -31,6 +32,16 @@ const PLATAFORMA: Record<string, string> = {
   br: "br1", na: "na1", lan: "la1", las: "la2", euw: "euw1", eune: "eun1", tr: "tr1", ru: "ru",
   me: "me1", kr: "kr", jp: "jp1", oce: "oc1", ph: "ph2", sg: "sg2", th: "th2", tw: "tw2", vn: "vn2",
 };
+
+// servidor → região da match-v5 (para buscar o resultado da partida)
+const REGIAO: Record<string, string> = {
+  br1: "americas", na1: "americas", la1: "americas", la2: "americas",
+  euw1: "europe", eun1: "europe", tr1: "europe", ru: "europe", me1: "europe",
+  kr: "asia", jp1: "asia", oc1: "sea", ph2: "sea", sg2: "sea", th2: "sea", tw2: "sea", vn2: "sea",
+};
+// apostas: no máximo 3 resultados por ciclo; sem resultado depois de 6 h, devolve
+const RESULTADOS_POR_VEZ = 3;
+const DESISTE_MS = 6 * 3600_000;
 
 function cors(req: Request): Record<string, string> {
   const o = req.headers.get("Origin") ?? "";
@@ -120,12 +131,13 @@ async function atualizar(admin: any): Promise<string | null> {
   // 2) quem está em partida agora (Spectator-V5)
   const nanicoPorPuuid = new Map(alvos.map((a) => [a.puuid, a.fid]));
   const resultado = new Map<string, any>(); // friend_id → partida
+  let completo = true; // todos os nanicos foram consultados (sem isso, não dá para dizer que uma partida acabou)
   for (const a of alvos) {
     const r = await riot(`https://${a.plataforma}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${encodeURIComponent(a.puuid)}`);
     if (r.status === 401 || r.status === 403) return "A chave da Riot está errada ou venceu.";
-    if (r.status === 429) { erro = "A Riot pediu para esperar (limite de consultas)."; break; }
+    if (r.status === 429) { erro = "A Riot pediu para esperar (limite de consultas)."; completo = false; break; }
     if (r.status === 404) { resultado.set(a.fid, null); continue; }
-    if (r.status !== 200 || !r.body) { erro = `Riot respondeu ${r.status} ao procurar partida.`; continue; }
+    if (r.status !== 200 || !r.body) { erro = `Riot respondeu ${r.status} ao procurar partida.`; completo = false; continue; }
     resultado.set(a.fid, r.body);
   }
 
@@ -162,7 +174,56 @@ async function atualizar(admin: any): Promise<string | null> {
   const { data: todos } = await admin.from("riot_ao_vivo").select("friend_id");
   const sair = (todos ?? []).map((r: any) => r.friend_id).filter((id: string) => !comLink.has(id));
   if (sair.length) await admin.from("riot_ao_vivo").delete().in("friend_id", sair);
+
+  // 4) apostas: abre o mercado de cada partida de dois times (fecha 5 min depois do início)
+  const vivos = new Set<number>();
+  for (const l of linhas) {
+    const j = l.jogo;
+    if (!j || !j.gameId || vivos.has(j.gameId)) continue; // vários nanicos na mesma partida: uma vez só
+    vivos.add(j.gameId);
+    const times = new Set(j.participantes.map((p: any) => p.time));
+    if (j.queueId === 1700 || times.size !== 2 || !times.has(100) || !times.has(200)) continue; // Arena e afins: sem aposta
+    const nanicos: Record<string, number> = {};
+    for (const p of j.participantes) if (p.fid) nanicos[p.fid] = p.time;
+    const { error: ea } = await admin.rpc("apostas_abrir", { p_game: j.gameId, p_plataforma: j.plataforma, p_inicio_ms: j.inicio, p_nanicos: nanicos });
+    if (ea) console.error("apostas_abrir", ea.message);
+  }
+  // 5) partida que sumiu: pergunta o resultado à Riot e paga (tenta de novo nos próximos ciclos até achar)
+  if (completo) {
+    const { data: abertos } = await admin.from("apostas_mercados").select("game_id,plataforma,aberto_em").eq("estado", "aberto").order("aberto_em").limit(20);
+    let consultas = 0;
+    for (const m of abertos ?? []) {
+      const game = Number(m.game_id);
+      if (vivos.has(game)) continue;
+      const plat = String(m.plataforma ?? "").toLowerCase();
+      const velho = Date.now() - Date.parse(m.aberto_em) > DESISTE_MS;
+      const regiao = REGIAO[plat];
+      if (!regiao || consultas >= RESULTADOS_POR_VEZ) {
+        if (velho) await liquidar(admin, game, null, true, "sem_resultado");
+        continue;
+      }
+      consultas++;
+      const r = await riot(`https://${regiao}.api.riotgames.com/lol/match/v5/matches/${plat.toUpperCase()}_${game}`);
+      if (r.status === 401 || r.status === 403) return "A chave da Riot está errada ou venceu.";
+      if (r.status === 429) break;
+      const info = r.status === 200 ? r.body?.info : null;
+      if (info && Array.isArray(info.teams)) {
+        // gameDuration vem em segundos quando existe gameEndTimestamp (senão, em milissegundos)
+        const dur = info.gameEndTimestamp ? Number(info.gameDuration) : Number(info.gameDuration) / 1000;
+        const remake = dur < 300 || (info.participants ?? []).some((p: any) => p.gameEndedInEarlySurrender);
+        const venc = Number(info.teams.find((t: any) => t.win === true)?.teamId) || null;
+        await liquidar(admin, game, venc, remake, remake ? "remake" : null);
+      } else if (velho) {
+        await liquidar(admin, game, null, true, "sem_resultado");
+      }
+    }
+  }
   return erro;
+}
+
+async function liquidar(admin: any, game: number, vencedor: number | null, remake: boolean, fim: string | null) {
+  const { error } = await admin.rpc("apostas_liquidar", { p_game: game, p_vencedor: vencedor, p_remake: remake, p_fim: fim });
+  if (error) console.error("apostas_liquidar", game, error.message);
 }
 
 Deno.serve(async (req: Request) => {

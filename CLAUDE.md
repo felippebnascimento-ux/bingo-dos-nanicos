@@ -97,7 +97,9 @@ src/
                        cálculo à riot-semana) e TrofeusView (cartões, seletor de semana, hall da fama)
     jogar/             JogarView (escalação, cartela, montar cartela), MiniCartela (painel do Ao vivo e
                        cartela flutuante), riot.ts (consulta a função riot-ao-vivo), partida.ts (lanes, puro),
-                       RiotBox, CellTag; roleta do rodízio: rodizio.ts (fatias, ângulo, "seguidas"; puro e
+                       RiotBox (com o painel "Apostar"), CellTag; apostas na partida: apostas.ts (pari-mútuo,
+                       retorno estimado; puro e testado) e apostasDados.ts (bolo e minhas apostas pelo tempo real,
+                       apostar(), aviso do fim); roleta do rodízio: rodizio.ts (fatias, ângulo, "seguidas"; puro e
                        testado), rodizioSala.ts (linha da sala, tempo real, animação, chama as funções) e Roleta.tsx;
                        bingoSala.ts (bingo no servidor numa sala de LoL: partida, minha cartela e cantos do banco,
                        `tocarCasa` canta ou confirma, `sortearCartela`, `usarMontada`, `fecharPartida`; sem o SQL ou
@@ -164,7 +166,8 @@ src/
 public/arte/           artes dos nanicos (rosto e corpo), bonecos do hall, foto da turma, reações dos Picarétezzi
 planejamento/          PLANO.md (próximas fases e decisões), prompts/ (um por fase), demos e arte pronta
 supabase/
-  functions/riot-ao-vivo/index.ts   Edge Function (Deno): partida ao vivo. Fora do build do Next.
+  functions/riot-ao-vivo/index.ts   Edge Function (Deno): partida ao vivo e as apostas dela (abre o mercado e paga
+                                    pelo resultado da match-v5). Fora do build do Next.
   functions/ficha-jogos/index.ts    Edge Function (Deno): números da ficha (Riot e Steam), guardados por 6 h
   functions/truco-mesa/            Edge Function (Deno): o juiz do truco (embaralha, guarda as mãos, confere as
                                    jogadas, paga a vitória). engine.ts é cópia GERADA por `npm run sincronizar:truco`
@@ -325,6 +328,8 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 | `truco_mesas` | mesa de truco como todos veem (`id`, `criada_por`, `opcoes`, `publico` = `trPublica`, `fase`, `atualizada_em`) | nanicos leem; só a função `truco-mesa` grava (pelas funções `truco_*`) |
 | `truco_estado` | a mesa completa, com o baralho e as mãos (`estado` = `{M, partida, fimEm}`, `versao`) | **ninguém** (nem leitura, nem tempo real); só as funções `truco_*` |
 | `truco_maos` | as cartas de cada lugar (`mesa_id`, `lugar`, `user_id`, `cartas`, `mao_n`) | cada um lê **só a sua** (o RLS filtra também o tempo real); só a função grava |
+| `apostas_mercados` | uma linha por partida ao vivo (`game_id`, `nanicos` friend id → time, `fecha_em`, `estado` aberto/pago/devolvido, `vencedor`, `fim`, `bolo_100`, `bolo_200`, `casa`) | nanicos leem; só a função `riot-ao-vivo` abre e paga (`apostas_abrir`, `apostas_liquidar`) |
+| `apostas` | a aposta de cada um numa partida (`lado` 100/200, `valor` 5–100, `pago`; uma por partida) | cada um lê as suas; só `apostar_partida(game, lado, valor)` grava |
 | `atributos_votos` | votos anônimos (`de`, `para`, `atributo`, `nota` 0–10) | **ninguém lê nem grava direto**: só pelas funções abaixo |
 
 - **Quem é nanico:** `public.eh_nanico()` diz se o usuário logado está ligado a um nanico.
@@ -363,6 +368,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
   - **Lugar:** `Lugar.key` é o `user_id` (não a aba), então recarregar ou trocar de aparelho não perde o lugar. Uma mesa em jogo por pessoa; as paradas há 3 h somem.
   - **Próxima mão:** quem está sentado pede `nova_mao` sozinho 3,8 s depois do fim; a função espera 3 s e vale só o primeiro pedido.
   - **Prêmio:** `truco_premiar(mesa)` (só a função) paga +15 a cada vencedor com `creditar(15, 'truco', 'mesa:partida')`, uma vez por partida, até 3 vitórias pagas por dia, e só se todos os lugares forem nanicos diferentes.
+- **Apostas na partida (seção 14 do `seguranca.sql`):** pari-mútuo com 5% da casa. A `riot-ao-vivo` abre o mercado quando vê a partida (fecha 5 min depois do início; Arena fica de fora) e, quando a partida some, busca o resultado na match-v5 (até 3 por ciclo) e chama `apostas_liquidar`, que paga `floor((total − casa) × aposta / bolo do vencedor)` com `creditar(…, 'aposta', …)`. Remake (menos de 5 min ou rendição antecipada), um lado vazio ou 6 h sem resultado devolvem tudo. Rodar de novo não paga de novo (o `estado` garante). Quem está na partida só aposta no próprio time (pelo `nanicos` do mercado ou pelo `riot_ao_vivo`). A conta está espelhada em `features/jogar/apostas.ts`, só para mostrar.
 - **Presença pública (seção 26 do `seguranca.sql`):** `bonus_diario` e `online_diario` continuam fechadas (cada um lê só as suas). O resumo de qualquer nanico sai por `presenca_de(nanico)` (sequência de hoje ou de ontem, recorde, minutos de hoje, 7 dias e total) e a chama da lista por `presenca_todos()` (só `seq` e `hoje_min`). Não calcule sequência no navegador.
 - **Gatilhos:** `chat_protecao`, `chat_sala_protecao` (recusa sala que não existe), `limpar_chat` (apaga o que tem mais de 30 dias), `nanicada_protecao`, `nanicada_remocao`, `escalacao_protecao` e `perfil_protecao`.
 - **"Já vi" do Log:** fica na conta, em `user_metadata.log_visto` (índice da entrada no `CHANGELOG`), gravado com `auth.updateUser({ data })` por `marcarLogVisto()` (`src/lib/dados.ts`). Vale em todos os aparelhos e não precisa de SQL. O `localStorage` (`log-visto`) fica de reserva.
@@ -382,7 +388,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
   - `reacao`: emojis e fotos;
   - `risco`: desenho na live;
   - `hall`: `{ para: {i, j} }`, o destino do boneco. Cada navegador calcula o caminho e anima sozinho (limite de 8 a cada 2 s).
-- **Mudanças no banco:** chegam por `postgres_changes` em `friends`, `phrases`, `game`, `chat_messages`, `carteiras`, `rodizio`, `mochila` (equipados), `consumos` (o boneco fumando ou bebendo), `truco_mesas`, `truco_maos`, `bingo_partidas`, `bingo_cartelas`, `bingo_cantos`, `midias`, `mural_links`, `perfil_links`, `rede_posts`, `rede_curtidas` e `rede_comentarios` (no DELETE, `aoMudarTabela` entrega a chave da linha apagada). A chinelada e a torta vêm do tempo real de `zoeiras` (pagas, gravadas por `zoar()`), e o sorteio da roleta do rodízio vem do tempo real de `rodizio` (todo mundo anima até o mesmo `girado_em`), **nunca de broadcast**. Os ganhos de moedas de todo mundo no Sítio vêm do tempo real de `carteiras` (gravado por `creditar()`), **nunca de broadcast**.
+- **Mudanças no banco:** chegam por `postgres_changes` em `friends`, `phrases`, `game`, `chat_messages`, `carteiras`, `rodizio`, `mochila` (equipados), `consumos` (o boneco fumando ou bebendo), `truco_mesas`, `truco_maos`, `bingo_partidas`, `bingo_cartelas`, `bingo_cantos`, `midias`, `mural_links`, `perfil_links`, `rede_posts`, `rede_curtidas`, `rede_comentarios`, `apostas_mercados` e `apostas` (no DELETE, `aoMudarTabela` entrega a chave da linha apagada). A chinelada e a torta vêm do tempo real de `zoeiras` (pagas, gravadas por `zoar()`), e o sorteio da roleta do rodízio vem do tempo real de `rodizio` (todo mundo anima até o mesmo `girado_em`), **nunca de broadcast**. Os ganhos de moedas de todo mundo no Sítio vêm do tempo real de `carteiras` (gravado por `creditar()`), **nunca de broadcast**.
 
 ### Navegador (`localStorage`, só conveniência de cada pessoa)
 - **Chaves:** `rift-lineup`, `rift-card` (cartela do bingo local; numa sala de LoL com o SQL, a cartela vem do banco), `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `log-visto`, `fome-fechado`, `hall-pos` (último piso no hall), `hall-sala-min` (lista "Na sala agora" do Sítio recolhida), `sala-atual` (última sala; o site sempre abre no lobby), `canais-voz-min` e `canais-texto-min` (categorias de canais recolhidas; no celular começam recolhidas) `membros-min` (lista de membros só com os rostos; abaixo de 1200 px fica assim sempre) e `midia` (microfone, saída de som, câmera, eco e ruído escolhidos nas Configurações) e `evento-visto` (o aviso que explica o happy hour e o churrasco já apareceu) `missoes-min` (cartão das missões recolhido no Sítio) e `rede-visto` (última postagem da rede nanica vista, para a bolinha de não lidas).
@@ -444,7 +450,7 @@ Mais de uma pessoa (e mais de uma IA) mexe no site. **Toda tarefa começa assim,
 ### Mudanças no Supabase
 - **Nunca** apague tabelas nem dados pelo Table Editor sem avisar o grupo.
 - **SQL:** primeiro no arquivo do repositório (`supabase/sql/`), depois no SQL Editor. Nada de mudança "só no painel".
-- **Edge Function `riot-ao-vivo`:** se mexer nela, publique de novo e confira se a aba Jogar ainda mostra "EM PARTIDA".
+- **Edge Function `riot-ao-vivo`:** se mexer nela, publique de novo e confira se a aba Jogar ainda mostra "EM PARTIDA". Ela também abre e paga as apostas (seção 14): não tire o passo 5 (resultado das partidas que sumiram).
 - **Origens:** a função só aceita chamadas das origens listadas em `ORIGENS`, que incluem a Vercel e `localhost:8810/8811`.
 - **Chave da Riot:** fica em **Edge Functions → Secrets → `RIOT_API_KEY`**. Não copie para lugar nenhum.
 - **Chave da Steam:** fica em **Edge Functions → Secrets → `STEAM_API_KEY`** (tirada em steamcommunity.com/dev/apikey). Sem ela, a ficha mostra só os números do LoL.
