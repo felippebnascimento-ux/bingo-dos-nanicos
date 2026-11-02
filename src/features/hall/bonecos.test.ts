@@ -19,7 +19,9 @@ const { iniciarHall, useHall } = await import("./bonecos");
 
 const pessoa = (key: string, name: string, pos: Presence["pos"]): Presence => ({ key, name, fid: null, lines: 0, live: null, cam: null, pos, sala: null, at: 0 });
 const ondeEsta = (key: string) => {
-  const b = useHall.getState().bonecos.find((x) => x.key === key);
+  /* um boneco por nanico: o id é "n:<fid>" (aqui sem fid, "nome:<nome>"); a chave da aba vira o nome da pessoa */
+  const nome = key === "k2" ? "nome:john" : key;
+  const b = useHall.getState().bonecos.find((x) => x.key === nome);
   return b && { i: b.i, j: b.j };
 };
 

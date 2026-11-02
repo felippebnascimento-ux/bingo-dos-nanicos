@@ -6,7 +6,7 @@
 import { create } from "zustand";
 import { aoMudarPresenca, aoReceber, enviar, estaNaSala, limitePorPessoa } from "@/lib/sala";
 import { getApp, MY_KEY, setApp, useApp } from "@/lib/store";
-import type { Presence } from "@/lib/tipos";
+import { umPorNanico, type PresencaNanico } from "@/lib/presenca";
 import { local, reduzMovimento } from "@/lib/util";
 import { caminho, entradaDe, entradaSorteada, posValida, sentido, type Piso, type Sentido } from "./hall";
 
@@ -157,6 +157,9 @@ function terminarTudo() {
 }
 
 /* ---------- quem está no hall ---------- */
+/* chave de cada aba → boneco do nanico dono dela (para o broadcast de qualquer aba mover o mesmo boneco) */
+const chaveDoBoneco = new Map<string, string>();
+
 function sincronizar() {
   const s = getApp();
   if (s.fase !== "app" || !s.myName) {
@@ -165,18 +168,21 @@ function sincronizar() {
     primeiraLista = true;
     return publicar();
   }
-  const lista: Pick<Presence, "key" | "name" | "fid" | "pos">[] = s.online.slice();
+  /* um boneco por nanico: as várias abas (e presenças antigas) de alguém viram um só */
+  const lista: Pick<PresencaNanico, "id" | "chaves" | "name" | "fid" | "pos">[] = umPorNanico(s.online, MY_KEY);
   /* eu apareço mesmo antes da presença chegar (ou se a sala cair) */
-  if (!lista.some((p) => p.key === MY_KEY)) lista.push({ key: MY_KEY, name: s.myName, fid: s.myFid, pos: s.hallPos });
-  const chaves = new Set<string>();
+  if (!lista.some((p) => p.id === MY_KEY)) lista.push({ id: MY_KEY, chaves: [MY_KEY], name: s.myName, fid: s.myFid, pos: s.hallPos });
+  const ids = new Set<string>();
   const entraram: string[] = [];
+  chaveDoBoneco.clear();
   for (const p of lista) {
-    chaves.add(p.key);
-    const eu = p.key === MY_KEY;
-    const pos = (eu ? s.hallPos : p.pos) || entradaDe(p.key);
-    const b = B.get(p.key);
+    ids.add(p.id);
+    for (const k of p.chaves) chaveDoBoneco.set(k, p.id);
+    const eu = p.id === MY_KEY;
+    const pos = (eu ? s.hallPos : p.pos) || entradaDe(p.id);
+    const b = B.get(p.id);
     if (!b) {
-      B.set(p.key, novo(p.key, eu ? s.myName : p.name, eu ? s.myFid : p.fid, pos));
+      B.set(p.id, novo(p.id, eu ? s.myName : p.name, eu ? s.myFid : p.fid, pos));
       if (!eu) entraram.push(p.name);
       continue;
     }
@@ -185,7 +191,7 @@ function sincronizar() {
     /* perdeu algum destino? a presença corrige, andando até o piso certo */
     if (!eu && p.pos && !andando(b) && (b.alvo.i !== p.pos.i || b.alvo.j !== p.pos.j)) rota(b, p.pos);
   }
-  for (const k of [...B.keys()]) if (!chaves.has(k)) B.delete(k);
+  for (const k of [...B.keys()]) if (!ids.has(k)) B.delete(k);
   if (entraram.length && !primeiraLista) useHall.setState({ aviso: `${entraram.join(", ")} entrou no hall` });
   primeiraLista = false;
   publicar();
@@ -212,7 +218,8 @@ const hallLimite = limitePorPessoa(8, 2000);
 function onHall(m: Record<string, unknown>) {
   if (typeof m.from !== "string" || m.from === MY_KEY || !posValida(m.para)) return;
   if (!estaNaSala(m.from) || !hallLimite(m.from)) return;
-  const b = B.get(m.from);
+  /* qualquer aba daquele nanico move o mesmo boneco (inclusive uma outra aba minha move o meu) */
+  const b = B.get(chaveDoBoneco.get(m.from) ?? m.from);
   if (b) rota(b, { i: m.para.i, j: m.para.j });
 }
 

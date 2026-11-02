@@ -3,6 +3,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { CamNaSala } from "@/features/live/CamNaSala";
 import { assistir } from "@/features/live/live";
 import { bingoLines } from "@/lib/bingo";
+import { umPorNanico } from "@/lib/presenca";
 import { friendDaPresenca, MY_KEY, setApp, useApp } from "@/lib/store";
 import type { Presence } from "@/lib/tipos";
 import { ehCelular, hueOf, initials, local, rolarAte } from "@/lib/util";
@@ -30,7 +31,9 @@ export function usePessoasNaSala(todos = false): Presence[] {
   const card = useApp((s) => s.card);
   const myLiveSid = useApp((s) => s.myLiveSid);
   const myCamSid = useApp((s) => s.myCamSid);
-  const list: Presence[] = todos ? online.slice() : online.filter((p) => p.sala === minhaSala || p.key === MY_KEY);
+  /* um por nanico: as várias abas de alguém viram uma linha só */
+  const juntos = umPorNanico(online, MY_KEY);
+  const list: Presence[] = todos ? juntos : juntos.filter((p) => p.sala === minhaSala || p.key === MY_KEY);
   if (myName && !list.some((p) => p.key === MY_KEY))
     list.unshift({ key: MY_KEY, name: myName, fid: myFid, lines: bingoLines(card), live: myLiveSid, cam: myCamSid, pos: null, sala: minhaSala, at: 0 });
   return list.sort((a, b) => (a.key === MY_KEY ? -1 : b.key === MY_KEY ? 1 : String(a.name).localeCompare(String(b.name), "pt-BR")));

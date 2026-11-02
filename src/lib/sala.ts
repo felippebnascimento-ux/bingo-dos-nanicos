@@ -153,15 +153,63 @@ export function trackMe() {
 }
 
 /* ---------- conexão ---------- */
+let aoTabela: (tabela: string) => void = () => {};
+let ligouUmaVez = false;
+let tentativa = 0;
+let religar: ReturnType<typeof setTimeout> | undefined;
+/** espera antes de reconectar: 1 s, 2 s, 5 s, 10 s e no máximo 30 s */
+const ESPERAS = [1000, 2000, 5000, 10000, 30000];
+
+/** Entra no lobby (uma vez); se a conexão cair, `reconectar()` monta o canal de novo sozinho. */
 export function joinRoom(onTabela: (tabela: string) => void) {
   if (room) return;
+  aoTabela = onTabela;
+  conectar();
+  if (ligouUmaVez) return;
+  ligouUmaVez = true;
+  /* a presença acompanha sozinha a cartela (linhas de bingo), a transmissão, a câmera, o piso do hall e a sala */
+  useApp.subscribe((s, p) => {
+    if (s.myLiveSid !== p.myLiveSid || s.myCamSid !== p.myCamSid || s.myName !== p.myName || s.hallPos !== p.hallPos || s.minhaSala !== p.minhaSala || bingoLines(s.card) !== bingoLines(p.card))
+      trackMe();
+  });
+  /* voltou para a aba: se o canal caiu, reconecta na hora; se não, renova a presença */
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) return;
+    if (!room || room.state !== "joined") reconectar(0);
+    else trackMe();
+  });
+  /* a presença se renova a cada minuto (o "mais recente" do um-por-nanico depende do `at`) */
+  setInterval(() => {
+    if (room?.state === "joined") trackMe();
+  }, 60_000);
+}
+
+/** Derruba o canal velho e monta de novo depois de `espera` (sem espera = agora). */
+function reconectar(espera = ESPERAS[Math.min(tentativa, ESPERAS.length - 1)]) {
+  clearTimeout(religar);
+  setApp({ conn: "Reconectando…" });
+  religar = setTimeout(() => {
+    const velho = room;
+    room = null;
+    if (velho) sb().removeChannel(velho).catch(() => {});
+    tentativa++;
+    conectar();
+    /* o canal da sala também volta (sem encerrar a live: quem transmite continua) */
+    const sala = getApp().minhaSala;
+    if (sala) entrarCanalSala(sala);
+  }, espera);
+}
+
+function conectar() {
+  const onTabela = aoTabela;
   let ch = sb().channel(CANAL_SALA, {
     config: { presence: { key: MY_KEY }, broadcast: { self: false }, private: true },
   });
   ch = ch.on("presence", { event: "sync" }, () => {
     const st = ch.presenceState() as Record<string, unknown[]>;
+    /* até 60 chaves cruas (abas e presenças antigas); o um-por-nanico junta depois */
     const online = Object.entries(st)
-      .slice(0, 40)
+      .slice(0, 60)
       .map(([key, arr]) => cleanPresence(key, Array.isArray(arr) ? arr[arr.length - 1] : null))
       .filter((p): p is Presence => !!p);
     setApp({ online });
@@ -189,18 +237,15 @@ export function joinRoom(onTabela: (tabela: string) => void) {
   });
   room = ch;
   ch.subscribe((st) => {
+    if (room !== ch) return; /* aviso de um canal velho, já trocado */
     if (st === "SUBSCRIBED") {
+      tentativa = 0;
       setApp({ conn: "Sincronizado" });
       trackMe();
       conectarFns.forEach((fn) => fn());
-    } else if (st === "CHANNEL_ERROR" || st === "TIMED_OUT") {
-      setApp({ conn: "Sem atualização ao vivo. Recarregue a página." });
+    } else if (st === "CHANNEL_ERROR" || st === "TIMED_OUT" || st === "CLOSED") {
+      /* a aba ficou em segundo plano, a internet caiu ou o servidor fechou: tenta de novo sozinho */
+      reconectar();
     }
-  });
-
-  /* a presença acompanha sozinha a cartela (linhas de bingo), a transmissão, a câmera e o piso do hall */
-  useApp.subscribe((s, p) => {
-    if (s.myLiveSid !== p.myLiveSid || s.myCamSid !== p.myCamSid || s.myName !== p.myName || s.hallPos !== p.hallPos || s.minhaSala !== p.minhaSala || bingoLines(s.card) !== bingoLines(p.card))
-      trackMe();
   });
 }
