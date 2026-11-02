@@ -4,6 +4,7 @@ import { Fome } from "./Fome";
 import { PortaLog, PortaLogin, PortaPrimeiraSenha, PortaTrocarSenha } from "./portas/Portas";
 import { Sidebar } from "./shell/Sidebar";
 import { Toast } from "./ui/Toast";
+import { CassinoView } from "@/features/cassino/CassinoView";
 import { FichaNanico } from "@/features/ficha/Ficha";
 import { SalasJanela } from "@/features/salas/Salas";
 import { HallView } from "@/features/hall/HallView";
@@ -44,6 +45,7 @@ export default function App() {
             <NanicadasView hidden={aba !== "frases"} />
             <NanicosView hidden={aba !== "nanicos"} />
             <TrucoView hidden={aba !== "truco"} />
+            <CassinoView hidden={aba !== "cassino"} />
             <PerfilView hidden={aba !== "perfil"} />
             <LiveView hidden={aba !== "live"} />
           </div>
