@@ -66,7 +66,9 @@ export const aoMudarTabela = (
 /** Manda um evento para a sala. `from` (MY_KEY) é acrescentado sozinho. */
 export function enviar(ev: Evento, payload: Record<string, unknown>) {
   const ch = EVENTOS_SALA.includes(ev) ? canalSala : room;
-  ch?.send({ type: "broadcast", event: ev, payload: { ...payload, from: MY_KEY } }).catch(() => {});
+  /* canal fora do ar (entrando ou reconectando): o supabase-js mandaria pela API, que não entrega em canal privado */
+  if (ch?.state !== "joined") return;
+  ch.send({ type: "broadcast", event: ev, payload: { ...payload, from: MY_KEY } }).catch(() => {});
 }
 
 export const salaConectada = () => !!room;
@@ -157,10 +159,32 @@ export const canalValido = (v: unknown): v is string => typeof v === "string" &&
 /** O canal de texto que eu estou olhando agora (vai na presença). */
 const meuTexto = (s = getApp()) => (s.aba === "chat" ? s.canalTexto : null);
 
+/*
+ * O Supabase aceita só 5 atualizações de presença a cada 30 s por pessoa; passou disso, ele FECHA o canal
+ * (ClientPresenceRateLimitReached) e, até reconectar, nada da sala chega (emojis, desenho, sinal da live).
+ * Então a presença sai no máximo 4 vezes a cada 30 s: o que mudar no meio espera e sai junto, com o estado mais novo.
+ */
+const PRESENCA_MAX = 4,
+  PRESENCA_JANELA = 30_000;
+let presencaEnvios: number[] = [];
+let presencaDepois: ReturnType<typeof setTimeout> | undefined;
+
 /** Atualiza a minha presença (nome, linhas de bingo, transmissão, câmera, piso do hall, sala, voz e canal de texto). */
 export function trackMe() {
+  if (presencaDepois) return; /* já tem uma marcada; ela lê o estado na hora de sair */
+  const agora = Date.now();
+  presencaEnvios = presencaEnvios.filter((t) => agora - t < PRESENCA_JANELA);
+  if (presencaEnvios.length >= PRESENCA_MAX) {
+    const espera = presencaEnvios[0] + PRESENCA_JANELA - agora + 250;
+    presencaDepois = setTimeout(() => {
+      presencaDepois = undefined;
+      trackMe();
+    }, espera);
+    return;
+  }
   const s = getApp();
-  if (!room || !s.myName) return;
+  if (!room || room.state !== "joined" || !s.myName) return;
+  presencaEnvios.push(agora);
   room
     .track({
       name: s.myName,

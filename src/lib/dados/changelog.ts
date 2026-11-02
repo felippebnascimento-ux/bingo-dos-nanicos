@@ -222,6 +222,13 @@ export const CHANGELOG: EntradaLog[] = [
       "A lista de membros à direita não mostra mais quem está falando (isso fica nos canais de voz)",
     ],
   },
+  {
+    data: "02/11/2026",
+    itens: [
+      "Emojis e desenho na live voltaram a chegar para todo mundo (a conexão da sala caía quando muita coisa mudava de uma vez)",
+      "Cor preta no desenho da live",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

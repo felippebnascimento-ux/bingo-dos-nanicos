@@ -11,8 +11,9 @@ import { local, newId } from "@/lib/util";
 import { getLive, setLive } from "./estado";
 import { LIVE } from "./tela";
 
-export const DCORES = ["#ff3b30", "#ffd60a", "#34c759", "#0a84ff", "#ffffff", "#ff2d95"],
-  DNOMES = ["vermelho", "amarelo", "verde", "azul", "branco", "rosa"];
+/* a ordem é o número que vai pela sala e fica salvo: cor nova entra sempre no fim */
+export const DCORES = ["#ff3b30", "#ffd60a", "#34c759", "#0a84ff", "#ffffff", "#ff2d95", "#000000"],
+  DNOMES = ["vermelho", "amarelo", "verde", "azul", "branco", "rosa", "preto"];
 export const DESP = [3, 6, 12],
   DESP_NOMES = ["fina", "média", "grossa"]; /* espessura por 1000 px de vídeo */
 
@@ -206,7 +207,7 @@ export function pintar() {
       g.lineJoin = "round";
       g.lineWidth = Math.max(1.5, (DESP[r.w] * a.w) / 1000) * dpr;
       g.strokeStyle = DCORES[r.c];
-      g.shadowColor = "rgba(0,0,0,.55)";
+      g.shadowColor = DCORES[r.c] === "#000000" ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.55)";
       g.shadowBlur = 3 * dpr;
       g.beginPath();
       g.moveTo(X(r.pts[0]), Y(r.pts[0]));

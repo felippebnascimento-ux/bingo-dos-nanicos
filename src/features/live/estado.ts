@@ -44,7 +44,7 @@ export const useLive = create<LiveUi>()(() => ({
   voando: [],
   desenhoOn: false,
   desenhoVer: des.ver !== false,
-  desenhoCor: Number.isInteger(des.cor) && (des.cor as number) >= 0 && (des.cor as number) < 6 ? (des.cor as number) : 0,
+  desenhoCor: Number.isInteger(des.cor) && (des.cor as number) >= 0 && (des.cor as number) < 7 /* DCORES.length, em desenho.ts */ ? (des.cor as number) : 0,
   desenhoEsp: Number.isInteger(des.esp) && (des.esp as number) >= 0 && (des.esp as number) < 3 ? (des.esp as number) : 1,
 }));
 
