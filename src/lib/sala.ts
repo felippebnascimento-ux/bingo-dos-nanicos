@@ -53,10 +53,11 @@ export function aoConectar(fn: () => void) {
   return () => void conectarFns.delete(fn);
 }
 
-/** Mudança numa tabela do banco (`friends`, `phrases`, `game`, `chat_messages`, `carteiras`, `rodizio`, `zoeiras`, `mochila`, `consumos`, `truco_mesas`, `truco_maos`, `bingo_partidas`, `bingo_cartelas`, `bingo_cantos`). No DELETE, `row` traz só a chave da linha apagada. */
+/** Mudança numa tabela do banco (`friends`, `phrases`, `game`, `chat_messages`, `carteiras`, `rodizio`, `zoeiras`, `mochila`, `consumos`, `truco_mesas`, `truco_maos`, `bingo_partidas`, `bingo_cartelas`, `bingo_cantos`, `midias`, `mural_links`, `perfil_links`). No DELETE, `row` traz só a chave da linha apagada. */
 export const aoMudarTabela = (
   tabela: "friends" | "phrases" | "game" | "chat_messages" | "carteiras" | "rodizio" | "zoeiras" | "mochila" | "consumos" | "truco_mesas" | "truco_maos"
-    | "bingo_partidas" | "bingo_cartelas" | "bingo_cantos",
+    | "bingo_partidas" | "bingo_cartelas" | "bingo_cantos"
+    | "midias" | "mural_links" | "perfil_links",
   fn: (row: Record<string, unknown> | null, ev: string) => void,
 ) => add(tabelaFns, tabela, fn);
 
@@ -287,7 +288,8 @@ function conectar() {
   });
   /* truco: a mesa pública e a minha mão (o RLS só manda a minha), gravadas pela função truco-mesa, nunca broadcast */
   /* bingo: a partida da sala, a minha cartela (o RLS só manda a minha) e os cantos; gravados só pelas funções bingo_* */
-  for (const tabela of ["truco_mesas", "truco_maos", "bingo_partidas", "bingo_cartelas", "bingo_cantos"] as const) {
+  /* mídias, mural e links do perfil: a galeria e a ficha se atualizam sozinhas */
+  for (const tabela of ["truco_mesas", "truco_maos", "bingo_partidas", "bingo_cartelas", "bingo_cantos", "midias", "mural_links", "perfil_links"] as const) {
     ch = ch.on("postgres_changes", { event: "*", schema: "public", table: tabela }, (pl) => {
       const row = (pl?.eventType === "DELETE" ? pl.old : pl?.new) as Record<string, unknown> | undefined;
       tabelaFns.get(tabela)?.forEach((fn) => fn(row || null, pl?.eventType || ""));

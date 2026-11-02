@@ -17,6 +17,7 @@ import { iniciarTrofeus } from "@/features/trofeus/trofeusDados";
 import { iniciarLoja } from "@/features/loja/lojaDados";
 import { iniciarBingo } from "@/features/jogar/bingoSala";
 import { iniciarMissoes } from "@/features/missoes/missoesDados";
+import { iniciarMidias } from "@/features/midias/midiasDados";
 import { iniciarRiot } from "@/features/jogar/riot";
 import { pararTudoAoVivo } from "@/features/live/live";
 
@@ -263,6 +264,7 @@ export function enterApp() {
   iniciarLoja();
   iniciarBingo();
   iniciarMissoes();
+  iniciarMidias();
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) {
       later("f", loadFriends);

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, type ComponentType } from "react";
-import { IcAjustes, IcAoVivo, IcCassino, IcInicio, IcJogar, IcSitio, IcNanicadas, IcNanicos, IcPerfil, IcTruco, IcVoltar } from "@/components/ui/icones";
+import { IcAjustes, IcAoVivo, IcCassino, IcInicio, IcJogar, IcMidias, IcSitio, IcNanicadas, IcNanicos, IcPerfil, IcTruco, IcVoltar } from "@/components/ui/icones";
 import { fecharSeletores } from "@/components/ui/FriendPicker";
 import { Avatar } from "@/components/ui/Avatar";
 import { CamBotoes } from "@/features/live/CamBotoes";
@@ -23,6 +23,7 @@ const ABAS: { aba: Aba; t: string; Ic: ComponentType }[] = [
   { aba: "live", t: "Ao vivo", Ic: IcAoVivo },
   { aba: "truco", t: "Truco", Ic: IcTruco },
   { aba: "cassino", t: "Cassino", Ic: IcCassino },
+  { aba: "midias", t: "Mídias", Ic: IcMidias },
   { aba: "perfil", t: "Perfil", Ic: IcPerfil },
 ];
 

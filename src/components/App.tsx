@@ -6,6 +6,7 @@ import { Membros } from "./shell/People";
 import { Sidebar } from "./shell/Sidebar";
 import { Toast } from "./ui/Toast";
 import { CassinoView } from "@/features/cassino/CassinoView";
+import { MidiasView } from "@/features/midias/MidiasView";
 import { ChatView } from "@/features/chat/ChatView";
 import { ConfigJanela } from "@/features/config/ConfigView";
 import { FichaNanico } from "@/features/ficha/Ficha";
@@ -62,6 +63,7 @@ export default function App() {
             <NanicosView hidden={aba !== "nanicos"} />
             <TrucoView hidden={aba !== "truco"} />
             <CassinoView hidden={aba !== "cassino"} />
+            <MidiasView hidden={aba !== "midias"} />
             <PerfilView hidden={aba !== "perfil"} />
             <LiveView hidden={aba !== "live"} />
             <ChatView hidden={aba !== "chat"} />

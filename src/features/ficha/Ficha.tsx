@@ -12,6 +12,8 @@ import { useEquipados } from "@/features/loja/lojaDados";
 import { verNanicadas } from "@/features/nanicos/NanicosView";
 import { opggNick, opggOf } from "@/features/perfil/opgg";
 import { steamNome, steamOf } from "@/features/perfil/steam";
+import { linksDe, useMidias } from "@/features/midias/midiasDados";
+import { TIPOS_LINK } from "@/features/perfil/links";
 import { artOf, bonecoOf } from "@/lib/dados/nanicos";
 import { friendOf, getApp, setApp, useApp } from "@/lib/store";
 import type { Friend } from "@/lib/tipos";
@@ -38,6 +40,7 @@ export function DicaSteamPrivada() {
 function Numeros({ f, num, carregando, falhou }: { f: Friend; num: NumerosFicha | undefined; carregando: boolean; falhou: boolean }) {
   const opgg = opggOf(f);
   const steam = steamOf(f);
+  const extras = linksDe(useMidias((s) => s.links), f.id);
   const lol = opgg ? num?.lol : null;
   const st = steam ? num?.steam : null;
   const quando = Math.max(lol?.atualizado ?? 0, st?.atualizado ?? 0);
@@ -85,7 +88,7 @@ function Numeros({ f, num, carregando, falhou }: { f: Friend; num: NumerosFicha 
           {a}
         </p>
       ))}
-      {(opgg || steam || main) && (
+      {(opgg || steam || main || extras.length > 0) && (
         <div className="ficha-links">
           {opgg && (
             <a className="btn soft sm" href={opgg} target="_blank" rel="noopener noreferrer" title={opggNick(opgg)}>
@@ -97,6 +100,11 @@ function Numeros({ f, num, carregando, falhou }: { f: Friend; num: NumerosFicha 
               Steam ↗
             </a>
           )}
+          {extras.map((l) => (
+            <a key={l.tipo} className="btn soft sm ficha-link" href={l.url} target="_blank" rel="noopener noreferrer">
+              {TIPOS_LINK.find((d) => d.tipo === l.tipo)?.nome ?? l.tipo} ↗
+            </a>
+          ))}
           {main && <span className="ficha-main">Main: {main}</span>}
         </div>
       )}

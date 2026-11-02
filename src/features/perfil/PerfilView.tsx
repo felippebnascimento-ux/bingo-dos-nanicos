@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { riotEmJogo, useRiot } from "@/features/jogar/riot";
 import { MoedasBloco } from "@/features/moedas/Moedas";
+import { CampoLinks } from "./CampoLinks";
 import { Missoes } from "@/features/missoes/Missoes";
 import { carregarFicha, useFicha } from "@/features/ficha/estado";
 import { DicaSteamPrivada } from "@/features/ficha/Ficha";
@@ -93,6 +94,7 @@ function MeuPerfil({ me }: { me: Friend }) {
         )}
       </form>
       <CampoSteam me={me} />
+      <CampoLinks />
     </>
   );
 }

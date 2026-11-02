@@ -210,7 +210,7 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | 9 | `09-truco-servidor.md` | `truco-servidor` | 2 | feito (02/11/2026); função `truco-mesa` publicada (cópia do engine gerada por `npm run sincronizar:truco`), SQL da seção 13 aplicado; o evento `truco` saiu do broadcast |
 | 10 | `10-apostas-ao-vivo.md` | `apostas-ao-vivo` | 6 | a fazer |
 | 11 | `11-loja-quarto.md` | `loja-quarto` | 2, 3 | feito (02/11/2026, antes da fila a pedido do João); SQL da seção 15 aplicado; acrescentei os consumíveis (cigarrinho, latinha, chimarrão, energético, caipirinha, charuto) com animação no Sítio |
-| 12 | `12-midias-links.md` | `midias-links` | 5 | a fazer |
+| 12 | `12-midias-links.md` | `midias-links` | 5 | feito (02/11/2026); SQL da seção 16 e bucket privado `midias` aplicados; aba Mídias no menu (galeria + mural), links no Perfil e na ficha; CSP sem mudança |
 | 13 | `13-login-convidado.md` | `login-convidado` | 5 | a fazer |
 | 14 | `14-hall-v2.md` | `hall-v2` | 00, 2, 3 | **feita**, PR aberto (em cima da `atributos-votados`); SQL da seção 7b aplicado em 02/11/2026 |
 | 15 | `15-celular-rede-nanica.md` | `celular-rede-nanica` | 11, 12 | a fazer |

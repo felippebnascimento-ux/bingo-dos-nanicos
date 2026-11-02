@@ -2239,7 +2239,145 @@ revoke all on function public.missao_progresso(uuid, date, text) from public, an
 revoke all on function public.minhas_missoes() from public, anon;
 grant execute on function public.minhas_missoes() to authenticated;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo e a das missões
+-- 16) mídias e links: galeria de prints (bucket privado), vídeos por link, links do perfil e mural do grupo -------------
+-- Bucket "midias" PRIVADO (até 5 MB, só imagem): nanicos baixam, cada um sobe e apaga só na própria pasta (<uid>/...).
+-- Vídeo não vai para o bucket (o plano grátis tem 1 GB): entra como link do YouTube, Medal ou clipe da Twitch.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('midias', 'midias', false, 5242880, array['image/webp', 'image/png', 'image/jpeg', 'image/gif'])
+on conflict (id) do update set public = false, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists midias_ler on storage.objects;
+create policy midias_ler on storage.objects for select to authenticated
+  using (bucket_id = 'midias' and public.eh_nanico());
+drop policy if exists midias_subir on storage.objects;
+create policy midias_subir on storage.objects for insert to authenticated
+  with check (bucket_id = 'midias' and public.eh_nanico() and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists midias_apagar on storage.objects;
+create policy midias_apagar on storage.objects for delete to authenticated
+  using (bucket_id = 'midias' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- a galeria: ou um arquivo do bucket (caminho), ou um link de vídeo; legenda curta e de qual sala veio
+create table if not exists public.midias (
+  id      bigint generated always as identity primary key,
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  caminho text unique check (caminho ~ '^[0-9a-f-]{36}/[a-z0-9-]{6,40}\.(webp|gif|png|jpg)$'),
+  link    text check (char_length(link) <= 300 and link ~ '^https://(((www|m)\.)?youtube\.com/(watch\?v=|shorts/)[A-Za-z0-9_-]{6,20}|youtu\.be/[A-Za-z0-9_-]{6,20}|(www\.)?medal\.tv/[A-Za-z0-9/_-]{3,200}|clips\.twitch\.tv/[A-Za-z0-9_-]{3,100}|(www\.)?twitch\.tv/[A-Za-z0-9_]{3,25}/clip/[A-Za-z0-9_-]{3,100})([?&#][^[:space:]<>"]*)?$'),
+  legenda text not null default '' check (char_length(legenda) <= 140),
+  sala    text references public.salas(id) on delete set null,
+  em      timestamptz not null default now(),
+  constraint midia_arquivo_ou_link check ((caminho is null) <> (link is null))
+);
+create index if not exists midias_em on public.midias (em desc);
+alter table public.midias enable row level security;
+revoke all on public.midias from public, anon, authenticated;
+grant select, delete on public.midias to authenticated;
+grant insert (caminho, link, legenda, sala) on public.midias to authenticated;
+drop policy if exists midias_tabela_ler on public.midias;
+create policy midias_tabela_ler on public.midias for select to authenticated using (public.eh_nanico());
+drop policy if exists midias_tabela_criar on public.midias;
+create policy midias_tabela_criar on public.midias for insert to authenticated with check (public.eh_nanico() and user_id = auth.uid());
+drop policy if exists midias_tabela_apagar on public.midias;
+create policy midias_tabela_apagar on public.midias for delete to authenticated using (user_id = auth.uid());
+
+create or replace function public.midias_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.user_id := auth.uid();
+  new.em := now();
+  new.legenda := left(btrim(regexp_replace(coalesce(new.legenda, ''), '[\x00-\x1F\x7F]', ' ', 'g')), 140);
+  if new.caminho is not null then
+    if split_part(new.caminho, '/', 1) <> new.user_id::text then
+      raise exception 'Envie na sua própria pasta.' using errcode = 'P0001';
+    end if;
+    if not exists (select 1 from storage.objects where bucket_id = 'midias' and name = new.caminho) then
+      raise exception 'O arquivo não chegou. Envie de novo.' using errcode = 'P0001';
+    end if;
+  end if;
+  perform public.limitar('midia', 10, interval '1 hour', 'Calma: no máximo 10 mídias por hora.');
+  if (select count(*) from public.midias where user_id = new.user_id) >= 60 then
+    raise exception 'Você já tem 60 mídias. Apague alguma para mandar outra.' using errcode = 'P0001';
+  end if;
+  return new;
+end $$;
+drop trigger if exists midias_protecao on public.midias;
+create trigger midias_protecao before insert on public.midias for each row execute function public.midias_protecao();
+
+-- links do perfil (além de op.gg e Steam): um por tipo, cada um só os próprios; o formato de cada site é conferido
+create table if not exists public.perfil_links (
+  friend_id uuid not null references public.friends(id) on delete cascade,
+  tipo      text not null check (tipo in ('twitch', 'youtube', 'instagram', 'tiktok', 'x', 'faceit', 'leetify')),
+  url       text not null check (char_length(url) <= 200),
+  primary key (friend_id, tipo),
+  constraint perfil_link_formato check (
+       (tipo = 'twitch'    and url ~ '^https://(www\.)?twitch\.tv/[A-Za-z0-9_]{3,25}/?$')
+    or (tipo = 'youtube'   and url ~ '^https://(www\.)?youtube\.com/(@[A-Za-z0-9._-]{3,30}|channel/[A-Za-z0-9_-]{10,40}|c/[A-Za-z0-9._-]{2,60})/?$')
+    or (tipo = 'instagram' and url ~ '^https://(www\.)?instagram\.com/[A-Za-z0-9._]{1,30}/?$')
+    or (tipo = 'tiktok'    and url ~ '^https://(www\.)?tiktok\.com/@[A-Za-z0-9._]{2,24}/?$')
+    or (tipo = 'x'         and url ~ '^https://(www\.)?(x|twitter)\.com/[A-Za-z0-9_]{1,15}/?$')
+    or (tipo = 'faceit'    and url ~ '^https://(www\.)?faceit\.com/[a-z]{2}(-[a-z]{2})?/players/[A-Za-z0-9_-]{2,30}/?$')
+    or (tipo = 'leetify'   and url ~ '^https://(www\.)?leetify\.com/app/profile/[0-9]{17}/?$'))
+);
+alter table public.perfil_links enable row level security;
+revoke all on public.perfil_links from public, anon, authenticated;
+grant select, insert, update, delete on public.perfil_links to authenticated;
+drop policy if exists perfil_links_ler on public.perfil_links;
+create policy perfil_links_ler on public.perfil_links for select to authenticated using (public.eh_nanico());
+drop policy if exists perfil_links_meus on public.perfil_links;
+create policy perfil_links_meus on public.perfil_links for all to authenticated
+  using (friend_id in (select id from public.friends where user_id = auth.uid()))
+  with check (friend_id in (select id from public.friends where user_id = auth.uid()));
+create or replace function public.perfil_links_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  perform public.limitar('perfil_link', 40, interval '1 hour', 'Calma: muitas mudanças nos links. Tente daqui a pouco.');
+  return new;
+end $$;
+drop trigger if exists perfil_links_protecao on public.perfil_links;
+create trigger perfil_links_protecao before insert or update on public.perfil_links for each row execute function public.perfil_links_protecao();
+
+-- mural de links do grupo (builds, vídeos, jogos): só https, autor sempre quem está logado, o autor apaga
+create table if not exists public.mural_links (
+  id      bigint generated always as identity primary key,
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  url     text not null check (char_length(url) <= 300 and url ~ '^https://[A-Za-z0-9.-]+\.[A-Za-z]{2,}(:[0-9]{2,5})?(/[^[:space:]<>"]*)?$'),
+  titulo  text not null default '' check (char_length(titulo) <= 80),
+  em      timestamptz not null default now()
+);
+create index if not exists mural_links_em on public.mural_links (em desc);
+alter table public.mural_links enable row level security;
+revoke all on public.mural_links from public, anon, authenticated;
+grant select, delete on public.mural_links to authenticated;
+grant insert (url, titulo) on public.mural_links to authenticated;
+drop policy if exists mural_ler on public.mural_links;
+create policy mural_ler on public.mural_links for select to authenticated using (public.eh_nanico());
+drop policy if exists mural_criar on public.mural_links;
+create policy mural_criar on public.mural_links for insert to authenticated with check (public.eh_nanico() and user_id = auth.uid());
+drop policy if exists mural_apagar on public.mural_links;
+create policy mural_apagar on public.mural_links for delete to authenticated using (user_id = auth.uid());
+create or replace function public.mural_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.user_id := auth.uid();
+  new.em := now();
+  new.titulo := left(btrim(regexp_replace(coalesce(new.titulo, ''), '[\x00-\x1F\x7F]', ' ', 'g')), 80);
+  perform public.limitar('mural', 10, interval '1 hour', 'Calma: no máximo 10 links por hora no mural.');
+  return new;
+end $$;
+drop trigger if exists mural_protecao on public.mural_links;
+create trigger mural_protecao before insert on public.mural_links for each row execute function public.mural_protecao();
+
+revoke all on function public.midias_protecao() from public, anon, authenticated;
+revoke all on function public.perfil_links_protecao() from public, anon, authenticated;
+revoke all on function public.mural_protecao() from public, anon, authenticated;
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.midias;      exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.mural_links; exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.perfil_links; exception when duplicate_object then null; end;
+end $$;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões e as 3 tabelas de mídias e links
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -2283,4 +2421,7 @@ select proname::text, 'bingo' from pg_proc
 union all
 select proname::text, 'missoes' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('minhas_missoes')
+union all
+select tablename::text, 'midias' from pg_tables
+ where schemaname = 'public' and tablename in ('midias', 'perfil_links', 'mural_links')
 order by 2, 1;

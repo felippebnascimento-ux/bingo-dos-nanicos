@@ -152,6 +152,14 @@ export const CHANGELOG: EntradaLog[] = [
       "As missões aparecem no Sítio, em cima da carteira, e no Perfil",
     ],
   },
+  {
+    data: "02/11/2026",
+    itens: [
+      "Mídias: galeria de prints do grupo",
+      "Links de Twitch, YouTube e outros na ficha, e um mural de links do grupo",
+      "Vídeo entra na galeria como link do YouTube, do Medal ou clipe da Twitch",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

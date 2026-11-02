@@ -93,6 +93,14 @@ export const IcCassino = (p: P) => (
     <path d="M12 3.5v4M12 16.5v4M3.5 12h4M16.5 12h4" />
   </Base>
 );
+/** Mídias: moldura de foto com montanha. */
+export const IcMidias = (p: P) => (
+  <Base {...p}>
+    <rect x="3.5" y="5" width="17" height="14" rx="2" />
+    <circle cx="9" cy="10" r="1.6" />
+    <path d="M20.5 16l-5-5-8 8" />
+  </Base>
+);
 /** Moeda (carteira). */
 export const IcMoeda = (p: P) => (
   <Base {...p}>

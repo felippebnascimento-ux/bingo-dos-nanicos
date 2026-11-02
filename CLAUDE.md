@@ -48,7 +48,7 @@ npm start            # serve out/ localmente para testar o build
 src/
   app/                 layout.tsx (fontes, CSS na ordem certa), page.tsx (monta o App só no navegador), ícones
   components/
-    App.tsx            casca do site em 3 colunas: menu, as 11 abas (sempre montadas, só escondidas; abre no Início) e
+    App.tsx            casca do site em 3 colunas: menu, as 13 abas (sempre montadas, só escondidas; abre no Início) e
                        a lista de membros; portas, toast. No Início o menu e os membros somem (`no-inicio`), e no
                        Sítio somem os membros (`sem-membros`). Troféus e Chat ficam fora do menu; Jogar só aparece numa
                        sala de LoL (ou sem a tabela de salas); no computador, Ao vivo e Perfil saem do menu (abrem pelos
@@ -85,6 +85,9 @@ src/
                        consumoSala.ts (tempo real de `consumos`: o boneco fuma ou bebe em todas as telas),
                        Itens.tsx (desenhos dos consumíveis e do escudo, ConsumoCamada do Sítio, TituloNanico) e
                        LojaView.tsx (vitrine com prévia, mochila; `MochilaLista` também aparece na ficha)
+    midias/            aba Mídias (aba `midias`, no menu): midiasDados.ts (galeria, mural e links do perfil; comprime a
+                       imagem no navegador para webp até 1920 px; baixa do bucket privado como blob: e solta a URL;
+                       `iniciarMidias`, `linksDe`) e MidiasView.tsx (galeria com tela cheia, vídeo como link, mural)
     missoes/           missões do dia: missoesDados.ts (pede minhas_missoes() ao entrar, a cada 2 min e depois das
                        ações que contam, vistas pelo tempo real; lerMissoes puro e testado) e Missoes.tsx (cartão no
                        canto do Sítio, acima da carteira e recolhível, e no Perfil)
@@ -107,7 +110,8 @@ src/
                        (bloco "No Sítio": dias seguidos, recorde, tempo online; `ChamaNome` ao lado do nome com 3+
                        dias), presenca.ts (presenca_de e presenca_todos) e PlacarZoeira.tsx (chineladas e tortas
                        dadas e levadas nos últimos 7 dias)
-    perfil/            PerfilView, opgg.ts e steam.ts (limpar link, nick)
+    perfil/            PerfilView, opgg.ts e steam.ts (limpar link, nick), links.ts (Twitch, YouTube… e vídeo e mural:
+                       cleanLink, cleanVideo, cleanMural, dominio; puro e testado) e CampoLinks.tsx ("Meus links")
     live/              live.ts (liga tudo à sala), rtc.ts (WebRTC comum), tela.ts (transmissão), camera.ts,
                        voz.ts (voz da sala: um par WebRTC só de áudio com cada um na voz, microfone, fone, quem
                        está falando), ruido.ts (abrirMic: microfone passado pela RNNoise; sem ela, a supressão
@@ -151,7 +155,7 @@ src/
     tipos.ts           Friend, Phrase, Card, Presence…
     dados/             campeoes.ts (CHAMPS, LANES, LANE_CAMP), nanicos.ts (NAN_MAP, artOf, bonecoOf), changelog.ts,
                        novidades.ts (o que mostrar no Log depois de uma atualização; puro e testado)
-  styles/              CSS global, numerado: 01-base.css … 31-missoes.css (no celular, as abas ficam numa barra embaixo)
+  styles/              CSS global, numerado: 01-base.css … 32-midias.css (no celular, as abas ficam numa barra embaixo)
 public/arte/           artes dos nanicos (rosto e corpo), bonecos do hall, foto da turma, reações dos Picarétezzi
 planejamento/          PLANO.md (próximas fases e decisões), prompts/ (um por fase), demos e arte pronta
 supabase/
@@ -302,6 +306,9 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 | `riot_semana_meta`, `riot_semana_partidas` | trava e progresso do cálculo da semana (`estado` calculando/parcial/pronta) e as partidas já lidas (só os números dos nanicos) | só a função `riot-semana` (o site lê `estado`) |
 | `jogos_stats` | números da ficha por nanico e fonte (`lol`: elo, vitórias, KDA, main; `steam`: horas) | nanicos leem; só a função `ficha-jogos` grava |
 | `riot_partidas_vistas` | partidas do LoL já lidas (KDA das últimas 20 sem buscar tudo de novo) | só a função `ficha-jogos` |
+| `midias` | galeria (`user_id`, `caminho` no bucket **ou** `link` de vídeo do YouTube/Medal/clipe da Twitch, `legenda` ≤ 140, `sala`) | nanicos leem; cada um manda (gatilho `midias_protecao`: autor, pasta própria, arquivo existe, 10 por hora, até 60 por pessoa) e apaga as suas |
+| `perfil_links` | links da ficha (`friend_id`, `tipo` twitch/youtube/instagram/tiktok/x/faceit/leetify, `url` no formato de cada site) | nanicos leem; cada um grava só os próprios |
+| `mural_links` | mural do grupo (`user_id`, `url` só https ≤ 300, `titulo` ≤ 80) | nanicos leem; cada um põe (10 por hora) e apaga os seus |
 | `missoes_def` | as missões possíveis (`id`, `texto`, `meta`, `valor`, `fase_ok`, `ordem`); a semente fica no SQL | nanicos leem; só o admin escreve (o PR de uma fase nova liga a missão dela com `fase_ok = true`) |
 | `missoes_dia` | as 3 missões de cada um por dia (`user_id`, `dia`, `missao_id`, `progresso`, `feita_em`) | cada um lê as suas; só `minhas_missoes()` grava |
 | `bingo_partidas` | uma partida de bingo aberta por sala de LoL (`sala`, `game_id` da Riot, `aberta_em`, `fechada_em`) | nanicos leem; só as funções `bingo_*` |
@@ -335,6 +342,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
   - **`equipar(item, ligar)`** só aceita o que está na mochila e desliga os outros do mesmo espaço (cadeira, mesa, tapete, pôster, planta, parede, luz, título, moldura). **`usar_item(item)`** gasta 1 consumível e grava em `consumos`; o tempo real dessa tabela anima o boneco em todas as telas (nunca broadcast). **`quarto_de(nanico)`** devolve os equipados.
   - **Escudo de sequência:** o `bater_ponto()` da seção 15 (substitui o da 7) gasta 1 escudo quando a pessoa faltou ontem mas veio anteontem, cria o dia de ontem com valor 0 e devolve `escudo_usado: true`. Dois dias perdidos não salvam.
   - **Itens:** consumíveis de 15 a 60 (cigarrinho, latinha, chimarrão, energético, caipirinha, charuto), escudo 400, quarto de 150 a 1.500, títulos de 250 a 2.000 e molduras de 800 e 1.200.
+- **Mídias e links (seção 16 do `seguranca.sql`):** bucket `midias` **privado** (5 MB, só webp/png/jpeg/gif); `storage.objects` só deixa nanico ler, subir na própria pasta (`<uid>/…`) e apagar a própria. O site mostra a imagem com `download()` → `URL.createObjectURL` (a CSP já aceita `blob:`); link externo abre em nova aba, sem iframe e sem prévia. Apagar uma mídia apaga o arquivo e a linha.
 - **Missões do dia (seção 23 do `seguranca.sql`):** `minhas_missoes()` sorteia 3 das `fase_ok` (com `random()`) na primeira chamada do dia de Brasília e devolve as 3 com o progresso **recalculado na hora** das tabelas de origem (`missao_progresso`: `online_diario`, `chat_messages`, `phrases.created_by`, `zoeiras`, extrato do truco, `bingo_premios`, `rodizio.sorteado_por`). Paga ao completar com `creditar(valor, 'missao', 'dia:id')` e, com as 3 feitas, o bônus de +25 (`'dia:bonus'`), uma vez só (trava por pessoa com `pg_advisory_xact_lock`). Nenhum progresso vem do site. A "Aposte numa partida ao vivo" espera a fase 10 (`fase_ok = false`).
 - **Bingo no servidor (seção 12a do `seguranca.sql`):**
   - **Cartela:** `bingo_nova_cartela(sala)` sorteia no banco (`bingo_sortear`, com `gen_random_bytes`; até 16 da partida, o resto genéricas, como `sortear()`), e `bingo_montada(sala, casas)` aceita 24 nanicadas que valem (`bingo_valem`, a mesma regra de `eligible()`). Ambas abrem a partida da sala se não houver (`bingo_abrir`). Trocar de cartela só antes do primeiro canto confirmado.
@@ -366,7 +374,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
   - `reacao`: emojis e fotos;
   - `risco`: desenho na live;
   - `hall`: `{ para: {i, j} }`, o destino do boneco. Cada navegador calcula o caminho e anima sozinho (limite de 8 a cada 2 s).
-- **Mudanças no banco:** chegam por `postgres_changes` em `friends`, `phrases`, `game`, `chat_messages`, `carteiras`, `rodizio`, `mochila` (equipados), `consumos` (o boneco fumando ou bebendo), `truco_mesas`, `truco_maos`, `bingo_partidas`, `bingo_cartelas` e `bingo_cantos` (no DELETE, `aoMudarTabela` entrega a chave da linha apagada). A chinelada e a torta vêm do tempo real de `zoeiras` (pagas, gravadas por `zoar()`), e o sorteio da roleta do rodízio vem do tempo real de `rodizio` (todo mundo anima até o mesmo `girado_em`), **nunca de broadcast**. Os ganhos de moedas de todo mundo no Sítio vêm do tempo real de `carteiras` (gravado por `creditar()`), **nunca de broadcast**.
+- **Mudanças no banco:** chegam por `postgres_changes` em `friends`, `phrases`, `game`, `chat_messages`, `carteiras`, `rodizio`, `mochila` (equipados), `consumos` (o boneco fumando ou bebendo), `truco_mesas`, `truco_maos`, `bingo_partidas`, `bingo_cartelas`, `bingo_cantos`, `midias`, `mural_links` e `perfil_links` (no DELETE, `aoMudarTabela` entrega a chave da linha apagada). A chinelada e a torta vêm do tempo real de `zoeiras` (pagas, gravadas por `zoar()`), e o sorteio da roleta do rodízio vem do tempo real de `rodizio` (todo mundo anima até o mesmo `girado_em`), **nunca de broadcast**. Os ganhos de moedas de todo mundo no Sítio vêm do tempo real de `carteiras` (gravado por `creditar()`), **nunca de broadcast**.
 
 ### Navegador (`localStorage`, só conveniência de cada pessoa)
 - **Chaves:** `rift-lineup`, `rift-card` (cartela do bingo local; numa sala de LoL com o SQL, a cartela vem do banco), `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `log-visto`, `fome-fechado`, `hall-pos` (último piso no hall), `hall-sala-min` (lista "Na sala agora" do Sítio recolhida), `sala-atual` (última sala; o site sempre abre no lobby), `canais-voz-min` e `canais-texto-min` (categorias de canais recolhidas; no celular começam recolhidas) `membros-min` (lista de membros só com os rostos; abaixo de 1200 px fica assim sempre) e `midia` (microfone, saída de som, câmera, eco e ruído escolhidos nas Configurações) e `evento-visto` (o aviso que explica o happy hour e o churrasco já apareceu) e `missoes-min` (cartão das missões recolhido no Sítio).
