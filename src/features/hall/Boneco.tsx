@@ -45,8 +45,11 @@ export const Boneco = memo(function Boneco({ b, f, eu, z, vb, rot = 0, enfeite }
       {!f.id ? (
         corpo
       ) : (
-        <button
-          type="button"
+        /* um <span> que age como botão (e não um <button>): assim nem o navegador nem extensões de modo escuro
+           pintam um quadrado em volta do boneco ao passar o mouse */
+        <span
+          role="button"
+          tabIndex={0}
           className="boneco-toque"
           aria-label={eu ? "Você: abrir o seu perfil" : `${b.name}, abrir opções`}
           aria-haspopup={eu ? undefined : "menu"}
@@ -54,9 +57,15 @@ export const Boneco = memo(function Boneco({ b, f, eu, z, vb, rot = 0, enfeite }
             e.stopPropagation();
             abrirMenu(b.key);
           }}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter" && e.key !== " ") return;
+            e.preventDefault();
+            e.stopPropagation();
+            abrirMenu(b.key);
+          }}
         >
           {corpo}
-        </button>
+        </span>
       )}
     </div>
   );

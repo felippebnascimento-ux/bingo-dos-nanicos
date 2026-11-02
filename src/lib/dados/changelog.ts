@@ -260,7 +260,7 @@ export const CHANGELOG: EntradaLog[] = [
   },
   {
     data: "02/11/2026",
-    itens: ["Passar o mouse no boneco não pinta mais um quadrado escuro em volta (alto contraste do Windows e cores de página do Edge)"],
+    itens: ["Passar o mouse no boneco não pinta mais um quadrado escuro em volta"],
   },
 ];
 

@@ -28,7 +28,7 @@
 .boneco-img.espelha{transform:scaleX(-1)}
 /* o boneco é um botão, mas sem nada em volta: nem fundo, nem borda, nem o destaque do toque ou do foco
    (no teclado, quem fica destacado é o nome do boneco) */
-.boneco-toque{position:absolute;inset:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;cursor:pointer;pointer-events:auto;
+.boneco-toque{display:block;position:absolute;inset:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;cursor:pointer;pointer-events:auto;
   -webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent}
 .boneco-toque:hover,.boneco-toque:active,.boneco-toque:focus{background:none;box-shadow:none;outline:none}
 /* com o alto contraste do Windows ou as cores de página do Edge, o navegador pinta o botão ao passar o mouse: o boneco não */
