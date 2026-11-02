@@ -1,10 +1,7 @@
-/* Salas tipo lan house: a janela das salas (cartões e chat geral), o "Você está em" do menu,
+/* Salas tipo lan house: a janela das salas (cartões e chat geral),
    o convite do Ao vivo no lobby e, no celular, a barra de abas embaixo da tela. */
 /* o Sítio é uma camada só: as camadas de dentro (bonecos, placas) não passam por cima do menu nem das janelas */
 .hall-area{isolation:isolate}
-.voce-esta{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border:1px solid var(--line);border-radius:var(--r-sm);font-size:13px}
-.voce-esta b{color:var(--accent-text)}
-body.side-min .voce-esta{display:none}
 
 .convite-sala{display:grid;gap:12px;justify-items:start;max-width:560px}
 .convite-sala p{margin:0}

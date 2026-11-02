@@ -1,5 +1,5 @@
 /*
- * Peças do WebRTC usadas pela tela e pela câmera.
+ * Peças do WebRTC usadas pela tela, pela câmera e pela voz.
  * A imagem vai direto de quem transmite para quem assiste (WebRTC).
  * O Supabase só serve para os dois se acharem (mensagens `rtc` na sala).
  * Se alguém numa rede mais fechada não conseguir assistir, dá para pôr um servidor TURN aqui.
@@ -12,7 +12,7 @@ export const ICE: RTCIceServer[] = [
   ...TURN_SERVERS,
 ];
 
-/** Mensagem de sinalização (tela: watch/offer/answer/ice/bye; câmera: cw/co/ca/ci/cb). */
+/** Mensagem de sinalização (tela: watch/offer/answer/ice/bye; câmera: cw/co/ca/ci/cb; voz: vo/va/vi/vb). */
 export type MsgRtc = {
   t: string;
   from: string;

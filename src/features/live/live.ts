@@ -1,5 +1,6 @@
 /*
  * Ao vivo: liga a transmissão de tela, as câmeras, as reações e o desenho à sala.
+ * Liga também a voz das salas (voz.ts), que usa a mesma sinalização.
  * `iniciarLive()` é chamado uma vez pela aba (LiveView); o resto do site usa
  * `assistir` (lista da sala) e `pararTudoAoVivo` (ao sair).
  */
@@ -10,8 +11,9 @@ import { onRisco, pintar } from "./desenho";
 import { onReacao } from "./reacoes";
 import type { MsgRtc } from "./rtc";
 import { closeAllWatches, onAnswer, onBye, onIce, onOffer, onWatch, stopLive, syncLive, watch } from "./tela";
+import { sairVoz, syncVoz, vozOnAnswer, vozOnBye, vozOnIce, vozOnOffer } from "./voz";
 
-const RTC_T = new Set(["watch", "offer", "answer", "ice", "bye", "cw", "co", "ca", "ci", "cb"]);
+const RTC_T = new Set(["watch", "offer", "answer", "ice", "bye", "cw", "co", "ca", "ci", "cb", "vo", "va", "vi", "vb"]);
 const ACOES: Record<string, (m: MsgRtc) => unknown> = {
   watch: onWatch,
   offer: onOffer,
@@ -23,6 +25,10 @@ const ACOES: Record<string, (m: MsgRtc) => unknown> = {
   ca: camOnAnswer,
   ci: camOnIce,
   cb: camOnBye,
+  vo: vozOnOffer,
+  va: vozOnAnswer,
+  vi: vozOnIce,
+  vb: vozOnBye,
 };
 
 /** Confere o formato da mensagem de sinalização (vem de outro navegador: não é confiável). */
@@ -65,6 +71,7 @@ export function iniciarLive() {
   aoMudarPresenca(() => {
     syncLive();
     syncCams();
+    syncVoz();
   });
   addEventListener("resize", () => pintar());
   document.addEventListener("fullscreenchange", () => setTimeout(pintar, 60));
@@ -72,6 +79,7 @@ export function iniciarLive() {
     try {
       stopLive();
       closeAllWatches();
+      sairVoz();
     } catch {
       /* a página já está fechando */
     }
@@ -81,12 +89,13 @@ export function iniciarLive() {
   syncCams();
 }
 
-/** Para a minha transmissão, as que estou assistindo e as câmeras (ao sair do site). */
+/** Para a minha transmissão, as que estou assistindo, as câmeras e a voz (ao sair do site ou trocar de sala). */
 export function pararTudoAoVivo(): void {
   stopLive();
   closeAllWatches();
   stopCam();
   closeAllCams();
+  sairVoz();
 }
 
 /** Abre a tela de quem está ao vivo; `principal` = vira a tela grande, com som. */

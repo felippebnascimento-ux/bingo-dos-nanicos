@@ -16,7 +16,7 @@ const grupoDe = (p: Presence) => (p.fid ? `n:${p.fid}` : `nome:${p.name.trim().t
 
 /**
  * Junta as presenças por nanico (pelo `fid`; sem `fid`, pelo nome), ficando com a de `at` mais recente.
- * Quem transmite tela ou câmera em qualquer aba continua com `live`/`cam` (e a chave dessa aba),
+ * Quem transmite tela ou câmera, ou está na voz, em qualquer aba continua com `live`/`cam`/`voz` (e a chave da tela),
  * para a live não sumir de quem transmite numa aba e anda na outra.
  * As minhas outras abas entram no meu item, que fica com a `minhaChave`.
  */
@@ -33,6 +33,8 @@ export function umPorNanico(online: readonly Presence[], minhaChave: string): Pr
     const transmite = lista.filter((p) => p.live).reduce<Presence | null>((a, b) => (!a || b.at > a.at ? b : a), null);
     const comCam = lista.filter((p) => p.cam).reduce<Presence | null>((a, b) => (!a || b.at > a.at ? b : a), null);
     const comPos = lista.filter((p) => p.pos).reduce<Presence | null>((a, b) => (!a || b.at > a.at ? b : a), null);
+    const naVoz = lista.filter((p) => p.voz).reduce<Presence | null>((a, b) => (!a || b.at > a.at ? b : a), null);
+    const lendo = lista.filter((p) => p.texto).reduce<Presence | null>((a, b) => (!a || b.at > a.at ? b : a), null);
     const base = eu ?? recente;
     out.push({
       ...base,
@@ -40,6 +42,11 @@ export function umPorNanico(online: readonly Presence[], minhaChave: string): Pr
       key: eu ? eu.key : (transmite ?? recente).key,
       live: transmite?.live ?? null,
       cam: comCam?.cam ?? null,
+      /* a voz (e o microfone e o fone dela) vem da aba que está na voz */
+      voz: naVoz?.voz ?? null,
+      mudo: naVoz?.mudo ?? false,
+      surdo: naVoz?.surdo ?? false,
+      texto: lendo?.texto ?? null,
       pos: (eu ?? comPos ?? recente).pos,
       lines: Math.max(...lista.map((p) => p.lines)),
       id: eu ? minhaChave : g,

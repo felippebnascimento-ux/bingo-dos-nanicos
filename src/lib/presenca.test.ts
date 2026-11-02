@@ -39,4 +39,10 @@ describe("umPorNanico", () => {
     expect(donoDaChave(r, "b")?.id).toBe("n:f1");
     expect(donoDaChave(r, "zzz")).toBeNull();
   });
+
+  it("a voz vem da aba que está na voz, com o microfone dela", () => {
+    const r = umPorNanico([p("a", { at: 10, voz: "sid-voz-1", mudo: true }), p("b", { at: 20 })], "eu");
+    expect(r[0].voz).toBe("sid-voz-1");
+    expect(r[0].mudo).toBe(true);
+  });
 });

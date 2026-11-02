@@ -11,7 +11,7 @@ export const CHANGELOG: EntradaLog[] = [
   { data: "24/10/2026", itens: ["Banco de frases compartilhado pelo grupo", "Escalação da partida igual para todos", "Cartela 5x5 sorteada para cada pessoa"] },
   { data: "24/10/2026", itens: ["Frase ligada a mais de um campeão", { t: "Fotos dos amigos no seletor", off: "trocado pela arte de cada nanico na v1.05" }, "Lista de amigos em ordem alfabética", { t: "Opção de renomear amigos", off: "removido na v1.02" }] },
   { data: "25/10/2026", itens: ["Site próprio, sem precisar de conta do Claude", { t: "Público só cadastra frases e troca fotos", off: "trocado pelo login de cada nanico na v1.07" }] },
-  { data: "25/10/2026", itens: ["Novo visual: Bingo dos Nanicos", "Lista de quem está na sala agora", { t: "Nome salvo no navegador", off: "trocado pelo login de cada nanico na v1.07" }] },
+  { data: "25/10/2026", itens: ["Novo visual: Bingo dos Nanicos", { t: "Lista de quem está na sala agora", off: "trocada pela lista de membros à direita na v1.53" }, { t: "Nome salvo no navegador", off: "trocado pelo login de cada nanico na v1.07" }] },
   { data: "25/10/2026", itens: ["Frases viram Nanicadas, sempre em minúsculas", { t: "Filtro por vários nanicos ao mesmo tempo", off: "voltou a ser uma pessoa por vez na v1.19" }, "Opção Random na escalação", "Telas largas aproveitam o espaço em colunas"] },
   { data: "25/10/2026", itens: ["Arte de cada nanico: rosto em todo o site e corpo inteiro na aba Nanicos", "Marca d'água do grupo e ícone da bola de bingo", "Seletor de nanico abre onde cabe na tela"] },
   { data: "30/10/2026", itens: [{ t: "Botão para entrar no Google Meet do grupo", off: "removido na v1.21: agora tem câmera e transmissão no site" }] },
@@ -83,6 +83,17 @@ export const CHANGELOG: EntradaLog[] = [
   {
     data: "02/11/2026",
     itens: ["O menu do lado rola sozinho em tela baixa, sem arrastar a página junto"],
+  },
+  {
+    data: "02/11/2026",
+    itens: [
+      "Voz nas salas: clique numa sala em \"Canais de voz\" para entrar, falar com quem está nela e ver as transmissões; o botão vermelho desliga e sai da sala",
+      "Clique no AO VIVO de alguém em outra sala para entrar no canal e já assistir à tela",
+      "O rosto de quem está falando acende na lista",
+      "Canais de texto no menu: o #geral e o chat de cada sala, com as mensagens novas e quem está lendo agora",
+      "Lista de membros à direita, com quem está online e quem está offline, onde cada um está e a câmera no rosto",
+      "Embaixo do menu ficam fixos a voz, a câmera, o seu perfil e as suas moedas",
+    ],
   },
 ];
 

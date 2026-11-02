@@ -23,7 +23,7 @@
         },
         {
           "key": "Permissions-Policy",
-          "value": "camera=(self), display-capture=(self), microphone=(), geolocation=(), payment=(), usb=(), serial=()"
+          "value": "camera=(self), display-capture=(self), microphone=(self), geolocation=(), payment=(), usb=(), serial=()"
         },
         {
           "key": "Strict-Transport-Security",

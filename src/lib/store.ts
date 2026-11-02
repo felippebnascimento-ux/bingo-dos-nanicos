@@ -50,12 +50,20 @@ export type AppState = {
   myLiveSid: string | null;
   /** id da minha câmera (vai na presença) */
   myCamSid: string | null;
+  /** id da minha conexão de voz (vai na presença), microfone desligado e "surdo" */
+  myVozSid: string | null;
+  vozMudo: boolean;
+  vozSurdo: boolean;
+  /** canal de texto aberto na aba Chat ("geral" ou o id de uma sala) */
+  canalTexto: string;
   /** meu piso no hall (vai na presença; só muda quando o boneco chega) */
   hallPos: { i: number; j: number } | null;
 
   /* tela */
   aba: Aba;
   sideMin: boolean;
+  /** lista de membros (barra da direita) só com os rostos */
+  membrosMin: boolean;
   railTab: RailTab;
   chatUnread: number;
   /** mesas de truco esperando gente (contador no menu) */
@@ -98,9 +106,14 @@ export const useApp = create<AppState>()(() => ({
   salasAberto: false,
   myLiveSid: null,
   myCamSid: null,
+  myVozSid: null,
+  vozMudo: false,
+  vozSurdo: false,
+  canalTexto: "geral",
   hallPos: null,
   aba: "inicio",
   sideMin: false,
+  membrosMin: false,
   railTab: "telas",
   chatUnread: 0,
   trucoAbertas: 0,

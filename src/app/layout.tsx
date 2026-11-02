@@ -29,6 +29,7 @@ import "@/styles/25-salas.css";
 import "@/styles/26-cassino.css";
 import "@/styles/27-inicio.css";
 import "@/styles/28-trofeus.css";
+import "@/styles/29-canais.css";
 
 /* fontes servidas pelo próprio site (a CSP não precisa liberar o Google Fonts) */
 const unbounded = Unbounded({ subsets: ["latin"], weight: ["500", "700", "800"], variable: "--font-unbounded", display: "swap" });

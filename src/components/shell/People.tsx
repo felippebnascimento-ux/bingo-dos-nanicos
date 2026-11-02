@@ -1,12 +1,16 @@
 "use client";
+import { useEffect, useState } from "react";
 import { ChamaNome } from "@/features/ficha/NoSitio";
 import { Avatar } from "@/components/ui/Avatar";
+import { IcFoneDesligado, IcMic, IcMicDesligado, IcVoltar } from "@/components/ui/icones";
 import { CamNaSala } from "@/features/live/CamNaSala";
 import { assistir } from "@/features/live/live";
+import { useVoz } from "@/features/live/voz";
+import { nomeDaSala } from "@/features/salas/trocar";
 import { bingoLines } from "@/lib/bingo";
-import { umPorNanico } from "@/lib/presenca";
+import { umPorNanico, type PresencaNanico } from "@/lib/presenca";
 import { friendDaPresenca, MY_KEY, setApp, useApp } from "@/lib/store";
-import type { Presence } from "@/lib/tipos";
+import type { Friend, Presence } from "@/lib/tipos";
 import { ehCelular, hueOf, initials, local, rolarAte } from "@/lib/util";
 
 /** Clicar em quem está ao vivo na lista da sala: abre a aba Ao vivo já na tela da pessoa. */
@@ -22,7 +26,7 @@ export function goWatch(key: string) {
 
 /**
  * Quem está na sala agora, comigo primeiro e o resto em ordem alfabética.
- * Na barra lateral, só quem está na minha sala (ou no lobby, se eu estiver nele); no Sítio, `todos`.
+ * Só quem está na minha sala (ou no lobby, se eu estiver nele); com `todos`, o site inteiro (Sítio).
  */
 export function usePessoasNaSala(todos = false): Presence[] {
   const online = useApp((s) => s.online);
@@ -40,77 +44,181 @@ export function usePessoasNaSala(todos = false): Presence[] {
   return list.sort((a, b) => (a.key === MY_KEY ? -1 : b.key === MY_KEY ? 1 : String(a.name).localeCompare(String(b.name), "pt-BR")));
 }
 
-/** "Na sala agora": quem está com o site aberto, com BINGO e AO VIVO. No Sítio, a lista fica no canto do hall. */
-export function People() {
+/**
+ * Todo mundo com o site aberto, um por nanico, comigo incluído. O meu item usa o meu estado
+ * (sala, tela, câmera, voz, canal de texto), que chega antes da presença voltar do canal.
+ */
+export function useNanicosOnline(): PresencaNanico[] {
+  const online = useApp((s) => s.online);
+  const myName = useApp((s) => s.myName);
+  const myFid = useApp((s) => s.myFid);
+  const card = useApp((s) => s.card);
+  const sala = useApp((s) => s.minhaSala);
+  const live = useApp((s) => s.myLiveSid);
+  const cam = useApp((s) => s.myCamSid);
+  const voz = useApp((s) => s.myVozSid);
+  const mudo = useApp((s) => s.vozMudo);
+  const surdo = useApp((s) => s.vozSurdo);
+  const texto = useApp((s) => (s.aba === "chat" ? s.canalTexto : null));
+  const lista = umPorNanico(online, MY_KEY);
+  const meu = { sala, live: live ?? null, cam: cam ?? null, voz, mudo: !!voz && mudo, surdo: !!voz && surdo, texto };
+  const i = lista.findIndex((p) => p.chaves.includes(MY_KEY));
+  if (i >= 0) lista[i] = { ...lista[i], ...meu, live: live ?? lista[i].live, cam: cam ?? lista[i].cam };
+  else if (myName)
+    lista.unshift({ key: MY_KEY, name: myName, fid: myFid, lines: bingoLines(card), pos: null, at: 0, id: MY_KEY, chaves: [MY_KEY], ...meu });
+  return lista;
+}
+
+/** Uma pessoa na lista de membros: rosto (ou câmera), nome, onde está e o que está fazendo. */
+function Membro({ p, f, falando }: { p: PresencaNanico | null; f: Friend | undefined; falando: boolean }) {
+  const salas = useApp((s) => s.salas);
+  const minhaSala = useApp((s) => s.minhaSala);
+  const nome = f?.name ?? p?.name ?? "";
+  const eu = !!p?.chaves.includes(MY_KEY);
+  const online = !!p;
+  /* a tela só dá para assistir de dentro da mesma sala */
+  const assiste = !!p?.live && p.sala === minhaSala;
+  const titulo = assiste ? (eu ? "Ver a sua transmissão" : `Assistir a tela de ${nome}`) : `Ver a ficha de ${nome}`;
+  const abrir = () => {
+    if (assiste && p) goWatch(p.key);
+    else if (f) setApp({ fichaAberta: f.id });
+  };
+  const onde = !p ? null : p.sala ? (nomeDaSala(p.sala, salas) ?? "Numa sala") : salas.length ? "No lobby" : null;
+  const pic = f ? (
+    <Avatar f={f} />
+  ) : (
+    <span className="u" style={{ ["--h" as string]: hueOf(nome) }} aria-hidden="true">
+      {initials(nome)}
+    </span>
+  );
+  return (
+    <li
+      data-key={p?.key}
+      className={(eu ? "me" : "") + (p?.live ? " live" : "") + (online ? "" : " offline") + (falando ? " falando" : "")}
+      title={titulo}
+      role={f || assiste ? "button" : undefined}
+      tabIndex={f || assiste ? 0 : undefined}
+      aria-label={f || assiste ? titulo : undefined}
+      onClick={f || assiste ? abrir : undefined}
+      onKeyDown={(e) => {
+        if ((f || assiste) && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          abrir();
+        }
+      }}
+    >
+      {p ? (
+        <CamNaSala personKey={p.key} nome={nome}>
+          {pic}
+        </CamNaSala>
+      ) : (
+        pic
+      )}
+      <span className="who">
+        <span className="nm">
+          {nome}
+          <ChamaNome fid={f?.id} />
+          {eu && (
+            <>
+              {" "}
+              <span className="you">(você)</span>
+            </>
+          )}
+        </span>
+        {onde && (
+          <small className="onde">
+            {p?.voz && (p.surdo ? <IcFoneDesligado tam={12} /> : p.mudo ? <IcMicDesligado tam={12} /> : <IcMic tam={12} />)}
+            {onde}
+          </small>
+        )}
+      </span>
+      {p?.live && <span className="live-pill">AO VIVO</span>}
+      {!!p?.lines && <span className="bingo-pill">BINGO{p.lines > 1 ? " ×" + p.lines : ""}</span>}
+    </li>
+  );
+}
+
+/** Abaixo desta largura a lista fica só com os rostos (sobra pouco espaço para o conteúdo). */
+const ESTREITA = "(max-width: 1199px)";
+function useEstreita() {
+  const [v, setV] = useState(() => matchMedia(ESTREITA).matches);
+  useEffect(() => {
+    const mq = matchMedia(ESTREITA);
+    const fn = () => setV(mq.matches);
+    mq.addEventListener("change", fn);
+    return () => mq.removeEventListener("change", fn);
+  }, []);
+  return v;
+}
+
+/**
+ * Membros (barra da direita, como no Discord): os 14 nanicos, primeiro quem está online e depois
+ * quem está offline. Com a câmera no círculo, AO VIVO (clica para assistir), BINGO e onde cada um está.
+ * Some no Início e no Sítio (o Sítio tem a própria lista no canto).
+ */
+export function Membros() {
   const friends = useApp((s) => s.friends);
-  const noSitio = useApp((s) => s.aba === "hall");
-  const list = usePessoasNaSala();
-  if (noSitio) return null;
+  const min = useApp((s) => s.membrosMin);
+  const falando = useVoz((s) => s.falando);
+  const estreita = useEstreita();
+  const pessoas = useNanicosOnline();
+
+  useEffect(() => {
+    document.body.classList.toggle("membros-min", min || estreita);
+  }, [min, estreita]);
+
+  const porNome = (a: { nome: string }, b: { nome: string }) => a.nome.localeCompare(b.nome, "pt-BR");
+  const linhas = pessoas.map((p) => {
+    const f = friendDaPresenca(p, friends);
+    return { p, f, nome: f?.name ?? p.name };
+  });
+  /* eu primeiro; depois quem está online em ordem de nome */
+  const online = linhas.sort((a, b) => (a.p.chaves.includes(MY_KEY) ? -1 : b.p.chaves.includes(MY_KEY) ? 1 : porNome(a, b)));
+  const offline = friends
+    .filter((f) => !linhas.some((l) => l.f?.id === f.id))
+    .map((f) => ({ p: null, f, nome: f.name }))
+    .sort(porNome);
+  const fala = (p: PresencaNanico) => p.chaves.some((k) => falando.includes(k));
 
   return (
-    <section className="room" aria-labelledby="roomTitle">
-      <h3 id="roomTitle">
+    <aside className="membros" aria-label="Membros">
+      <button
+        className="membros-toggle"
+        type="button"
+        hidden={estreita}
+        aria-expanded={!min}
+        aria-label={min ? "Abrir a lista de membros" : "Recolher a lista de membros"}
+        title={min ? "Abrir a lista de membros" : "Recolher a lista de membros"}
+        onClick={() => {
+          setApp({ membrosMin: !min });
+          local.set("membros-min", min ? "0" : "1");
+        }}
+      >
+        <IcVoltar />
+      </button>
+      <h3>
         <span className="dot" aria-hidden="true" />
-        <span id="roomCount">Na sala agora ({list.length})</span>
+        <span className="t">Online — </span>
+        {online.length}
       </h3>
-      <ul className="people" id="people">
-        {list.length ? (
-          list.map((p) => {
-            const f = friendDaPresenca(p, friends);
-            const nm = f ? f.name : p.name,
-              eu = p.key === MY_KEY;
-            const titulo = p.live ? (eu ? "Ver a sua transmissão" : `Assistir a tela de ${nm}`) : nm;
-            const pic = f ? (
-              <Avatar f={f} />
-            ) : (
-              <span className="u" style={{ ["--h" as string]: hueOf(p.name) }} aria-hidden="true">
-                {initials(p.name)}
-              </span>
-            );
-            return (
-              <li
-                key={p.key}
-                data-key={p.key}
-                className={(eu ? "me" : "") + (p.live ? " live" : "")}
-                title={titulo}
-                {...(p.live
-                  ? {
-                      "data-live": p.key,
-                      role: "button",
-                      tabIndex: 0,
-                      "aria-label": titulo,
-                      onClick: () => goWatch(p.key),
-                      onKeyDown: (e: React.KeyboardEvent) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          goWatch(p.key);
-                        }
-                      },
-                    }
-                  : {})}
-              >
-                <CamNaSala personKey={p.key} nome={nm}>
-                  {pic}
-                </CamNaSala>
-                <span className="who">
-                  {nm}
-                  <ChamaNome fid={f?.id} />
-                  {eu && (
-                    <>
-                      {" "}
-                      <span className="you">(você)</span>
-                    </>
-                  )}
-                </span>
-                {p.live && <span className="live-pill">AO VIVO</span>}
-                {p.lines > 0 && <span className="bingo-pill">BINGO{p.lines > 1 ? " ×" + p.lines : ""}</span>}
-              </li>
-            );
-          })
-        ) : (
-          <li className="status">Ninguém por aqui ainda.</li>
-        )}
+      <ul className="people">
+        {online.map(({ p, f }) => (
+          <Membro key={p.id} p={p} f={f} falando={fala(p)} />
+        ))}
       </ul>
-    </section>
+      {offline.length > 0 && (
+        <>
+          <h3>
+            <span className="t">Offline — </span>
+            {offline.length}
+          </h3>
+          <ul className="people">
+            {offline.map(({ f }) => (
+              <Membro key={f.id} p={null} f={f} falando={false} />
+            ))}
+          </ul>
+        </>
+      )}
+    </aside>
   );
 }

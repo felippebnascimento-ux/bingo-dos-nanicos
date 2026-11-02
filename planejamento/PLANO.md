@@ -171,7 +171,7 @@ A ideia é dar três motivos para abrir o site: zoar os amigos, não perder o qu
 - **O que não dá para impedir:** combinação pelo Discord. Por isso os prêmios têm limite por dia.
 
 ### Salas tipo lan house
-- **Para que servem:** a call do Discord se dividiu, então cada grupo vai para uma sala. Não tem voz no site.
+- **Para que servem:** a call do Discord se dividiu, então cada grupo vai para uma sala. Desde 02/11/2026 cada sala tem voz no site (canais de voz no menu, como no Discord).
 - **Lobby (tela inicial):** os cartões das salas mostram quem está em cada uma, quem está ao vivo e quem está em partida.
 - **Cada sala tem:** presença, live, câmeras, reações, desenho e chat próprios.
 - **No lobby, para todos:** chat geral, truco e cassino.

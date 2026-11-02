@@ -33,6 +33,7 @@ export function iniciarLocal() {
     lineup: cleanLineup(local.json("rift-lineup")),
     card: card && Array.isArray(card.cells) && Array.isArray(card.marked) ? card : null,
     sideMin: local.get("side-min") === "1",
+    membrosMin: local.get("membros-min") === "1",
     logVisto: lerVisto(local.get("log-visto")),
   });
   const t = local.get("rail-tab");

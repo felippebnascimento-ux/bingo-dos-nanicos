@@ -209,6 +209,49 @@ export const IcExpandir = (p: P) => (
     <path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" />
   </Base>
 );
+/** Voz e canais (estilo Discord): microfone, fone, desligar, # do canal de texto e a seta de recolher. */
+export const IcMic = (p: P) => (
+  <Base {...p}>
+    <rect x="9" y="3" width="6" height="11" rx="3" />
+    <path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" />
+  </Base>
+);
+export const IcMicDesligado = (p: P) => (
+  <Base {...p}>
+    <path d="M15 9.5V6a3 3 0 0 0-5.7-1.3M9 9v2a3 3 0 0 0 4.6 2.5" />
+    <path d="M5.5 11a6.5 6.5 0 0 0 10.4 5.2M18.5 11a6.4 6.4 0 0 1-.5 2.4M12 17.5V21M4 4l16 16" />
+  </Base>
+);
+export const IcFone = (p: P) => (
+  <Base {...p}>
+    <path d="M4 15v-3a8 8 0 0 1 16 0v3" />
+    <rect x="3.5" y="14" width="4" height="6" rx="1.5" />
+    <rect x="16.5" y="14" width="4" height="6" rx="1.5" />
+  </Base>
+);
+export const IcFoneDesligado = (p: P) => (
+  <Base {...p}>
+    <path d="M4 15v-3a8 8 0 0 1 12.6-6.5M19.4 9A8 8 0 0 1 20 12v3" />
+    <rect x="3.5" y="14" width="4" height="6" rx="1.5" />
+    <rect x="16.5" y="14" width="4" height="6" rx="1.5" />
+    <path d="M4 4l16 16" />
+  </Base>
+);
+export const IcDesligar = (p: P) => (
+  <Base {...p}>
+    <path d="M3.5 14.5c4.7-4.7 12.3-4.7 17 0l-2 2.5-3.2-1.3v-2.4a10 10 0 0 0-6.6 0v2.4L5.5 17z" />
+  </Base>
+);
+export const IcHash = (p: P) => (
+  <Base {...p}>
+    <path d="M9 4L7 20M17 4l-2 16M4.5 9h16M3.5 15h16" />
+  </Base>
+);
+export const IcSeta = (p: P) => (
+  <Base strokeWidth={2.4} {...p}>
+    <path d="M6 9l6 6 6-6" />
+  </Base>
+);
 /** estrela da casa LIVRE da cartela */
 export const IcEstrela = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">

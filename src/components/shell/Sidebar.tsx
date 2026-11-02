@@ -5,7 +5,6 @@ import { fecharSeletores } from "@/components/ui/FriendPicker";
 import { Avatar } from "@/components/ui/Avatar";
 import { CamBotoes } from "@/features/live/CamBotoes";
 import { CarteiraChip } from "@/features/moedas/Moedas";
-import { VoceEsta } from "@/features/salas/Salas";
 import { logout } from "@/lib/dados";
 import { VERSION } from "@/lib/dados/changelog";
 import { temNovidade } from "@/lib/dados/novidades";
@@ -13,7 +12,8 @@ import { CREW, MARCA } from "@/lib/dados/nanicos";
 import { friendOf, MY_KEY, salaLol, setApp, useApp } from "@/lib/store";
 import type { Aba } from "@/lib/tipos";
 import { local } from "@/lib/util";
-import { People } from "./People";
+import { nomeDaSala } from "@/features/salas/trocar";
+import { Canais, VozPainel } from "./Canais";
 
 const ABAS: { aba: Aba; t: string; Ic: ComponentType }[] = [
   { aba: "inicio", t: "Início", Ic: IcInicio },
@@ -43,6 +43,7 @@ function Nav() {
   const eu = useApp((s) => friendOf(s.myFid, s.friends));
   /* a aba Jogar (escalação e bingo) só existe nas salas de LoL; sem o SQL das salas, sempre aparece */
   const temJogar = useApp((s) => !s.salas.length || !!salaLol(s));
+  const temSalas = useApp((s) => s.salas.length > 0);
 
   const contagem = (a: Aba) => {
     if (a === "frases") return <span className="count" id="nFrases">{nFrases || ""}</span>;
@@ -61,7 +62,8 @@ function Nav() {
           aria-selected={aba === a}
           data-tab={a}
           id={a === "live" ? "navLive" : undefined}
-          className={a === "live" && unread ? "unread" : undefined}
+          /* com salas, o Ao vivo se abre pelos canais de voz; o item fica só na barra de abas do celular */
+          className={[a === "live" && unread ? "unread" : "", a === "live" && temSalas ? "so-celular" : ""].join(" ").trim() || undefined}
           title={t}
           onClick={() => {
             setApp({ aba: a });
@@ -77,7 +79,29 @@ function Nav() {
   );
 }
 
-/** Barra lateral: marca, quem está na sala, navegação, câmera e rodapé. No celular vira faixa no topo. */
+/** Eu, embaixo do menu: rosto, nome e onde estou (abre o Perfil), com as moedas ao lado. */
+function EuPainel() {
+  const eu = useApp((s) => friendOf(s.myFid, s.friends));
+  const myName = useApp((s) => s.myName);
+  const sala = useApp((s) => nomeDaSala(s.minhaSala, s.salas));
+  const temSalas = useApp((s) => s.salas.length > 0);
+  const naAba = useApp((s) => s.aba === "perfil");
+  if (!myName) return null;
+  return (
+    <div className="eu-painel">
+      <button type="button" className={"eu" + (naAba ? " on" : "")} aria-current={naAba ? "page" : undefined} title="Abrir o meu perfil" onClick={() => setApp({ aba: "perfil" })}>
+        {eu ? <Avatar f={eu} /> : <span className="av">{myName[0]}</span>}
+        <span className="eu-txt">
+          <b>{eu?.name ?? myName}</b>
+          {temSalas && <small>{sala ?? "No lobby"}</small>}
+        </span>
+      </button>
+      <CarteiraChip />
+    </div>
+  );
+}
+
+/** Barra lateral: marca, navegação e canais (rolam); embaixo, fixos, voz, câmera, eu, moedas e rodapé. No celular vira faixa no topo. */
 export function Sidebar() {
   const sideMin = useApp((s) => s.sideMin);
   const conn = useApp((s) => s.conn);
@@ -101,47 +125,52 @@ export function Sidebar() {
       >
         <IcVoltar />
       </button>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="brand-mini" id="brandMini" src={MARCA} alt="Bingo dos Nanicos" onClick={() => setApp({ aba: "inicio" })} />
-      {/* a marca leva de volta ao Início */}
-      <button type="button" className="brand" aria-label="Bingo dos Nanicos: voltar ao Início" onClick={() => setApp({ aba: "inicio" })}>
+      {/* a parte de cima rola; a de baixo (voz, câmera, eu e moedas) fica sempre à vista, como no Discord */}
+      <div className="side-rolagem">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="brand-img" src={CREW} alt="Os Nanicos" width={1100} height={681} decoding="async" />
-        <div className="brand-txt">
-          <small>Bingo dos</small>
-          <b>
-            Nanicos<i>.</i>
-          </b>
-        </div>
-      </button>
+        <img className="brand-mini" id="brandMini" src={MARCA} alt="Bingo dos Nanicos" onClick={() => setApp({ aba: "inicio" })} />
+        {/* a marca leva de volta ao Início */}
+        <button type="button" className="brand" aria-label="Bingo dos Nanicos: voltar ao Início" onClick={() => setApp({ aba: "inicio" })}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="brand-img" src={CREW} alt="Os Nanicos" width={1100} height={681} decoding="async" />
+          <div className="brand-txt">
+            <small>Bingo dos</small>
+            <b>
+              Nanicos<i>.</i>
+            </b>
+          </div>
+        </button>
 
-      <VoceEsta />
-      <People />
-      <Nav />
-      <CamBotoes />
-      <CarteiraChip />
+        <Nav />
+        <Canais />
+      </div>
 
-      <div className="side-foot">
-        <div className="links">
-          <button className="linkish" id="trocarSenha" onClick={() => setApp({ pwAberto: true })}>
-            Trocar senha
-          </button>
-          <button className="linkish" id="sair" onClick={logout}>
-            Sair
-          </button>
-        </div>
-        <div className="foot-row">
-          <span className="conn" id="conn">{conn}</span>
-          <span className="ver" id="ver">{VERSION}</span>
-          <button
-            className={"log-btn" + (logNovo ? " new" : "")}
-            id="logBtn"
-            type="button"
-            aria-label="Ver o que mudou em cada versão"
-            onClick={() => setApp({ logAberto: true })}
-          >
-            Log
-          </button>
+      <div className="side-base">
+        <VozPainel />
+        <CamBotoes />
+        <EuPainel />
+        <div className="side-foot">
+          <div className="links">
+            <button className="linkish" id="trocarSenha" onClick={() => setApp({ pwAberto: true })}>
+              Trocar senha
+            </button>
+            <button className="linkish" id="sair" onClick={logout}>
+              Sair
+            </button>
+          </div>
+          <div className="foot-row">
+            <span className="conn" id="conn">{conn}</span>
+            <span className="ver" id="ver">{VERSION}</span>
+            <button
+              className={"log-btn" + (logNovo ? " new" : "")}
+              id="logBtn"
+              type="button"
+              aria-label="Ver o que mudou em cada versão"
+              onClick={() => setApp({ logAberto: true })}
+            >
+              Log
+            </button>
+          </div>
         </div>
       </div>
     </aside>

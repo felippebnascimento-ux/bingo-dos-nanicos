@@ -7,13 +7,18 @@ import { toast } from "@/lib/toast";
 import { hhmm } from "@/lib/util";
 import { enviarChat, useChat, type MsgChat } from "./chat";
 
-/** Chat da sala no painel do Ao vivo. */
-export function ChatPainel() {
-  const msgs = useChat((s) => s.msgs);
+const SEM_MSGS: MsgChat[] = [];
+
+/**
+ * Chat: sem `canal`, o da minha sala no painel do Ao vivo; com `canal` ("geral" ou o id de uma sala),
+ * o canal de texto aberto na aba Chat.
+ */
+export function ChatPainel({ canal, placeholder = "Mensagem para a sala" }: { canal?: string; placeholder?: string }) {
+  const msgs = useChat((s) => (canal ? (s.porCanal[canal] ?? SEM_MSGS) : s.msgs));
   const ok = useChat((s) => s.ok);
   const friends = useApp((s) => s.friends);
   const myUid = useApp((s) => s.myUid);
-  const visivel = useApp((s) => s.aba === "live" && s.railTab === "chat");
+  const visivel = useApp((s) => (canal ? s.aba === "chat" && s.canalTexto === canal : s.aba === "live" && s.railTab === "chat"));
   const [texto, setTexto] = useState("");
   const lista = useRef<HTMLDivElement>(null);
   /* só desce sozinho se a pessoa já estava no fim da conversa */
@@ -41,7 +46,7 @@ export function ChatPainel() {
     if (!ok) return toast("O chat ainda não está ligado no Supabase.");
     setTexto("");
     try {
-      await enviarChat(t);
+      await enviarChat(t, canal);
       requestAnimationFrame(descer);
     } catch (err) {
       console.error(err);
@@ -56,7 +61,7 @@ export function ChatPainel() {
     <div className="block chat">
       <div
         className="chat-list"
-        id="chatList"
+        id={canal ? undefined : "chatList"}
         ref={lista}
         onScroll={(e) => {
           const el = e.currentTarget;
@@ -95,11 +100,11 @@ export function ChatPainel() {
           })
         )}
       </div>
-      <form className="chat-form" id="chatForm" autoComplete="off" onSubmit={enviar}>
+      <form className="chat-form" id={canal ? undefined : "chatForm"} autoComplete="off" onSubmit={enviar}>
         <input
-          id="chatInput"
+          id={canal ? undefined : "chatInput"}
           maxLength={300}
-          placeholder="Mensagem para a sala"
+          placeholder={placeholder}
           aria-label="Mensagem"
           value={texto}
           onChange={(e) => setTexto(e.target.value)}

@@ -1,8 +1,8 @@
 "use client";
 /*
- * Janela das salas (abre pela porta de vidro do Sítio ou pelo "Trocar" do menu): um cartão por sala,
+ * Janela das salas (abre pela porta de vidro do Sítio): um cartão por sala,
  * como uma máquina de lan house, com quem está ali, quem está ao vivo e quem está em partida;
- * o chat geral ao lado (embaixo, no celular). E o "Você está em:" do menu.
+ * o chat geral ao lado (embaixo, no celular). No menu, as salas aparecem como canais de voz (shell/Canais.tsx).
  */
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent as KE } from "react";
 import { Avatar } from "@/components/ui/Avatar";
@@ -17,33 +17,9 @@ import { friendDaPresenca, MY_KEY, setApp, useApp } from "@/lib/store";
 import { errMsg } from "@/lib/supabase";
 import type { Friend, Presence, Sala } from "@/lib/tipos";
 import { toast } from "@/lib/toast";
-import { entrarSala, nomeDaSala } from "./trocar";
+import { entrarSala } from "./trocar";
 
 const JOGO: Record<Sala["jogo"], string> = { lol: "League of Legends", cs: "Counter-Strike 2", outro: "Resenha" };
-
-/** "Você está em: LoL 1 · Trocar" (em cima do "Na sala agora", no menu). */
-export function VoceEsta() {
-  const salas = useApp((s) => s.salas);
-  const minha = useApp((s) => s.minhaSala);
-  if (!salas.length) return null;
-  const nome = nomeDaSala(minha, salas);
-  return (
-    <div className="voce-esta">
-      <span>
-        {nome ? (
-          <>
-            Você está em: <b>{nome}</b>
-          </>
-        ) : (
-          "Você está no lobby"
-        )}
-      </span>
-      <button type="button" className="linkish" onClick={() => setApp({ salasAberto: true })}>
-        {nome ? "Trocar" : "Entrar numa sala"}
-      </button>
-    </div>
-  );
-}
 
 /** Rosto num cartão de sala; passando o mouse (ou tocando), mostra os números daquele jogo e os links. */
 function RostoSala({ p, f, jogo }: { p: Presence; f: Friend | undefined; jogo: Sala["jogo"] }) {
@@ -201,7 +177,7 @@ function SalasAberta() {
       <div className="salas-card">
         <div className="salas-topo">
           <h2 id="salasTitulo">Salas</h2>
-          <p className="hint">Cada sala tem live, câmeras e chat próprios. A voz continua no Discord.</p>
+          <p className="hint">Cada sala tem voz, live, câmeras e chat próprios.</p>
           <button className="ficha-fechar" type="button" ref={fecharRef} aria-label="Fechar as salas" onClick={fechar}>
             <IcFechar />
           </button>

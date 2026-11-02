@@ -55,11 +55,18 @@ export type Presence = {
   pos: { i: number; j: number } | null;
   /** sala tipo lan house onde a pessoa está (null = no lobby) */
   sala: string | null;
+  /** id da minha conexão de voz na sala (null = fora da voz) */
+  voz?: string | null;
+  /** microfone desligado / sem ouvir ninguém (só aparecem para quem está na voz) */
+  mudo?: boolean;
+  surdo?: boolean;
+  /** canal de texto aberto agora ("geral" ou o id de uma sala; null = nenhum) */
+  texto?: string | null;
   at: number;
 };
 
 /** Sala tipo lan house (tabela `salas`, criada só pelo admin). */
 export type Sala = { id: string; nome: string; jogo: "lol" | "cs" | "outro"; discord: string | null; ordem: number };
 
-export type Aba = "inicio" | "trofeus" | "hall" | "cassino" | "jogar" | "frases" | "nanicos" | "live" | "truco" | "perfil";
+export type Aba = "inicio" | "chat" | "trofeus" | "hall" | "cassino" | "jogar" | "frases" | "nanicos" | "live" | "truco" | "perfil";
 export type RailTab = "telas" | "chat" | "cartela";

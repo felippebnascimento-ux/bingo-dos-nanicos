@@ -57,7 +57,9 @@ export async function startLive() {
   const R = RES[res],
     vid = { frameRate: { ideal: fps, max: fps }, width: { ideal: R.w, max: R.w }, height: { ideal: R.h, max: R.h } };
   const aud = { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
-  const extra = { systemAudio: "include", selfBrowserSurface: "exclude", surfaceSwitching: "include" };
+  /* restrictOwnAudio: o som que o próprio site toca (a voz da sala) não entra no som do sistema capturado,
+     senão quem fala se ouviria de volta na transmissão */
+  const extra = { systemAudio: "include", selfBrowserSurface: "exclude", surfaceSwitching: "include", restrictOwnAudio: true };
   const tentativas: Record<string, unknown>[] = [
     { video: vid, audio: aud, ...extra, windowAudio: "window" },
     { video: vid, audio: aud, ...extra },

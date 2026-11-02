@@ -43,16 +43,19 @@ body.side-min .side-toggle{transform:translateY(-50%) scaleX(-1)}
   body.side-min .main{padding-left:max(16px,3vw)}
 }
 @media (hover:none) and (min-width:861px){.side-toggle{opacity:1}}
-/* menu com rolagem própria: em tela baixa o conteúdo passava da altura e ficava cortado. Rolar o menu não arrasta a
-   página, e rolar a página não mexe no menu. A alça vira fixed para a rolagem do menu não cortar a metade de fora. */
+/* menu com rolagem própria: em tela baixa o conteúdo passava da altura e ficava cortado. Só a parte de cima
+   (marca, abas e canais) rola, e rolar o menu não arrasta a página; a de baixo (voz, câmera, eu) fica fixa.
+   A alça vira fixed para a rolagem do menu não cortar a metade de fora. */
 @media (min-width:861px){
-  .side{height:100dvh;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--muted) 55%,transparent) transparent}
-  .side::-webkit-scrollbar{width:6px}
-  .side::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--muted) 55%,transparent);border-radius:99px}
-  .side::-webkit-scrollbar-track{background:transparent}
-  .side > *{flex-shrink:0}
+  .side{height:100dvh;overflow:hidden}
+  .side-rolagem{flex:1;min-height:0;display:flex;flex-direction:column;gap:22px;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;margin:0 -8px;padding:0 8px 4px;scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--muted) 55%,transparent) transparent}
+  .side-rolagem::-webkit-scrollbar{width:6px}
+  .side-rolagem::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--muted) 55%,transparent);border-radius:99px}
+  .side-rolagem::-webkit-scrollbar-track{background:transparent}
+  .side-rolagem > *{flex-shrink:0}
   .side-toggle{position:fixed;left:calc(var(--side-w) - 14px)}
   .people,body.side-min .room{overscroll-behavior:contain}
+  body.side-min .side-rolagem{align-items:center;gap:14px;width:calc(100% + 16px)}
 }
 @media (max-width:860px){.side-toggle{display:none}.nav svg{display:none}.nav button{justify-content:center}.nav button .t{flex:none}}
 

@@ -139,16 +139,39 @@ export function cleanPresence(key: unknown, d: unknown): Presence | null {
     cam: sidValido(o.cam) ? o.cam : null,
     pos: posValida(o.pos) ? { i: o.pos.i, j: o.pos.j } : null,
     sala: typeof o.sala === "string" && getApp().salas.some((x) => x.id === o.sala) ? o.sala : null,
+    voz: sidValido(o.voz) ? o.voz : null,
+    mudo: o.mudo === true,
+    surdo: o.surdo === true,
+    texto: canalValido(o.texto) ? o.texto : null,
     at: Number(o.at) || 0,
   };
 }
 
-/** Atualiza a minha presença (nome, linhas de bingo, transmissão, câmera, piso do hall e sala). */
+/** Canal de texto que existe: "geral" ou o id de uma sala. */
+export const canalValido = (v: unknown): v is string => typeof v === "string" && (v === "geral" || getApp().salas.some((x) => x.id === v));
+
+/** O canal de texto que eu estou olhando agora (vai na presença). */
+const meuTexto = (s = getApp()) => (s.aba === "chat" ? s.canalTexto : null);
+
+/** Atualiza a minha presença (nome, linhas de bingo, transmissão, câmera, piso do hall, sala, voz e canal de texto). */
 export function trackMe() {
   const s = getApp();
   if (!room || !s.myName) return;
   room
-    .track({ name: s.myName, fid: s.myFid, lines: bingoLines(s.card), live: s.myLiveSid, cam: s.myCamSid, pos: s.hallPos, sala: s.minhaSala, at: Date.now() })
+    .track({
+      name: s.myName,
+      fid: s.myFid,
+      lines: bingoLines(s.card),
+      live: s.myLiveSid,
+      cam: s.myCamSid,
+      pos: s.hallPos,
+      sala: s.minhaSala,
+      voz: s.myVozSid,
+      mudo: s.vozMudo,
+      surdo: s.vozSurdo,
+      texto: meuTexto(s),
+      at: Date.now(),
+    })
     .catch(() => {});
 }
 
@@ -167,9 +190,20 @@ export function joinRoom(onTabela: (tabela: string) => void) {
   conectar();
   if (ligouUmaVez) return;
   ligouUmaVez = true;
-  /* a presença acompanha sozinha a cartela (linhas de bingo), a transmissão, a câmera, o piso do hall e a sala */
+  /* a presença acompanha sozinha a cartela (linhas de bingo), a transmissão, a câmera, o piso do hall, a sala, a voz e o canal de texto */
   useApp.subscribe((s, p) => {
-    if (s.myLiveSid !== p.myLiveSid || s.myCamSid !== p.myCamSid || s.myName !== p.myName || s.hallPos !== p.hallPos || s.minhaSala !== p.minhaSala || bingoLines(s.card) !== bingoLines(p.card))
+    if (
+      s.myLiveSid !== p.myLiveSid ||
+      s.myCamSid !== p.myCamSid ||
+      s.myName !== p.myName ||
+      s.hallPos !== p.hallPos ||
+      s.minhaSala !== p.minhaSala ||
+      s.myVozSid !== p.myVozSid ||
+      s.vozMudo !== p.vozMudo ||
+      s.vozSurdo !== p.vozSurdo ||
+      meuTexto(s) !== meuTexto(p) ||
+      bingoLines(s.card) !== bingoLines(p.card)
+    )
       trackMe();
   });
   /* voltou para a aba: se o canal caiu, reconecta na hora; se não, renova a presença */

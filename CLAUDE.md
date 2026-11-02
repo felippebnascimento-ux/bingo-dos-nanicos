@@ -46,11 +46,16 @@ npm start            # serve out/ localmente para testar o build
 src/
   app/                 layout.tsx (fontes, CSS na ordem certa), page.tsx (monta o App só no navegador), ícones
   components/
-    App.tsx            casca do site: barra lateral, as 10 abas (sempre montadas, só escondidas; abre no Início),
-                       portas, toast; no Início a barra lateral some (classe `no-inicio` no body). O menu mostra 9:
-                       Troféus fica fora, e Jogar só aparece numa sala de LoL (ou sem a tabela de salas)
-    shell/             Sidebar (marca, navegação, rodapé; Perfil com o rosto) e People ("Na sala agora";
-                       `usePessoasNaSala()` também serve o Sítio, e a lista da barra some na aba Sítio)
+    App.tsx            casca do site em 3 colunas: menu, as 11 abas (sempre montadas, só escondidas; abre no Início) e
+                       a lista de membros; portas, toast. No Início o menu e os membros somem (`no-inicio`), e no
+                       Sítio somem os membros (`sem-membros`). Troféus e Chat ficam fora do menu; Jogar só aparece numa
+                       sala de LoL (ou sem a tabela de salas); no computador, Ao vivo e Perfil saem do menu (abrem pelos
+                       canais de voz e pela linha "eu" embaixo) e continuam na barra de abas do celular
+    shell/             Sidebar (parte de cima rola: marca, navegação, canais; embaixo, fixos: voz, câmera, eu com as
+                       moedas e rodapé), Canais.tsx (canais de voz e de texto como no Discord, categorias recolhíveis,
+                       e o VozPainel) e People.tsx (Membros: a barra da direita com os 14 nanicos, online e offline,
+                       câmera no círculo; `usePessoasNaSala()` também serve o Sítio; `useNanicosOnline()` é a lista
+                       um por nanico com o meu estado, usada pelos canais e pelos membros)
     portas/            login, primeira senha, trocar senha, log de versões (modo "tudo" e modo "novidades")
     ui/                Avatar, FriendPicker, Toast, ícones, useSure (segundo toque)
     Fome.tsx           easter egg das 18h às 22h
@@ -87,15 +92,20 @@ src/
                        dadas e levadas nos últimos 7 dias)
     perfil/            PerfilView, opgg.ts e steam.ts (limpar link, nick)
     live/              live.ts (liga tudo à sala), rtc.ts (WebRTC comum), tela.ts (transmissão), camera.ts,
+                       voz.ts (voz da sala: um par WebRTC só de áudio com cada um na voz, microfone, fone, quem
+                       está falando), vozRegras.ts (quem oferece, volume, anel de fala; puro e testado),
                        reacoes.ts, desenho.ts, estado.ts (store + preferências), pip.ts;
                        telas: LiveView, Palco, Painel, Cameras, Video, Voos, Rosto, CamNaSala, CamBotoes e
                        CamadaReacoesMinha (reações que chegam na minha transmissão, fora das abas)
-    chat/              chat.ts (um chat por sala: "geral" no lobby e o id da sala dentro dela) e ChatPainel
+    chat/              chat.ts (um chat por sala: "geral" no lobby e o id da sala dentro dela; não lidas por canal),
+                       ChatPainel (o da minha sala no Ao vivo, ou um `canal`) e ChatView (aba `chat`, fora do menu:
+                       o canal de texto escolhido no menu)
     cassino/           aba Cassino (moedas fictícias): regras.ts (roleta, limbo, dado, caça-níquel, conferir() e
                        refazer() com HMAC-SHA256; puro e testado), estado.ts (dados do banco), Jogos.tsx (limbo,
                        maior ou menor e caça-níquel) e CassinoView (seletor de jogo, roleta, conferência, histórico)
     salas/             salas tipo lan house: trocar.ts (entrarSala: encerra tela e câmera, troca o canal,
-                       carrega escalação e chat) e Salas.tsx (janela das salas com cartões e chat geral; "Você está em")
+                       carrega escalação e chat; encerra a voz) e Salas.tsx (janela das salas com cartões e chat geral,
+                       aberta pela porta do Sítio)
     truco/             engine.ts (regras, puro e testado), valida.ts (confere mesa vinda da sala),
                        mesa.ts (mesa online: o navegador do anfitrião manda), TrucoView, Lobby, MesaTela, Carta
   lib/
@@ -115,7 +125,7 @@ src/
     tipos.ts           Friend, Phrase, Card, Presence…
     dados/             campeoes.ts (CHAMPS, LANES, LANE_CAMP), nanicos.ts (NAN_MAP, artOf, bonecoOf), changelog.ts,
                        novidades.ts (o que mostrar no Log depois de uma atualização; puro e testado)
-  styles/              CSS global, numerado: 01-base.css … 28-trofeus.css (no celular, as abas ficam numa barra embaixo)
+  styles/              CSS global, numerado: 01-base.css … 29-canais.css (no celular, as abas ficam numa barra embaixo)
 public/arte/           artes dos nanicos (rosto e corpo), bonecos do hall, foto da turma, reações dos Picarétezzi
 planejamento/          PLANO.md (próximas fases e decisões), prompts/ (um por fase), demos e arte pronta
 supabase/
@@ -287,11 +297,12 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 - **Lobby, canal `bingo-dos-nanicos`** (o mesmo de antes, então quem está com a versão antiga segue funcionando): presença de todo mundo, os eventos `truco` e `hall` e as mudanças do banco.
 - **Canal da minha sala, `sala:<id>`:** os eventos `rtc`, `reacao` e `risco`, só de quem está nela. O banco (RLS de `realtime.messages`) só aceita `sala:<id>` de uma sala que existe.
 - **Uma sala por vez:** `minhaSala` no store (null = lobby). Trocar de sala passa por `entrarSala()` (`features/salas/trocar.ts`). `onlineSala` é quem está na minha sala, e a live, as câmeras, as reações e o desenho usam essa lista e `naMinhaSala(from)` no lugar de `estaNaSala(from)`.
-- **Presença:** `{name, fid, lines, live, cam, pos, sala, at}`, conferida por `cleanPresence()` (`sala` só vale se estiver na lista de salas).
+- **Presença:** `{name, fid, lines, live, cam, pos, sala, voz, mudo, surdo, texto, at}`, conferida por `cleanPresence()` (`sala` só vale se estiver na lista de salas; `voz` é um sid; `texto` é o canal de texto aberto, `"geral"` ou o id de uma sala).
+- **Voz:** entrar num canal de voz é `entrarSala(id)` + `entrarVoz()` (`features/live/voz.ts`). Cada par na voz da sala tem uma conexão WebRTC só de áudio; a chave menor oferece. A sinalização vai no `rtc` do canal da sala (`vo`/`va`/`vi`/`vb`, conferida em `live.ts` como o resto). Outra aba do mesmo nanico não conecta (ouviria a si mesmo). Trocar de sala ou sair do site encerra a voz, e o botão de desligar do menu é sair da sala (`entrarSala(null)`). A transmissão de tela pede `restrictOwnAudio` para a voz não voltar pelo som do sistema. Não tem servidor TURN: rede muito fechada pode não conectar.
 - **Um por nanico:** a chave da presença é uma por aba (`MY_KEY`), então o mesmo nanico com duas abas, PC e celular, ou uma presença antiga, aparece várias vezes na lista crua. Toda tela que lista gente (hall, "Na sala agora") passa por `umPorNanico()` (`src/lib/presenca.ts`), que junta por `fid`, fica com o `at` mais novo e mantém `live`/`cam` de qualquer aba que transmita. O boneco tem o id `n:<fid>`, e o broadcast de qualquer aba daquele nanico move o mesmo boneco. **Não troque a chave da presença pelo `fid`**: duas abas brigariam pela mesma chave.
 - **Reconexão:** se o canal do lobby cair (`CHANNEL_ERROR`, `TIMED_OUT`, `CLOSED`), o site mostra "Reconectando…" e monta o canal de novo sozinho (1 s, 2 s, 5 s, 10 s, até 30 s), junto com o canal da sala. Ao voltar para a aba, reconecta na hora (ou renova a presença), e a presença se renova a cada 60 s. Os handlers de `aoReceber`/`aoMudarPresenca`/`aoMudarTabela` ficam guardados no módulo e valem no canal novo. `pos` é o piso do boneco no hall (`{i, j}`, conferido por `posValida`); só muda quando o boneco chega.
 - **Eventos de broadcast:**
-  - `rtc`: sinalização da tela e da câmera;
+  - `rtc`: sinalização da tela, da câmera e da voz;
   - `reacao`: emojis e fotos;
   - `risco`: desenho na live;
   - `truco`: mesas, jogadas e mão de cada um;
@@ -299,7 +310,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 - **Mudanças no banco:** chegam por `postgres_changes` em `friends`, `phrases`, `game`, `chat_messages`, `carteiras` e `rodizio`. A chinelada e a torta vêm do tempo real de `zoeiras` (pagas, gravadas por `zoar()`), e o sorteio da roleta do rodízio vem do tempo real de `rodizio` (todo mundo anima até o mesmo `girado_em`), **nunca de broadcast**. Os ganhos de moedas de todo mundo no Sítio vêm do tempo real de `carteiras` (gravado por `creditar()`), **nunca de broadcast**.
 
 ### Navegador (`localStorage`, só conveniência de cada pessoa)
-- **Chaves:** `rift-lineup`, `rift-card`, `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `truco-mesa`, `log-visto`, `fome-fechado`, `hall-pos` (último piso no hall), `hall-sala-min` (lista "Na sala agora" do Sítio recolhida) e `sala-atual` (última sala; o site sempre abre no lobby).
+- **Chaves:** `rift-lineup`, `rift-card`, `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `truco-mesa`, `log-visto`, `fome-fechado`, `hall-pos` (último piso no hall), `hall-sala-min` (lista "Na sala agora" do Sítio recolhida), `sala-atual` (última sala; o site sempre abre no lobby), `canais-voz-min` e `canais-texto-min` (categorias de canais recolhidas; no celular começam recolhidas) e `membros-min` (lista de membros só com os rostos; abaixo de 1200 px fica assim sempre).
 - **As do site antigo continuam iguais**, então ninguém perde a cartela na troca.
 - **`sessionStorage`:** `log-auto` (o Log de novidades já abriu sozinho nesta sessão do navegador).
 - Nada importante pode morar só aqui.

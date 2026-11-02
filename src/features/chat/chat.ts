@@ -11,9 +11,16 @@ export type MsgChat = { id: string | number; user_id: string; text: string; crea
 
 /**
  * `msgs` = o chat de onde eu estou (a minha sala, ou o geral no lobby); `geral` = o chat do lobby,
- * que aparece na janela das salas. Sem o SQL das salas, tudo é o chat único de antes.
+ * que aparece na janela das salas; `porCanal` = todos os canais de texto já carregados (aba Chat);
+ * `naoLidas` = mensagens novas por canal desde que abri o site. Sem o SQL das salas, tudo é o chat único de antes.
  */
-export const useChat = create<{ msgs: MsgChat[]; geral: MsgChat[]; ok: boolean }>()(() => ({ msgs: [], geral: [], ok: true }));
+export const useChat = create<{
+  msgs: MsgChat[];
+  geral: MsgChat[];
+  porCanal: Record<string, MsgChat[]>;
+  naoLidas: Record<string, number>;
+  ok: boolean;
+}>()(() => ({ msgs: [], geral: [], porCanal: {}, naoLidas: {}, ok: true }));
 
 const comSalas = () => getApp().salas.length > 0;
 const COLUNAS = () => (comSalas() ? "id,user_id,text,created_at,sala" : "id,user_id,text,created_at");
@@ -32,16 +39,26 @@ function limpa(r: unknown): MsgChat | null {
 
 /* mensagens guardadas por chat ("geral" ou o id da sala) */
 const porSala = new Map<string, MsgChat[]>();
-const publicar = () => useChat.setState({ msgs: porSala.get(chatAtual()) ?? [], geral: porSala.get("geral") ?? [] });
+const publicar = () =>
+  useChat.setState({ msgs: porSala.get(chatAtual()) ?? [], geral: porSala.get("geral") ?? [], porCanal: Object.fromEntries(porSala) });
 
-/** O chat está na tela agora (aba Ao vivo, painel Chat, janela visível)? */
+/** O chat da minha sala está na tela agora (aba Ao vivo, painel Chat, janela visível)? */
 export const chatVisivel = () => {
   const s = getApp();
   return s.aba === "live" && s.railTab === "chat" && !document.hidden;
 };
 
+/** Este canal de texto está na tela agora (aba Chat nele, ou o painel do Ao vivo, se for o da minha sala)? */
+const canalVisivel = (canal: string) => {
+  const s = getApp();
+  return !document.hidden && ((s.aba === "chat" && s.canalTexto === canal) || (canal === chatAtual() && chatVisivel()));
+};
+
 function zerarSeVisivel() {
   if (chatVisivel() && getApp().chatUnread) setApp({ chatUnread: 0 });
+  const nl = useChat.getState().naoLidas;
+  const vistos = Object.keys(nl).filter((c) => nl[c] && canalVisivel(c));
+  if (vistos.length) useChat.setState({ naoLidas: { ...nl, ...Object.fromEntries(vistos.map((c) => [c, 0])) } });
 }
 
 function addChat(r: unknown) {
@@ -53,8 +70,14 @@ function addChat(r: unknown) {
   if (nova.length > 200) nova.shift();
   porSala.set(m.sala, nova);
   publicar();
-  /* não lidas: só do chat de onde eu estou */
-  if (m.sala === chatAtual() && m.user_id !== getApp().myUid && !chatVisivel()) setApp({ chatUnread: getApp().chatUnread + 1 });
+  if (m.user_id === getApp().myUid) return;
+  /* não lidas do menu "Ao vivo": só do chat de onde eu estou */
+  if (m.sala === chatAtual() && !chatVisivel()) setApp({ chatUnread: getApp().chatUnread + 1 });
+  /* não lidas de cada canal de texto */
+  if (!canalVisivel(m.sala)) {
+    const nl = useChat.getState().naoLidas;
+    useChat.setState({ naoLidas: { ...nl, [m.sala]: (nl[m.sala] ?? 0) + 1 } });
+  }
 }
 
 async function carregarSala(sala: string) {
@@ -72,7 +95,7 @@ export async function carregarChat(): Promise<void> {
     aoMudarTabela("chat_messages", (row) => addChat(row));
     /* abriu o chat (aba ou painel) ou voltou para a janela: zera as não lidas */
     useApp.subscribe((s, p) => {
-      if (s.aba !== p.aba || s.railTab !== p.railTab) zerarSeVisivel();
+      if (s.aba !== p.aba || s.railTab !== p.railTab || s.canalTexto !== p.canalTexto) zerarSeVisivel();
       /* trocou de sala: o chat passa a ser o da sala nova */
       if (s.minhaSala !== p.minhaSala) {
         setApp({ chatUnread: 0 });
@@ -89,6 +112,15 @@ export async function carregarChat(): Promise<void> {
     console.warn("chat indisponível", e);
     useChat.setState({ ok: false });
   }
+}
+
+/** Abre um canal de texto na aba Chat (carrega as mensagens dele na primeira vez). */
+export function abrirCanalTexto(canal: string) {
+  setApp({ aba: "chat", canalTexto: canal });
+  if (porSala.has(canal) || !comSalas()) return;
+  carregarSala(canal)
+    .then(publicar)
+    .catch((e) => console.warn("canal indisponível", e));
 }
 
 /** Envia uma mensagem (até 300 letras) para o chat de onde eu estou, ou para `sala`. Lança o erro do banco se não der. */
