@@ -80,6 +80,10 @@ export const CHANGELOG: EntradaLog[] = [
       "Clique no quadro de troféus do Sítio para ver todas as categorias, as semanas anteriores e o hall da fama",
     ],
   },
+  {
+    data: "02/11/2026",
+    itens: ["O menu do lado rola sozinho em tela baixa, sem arrastar a página junto"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

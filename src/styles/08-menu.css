@@ -43,6 +43,17 @@ body.side-min .side-toggle{transform:translateY(-50%) scaleX(-1)}
   body.side-min .main{padding-left:max(16px,3vw)}
 }
 @media (hover:none) and (min-width:861px){.side-toggle{opacity:1}}
+/* menu com rolagem própria: em tela baixa o conteúdo passava da altura e ficava cortado. Rolar o menu não arrasta a
+   página, e rolar a página não mexe no menu. A alça vira fixed para a rolagem do menu não cortar a metade de fora. */
+@media (min-width:861px){
+  .side{height:100dvh;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--muted) 55%,transparent) transparent}
+  .side::-webkit-scrollbar{width:6px}
+  .side::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--muted) 55%,transparent);border-radius:99px}
+  .side::-webkit-scrollbar-track{background:transparent}
+  .side > *{flex-shrink:0}
+  .side-toggle{position:fixed;left:calc(var(--side-w) - 14px)}
+  .people,body.side-min .room{overscroll-behavior:contain}
+}
 @media (max-width:860px){.side-toggle{display:none}.nav svg{display:none}.nav button{justify-content:center}.nav button .t{flex:none}}
 
 /* celular estreito: com 7 abas, cada botão fica do tamanho do texto (colunas iguais apertavam "Ao vivo") */
