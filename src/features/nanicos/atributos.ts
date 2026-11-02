@@ -8,13 +8,14 @@ export type Notas = Record<ChaveAtributo, number>;
 export type Media = { media: number | null; votos: number };
 export type Atributos = Record<ChaveAtributo, Media>;
 
+/* em ordem alfabética (as notas são guardadas por chave, então a ordem é só da tela) */
 export const ATRIBUTOS: readonly { chave: ChaveAtributo; nome: string; dica: string; cs2?: boolean }[] = [
-  { chave: "tilt", nome: "Tilt", dica: "quanto perde a cabeça depois de um erro" },
+  { chave: "call", nome: "Call", dica: "quanto as calls dele funcionam" },
   { chave: "choro", nome: "Choro", dica: "quanto chora depois de morrer" },
   { chave: "clutch", nome: "Clutch", dica: "quanto resolve no um contra vários", cs2: true },
   { chave: "farm", nome: "Farm", dica: "quanto farma em vez de brigar" },
   { chave: "sorte", nome: "Sorte", dica: "quanto a sorte ajuda" },
-  { chave: "call", nome: "Call", dica: "quanto as calls dele funcionam" },
+  { chave: "tilt", nome: "Tilt", dica: "quanto perde a cabeça depois de um erro" },
 ];
 const CHAVES = ATRIBUTOS.map((a) => a.chave);
 

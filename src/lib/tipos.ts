@@ -6,6 +6,8 @@ export type Friend = {
   user_id?: string | null;
   created_at?: string;
   opgg?: string | null;
+  /** segunda conta do LoL (smurf) */
+  opgg_smurf?: string | null;
   steam?: string | null;
 };
 
@@ -68,5 +70,5 @@ export type Presence = {
 /** Sala tipo lan house (tabela `salas`, criada só pelo admin). */
 export type Sala = { id: string; nome: string; jogo: "lol" | "cs" | "outro"; discord: string | null; ordem: number };
 
-export type Aba = "inicio" | "chat" | "trofeus" | "loja" | "midias" | "hall" | "cassino" | "jogar" | "frases" | "nanicos" | "live" | "truco" | "perfil";
+export type Aba = "chat" | "trofeus" | "loja" | "midias" | "hall" | "cassino" | "jogar" | "frases" | "nanicos" | "live" | "truco" | "perfil";
 export type RailTab = "telas" | "chat" | "cartela";

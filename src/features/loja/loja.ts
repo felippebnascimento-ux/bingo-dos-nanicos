@@ -10,7 +10,7 @@ export type LinhaMochila = { userId: string; itemId: string; qtd: number; equipa
 /** Os grupos da vitrine, na ordem em que aparecem. */
 export const GRUPOS: readonly { id: string; nome: string; espacos: readonly Espaco[] }[] = [
   { id: "celular", nome: "A meta grande", espacos: ["celular"] },
-  { id: "consumivel", nome: "Para usar no Sítio", espacos: ["consumivel"] },
+  { id: "consumivel", nome: "Para usar no Nanico Hotel", espacos: ["consumivel"] },
   { id: "quarto", nome: "Para o quarto", espacos: ["cadeira", "mesa", "tapete", "poster", "planta", "parede", "luz"] },
   { id: "visual", nome: "Títulos e molduras", espacos: ["titulo", "moldura"] },
   { id: "escudo", nome: "Proteção", espacos: ["escudo"] },

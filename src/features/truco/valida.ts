@@ -101,7 +101,9 @@ function mao(x: unknown, N: number): MaoPub | null | undefined {
     flor = { quem: (f.quem as number[]).slice(0, N), team: f.team };
   }
   const sobra = x.sobra === null || x.sobra === undefined ? null : porLugar(x.sobra, N);
-  return { n: x.n, mano: x.mano, vez: x.vez, nc, vazas, truco: tr, env: en, flor, fim: fi, sobra };
+  /* relógio da jogada (mesa antiga não tem) */
+  const desde = typeof x.desde === "number" && Number.isFinite(x.desde) ? x.desde : undefined;
+  return { n: x.n, mano: x.mano, vez: x.vez, nc, vazas, truco: tr, env: en, flor, fim: fi, sobra, desde };
 }
 
 /** Mesa vinda da sala → mesa conferida, ou null. `de` é quem mandou (tem que ser o anfitrião). */

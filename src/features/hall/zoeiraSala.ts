@@ -119,7 +119,7 @@ function onZoeira(row: Record<string, unknown> | null) {
         const r = useZoeira.getState().revidar;
         if (r && r.ate <= Date.now() + 50) useZoeira.setState({ revidar: null });
       }, REVIDE_MS);
-      if (!hallAVista()) toast(`${quem} te deu ${acao}. Vá ao Sítio para revidar de graça.`);
+      if (!hallAVista()) toast(`${quem} te deu ${acao}. Vá ao Nanico Hotel para revidar de graça.`);
     }
   }
   /* só anima com os dois no hall e o hall à vista */

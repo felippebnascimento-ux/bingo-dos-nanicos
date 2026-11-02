@@ -47,21 +47,27 @@ export function iniciarLocal() {
 
 /* ---------- carregar do banco ---------- */
 export async function loadFriends() {
-  let rows: Friend[];
-  try {
-    rows = await q<Friend[]>(sb().from("friends").select("id,name,photo,user_id,created_at,opgg,steam"));
-    setApp({ opggOk: true, steamOk: true });
-  } catch {
-    /* se o SQL da ficha (Steam) ou do op.gg ainda não rodou, o site segue funcionando sem a coluna */
+  /* se o SQL do smurf, da ficha (Steam) ou do op.gg ainda não rodou, o site segue funcionando sem a coluna */
+  const tentativas = [
+    { cols: "opgg,steam,opgg_smurf", ok: { opggOk: true, steamOk: true, smurfOk: true }, aviso: "" },
+    { cols: "opgg,steam", ok: { opggOk: true, steamOk: true, smurfOk: false }, aviso: "banco sem a coluna opgg_smurf: rode a seção 27 do seguranca.sql" },
+    { cols: "opgg", ok: { opggOk: true, steamOk: false, smurfOk: false }, aviso: "banco sem a coluna steam: rode a seção 8 do seguranca.sql" },
+  ];
+  let rows: Friend[] | null = null;
+  for (const t of tentativas) {
     try {
-      rows = await q<Friend[]>(sb().from("friends").select("id,name,photo,user_id,created_at,opgg"));
-      console.warn("banco sem a coluna steam: rode a seção 8 do seguranca.sql");
-      setApp({ opggOk: true, steamOk: false });
-    } catch (e) {
-      console.warn("banco sem op.gg", e);
-      setApp({ opggOk: false, steamOk: false });
-      rows = await q<Friend[]>(sb().from("friends").select("id,name,photo,user_id,created_at"));
+      rows = await q<Friend[]>(sb().from("friends").select("id,name,photo,user_id,created_at," + t.cols));
+      if (t.aviso) console.warn(t.aviso);
+      setApp(t.ok);
+      break;
+    } catch {
+      /* tenta sem a coluna nova */
     }
+  }
+  if (!rows) {
+    console.warn("banco sem op.gg");
+    setApp({ opggOk: false, steamOk: false, smurfOk: false });
+    rows = await q<Friend[]>(sb().from("friends").select("id,name,photo,user_id,created_at"));
   }
   const friends = (rows || []).sort(byName);
   const { myUid } = getApp();
@@ -160,8 +166,8 @@ export const api = {
     if (f.val === null) return Promise.resolve(null);
     return q(sb().from("game").update({ players, updated_at: new Date().toISOString() }).eq(f.col, f.val));
   },
-  saveOpgg: (fid: string, url: string | null) =>
-    q<{ id: string; opgg?: string | null }[]>(sb().from("friends").update({ opgg: url }).eq("id", fid).select("id,opgg")),
+  saveOpgg: (fid: string, url: string | null, smurf = false) =>
+    q<{ id: string }[]>(sb().from("friends").update(smurf ? { opgg_smurf: url } : { opgg: url }).eq("id", fid).select("id")),
   saveSteam: (fid: string, url: string | null) =>
     q<{ id: string; steam?: string | null }[]>(sb().from("friends").update({ steam: url }).eq("id", fid).select("id,steam")),
 };

@@ -36,7 +36,8 @@ describe("médias", () => {
   });
 
   it("os seis atributos, com o Clutch marcado como CS2", () => {
-    expect(ATRIBUTOS.map((a) => a.chave)).toEqual(["tilt", "choro", "clutch", "farm", "sorte", "call"]);
+    /* em ordem alfabética na tela */
+    expect(ATRIBUTOS.map((a) => a.chave)).toEqual(["call", "choro", "clutch", "farm", "sorte", "tilt"]);
     expect(ATRIBUTOS.filter((a) => a.cs2).map((a) => a.nome)).toEqual(["Clutch"]);
   });
 

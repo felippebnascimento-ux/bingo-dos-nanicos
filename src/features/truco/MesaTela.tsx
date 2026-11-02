@@ -1,11 +1,33 @@
 "use client";
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { useSure } from "@/components/ui/useSure";
 import { friendOf, useApp } from "@/lib/store";
-import { TR_ENV, TR_TRUCO, trOpcoes, trValido, type Carta as TCarta, type MesaPub } from "./engine";
+import { TR_ENV, TR_TEMPO_MS, TR_TRUCO, trOpcoes, trQuemDeve, trValido, type Carta as TCarta, type MesaPub } from "./engine";
 import { Carta, Costas } from "./Carta";
-import { fecharMesa, levantar, meuLugar, revanche, trEnviar, trNaMesa, useTruco, voltarAoLobby } from "./mesa";
+import { fecharMesa, fimDaJogada, garantirTempo, levantar, meuLugar, revanche, trEnviar, trNaMesa, useTruco, voltarAoLobby } from "./mesa";
+
+/** Os segundos que faltam para a jogada (20 s). Acabou, a carta sai sozinha. */
+function Relogio({ fim, eu }: { fim: number; eu: boolean }) {
+  const [agora, setAgora] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setAgora(Date.now()), 250);
+    return () => clearInterval(t);
+  }, [fim]);
+  const resta = Math.max(0, fim - agora);
+  const seg = Math.ceil(resta / 1000);
+  return (
+    <span
+      className={"tr-relogio" + (seg <= 5 ? " urgente" : "")}
+      style={{ ["--resta" as string]: String(resta / TR_TEMPO_MS) }}
+      role="timer"
+      aria-label={eu ? `Você tem ${seg} segundos` : `${seg} segundos para jogar`}
+      title={eu ? "Acabou o tempo, sai uma carta sorteada (ou aceita o pedido)" : undefined}
+    >
+      {seg} s
+    </span>
+  );
+}
 
 /** As minhas cartas. A que eu cliquei sobe na hora ("indo") até o servidor devolver a mão nova; se ele recusar, desce. */
 function MinhaMao({ cartas, pode }: { cartas: TCarta[]; pode: boolean }) {
@@ -60,6 +82,12 @@ export function MesaTela({ m }: { m: MesaPub }) {
   const minhas = eu >= 0 && h && mao && mao.id === m.id && mao.n === h.n ? mao.cartas : [];
   const naMesa = h ? trNaMesa(h) : null;
   const pode = !!op?.jogar && !!h && !h.fim;
+  /* o relógio de 20 s: de quem é a vez de agir e até quando */
+  const fim = fimDaJogada(m);
+  const deve = fim !== null ? trQuemDeve(m) : null;
+  useEffect(() => {
+    if (fim !== null && eu >= 0) garantirTempo(m.id);
+  }, [fim, eu, m.id]);
 
   const lugar = (i: number) => {
     const l = m.lugares[i], p = pos(i);
@@ -89,6 +117,7 @@ export function MesaTela({ m }: { m: MesaPub }) {
               mão
             </span>
           ) : null}
+          {fim !== null && deve === i ? <Relogio fim={fim} eu={i === eu} /> : null}
         </div>
         {i !== eu && h ? (
           <div className="tr-costas">
@@ -276,6 +305,7 @@ export function MesaTela({ m }: { m: MesaPub }) {
           </div>
           <div className="tr-rodape">
             {pode ? <span className="tr-sua">Sua vez</span> : esperando}
+            {fim !== null && deve === eu ? <Relogio fim={fim} eu /> : null}
             {acoes}
             {op?.mazo ? (
               <button

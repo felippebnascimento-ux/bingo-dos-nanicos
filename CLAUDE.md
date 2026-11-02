@@ -48,29 +48,29 @@ npm start            # serve out/ localmente para testar o build
 src/
   app/                 layout.tsx (fontes, CSS na ordem certa), page.tsx (monta o App só no navegador), ícones
   components/
-    App.tsx            casca do site em 3 colunas: menu, as 13 abas (sempre montadas, só escondidas; abre no Início) e
-                       a lista de membros; portas, toast. No Início o menu e os membros somem (`no-inicio`), e no
-                       Sítio somem os membros (`sem-membros`). Troféus e Chat ficam fora do menu; Jogar só aparece numa
-                       sala de LoL (ou sem a tabela de salas); no computador, Ao vivo e Perfil saem do menu (abrem pelos
-                       canais de voz e pela linha "eu" embaixo) e continuam na barra de abas do celular
-    shell/             Sidebar (parte de cima rola: marca, navegação em grupos `GRUPOS` com títulos (Lugares, Turma e
-                       Moedas: Ranking, Loja, Troféus; no celular a barra de baixo fica sem títulos e sem as Moedas), canais; embaixo, fixos: voz, câmera, eu com as
+    App.tsx            casca do site em 3 colunas: menu, as 12 abas (sempre montadas, só escondidas; abre no Nanico
+                       Hotel, a aba `hall`) e a lista de membros; portas, toast. No Nanico Hotel somem os membros
+                       (`sem-membros`). O Chat fica fora do menu; no computador, Ao vivo e Perfil saem do menu (abrem
+                       pelos canais de voz e pela linha "eu" embaixo) e continuam na barra de abas do celular.
+                       A tela de Início (fase 28) saiu na v1.68, a pedido do Felippe
+    shell/             Sidebar (parte de cima rola: marca, navegação em grupos `GRUPOS` que recolhem como as categorias
+                       de canais (Jogos: Nanico Hotel, Ao vivo só no celular, Truco, Cassino, Loja; Bingo: Nanicadas e
+                       Jogar, sempre à vista; Turma: Nanicos, Mídias, Troféus, Perfil; recolhidos em `menu-min`; no
+                       celular a barra de baixo fica sem títulos, sem Loja e sem Troféus; o Ranking fica só na carteira),
+                       canais; embaixo, fixos: voz, câmera, eu com as
                        moedas, a engrenagem das Configurações e o rodapé com conexão, versão e Log), Canais.tsx (canais de voz como no Discord, com quem está, quem transmite e as mensagens novas do chat da sala, e o #geral em
                        "Canais de texto"; categorias recolhíveis,
                        e o VozPainel) e People.tsx (Membros: a barra da direita com os 14 nanicos, online e offline,
-                       câmera no círculo; `usePessoasNaSala()` também serve o Sítio; `useNanicosOnline()` é a lista
+                       câmera no círculo, sem o indicador de voz (quem fala aparece só nos canais); `usePessoasNaSala()` também serve o Sítio; `useNanicosOnline()` é a lista
                        um por nanico com o meu estado, usada pelos canais e pelos membros)
     portas/            login, primeira senha, trocar senha, log de versões (modo "tudo" e modo "novidades")
     ui/                Avatar, FriendPicker, Toast, ícones, useSure (segundo toque)
     Fome.tsx           easter egg das 18h às 22h
   features/            uma pasta por aba / assunto
-    inicio/            InicioView: tela de início (aba `inicio`, a primeira depois do login): barra de cima, saudação,
-                       "Seu dia" (moedas, sequência, bônus, missões), "Acontecendo agora" (partida, live, truco; some
-                       vazia), um cartão por lugar e o ranking de moedas ao lado (no celular, em cima dos cartões)
     moedas/            Moedas.tsx: selinho do saldo no menu (CarteiraChip) e quadro do Perfil (MoedasBloco);
-                       Ranking.tsx: painel da carteira (abas Ranking e Meu extrato), aberto pela carteira do Sítio e
-                       pelo chip do Início (`abrirCarteira`), e `useMinhaPosicao()` ("3º lugar")
-    hall/              aba Sítio, sala de 14×11: hall.ts (grade, móveis, CLICAVEIS, caminho, ordem
+                       Ranking.tsx: painel da carteira (abas Ranking e Meu extrato), aberto pela carteira do Nanico Hotel
+                       (`abrirCarteira`), e `useMinhaPosicao()` ("3º lugar")
+    hall/              aba Nanico Hotel (antes "Sítio do Mitz"; no código continua `hall` e "Sítio" nos nomes), sala de 14×11: hall.ts (grade, móveis, CLICAVEIS, caminho, ordem
                        de desenho; puro e testado), bonecos.ts (movimento, evento `hall`, presença), Sala.tsx
                        (cômodo em SVG com janelão e porta do banheiro, um móvel por camada, destaque do piso; a disposição segue a
                        planta do grupo de 02/11/2026: entrada pelo vão da frente, sem o portão K-FOFO), Boneco.tsx
@@ -82,7 +82,7 @@ src/
                        (chapéu de burro, coroa dourada e coroa de moedas na cabeça do boneco); eventos com
                        horário: eventosSala.ts (relógio, espetinho já pego, chama churrasco_pegar()) e EventosTela.tsx
                        (faixa em cima do cômodo, luz do happy hour, brasa e fumaça, placa "Pegar espetinho")
-    loja/              aba Loja (aba `loja`, fora do menu; abre pela geladeira do Sítio e pelo chip "Loja" do Início):
+    loja/              aba Loja (aba `loja`, no grupo Jogos do menu; abre também pela geladeira do Nanico Hotel):
                        loja.ts (espaços, vitrine, equipados, podeComprar, balanço do boneco; puro e testado),
                        lojaDados.ts (vitrine, mochila, equipados de todos; comprar, equipar, usar; `useEquipados`),
                        consumoSala.ts (tempo real de `consumos`: o boneco fuma ou bebe em todas as telas),
@@ -111,12 +111,14 @@ src/
     nanicos/           NanicosView: os 14 nanicos com a arte de corpo inteiro (tocar abre a ficha);
                        atributos.ts (os 6 atributos votados, conferir notas, médias; puro e testado)
     ficha/             ficha do nanico: Ficha.tsx (janela), Quarto.tsx (quarto isométrico com o boneco),
-                       AtributosFicha.tsx ("Segundo os nanicos": barras e votar), estado.ts (números da função
-                       ficha-jogos e atributos), numeros.ts (conferir e escrever; puro e testado), NoSitio.tsx
-                       (bloco "No Sítio": dias seguidos, recorde, tempo online; `ChamaNome` ao lado do nome com 3+
-                       dias), presenca.ts (presenca_de e presenca_todos) e PlacarZoeira.tsx (chineladas e tortas
-                       dadas e levadas nos últimos 7 dias)
-    perfil/            PerfilView, opgg.ts e steam.ts (limpar link, nick), links.ts (Twitch, YouTube… e vídeo e mural:
+                       AtributosFicha.tsx ("Segundo os nanicos": barras e votar, em ordem alfabética), estado.ts
+                       (números da função ficha-jogos, usados no Perfil e nas Salas, e atributos), numeros.ts (conferir
+                       e escrever; puro e testado), NoSitio.tsx (bloco "No Nanico Hotel": dias seguidos, recorde,
+                       tempo online; `ChamaNome` ao lado do nome com 3+ dias) e presenca.ts (presenca_de e
+                       presenca_todos). A ficha mostra em "No jogo" só os links (op.gg, smurf, Steam e os do perfil):
+                       sem elo, KDA, main e horas, e sem o placar da zoeira (decisão do Felippe, v1.68)
+    perfil/            PerfilView (op.gg, op.gg do smurf, Steam e links), opgg.ts (cleanOpgg, opggOf, opggSmurfOf,
+                       opggNick) e steam.ts (limpar link, nick), links.ts (Twitch, YouTube… e vídeo e mural:
                        cleanLink, cleanVideo, cleanMural, dominio; puro e testado) e CampoLinks.tsx ("Meus links")
     live/              live.ts (liga tudo à sala), rtc.ts (WebRTC comum), tela.ts (transmissão), camera.ts,
                        voz.ts (voz da sala: um par WebRTC só de áudio com cada um na voz, microfone, fone, quem
@@ -144,9 +146,10 @@ src/
     salas/             salas tipo lan house: trocar.ts (entrarSala: encerra tela e voz, mantém a câmera, troca o canal,
                        carrega escalação e chat; encerra a voz) e Salas.tsx (janela das salas com cartões e chat geral,
                        aberta pela porta do Sítio)
-    truco/             engine.ts (regras, puro e testado; a função truco-mesa usa uma cópia), valida.ts (confere a
-                       mesa pública), mesa.ts (pede cada ação à função truco-mesa e recebe a mesa e a minha mão pelo
-                       tempo real), TrucoView, Lobby, MesaTela, Carta e Baralho.tsx (o desenho próprio do
+    truco/             engine.ts (regras, puro e testado; a função truco-mesa usa uma cópia; relógio de 20 s por
+                       jogada: `desde`, trQuemDeve, trRestante, trTempoEsgotado), valida.ts (confere a mesa pública),
+                       mesa.ts (pede cada ação à função truco-mesa e recebe a mesa e a minha mão pelo tempo real;
+                       `fimDaJogada` e o aviso "tempo" quando acaba), TrucoView, Lobby, MesaTela, Carta e Baralho.tsx (o desenho próprio do
                        baralho espanhol em SVG: naipes, figuras e a moldura com as pintas)
   lib/
     config.ts          URL e chave pública do Supabase
@@ -168,7 +171,7 @@ src/
     tipos.ts           Friend, Phrase, Card, Presence…
     dados/             campeoes.ts (CHAMPS, LANES, LANE_CAMP), nanicos.ts (NAN_MAP, artOf, bonecoOf), changelog.ts,
                        novidades.ts (o que mostrar no Log depois de uma atualização; puro e testado)
-  styles/              CSS global, numerado: 01-base.css … 33-celular.css (no celular, as abas ficam numa barra embaixo)
+  styles/              CSS global, numerado: 01-base.css … 33-celular.css (o 27, do Início, saiu) (no celular, as abas ficam numa barra embaixo)
 public/arte/           artes dos nanicos (rosto e corpo), bonecos do hall, foto da turma, reações dos Picarétezzi
 planejamento/          PLANO.md (próximas fases e decisões), prompts/ (um por fase), demos e arte pronta
 supabase/
@@ -297,7 +300,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 ### Supabase (schema `public`)
 | Tabela | O que guarda | Quem pode mexer pelo site |
 |---|---|---|
-| `friends` | os 14 nanicos (`name`, `user_id`, `username`, `opgg`, `steam`) | cada um só o próprio `opgg` e `steam` |
+| `friends` | os 14 nanicos (`name`, `user_id`, `username`, `opgg`, `opgg_smurf`, `steam`) | cada um só o próprio `opgg`, `opgg_smurf` e `steam` |
 | `phrases` | nanicadas (`text`, `friend_ids uuid[]`, `champions text[]`, `modo 'qualquer'\|'todos'`) | criar, editar e remover (com limite e histórico) |
 | `nanicadas_historico` | cópia de toda nanicada editada ou removida | ninguém pelo site (só o admin) |
 | `game` | escalação por sala de LoL (`sala`, `players` = 5 rotas `{friendId, champion}`; a linha 1 é a da `lol-1`) | atualizar (formato conferido) |
@@ -312,7 +315,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 | `extrato` | cada entrada e saída de moedas (`valor`, `motivo`, `ref`) | ninguém grava; cada um lê o seu |
 | `bonus_diario` | bônus de cada dia e a sequência (`dia`, `seq`, `valor`) | ninguém grava; cada um lê o seu |
 | `online_diario` | minutos com o site aberto por dia (`minutos`, `ultimo_pulso`) | ninguém grava; cada um lê o seu |
-| `riot_contas`, `riot_ao_vivo`, `riot_meta` | cache da API da Riot | só a Edge Function |
+| `riot_contas`, `riot_ao_vivo`, `riot_meta` | cache da API da Riot (`riot_contas` guarda também a conta do smurf: `riot_id_smurf`, `puuid_smurf`) | só a Edge Function |
 | `rodizio` | roleta do rodízio, uma linha por sala de LoL (`fila`, `rodada`, `ja_entraram`, `sorteado`, `girado_em`, `giro`, `trocas`, `no_time`) | ninguém direto: só `rodizio_fila`, `rodizio_girar` (o banco sorteia com `random()`), `rodizio_colocar` (troca a rota na `game` e passa pelo `escalacao_protecao`) e `rodizio_desistir` (seção 19) |
 | `zoeiras` | chinelada, torta e revide no Sítio (`de`, `para` = friend ids, `tipo`, `em`; apaga com 30 dias) | ninguém direto: só `zoar(nanico, tipo)` (cobra 5/25 com `creditar`, revide grátis em 30 s, limites) e `placar_zoeira(nanico)` (seção 20); nanicos leem as das últimas 24 h |
 | `loja_itens` | a vitrine (`id`, `nome`, `descricao`, `espaco`, `preco` 10–5000, `dados` com cor/texto/animação, `ativo`, `ordem`); a semente fica no SQL | nanicos leem; só o admin escreve |
@@ -375,9 +378,11 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
   - **Cada ação:** `truco_vez(user)` (30 a cada 10 s) → `truco_carregar(mesa)` → regras do `engine.ts` → `truco_salvar(..., versao)`, que só grava se ninguém gravou no meio (senão a função tenta de novo). Embaralha com `crypto.getRandomValues`.
   - **Lugar:** `Lugar.key` é o `user_id` (não a aba), então recarregar ou trocar de aparelho não perde o lugar. Uma mesa em jogo por pessoa; as paradas há 3 h somem.
   - **Próxima mão:** quem está sentado pede `nova_mao` sozinho 3,8 s depois do fim; a função espera 3 s e vale só o primeiro pedido.
+  - **Tempo (20 s por jogada, `TR_TEMPO_MS`):** `h.desde` marca o começo da espera (relógio do servidor; toda ação que deu certo recomeça). Quando acaba no aparelho, quem está sentado manda `tempo` (n); a função só aceita se o relógio dela também passou e, por quem devia agir (`trQuemDeve`), aceita o pedido pendente ("quero") ou joga uma carta sorteada. Mesa sem `desde` (antiga) não tem tempo.
   - **Prêmio:** `truco_premiar(mesa)` (só a função) paga +15 a cada vencedor com `creditar(15, 'truco', 'mesa:partida')`, uma vez por partida, até 3 vitórias pagas por dia, e só se todos os lugares forem nanicos diferentes.
 - **Apostas na partida (seção 14 do `seguranca.sql`):** pari-mútuo com 5% da casa. A `riot-ao-vivo` abre o mercado quando vê a partida (fecha 5 min depois do início; Arena fica de fora) e, quando a partida some, busca o resultado na match-v5 (até 3 por ciclo) e chama `apostas_liquidar`, que paga `floor((total − casa) × aposta / bolo do vencedor)` com `creditar(…, 'aposta', …)`. Remake (menos de 5 min ou rendição antecipada), um lado vazio ou 6 h sem resultado devolvem tudo. Rodar de novo não paga de novo (o `estado` garante). Quem está na partida só aposta no próprio time (pelo `nanicos` do mercado ou pelo `riot_ao_vivo`). A conta está espelhada em `features/jogar/apostas.ts`, só para mostrar.
 - **Presença pública (seção 26 do `seguranca.sql`):** `bonus_diario` e `online_diario` continuam fechadas (cada um lê só as suas). O resumo de qualquer nanico sai por `presenca_de(nanico)` (sequência de hoje ou de ontem, recorde, minutos de hoje, 7 dias e total) e a chama da lista por `presenca_todos()` (só `seq` e `hoje_min`). Não calcule sequência no navegador.
+- **op.gg de smurf (seção 27 do `seguranca.sql`):** coluna `friends.opgg_smurf` (mesmo formato do `opgg`, gravada pelo dono, passa pelo `perfil_protecao`). A `riot-ao-vivo` resolve as duas contas (o smurf em `riot_id_smurf`/`puuid_smurf`) e vale a que estiver em partida. A ficha e o Perfil mostram o link; a `ficha-jogos` e a `riot-semana` continuam só com o `opgg`.
 - **Gatilhos:** `chat_protecao`, `chat_sala_protecao` (recusa sala que não existe), `limpar_chat` (apaga o que tem mais de 30 dias), `nanicada_protecao`, `nanicada_remocao`, `escalacao_protecao` e `perfil_protecao`.
 - **"Já vi" do Log:** fica na conta, em `user_metadata.log_visto` (índice da entrada no `CHANGELOG`), gravado com `auth.updateUser({ data })` por `marcarLogVisto()` (`src/lib/dados.ts`). Vale em todos os aparelhos e não precisa de SQL. O `localStorage` (`log-visto`) fica de reserva.
 - **Logins:** são criados só pelo admin, com `criar_login_nanico(nome, usuario, senha)` e `resetar_senha_nanico(usuario, senha)`. O e-mail interno é `usuario@nanicos.app`.
@@ -399,7 +404,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 - **Mudanças no banco:** chegam por `postgres_changes` em `friends`, `phrases`, `game`, `chat_messages`, `carteiras`, `rodizio`, `mochila` (equipados), `consumos` (o boneco fumando ou bebendo), `truco_mesas`, `truco_maos`, `bingo_partidas`, `bingo_cartelas`, `bingo_cantos`, `midias`, `mural_links`, `perfil_links`, `rede_posts`, `rede_curtidas`, `rede_comentarios`, `apostas_mercados`, `apostas` e `atributos_aviso` (no DELETE, `aoMudarTabela` entrega a chave da linha apagada). A chinelada e a torta vêm do tempo real de `zoeiras` (pagas, gravadas por `zoar()`), e o sorteio da roleta do rodízio vem do tempo real de `rodizio` (todo mundo anima até o mesmo `girado_em`), **nunca de broadcast**. Os ganhos de moedas de todo mundo no Sítio vêm do tempo real de `carteiras` (gravado por `creditar()`), **nunca de broadcast**.
 
 ### Navegador (`localStorage`, só conveniência de cada pessoa)
-- **Chaves:** `rift-lineup`, `rift-card` (cartela do bingo local; numa sala de LoL com o SQL, a cartela vem do banco), `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `log-visto`, `fome-fechado`, `hall-pos` (último piso no hall), `hall-sala-min` (lista "Na sala agora" do Sítio recolhida), `sala-atual` (última sala; o site sempre abre no lobby), `canais-voz-min` e `canais-texto-min` (categorias de canais recolhidas; no celular começam recolhidas) `membros-min` (lista de membros só com os rostos; abaixo de 1200 px fica assim sempre) e `midia` (microfone, saída de som, câmera, eco e ruído escolhidos nas Configurações) e `evento-visto` (o aviso que explica o happy hour e o churrasco já apareceu) `missoes-min` (cartão das missões recolhido no Sítio) e `rede-visto` (última postagem da rede nanica vista, para a bolinha de não lidas) e `roleta-som` (`0` = roleta do Cassino no mudo).
+- **Chaves:** `rift-lineup`, `rift-card` (cartela do bingo local; numa sala de LoL com o SQL, a cartela vem do banco), `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `log-visto`, `fome-fechado`, `hall-pos` (último piso no hall), `hall-sala-min` (lista "Na sala agora" do Sítio recolhida), `sala-atual` (última sala; o site sempre abre no lobby), `menu-min` (grupos do menu recolhidos), `canais-voz-min` e `canais-texto-min` (categorias de canais recolhidas; no celular começam recolhidas) `membros-min` (lista de membros só com os rostos; abaixo de 1200 px fica assim sempre) e `midia` (microfone, saída de som, câmera, eco e ruído escolhidos nas Configurações) e `evento-visto` (o aviso que explica o happy hour e o churrasco já apareceu) `missoes-min` (cartão das missões recolhido no Sítio) e `rede-visto` (última postagem da rede nanica vista, para a bolinha de não lidas) e `roleta-som` (`0` = roleta do Cassino no mudo).
 - **As do site antigo continuam iguais**, então ninguém perde a cartela na troca.
 - **`sessionStorage`:** `log-auto` (o Log de novidades já abriu sozinho nesta sessão do navegador).
 - Nada importante pode morar só aqui.
@@ -407,7 +412,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 ### Arte (`public/arte/`)
 - **`nanicos/{n}-rosto.webp` e `{n}-corpo.webp`:** o número vem de `NAN_MAP` (nome do nanico → número). Os nomes são Abreutz, Alemão, DD, Gamer, Grito, Guiperino, Le Bubu, Henry, Pitoco, John, Veião, Max, Gordão e Pin.
 - **Tamanhos:** o rosto tem 160×160 e o corpo, 440 px de altura. Use `artOf(friend)`.
-- **`bonecos/*.webp`:** uma spritesheet por nanico para o hall (células de 84×134, linhas `frente`/`costas`, colunas `parado` + 4 de andar; os lados esquerdos são o espelho). O formato está em `bonecos/bonecos.json`. Use `bonecoOf(friend)`; quem não tem boneco aparece com o rosto num pino.
+- **`bonecos/*.webp`:** uma spritesheet por nanico para o hall (células de 84×134 nas medidas do código; desde a v1.68 a folha está em 3x, 252×402 px por célula, para ficar nítida ampliada; linhas `frente`/`costas`, colunas `parado` + 4 de andar; os lados esquerdos são o espelho). O formato está em `bonecos/bonecos.json`. Use `bonecoOf(friend)`; quem não tem boneco aparece com o rosto num pino.
 - **`turma.webp`:** foto da turma. **`marca.png`:** bola de bingo. **`reacoes/`:** os Picarétezzi.
 
 ---

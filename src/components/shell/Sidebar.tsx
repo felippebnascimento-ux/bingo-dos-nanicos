@@ -1,52 +1,53 @@
 "use client";
-import { useEffect, type ComponentType } from "react";
-import { IcAjustes, IcAoVivo, IcCassino, IcInicio, IcJogar, IcLoja, IcMidias, IcRanking, IcSitio, IcNanicadas, IcNanicos, IcPerfil, IcTaca, IcTruco, IcVoltar } from "@/components/ui/icones";
+import { useEffect, useState, type ComponentType } from "react";
+import { IcAjustes, IcAoVivo, IcCassino, IcJogar, IcLoja, IcMidias, IcSeta, IcSitio, IcNanicadas, IcNanicos, IcPerfil, IcTaca, IcTruco, IcVoltar } from "@/components/ui/icones";
 import { fecharSeletores } from "@/components/ui/FriendPicker";
 import { Avatar } from "@/components/ui/Avatar";
 import { CamBotoes } from "@/features/live/CamBotoes";
 import { CarteiraChip } from "@/features/moedas/Moedas";
-import { abrirCarteira } from "@/features/moedas/Ranking";
 import { useCarteira } from "@/lib/carteira";
 import { VERSION } from "@/lib/dados/changelog";
 import { temNovidade } from "@/lib/dados/novidades";
 import { CREW, MARCA } from "@/lib/dados/nanicos";
-import { friendOf, MY_KEY, salaLol, setApp, useApp } from "@/lib/store";
+import { friendOf, MY_KEY, setApp, useApp } from "@/lib/store";
 import type { Aba } from "@/lib/tipos";
 import { local } from "@/lib/util";
 import { nomeDaSala } from "@/features/salas/trocar";
 import { BotaoCelular } from "@/features/celular/Celular";
 import { Canais, VozPainel } from "./Canais";
 
-type ItemMenu = { aba: Aba; t: string; Ic: ComponentType };
-/* o menu em grupos: os lugares para ir, a turma e as moedas. No celular vira a barra de baixo, sem os
-   títulos e sem o grupo das moedas (o Início mostra o ranking e a Loja) */
-const GRUPOS: { titulo: string | null; moedas?: boolean; itens: ItemMenu[] }[] = [
-  { titulo: null, itens: [{ aba: "inicio", t: "Início", Ic: IcInicio }] },
+/* `curto`: o nome na barra de baixo do celular, onde o espaço é pouco */
+type ItemMenu = { aba: Aba; t: string; curto?: string; Ic: ComponentType; soComputador?: boolean };
+/* o menu em grupos que recolhem (como os canais): Jogos, Bingo e Turma. No celular vira a barra de baixo,
+   sem os títulos (todos os itens à vista) e sem a Loja e os Troféus */
+const GRUPOS: { id: string; titulo: string; itens: ItemMenu[] }[] = [
   {
-    titulo: "Lugares",
+    id: "jogos",
+    titulo: "Jogos",
     itens: [
-      { aba: "hall", t: "Sítio", Ic: IcSitio },
-      { aba: "jogar", t: "Jogar", Ic: IcJogar },
+      { aba: "hall", t: "Nanico Hotel", curto: "Hotel", Ic: IcSitio },
       { aba: "live", t: "Ao vivo", Ic: IcAoVivo },
       { aba: "truco", t: "Truco", Ic: IcTruco },
       { aba: "cassino", t: "Cassino", Ic: IcCassino },
+      { aba: "loja", t: "Loja", Ic: IcLoja, soComputador: true },
     ],
   },
   {
-    titulo: "Turma",
+    id: "bingo",
+    titulo: "Bingo",
     itens: [
       { aba: "frases", t: "Nanicadas", Ic: IcNanicadas },
-      { aba: "nanicos", t: "Nanicos", Ic: IcNanicos },
-      { aba: "midias", t: "Mídias", Ic: IcMidias },
-      { aba: "perfil", t: "Perfil", Ic: IcPerfil },
+      { aba: "jogar", t: "Jogar", Ic: IcJogar },
     ],
   },
   {
-    titulo: "Moedas",
-    moedas: true,
+    id: "turma",
+    titulo: "Turma",
     itens: [
-      { aba: "loja", t: "Loja", Ic: IcLoja },
-      { aba: "trofeus", t: "Troféus", Ic: IcTaca },
+      { aba: "nanicos", t: "Nanicos", Ic: IcNanicos },
+      { aba: "midias", t: "Mídias", Ic: IcMidias },
+      { aba: "trofeus", t: "Troféus", Ic: IcTaca, soComputador: true },
+      { aba: "perfil", t: "Perfil", Ic: IcPerfil },
     ],
   },
 ];
@@ -65,11 +66,16 @@ function Nav() {
   const unread = useApp((s) => s.chatUnread > 0);
   /* o item Perfil mostra o meu rosto (sem nanico, continua o ícone) */
   const eu = useApp((s) => friendOf(s.myFid, s.friends));
-  /* a aba Jogar (escalação e bingo) só existe nas salas de LoL; sem o SQL das salas, sempre aparece */
-  const temJogar = useApp((s) => !s.salas.length || !!salaLol(s));
   const temSalas = useApp((s) => s.salas.length > 0);
-  /* sem o SQL das moedas, o grupo das moedas some */
+  /* sem o SQL das moedas, a Loja some */
   const temMoedas = useCarteira((s) => !!s.carteira);
+  /* grupos recolhidos (no computador; no celular a barra de baixo mostra tudo) */
+  const [recolhidos, setRecolhidos] = useState<string[]>(() => local.json<string[]>("menu-min") ?? []);
+  const alternar = (id: string) => {
+    const novo = recolhidos.includes(id) ? recolhidos.filter((x) => x !== id) : [...recolhidos, id];
+    setRecolhidos(novo);
+    local.setJson("menu-min", novo);
+  };
 
   const contagem = (a: Aba) => {
     if (a === "frases") return <span className="count" id="nFrases">{nFrases || ""}</span>;
@@ -79,15 +85,25 @@ function Nav() {
     return null;
   };
 
-  const item = ({ aba: a, t, Ic }: ItemMenu, extra = "") => (
+  const item = ({ aba: a, t, curto, Ic, soComputador }: ItemMenu, recolhido: boolean) => (
     <button
       key={a}
       role="tab"
       aria-selected={aba === a}
       data-tab={a}
       id={a === "live" ? "navLive" : undefined}
-      /* com salas, o Ao vivo se abre pelos canais de voz; o item fica só na barra de abas do celular */
-      className={[a === "live" && unread ? "unread" : "", a === "live" && temSalas ? "so-celular" : "", extra].join(" ").trim() || undefined}
+      /* com salas, o Ao vivo se abre pelos canais de voz; o item fica só na barra de abas do celular.
+         Num grupo recolhido, fica à vista só a aba aberta */
+      className={
+        [
+          a === "live" && unread ? "unread" : "",
+          a === "live" && temSalas ? "so-celular" : "",
+          soComputador ? "so-computador" : "",
+          recolhido && aba !== a ? "nav-recolhido" : "",
+        ]
+          .join(" ")
+          .trim() || undefined
+      }
       title={t}
       onClick={() => {
         setApp({ aba: a });
@@ -95,7 +111,14 @@ function Nav() {
       }}
     >
       {a === "perfil" && eu ? <Avatar f={eu} size="xs" className="nav-rosto" /> : <Ic />}
-      <span className="t">{t}</span>
+      {curto ? (
+        <span className="t">
+          <span className="t-longo">{t}</span>
+          <span className="t-curto">{curto}</span>
+        </span>
+      ) : (
+        <span className="t">{t}</span>
+      )}
       {contagem(a)}
     </button>
   );
@@ -103,23 +126,20 @@ function Nav() {
   return (
     <nav className="nav" role="tablist" aria-label="Seções">
       {GRUPOS.map((g) => {
-        if (g.moedas && !temMoedas) return null;
-        const itens = g.itens.filter((x) => x.aba !== "jogar" || temJogar);
+        const recolhido = recolhidos.includes(g.id);
+        const itens = g.itens.filter((x) => x.aba !== "loja" || temMoedas);
         return [
-          g.titulo && (
-            <span key={"g-" + g.titulo} className={"nav-grupo" + (g.moedas ? " so-computador" : "")} aria-hidden="true">
-              {g.titulo}
-            </span>
-          ),
-          ...(g.moedas
-            ? [
-                <button key="ranking" type="button" className="so-computador" title="Ranking" onClick={abrirCarteira}>
-                  <IcRanking />
-                  <span className="t">Ranking</span>
-                </button>,
-                ...itens.map((x) => item(x, "so-computador")),
-              ]
-            : itens.map((x) => item(x))),
+          <button
+            key={"g-" + g.id}
+            type="button"
+            className={"nav-grupo" + (recolhido ? " min" : "")}
+            aria-expanded={!recolhido}
+            onClick={() => alternar(g.id)}
+          >
+            <IcSeta tam={12} />
+            {g.titulo}
+          </button>,
+          ...itens.map((x) => item(x, recolhido)),
         ];
       })}
       <BotaoCelular className="no-menu" />
@@ -181,9 +201,9 @@ export function Sidebar() {
       {/* a parte de cima rola; a de baixo (voz, câmera, eu e moedas) fica sempre à vista, como no Discord */}
       <div className="side-rolagem">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="brand-mini" id="brandMini" src={MARCA} alt="Bingo dos Nanicos" onClick={() => setApp({ aba: "inicio" })} />
-        {/* a marca leva de volta ao Início */}
-        <button type="button" className="brand" aria-label="Bingo dos Nanicos: voltar ao Início" onClick={() => setApp({ aba: "inicio" })}>
+        <img className="brand-mini" id="brandMini" src={MARCA} alt="Bingo dos Nanicos" onClick={() => setApp({ aba: "hall" })} />
+        {/* a marca leva de volta ao Nanico Hotel */}
+        <button type="button" className="brand" aria-label="Bingo dos Nanicos: voltar ao Nanico Hotel" onClick={() => setApp({ aba: "hall" })}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className="brand-img" src={CREW} alt="Os Nanicos" width={1100} height={681} decoding="async" />
           <div className="brand-txt">

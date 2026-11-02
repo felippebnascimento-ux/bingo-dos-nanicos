@@ -22,7 +22,7 @@ export function NoSitio({ fid, eu }: { fid: string; eu: boolean }) {
   const maior = Math.max(60, ...p.semana.map((d) => d.min));
   return (
     <section className="ficha-sec no-sitio" aria-labelledby={`noSitio-${fid}`}>
-      <h3 id={`noSitio-${fid}`}>No Sítio</h3>
+      <h3 id={`noSitio-${fid}`}>No Nanico Hotel</h3>
       <div className="no-sitio-seq">
         <IcChama tam={34} className={p.seq ? "acesa" : undefined} />
         <div>
