@@ -2,13 +2,14 @@
  * Loja e mochila (puro e testado): os espaços, a vitrine agrupada, o que cada um tem equipado e se dá
  * para comprar. Só serve para MOSTRAR: quem confere preço, saldo e repetição é o banco (comprar(), seção 15).
  */
-export type Espaco = "cadeira" | "mesa" | "tapete" | "poster" | "planta" | "parede" | "luz" | "titulo" | "moldura" | "escudo" | "consumivel";
+export type Espaco = "cadeira" | "mesa" | "tapete" | "poster" | "planta" | "parede" | "luz" | "titulo" | "moldura" | "escudo" | "consumivel" | "celular";
 export type Anim = "fumar" | "charuto" | "beber" | "tremer" | "tonto";
 export type ItemLoja = { id: string; nome: string; descricao: string; espaco: Espaco; preco: number; dados: { cor?: string; texto?: string; anim?: Anim }; ordem: number };
 export type LinhaMochila = { userId: string; itemId: string; qtd: number; equipado: boolean };
 
 /** Os grupos da vitrine, na ordem em que aparecem. */
 export const GRUPOS: readonly { id: string; nome: string; espacos: readonly Espaco[] }[] = [
+  { id: "celular", nome: "A meta grande", espacos: ["celular"] },
   { id: "consumivel", nome: "Para usar no Sítio", espacos: ["consumivel"] },
   { id: "quarto", nome: "Para o quarto", espacos: ["cadeira", "mesa", "tapete", "poster", "planta", "parede", "luz"] },
   { id: "visual", nome: "Títulos e molduras", espacos: ["titulo", "moldura"] },
@@ -27,11 +28,18 @@ export const NOME_ESPACO: Readonly<Record<Espaco, string>> = {
   moldura: "Moldura",
   escudo: "Escudo",
   consumivel: "Consumível",
+  celular: "Celular",
 };
 
-/** Escudo e consumíveis acumulam; o resto só se compra uma vez e se equipa. */
+/** Escudo e consumíveis acumulam; o resto só se compra uma vez e se equipa (menos o celular, que se abre). */
 export const acumula = (e: Espaco) => e === "escudo" || e === "consumivel";
-export const equipavel = (e: Espaco) => !acumula(e);
+export const equipavel = (e: Espaco) => !acumula(e) && e !== "celular";
+
+/** Quanto já juntei para um item caro (0 a 1) e quanto falta, para a barra da loja. */
+export function progressoCompra(preco: number, saldo: number | null) {
+  const s = Math.max(0, saldo ?? 0);
+  return { parte: Math.min(1, s / Math.max(1, preco)), falta: Math.max(0, preco - s) };
+}
 export const MAX_ESCUDOS = 3;
 export const MAX_CONSUMIVEL = 20;
 

@@ -1447,7 +1447,7 @@ create table if not exists public.loja_itens (
   id        text primary key check (id ~ '^[a-z0-9-]{2,30}$'),
   nome      text not null check (char_length(nome) between 2 and 40),
   descricao text not null default '' check (char_length(descricao) <= 140),
-  espaco    text not null check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel')),
+  espaco    text not null check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular')),
   preco     int not null check (preco between 10 and 5000),
   dados     jsonb not null default '{}'::jsonb check (octet_length(dados::text) <= 500),
   ativo     boolean not null default true,
@@ -2377,7 +2377,133 @@ begin
   begin alter publication supabase_realtime add table public.perfil_links; exception when duplicate_object then null; end;
 end $$;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões e as 3 tabelas de mídias e links
+-- 18) celular e rede nanica: o item "Celular" (3.000 moedas, a meta grande) abre a rede social do grupo ----------------
+-- Só quem tem o celular na mochila lê, posta, curte e comenta, e quem garante é o RLS (tem_item), não o ícone escondido.
+-- Imagem da postagem vai para o bucket "midias", na pasta rede/<uid>/. Postar e curtir não dão moedas.
+alter table public.loja_itens drop constraint if exists loja_itens_espaco_check;
+alter table public.loja_itens add constraint loja_itens_espaco_check
+  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular'));
+insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem) values
+  ('celular', 'Celular', 'Abre a rede social nanica: poste, curta e comente com o grupo.', 'celular', 3000, '{}', 0)
+on conflict (id) do update set nome = excluded.nome, descricao = excluded.descricao, espaco = excluded.espaco,
+  preco = excluded.preco, dados = excluded.dados, ordem = excluded.ordem;
+
+-- quem está logado tem esse item na mochila?
+create or replace function public.tem_item(p_item text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.mochila where user_id = auth.uid() and item_id = p_item and qtd > 0);
+$$;
+revoke all on function public.tem_item(text) from public, anon;
+grant execute on function public.tem_item(text) to authenticated;
+
+create table if not exists public.rede_posts (
+  id      bigint generated always as identity primary key,
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  texto   text not null check (char_length(texto) between 1 and 500),
+  midia   text check (midia ~ '^rede/[0-9a-f-]{36}/[a-z0-9-]{6,40}\.(webp|gif)$'),
+  em      timestamptz not null default now()
+);
+create index if not exists rede_posts_em on public.rede_posts (em desc);
+create table if not exists public.rede_curtidas (
+  post_id bigint not null references public.rede_posts(id) on delete cascade,
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  em      timestamptz not null default now(),
+  primary key (post_id, user_id)
+);
+create table if not exists public.rede_comentarios (
+  id      bigint generated always as identity primary key,
+  post_id bigint not null references public.rede_posts(id) on delete cascade,
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  texto   text not null check (char_length(texto) between 1 and 280),
+  em      timestamptz not null default now()
+);
+create index if not exists rede_comentarios_post on public.rede_comentarios (post_id, em);
+
+alter table public.rede_posts       enable row level security;
+alter table public.rede_curtidas    enable row level security;
+alter table public.rede_comentarios enable row level security;
+revoke all on public.rede_posts, public.rede_curtidas, public.rede_comentarios from public, anon, authenticated;
+grant select, delete on public.rede_posts, public.rede_curtidas, public.rede_comentarios to authenticated;
+grant insert (texto, midia) on public.rede_posts to authenticated;
+grant insert (post_id) on public.rede_curtidas to authenticated;
+grant insert (post_id, texto) on public.rede_comentarios to authenticated;
+
+drop policy if exists rede_posts_ler on public.rede_posts;
+create policy rede_posts_ler on public.rede_posts for select to authenticated using (public.eh_nanico() and public.tem_item('celular'));
+drop policy if exists rede_posts_criar on public.rede_posts;
+create policy rede_posts_criar on public.rede_posts for insert to authenticated with check (user_id = auth.uid() and public.tem_item('celular'));
+drop policy if exists rede_posts_apagar on public.rede_posts;
+create policy rede_posts_apagar on public.rede_posts for delete to authenticated using (user_id = auth.uid());
+
+drop policy if exists rede_curtidas_ler on public.rede_curtidas;
+create policy rede_curtidas_ler on public.rede_curtidas for select to authenticated using (public.eh_nanico() and public.tem_item('celular'));
+drop policy if exists rede_curtidas_criar on public.rede_curtidas;
+create policy rede_curtidas_criar on public.rede_curtidas for insert to authenticated with check (user_id = auth.uid() and public.tem_item('celular'));
+drop policy if exists rede_curtidas_apagar on public.rede_curtidas;
+create policy rede_curtidas_apagar on public.rede_curtidas for delete to authenticated using (user_id = auth.uid());
+
+drop policy if exists rede_comentarios_ler on public.rede_comentarios;
+create policy rede_comentarios_ler on public.rede_comentarios for select to authenticated using (public.eh_nanico() and public.tem_item('celular'));
+drop policy if exists rede_comentarios_criar on public.rede_comentarios;
+create policy rede_comentarios_criar on public.rede_comentarios for insert to authenticated with check (user_id = auth.uid() and public.tem_item('celular'));
+drop policy if exists rede_comentarios_apagar on public.rede_comentarios;
+create policy rede_comentarios_apagar on public.rede_comentarios for delete to authenticated using (user_id = auth.uid());
+
+-- autor sempre quem está logado, texto limpo (mantém as quebras de linha), limites por hora e imagem na própria pasta
+create or replace function public.rede_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.user_id := auth.uid();
+  new.em := now();
+  if tg_table_name = 'rede_curtidas' then
+    perform public.limitar('rede_curtida', 120, interval '1 hour', 'Calma: curtidas demais em pouco tempo.');
+    return new;
+  end if;
+  new.texto := btrim(regexp_replace(coalesce(new.texto, ''), '[\x00-\x09\x0B-\x1F\x7F]', ' ', 'g'));
+  if char_length(new.texto) = 0 then raise exception 'Escreva alguma coisa.' using errcode = 'P0001'; end if;
+  if tg_table_name = 'rede_posts' then
+    if new.midia is not null then
+      if split_part(new.midia, '/', 2) <> new.user_id::text then
+        raise exception 'A imagem tem que estar na sua pasta.' using errcode = 'P0001';
+      end if;
+      if not exists (select 1 from storage.objects where bucket_id = 'midias' and name = new.midia) then
+        raise exception 'A imagem não chegou. Tente de novo.' using errcode = 'P0001';
+      end if;
+    end if;
+    perform public.limitar('rede_post', 10, interval '1 hour', 'Calma: no máximo 10 postagens por hora.');
+  else
+    perform public.limitar('rede_comentario', 40, interval '1 hour', 'Calma: no máximo 40 comentários por hora.');
+  end if;
+  return new;
+end $$;
+revoke all on function public.rede_protecao() from public, anon, authenticated;
+drop trigger if exists rede_protecao on public.rede_posts;
+create trigger rede_protecao before insert on public.rede_posts for each row execute function public.rede_protecao();
+drop trigger if exists rede_protecao on public.rede_curtidas;
+create trigger rede_protecao before insert on public.rede_curtidas for each row execute function public.rede_protecao();
+drop trigger if exists rede_protecao on public.rede_comentarios;
+create trigger rede_protecao before insert on public.rede_comentarios for each row execute function public.rede_protecao();
+
+-- a pasta rede/<uid>/ do bucket midias: sobe e apaga só quem tem o celular, na própria pasta (refaz as políticas da seção 16)
+drop policy if exists midias_subir on storage.objects;
+create policy midias_subir on storage.objects for insert to authenticated
+  with check (bucket_id = 'midias' and public.eh_nanico() and (
+    (storage.foldername(name))[1] = auth.uid()::text
+    or ((storage.foldername(name))[1] = 'rede' and (storage.foldername(name))[2] = auth.uid()::text and public.tem_item('celular'))));
+drop policy if exists midias_apagar on storage.objects;
+create policy midias_apagar on storage.objects for delete to authenticated
+  using (bucket_id = 'midias' and (
+    (storage.foldername(name))[1] = auth.uid()::text
+    or ((storage.foldername(name))[1] = 'rede' and (storage.foldername(name))[2] = auth.uid()::text)));
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.rede_posts;       exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.rede_curtidas;    exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.rede_comentarios; exception when duplicate_object then null; end;
+end $$;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links e as 3 da rede nanica
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -2424,4 +2550,7 @@ select proname::text, 'missoes' from pg_proc
 union all
 select tablename::text, 'midias' from pg_tables
  where schemaname = 'public' and tablename in ('midias', 'perfil_links', 'mural_links')
+union all
+select tablename::text, 'rede' from pg_tables
+ where schemaname = 'public' and tablename in ('rede_posts', 'rede_curtidas', 'rede_comentarios')
 order by 2, 1;

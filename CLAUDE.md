@@ -85,7 +85,8 @@ src/
                        consumoSala.ts (tempo real de `consumos`: o boneco fuma ou bebe em todas as telas),
                        Itens.tsx (desenhos dos consumíveis e do escudo, ConsumoCamada do Sítio, TituloNanico) e
                        LojaView.tsx (vitrine com prévia, mochila; `MochilaLista` também aparece na ficha)
-    midias/            aba Mídias (aba `midias`, no menu): midiasDados.ts (galeria, mural e links do perfil; comprime a
+    midias/            aba Mídias (aba `midias`, no menu): Imagem.tsx (imagem do bucket sob demanda, usada também na rede),
+                       midiasDados.ts (galeria, mural e links do perfil; comprime a
                        imagem no navegador para webp até 1920 px; baixa do bucket privado como blob: e solta a URL;
                        `iniciarMidias`, `linksDe`) e MidiasView.tsx (galeria com tela cheia, vídeo como link, mural)
     missoes/           missões do dia: missoesDados.ts (pede minhas_missoes() ao entrar, a cada 2 min e depois das
@@ -123,6 +124,10 @@ src/
                        (microfone, saída, câmera, eco e ruído escolhidos, lista de aparelhos; voz.ts e camera.ts
                        leem daqui e trocam o aparelho na hora com `replaceTrack`) e ConfigView.tsx (ConfigJanela:
                        aparelhos, teste do microfone, trocar senha e sair)
+    celular/           o Celular (item da loja) e a rede nanica: rede.ts (feed de 20 em 20, postar com imagem comprimida
+                       na pasta rede/<uid>/ do bucket midias, curtir, comentar, apagar, não lidas em `rede-visto`, tempo
+                       real; `iniciarRede`, `abrirCelular`) e Celular.tsx (BotaoCelular no menu e no Sítio só para quem
+                       tem o item, `useTemCelular`, e a moldura por cima de tudo; até 520 px vira tela inteira)
     chat/              chat.ts (um chat por sala: "geral" no lobby e o id da sala dentro dela; não lidas por canal),
                        ChatPainel (o da minha sala, que é o chat do canal de voz, na primeira aba do painel do Ao vivo; ou um `canal`) e ChatView (aba `chat`, fora do menu:
                        o canal de texto escolhido no menu)
@@ -155,7 +160,7 @@ src/
     tipos.ts           Friend, Phrase, Card, Presence…
     dados/             campeoes.ts (CHAMPS, LANES, LANE_CAMP), nanicos.ts (NAN_MAP, artOf, bonecoOf), changelog.ts,
                        novidades.ts (o que mostrar no Log depois de uma atualização; puro e testado)
-  styles/              CSS global, numerado: 01-base.css … 32-midias.css (no celular, as abas ficam numa barra embaixo)
+  styles/              CSS global, numerado: 01-base.css … 33-celular.css (no celular, as abas ficam numa barra embaixo)
 public/arte/           artes dos nanicos (rosto e corpo), bonecos do hall, foto da turma, reações dos Picarétezzi
 planejamento/          PLANO.md (próximas fases e decisões), prompts/ (um por fase), demos e arte pronta
 supabase/
@@ -309,6 +314,8 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 | `midias` | galeria (`user_id`, `caminho` no bucket **ou** `link` de vídeo do YouTube/Medal/clipe da Twitch, `legenda` ≤ 140, `sala`) | nanicos leem; cada um manda (gatilho `midias_protecao`: autor, pasta própria, arquivo existe, 10 por hora, até 60 por pessoa) e apaga as suas |
 | `perfil_links` | links da ficha (`friend_id`, `tipo` twitch/youtube/instagram/tiktok/x/faceit/leetify, `url` no formato de cada site) | nanicos leem; cada um grava só os próprios |
 | `mural_links` | mural do grupo (`user_id`, `url` só https ≤ 300, `titulo` ≤ 80) | nanicos leem; cada um põe (10 por hora) e apaga os seus |
+| `rede_posts` | rede nanica (`user_id`, `texto` 1–500, `midia` = `rede/<uid>/<id>.webp` no bucket `midias`) | só quem tem o Celular lê e posta (`tem_item('celular')`); o autor apaga; ninguém edita |
+| `rede_curtidas`, `rede_comentarios` | curtidas (`post_id`, `user_id`) e comentários (`texto` 1–280) | só quem tem o Celular lê e escreve; o autor apaga |
 | `missoes_def` | as missões possíveis (`id`, `texto`, `meta`, `valor`, `fase_ok`, `ordem`); a semente fica no SQL | nanicos leem; só o admin escreve (o PR de uma fase nova liga a missão dela com `fase_ok = true`) |
 | `missoes_dia` | as 3 missões de cada um por dia (`user_id`, `dia`, `missao_id`, `progresso`, `feita_em`) | cada um lê as suas; só `minhas_missoes()` grava |
 | `bingo_partidas` | uma partida de bingo aberta por sala de LoL (`sala`, `game_id` da Riot, `aberta_em`, `fechada_em`) | nanicos leem; só as funções `bingo_*` |
@@ -343,6 +350,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
   - **Escudo de sequência:** o `bater_ponto()` da seção 15 (substitui o da 7) gasta 1 escudo quando a pessoa faltou ontem mas veio anteontem, cria o dia de ontem com valor 0 e devolve `escudo_usado: true`. Dois dias perdidos não salvam.
   - **Itens:** consumíveis de 15 a 60 (cigarrinho, latinha, chimarrão, energético, caipirinha, charuto), escudo 400, quarto de 150 a 1.500, títulos de 250 a 2.000 e molduras de 800 e 1.200.
 - **Mídias e links (seção 16 do `seguranca.sql`):** bucket `midias` **privado** (5 MB, só webp/png/jpeg/gif); `storage.objects` só deixa nanico ler, subir na própria pasta (`<uid>/…`) e apagar a própria. O site mostra a imagem com `download()` → `URL.createObjectURL` (a CSP já aceita `blob:`); link externo abre em nova aba, sem iframe e sem prévia. Apagar uma mídia apaga o arquivo e a linha.
+- **Celular e rede nanica (seção 18 do `seguranca.sql`):** o item `celular` (espaço `celular`, 3.000 moedas, compra única, não se equipa: na mochila o botão é "Abrir"). `public.tem_item(item)` diz se quem está logado tem o item, e o RLS das tabelas `rede_*` usa `eh_nanico() and tem_item('celular')`: sem o item, o feed volta vazio e o tempo real não chega. O gatilho `rede_protecao` força o autor, limpa o texto (mantém quebras de linha), confere a imagem na própria pasta e limita (10 postagens, 40 comentários e 120 curtidas por hora). A política de subir no bucket `midias` aceita também `rede/<uid>/` para quem tem o Celular. Postar e curtir não dão moedas. O aviso "Fulano postou na rede nanica" no Sítio só chega a quem tem o Celular (o tempo real respeita o RLS).
 - **Missões do dia (seção 23 do `seguranca.sql`):** `minhas_missoes()` sorteia 3 das `fase_ok` (com `random()`) na primeira chamada do dia de Brasília e devolve as 3 com o progresso **recalculado na hora** das tabelas de origem (`missao_progresso`: `online_diario`, `chat_messages`, `phrases.created_by`, `zoeiras`, extrato do truco, `bingo_premios`, `rodizio.sorteado_por`). Paga ao completar com `creditar(valor, 'missao', 'dia:id')` e, com as 3 feitas, o bônus de +25 (`'dia:bonus'`), uma vez só (trava por pessoa com `pg_advisory_xact_lock`). Nenhum progresso vem do site. A "Aposte numa partida ao vivo" espera a fase 10 (`fase_ok = false`).
 - **Bingo no servidor (seção 12a do `seguranca.sql`):**
   - **Cartela:** `bingo_nova_cartela(sala)` sorteia no banco (`bingo_sortear`, com `gen_random_bytes`; até 16 da partida, o resto genéricas, como `sortear()`), e `bingo_montada(sala, casas)` aceita 24 nanicadas que valem (`bingo_valem`, a mesma regra de `eligible()`). Ambas abrem a partida da sala se não houver (`bingo_abrir`). Trocar de cartela só antes do primeiro canto confirmado.
@@ -374,10 +382,10 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
   - `reacao`: emojis e fotos;
   - `risco`: desenho na live;
   - `hall`: `{ para: {i, j} }`, o destino do boneco. Cada navegador calcula o caminho e anima sozinho (limite de 8 a cada 2 s).
-- **Mudanças no banco:** chegam por `postgres_changes` em `friends`, `phrases`, `game`, `chat_messages`, `carteiras`, `rodizio`, `mochila` (equipados), `consumos` (o boneco fumando ou bebendo), `truco_mesas`, `truco_maos`, `bingo_partidas`, `bingo_cartelas`, `bingo_cantos`, `midias`, `mural_links` e `perfil_links` (no DELETE, `aoMudarTabela` entrega a chave da linha apagada). A chinelada e a torta vêm do tempo real de `zoeiras` (pagas, gravadas por `zoar()`), e o sorteio da roleta do rodízio vem do tempo real de `rodizio` (todo mundo anima até o mesmo `girado_em`), **nunca de broadcast**. Os ganhos de moedas de todo mundo no Sítio vêm do tempo real de `carteiras` (gravado por `creditar()`), **nunca de broadcast**.
+- **Mudanças no banco:** chegam por `postgres_changes` em `friends`, `phrases`, `game`, `chat_messages`, `carteiras`, `rodizio`, `mochila` (equipados), `consumos` (o boneco fumando ou bebendo), `truco_mesas`, `truco_maos`, `bingo_partidas`, `bingo_cartelas`, `bingo_cantos`, `midias`, `mural_links`, `perfil_links`, `rede_posts`, `rede_curtidas` e `rede_comentarios` (no DELETE, `aoMudarTabela` entrega a chave da linha apagada). A chinelada e a torta vêm do tempo real de `zoeiras` (pagas, gravadas por `zoar()`), e o sorteio da roleta do rodízio vem do tempo real de `rodizio` (todo mundo anima até o mesmo `girado_em`), **nunca de broadcast**. Os ganhos de moedas de todo mundo no Sítio vêm do tempo real de `carteiras` (gravado por `creditar()`), **nunca de broadcast**.
 
 ### Navegador (`localStorage`, só conveniência de cada pessoa)
-- **Chaves:** `rift-lineup`, `rift-card` (cartela do bingo local; numa sala de LoL com o SQL, a cartela vem do banco), `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `log-visto`, `fome-fechado`, `hall-pos` (último piso no hall), `hall-sala-min` (lista "Na sala agora" do Sítio recolhida), `sala-atual` (última sala; o site sempre abre no lobby), `canais-voz-min` e `canais-texto-min` (categorias de canais recolhidas; no celular começam recolhidas) `membros-min` (lista de membros só com os rostos; abaixo de 1200 px fica assim sempre) e `midia` (microfone, saída de som, câmera, eco e ruído escolhidos nas Configurações) e `evento-visto` (o aviso que explica o happy hour e o churrasco já apareceu) e `missoes-min` (cartão das missões recolhido no Sítio).
+- **Chaves:** `rift-lineup`, `rift-card` (cartela do bingo local; numa sala de LoL com o SQL, a cartela vem do banco), `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `log-visto`, `fome-fechado`, `hall-pos` (último piso no hall), `hall-sala-min` (lista "Na sala agora" do Sítio recolhida), `sala-atual` (última sala; o site sempre abre no lobby), `canais-voz-min` e `canais-texto-min` (categorias de canais recolhidas; no celular começam recolhidas) `membros-min` (lista de membros só com os rostos; abaixo de 1200 px fica assim sempre) e `midia` (microfone, saída de som, câmera, eco e ruído escolhidos nas Configurações) e `evento-visto` (o aviso que explica o happy hour e o churrasco já apareceu) `missoes-min` (cartão das missões recolhido no Sítio) e `rede-visto` (última postagem da rede nanica vista, para a bolinha de não lidas).
 - **As do site antigo continuam iguais**, então ninguém perde a cartela na troca.
 - **`sessionStorage`:** `log-auto` (o Log de novidades já abriu sozinho nesta sessão do navegador).
 - Nada importante pode morar só aqui.

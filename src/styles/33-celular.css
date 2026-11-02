@@ -1,0 +1,44 @@
+/* Celular (fase 15): botão no menu e no Sítio, a moldura por cima de tudo e a rede nanica dentro. */
+.celular-botao{position:relative;display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border:1px solid var(--line);border-radius:99px;background:var(--surface);color:var(--ink);font:600 13px var(--body);cursor:pointer}
+.celular-botao:hover{border-color:var(--accent)}
+.celular-bolinha{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;padding:0 4px;border-radius:99px;display:grid;place-items:center;background:var(--live);color:var(--stamp-ink);font:700 10px var(--display)}
+.celular-botao.no-menu{width:100%;margin-top:6px;border-radius:10px}
+.celular-botao.hall-celular{position:absolute;z-index:120;right:16px;bottom:60px;background:color-mix(in srgb,var(--accent-ink) 88%,transparent);color:var(--stamp-ink);border-color:rgb(255 255 255 / .08)}
+@media (max-width:760px){.celular-botao.hall-celular{position:relative;align-self:flex-start}}
+
+.celular-fundo{position:fixed;inset:0;z-index:1900;display:grid;place-items:center;padding:16px;background:color-mix(in srgb,var(--ink) 55%,transparent)}
+.celular{display:flex;flex-direction:column;width:min(400px,100%);height:min(780px,calc(100vh - 32px));border:10px solid var(--ink);border-radius:36px;background:var(--bg);box-shadow:0 24px 60px var(--shadow);overflow:hidden}
+.celular-barra{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 14px;background:var(--ink);color:var(--stamp-ink);font:600 12px var(--body)}
+.celular-barra b{font:700 13px var(--display)}
+.celular-tela{flex:1;overflow-y:auto;overscroll-behavior:contain}
+
+.rede{display:grid;gap:10px;padding:10px}
+.rede-postar{display:grid;gap:6px;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+.rede-postar textarea{width:100%;resize:vertical;min-height:52px;font:inherit}
+.rede-postar .row{gap:6px;align-items:center;flex-wrap:wrap}
+.rede-conta{margin-left:auto;font-size:11px;color:var(--muted)}
+.rede-arquivo{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+.rede-post{display:grid;gap:8px;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+.rede-post header{display:flex;align-items:center;gap:8px}
+.rede-post header small{flex:1;font-size:11px;color:var(--muted)}
+.rede-nome{display:inline-flex;align-items:center;gap:6px;padding:0;border:0;background:none;color:inherit;font:inherit;cursor:pointer}
+.rede-nome b{font:700 13px var(--body)}
+.rede-texto{margin:0;font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+.rede-post .midia-img{border-radius:10px;aspect-ratio:auto;min-height:120px}
+.rede-post .midia-img img{object-fit:contain;max-height:420px}
+.rede-acoes{display:flex;align-items:center;gap:12px}
+.rede-curtir{padding:2px 8px;border:1px solid var(--line);border-radius:99px;background:none;color:var(--ink);font:600 13px var(--body);cursor:pointer}
+.rede-curtir.on{border-color:var(--live);color:var(--live)}
+.rede-coments ul{display:grid;gap:4px;margin:0 0 6px;padding:0;list-style:none;font-size:13px;overflow-wrap:anywhere}
+.rede-coments li .linkish{margin-left:8px;font-size:12px}
+.rede-coments .row{gap:6px;flex-wrap:nowrap}
+.rede-coments input{flex:1;min-width:0}
+.rede-perfil{display:flex;align-items:center;gap:10px}
+.rede-perfil b{flex:1;font:700 15px var(--display)}
+.rede-mais{justify-self:center}
+
+/* celular de verdade: tela inteira, sem moldura */
+@media (max-width:520px){
+  .celular-fundo{padding:0}
+  .celular{width:100%;height:100%;border:0;border-radius:0}
+}

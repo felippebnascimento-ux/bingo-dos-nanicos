@@ -7,6 +7,7 @@ import { Sidebar } from "./shell/Sidebar";
 import { Toast } from "./ui/Toast";
 import { CassinoView } from "@/features/cassino/CassinoView";
 import { MidiasView } from "@/features/midias/MidiasView";
+import { Celular } from "@/features/celular/Celular";
 import { ChatView } from "@/features/chat/ChatView";
 import { ConfigJanela } from "@/features/config/ConfigView";
 import { FichaNanico } from "@/features/ficha/Ficha";
@@ -87,6 +88,7 @@ export default function App() {
           <option key={c} value={c} />
         ))}
       </datalist>
+      <Celular />
       <Toast />
       <CamadaReacoesMinha />
     </>

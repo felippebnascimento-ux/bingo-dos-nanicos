@@ -160,6 +160,13 @@ export const CHANGELOG: EntradaLog[] = [
       "Vídeo entra na galeria como link do YouTube, do Medal ou clipe da Twitch",
     ],
   },
+  {
+    data: "02/11/2026",
+    itens: [
+      "Celular na loja: compre e entre na rede social nanica para postar, curtir e comentar",
+      "A loja mostra quanto falta para o celular, com uma barra de progresso",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

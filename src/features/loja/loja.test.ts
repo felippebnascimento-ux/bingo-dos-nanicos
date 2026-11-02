@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { balanco, doGrupo, equipados, lerItem, podeComprar, textoConsumo, type ItemLoja } from "./loja";
+import { balanco, doGrupo, equipados, equipavel, lerItem, podeComprar, progressoCompra, textoConsumo, type ItemLoja } from "./loja";
 
 const it_ = (id: string, espaco: ItemLoja["espaco"], preco: number, ordem = 0): ItemLoja => ({ id, nome: id, descricao: "", espaco, preco, dados: {}, ordem });
 const ITENS = [it_("cadeira-trono", "cadeira", 1500, 2), it_("cadeira-gamer", "cadeira", 600, 1), it_("cigarro", "consumivel", 15), it_("escudo", "escudo", 400), it_("titulo-tilt", "titulo", 300)];
@@ -47,5 +47,11 @@ describe("loja", () => {
     expect(textoConsumo("Pitoco", { id: "cigarro", nome: "Cigarrinho" })).toBe("Pitoco acendeu um cigarrinho");
     expect(textoConsumo("Max", { id: "cerveja", nome: "Latinha gelada" })).toBe("Max tomou uma latinha gelada");
     expect(textoConsumo("DD", { id: "chimarrao", nome: "Chimarrão" })).toBe("DD tomou um chimarrão");
+  });
+  it("celular: não se equipa e mostra quanto falta", () => {
+    expect(equipavel("celular")).toBe(false);
+    expect(progressoCompra(3000, 1284)).toEqual({ parte: 0.428, falta: 1716 });
+    expect(progressoCompra(3000, 5000)).toEqual({ parte: 1, falta: 0 });
+    expect(progressoCompra(3000, null).falta).toBe(3000);
   });
 });

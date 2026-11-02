@@ -5,65 +5,19 @@
  * sem iframe e sem prévia (a CSP bloqueia, de propósito).
  */
 import { useEffect, useRef, useState } from "react";
+import { Imagem } from "./Imagem";
 import { Avatar } from "@/components/ui/Avatar";
 import { useSure } from "@/components/ui/useSure";
 import { cleanMural, cleanVideo, dominio } from "@/features/perfil/links";
 import { friendOf, useApp } from "@/lib/store";
 import { toast } from "@/lib/toast";
 import {
-  adicionarMural, apagarMidia, apagarMural, enviarImagem, enviarVideo, urlDaImagem, useMidias,
+  adicionarMural, apagarMidia, apagarMural, enviarImagem, enviarVideo, useMidias,
   type LinkMural, type Midia,
 } from "./midiasDados";
 
 const quando = (t: number) =>
   t ? new Date(t).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" }) : "";
-
-/** Imagem do bucket: baixa só quando chega perto da tela. */
-function Imagem({ caminho, alt, cheia = false }: { caminho: string; alt: string; cheia?: boolean }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [url, setUrl] = useState<string | null>(null);
-  const [falhou, setFalhou] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    let vivo = true;
-    const carregar = () =>
-      void urlDaImagem(caminho).then((u) => {
-        if (!vivo) return;
-        if (u) setUrl(u);
-        else setFalhou(true);
-      });
-    if (cheia || typeof IntersectionObserver === "undefined") {
-      carregar();
-      return () => void (vivo = false);
-    }
-    const io = new IntersectionObserver(
-      (es) => {
-        if (es.some((e) => e.isIntersecting)) {
-          io.disconnect();
-          carregar();
-        }
-      },
-      { rootMargin: "200px" },
-    );
-    io.observe(el);
-    return () => {
-      vivo = false;
-      io.disconnect();
-    };
-  }, [caminho, cheia]);
-  return (
-    <div ref={ref} className={"midia-img" + (cheia ? " cheia" : "")}>
-      {url ? (
-        /* blob: do bucket privado; o next/image não serve aqui (site estático) */
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={url} alt={alt} />
-      ) : (
-        <span className="status">{falhou ? "Não carregou" : "Carregando…"}</span>
-      )}
-    </div>
-  );
-}
 
 function CartaoMidia({ m, abrir }: { m: Midia; abrir: (m: Midia) => void }) {
   const friends = useApp((s) => s.friends);

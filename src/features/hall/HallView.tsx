@@ -10,6 +10,7 @@ import { useTruco } from "@/features/truco/mesa";
 import { friendDaPresenca, MY_KEY, setApp, useApp } from "@/lib/store";
 import { andarAte, andarUmPiso, iniciarHall, useHall } from "./bonecos";
 import { Boneco } from "./Boneco";
+import { BotaoCelular } from "@/features/celular/Celular";
 import { Missoes } from "@/features/missoes/Missoes";
 import { CarteiraCanto, Dica, Ganhos, NaSala } from "./Cantos";
 import { iniciarGanhos } from "./ganhos";
@@ -222,6 +223,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
         <Ganhos />
         <CarteiraCanto />
         <Missoes canto />
+        <BotaoCelular className="hall-canto hall-celular" />
         <Dica />
         <Revidar />
       </div>

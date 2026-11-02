@@ -213,7 +213,7 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | 12 | `12-midias-links.md` | `midias-links` | 5 | feito (02/11/2026); SQL da seção 16 e bucket privado `midias` aplicados; aba Mídias no menu (galeria + mural), links no Perfil e na ficha; CSP sem mudança |
 | 13 | `13-login-convidado.md` | `login-convidado` | 5 | a fazer |
 | 14 | `14-hall-v2.md` | `hall-v2` | 00, 2, 3 | **feita**, PR aberto (em cima da `atributos-votados`); SQL da seção 7b aplicado em 02/11/2026 |
-| 15 | `15-celular-rede-nanica.md` | `celular-rede-nanica` | 11, 12 | a fazer |
+| 15 | `15-celular-rede-nanica.md` | `celular-rede-nanica` | 11, 12 | feito (02/11/2026); SQL da seção 18 aplicado; Celular a 3.000 na loja com barra de "faltam"; rede nanica (feed, postar com imagem, curtir, comentar, perfil); o aviso no Sítio só chega a quem tem o Celular (RLS) |
 | 16 | `16-rua-do-sitio.md` | `rua-do-sitio` | 14 | a fazer |
 | 17 | `17-roleta-rodizio.md` | `roleta-rodizio` | 0 (se a 5 existir, a roleta é por sala) | feito (02/11/2026), uma roleta por sala de LoL; SQL da seção 19 aplicado |
 | 18 | `18-chinelada-torta.md` | `chinelada-torta` | 2, 14 | feito (02/11/2026); SQL da seção 20 aplicado |

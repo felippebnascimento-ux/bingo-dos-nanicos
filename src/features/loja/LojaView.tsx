@@ -13,7 +13,8 @@ import { useCarteira } from "@/lib/carteira";
 import { formatarMoedas } from "@/lib/moedas";
 import { friendOf, setApp, useApp } from "@/lib/store";
 import { DesenhoItem } from "./Itens";
-import { acumula, doGrupo, equipavel, GRUPOS, NOME_ESPACO, podeComprar, type ItemLoja } from "./loja";
+import { abrirCelular } from "@/features/celular/rede";
+import { acumula, doGrupo, equipavel, GRUPOS, NOME_ESPACO, podeComprar, progressoCompra, type ItemLoja } from "./loja";
 import { comprar, equipar, useLoja, useMinhaMochila, usar } from "./lojaDados";
 
 const FOCO: Partial<Record<ItemLoja["espaco"], "parede" | "chao" | "mesa" | "poster" | "cadeira" | "planta">> = {
@@ -57,6 +58,14 @@ function CartaoItem({ it, tenho, equipado, saldo }: { it: ItemLoja; tenho: numbe
       </div>
       <h3>{it.nome}</h3>
       <p className="hint">{it.descricao}</p>
+      {it.espaco === "celular" && tenho === 0 && saldo !== null && saldo < it.preco && (
+        <div className="loja-meta">
+          <span className="missao-barra" role="progressbar" aria-valuemin={0} aria-valuemax={it.preco} aria-valuenow={saldo} aria-label="Quanto já juntei">
+            <i style={{ width: `${progressoCompra(it.preco, saldo).parte * 100}%` }} />
+          </span>
+          <small>faltam {formatarMoedas(progressoCompra(it.preco, saldo).falta)} moedas</small>
+        </div>
+      )}
       <div className="loja-acoes">
         <span className="loja-preco">
           <span className="hall-moeda" aria-hidden="true">
@@ -64,7 +73,11 @@ function CartaoItem({ it, tenho, equipado, saldo }: { it: ItemLoja; tenho: numbe
           </span>
           {formatarMoedas(it.preco)}
         </span>
-        {tenho > 0 && equipavel(it.espaco) ? (
+        {tenho > 0 && it.espaco === "celular" ? (
+          <button type="button" className="btn sm" onClick={abrirCelular}>
+            Abrir
+          </button>
+        ) : tenho > 0 && equipavel(it.espaco) ? (
           <button type="button" className={"btn sm" + (equipado ? " soft" : "")} disabled={!!ocupado} onClick={() => void equipar(it, !equipado)}>
             {equipado ? "Tirar" : "Equipar"}
           </button>
@@ -115,6 +128,10 @@ export function MochilaLista() {
           {it.espaco === "consumivel" ? (
             <button type="button" className="btn sm" disabled={!!ocupado} onClick={() => void usar(it)}>
               Usar no Sítio
+            </button>
+          ) : it.espaco === "celular" ? (
+            <button type="button" className="btn sm" onClick={abrirCelular}>
+              Abrir
             </button>
           ) : it.espaco === "escudo" ? (
             <span className="status">Gasto sozinho</span>

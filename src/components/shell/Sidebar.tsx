@@ -12,6 +12,7 @@ import { friendOf, MY_KEY, salaLol, setApp, useApp } from "@/lib/store";
 import type { Aba } from "@/lib/tipos";
 import { local } from "@/lib/util";
 import { nomeDaSala } from "@/features/salas/trocar";
+import { BotaoCelular } from "@/features/celular/Celular";
 import { Canais, VozPainel } from "./Canais";
 
 const ABAS: { aba: Aba; t: string; Ic: ComponentType }[] = [
@@ -75,6 +76,7 @@ function Nav() {
           {contagem(a)}
         </button>
       ))}
+      <BotaoCelular className="no-menu" />
     </nav>
   );
 }

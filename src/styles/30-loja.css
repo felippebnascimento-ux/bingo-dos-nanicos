@@ -99,3 +99,7 @@
   .consumo .consumo-item{animation:none;transform:rotate(-30deg)}
   .consumo-fumaca{display:none}
 }
+
+/* celular: quanto já juntei (a barra é a mesma das missões) */
+.loja-meta{display:grid;gap:3px}
+.loja-meta small{font-size:11px;color:var(--muted)}

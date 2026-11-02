@@ -57,6 +57,14 @@ export function DesenhoItem({ id }: { id: string }) {
           <rect x="13" y="0" width="2" height="16" className="l-canudo" transform="rotate(14 14 8)" />
         </svg>
       );
+    case "celular":
+      return (
+        <svg viewBox="0 0 22 38" aria-hidden="true">
+          <rect x="1" y="1" width="20" height="36" rx="4" className="l-lata2" />
+          <rect x="3" y="5" width="16" height="25" rx="1.5" className="l-raio" />
+          <rect x="8" y="32.5" width="6" height="2" rx="1" className="l-tampa" />
+        </svg>
+      );
     case "escudo":
       return (
         <svg viewBox="0 0 30 34" aria-hidden="true">
