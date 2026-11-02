@@ -1,4 +1,5 @@
 "use client";
+import { ChamaNome } from "@/features/ficha/NoSitio";
 import { Avatar } from "@/components/ui/Avatar";
 import { CamNaSala } from "@/features/live/CamNaSala";
 import { assistir } from "@/features/live/live";
@@ -93,6 +94,7 @@ export function People() {
                 </CamNaSala>
                 <span className="who">
                   {nm}
+                  <ChamaNome fid={f?.id} />
                   {eu && (
                     <>
                       {" "}

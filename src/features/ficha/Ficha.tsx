@@ -15,6 +15,7 @@ import type { Friend } from "@/lib/tipos";
 import { carregarFicha, useFicha } from "./estado";
 import { eloTexto, haQuanto, horasTexto, kdaTexto, taxaVitoria, type NumerosFicha } from "./numeros";
 import { AtributosFicha } from "./AtributosFicha";
+import { NoSitio } from "./NoSitio";
 import { Quarto } from "./Quarto";
 
 /** Como deixar as horas da Steam visíveis (usado aqui e no Perfil). */
@@ -152,6 +153,7 @@ function FichaAberta({ f }: { f: Friend }) {
               <IcFechar />
             </button>
           </div>
+          <NoSitio fid={f.id} eu={f.id === getApp().myFid} />
           <Numeros f={f} num={num} carregando={carregando} falhou={falhou} />
           <AtributosFicha f={f} eu={f.id === getApp().myFid} />
           <button

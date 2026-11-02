@@ -953,7 +953,57 @@ begin
   raise notice 'RTP do caça-níquel: %', round(v_rtp, 4);
 end $$;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas e as 6 funções do cassino
+-- 26) presença pública: sequência de dias e tempo online na ficha -------------------------------
+-- As tabelas bonus_diario e online_diario continuam fechadas (cada um lê só as suas). O que fica público
+-- para os nanicos é só o resumo, calculado aqui.
+
+-- resumo de um nanico: sequência atual (de hoje ou de ontem, senão 0), recorde, minutos de hoje,
+-- os 7 últimos dias (de hoje para trás, 0 nos dias sem linha) e o total desde que as moedas começaram
+create or replace function public.presenca_de(p_friend uuid) returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  v_uid   uuid;
+  v_hoje  date := public.hoje_br();
+  v_seq   int;
+  v_pegou boolean;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos veem a presença.' using errcode = 'P0001'; end if;
+  select user_id into v_uid from public.friends where id = p_friend;
+  if v_uid is null then return null; end if;
+  select seq into v_seq from public.bonus_diario where user_id = v_uid and dia = v_hoje;
+  v_pegou := v_seq is not null;
+  if not v_pegou then
+    select seq into v_seq from public.bonus_diario where user_id = v_uid and dia = v_hoje - 1;
+  end if;
+  return jsonb_build_object(
+    'seq', coalesce(v_seq, 0),
+    'pegou_hoje', v_pegou,
+    'recorde', coalesce((select max(seq) from public.bonus_diario where user_id = v_uid), 0),
+    'hoje_min', coalesce((select minutos from public.online_diario where user_id = v_uid and dia = v_hoje), 0),
+    'semana', (select jsonb_agg(jsonb_build_object('dia', d.dia, 'min', coalesce(o.minutos, 0)) order by d.dia desc)
+                 from (select (v_hoje - k) as dia from generate_series(0, 6) k) d
+                 left join public.online_diario o on o.user_id = v_uid and o.dia = d.dia),
+    'total_min', coalesce((select sum(minutos) from public.online_diario where user_id = v_uid), 0));
+end $$;
+revoke all on function public.presenca_de(uuid) from public, anon;
+grant execute on function public.presenca_de(uuid) to authenticated;
+
+-- só a sequência atual e os minutos de hoje dos 14 ({id do nanico: {seq, hoje_min}}), para a chama na lista
+create or replace function public.presenca_todos() returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  v_hoje date := public.hoje_br();
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos veem a presença.' using errcode = 'P0001'; end if;
+  return (select coalesce(jsonb_object_agg(f.id, jsonb_build_object(
+            'seq', coalesce((select b.seq from public.bonus_diario b where b.user_id = f.user_id and b.dia >= v_hoje - 1 order by b.dia desc limit 1), 0),
+            'hoje_min', coalesce((select o.minutos from public.online_diario o where o.user_id = f.user_id and o.dia = v_hoje), 0))), '{}'::jsonb)
+            from public.friends f where f.user_id is not null);
+end $$;
+revoke all on function public.presenca_todos() from public, anon;
+grant execute on function public.presenca_todos() to authenticated;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino e as 2 da presença
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -970,4 +1020,7 @@ select id, 'sala' from public.salas
 union all
 select proname::text, 'cassino' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('apostar_roleta', 'apostar_limbo', 'apostar_dado', 'apostar_slot', 'trocar_semente', 'cassino_estado')
+union all
+select proname::text, 'presenca' from pg_proc
+ where pronamespace = 'public'::regnamespace and proname in ('presenca_de', 'presenca_todos')
 order by 2, 1;

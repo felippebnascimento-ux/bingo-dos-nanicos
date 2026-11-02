@@ -88,3 +88,22 @@ export function ranking(
 export const posicaoDe = (lista: readonly LinhaRanking[], userId: string | null) => (userId ? (lista.find((l) => l.userId === userId)?.pos ?? null) : null);
 
 export const ordinal = (n: number) => `${n}º`;
+
+/* ---------- presença na ficha (sequência e tempo online) ---------- */
+/** 45 → "45 min", 80 → "1 h 20 min", 540 → "9 h". */
+export function textoTempo(min: number) {
+  const m = Math.max(0, Math.round(min));
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60);
+  return m % 60 ? `${h} h ${m % 60} min` : `${h} h`;
+}
+
+/** Dias até o próximo prêmio da sequência (7º e 30º dia); null depois do 30. */
+export function faltaParaPremio(seq: number): { dias: number; premio: 7 | 30 } | null {
+  if (seq < 7) return { dias: 7 - seq, premio: 7 };
+  if (seq < 30) return { dias: 30 - seq, premio: 30 };
+  return null;
+}
+
+/** Entrou ontem e ainda não hoje: a sequência vale, mas some se não entrar hoje. */
+export const sequenciaEmRisco = (seq: number, pegouHoje: boolean) => seq > 0 && !pegouHoje;

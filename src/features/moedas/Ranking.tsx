@@ -10,6 +10,7 @@ import { carregarExtrato, carregarRanking, useCarteira } from "@/lib/carteira";
 import { formatarMoedas, ordinal, posicaoDe, ranking } from "@/lib/moedas";
 import { friendOf, setApp, useApp } from "@/lib/store";
 import { MoedasBloco } from "./Moedas";
+import { ChamaNome } from "@/features/ficha/NoSitio";
 
 /** O ranking calculado (carrega as carteiras na primeira tela que precisar). */
 export function useRanking() {
@@ -95,6 +96,7 @@ function PainelAberto({ aba }: { aba: "ranking" | "extrato" }) {
                     </span>
                     <span className="ranking-nome">
                       {l.nome}
+                      <ChamaNome fid={l.fid} />
                       {subiu && <em className="ranking-subiu">▲ subiu</em>}
                     </span>
                     <b>{l.saldo !== null ? formatarMoedas(l.saldo) : "—"}</b>

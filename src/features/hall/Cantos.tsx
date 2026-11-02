@@ -9,6 +9,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { goWatch, usePessoasNaSala } from "@/components/shell/People";
 import { useCarteira } from "@/lib/carteira";
 import { abrirCarteira, useMinhaPosicao } from "@/features/moedas/Ranking";
+import { ChamaNome } from "@/features/ficha/NoSitio";
 import { formatarMoedas, motivoGanho } from "@/lib/moedas";
 import { friendDaPresenca, friendOf, MY_KEY, setApp, useApp } from "@/lib/store";
 import { hueOf, initials, local } from "@/lib/util";
@@ -56,6 +57,7 @@ export function NaSala() {
                   <span className="nm">
                     {nome}
                     {eu && " (você)"}
+                    <ChamaNome fid={f?.id} />
                   </span>
                 </button>
                 {p.live && (

@@ -25,6 +25,12 @@ export const IcVoltar = (p: P) => (
     <path d="M15 6l-6 6 6 6" />
   </Base>
 );
+/** Chama (dias seguidos no Sítio). */
+export const IcChama = (p: P) => (
+  <Base {...p}>
+    <path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3-1-5 1-8.5z" />
+  </Base>
+);
 /** Coroa de moedas (1º lugar do ranking). */
 export const IcCoroa = (p: P) => (
   <Base {...p} fill="currentColor" strokeWidth={1.5}>

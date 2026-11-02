@@ -72,7 +72,9 @@ src/
                        atributos.ts (os 6 atributos votados, conferir notas, médias; puro e testado)
     ficha/             ficha do nanico: Ficha.tsx (janela), Quarto.tsx (quarto isométrico com o boneco),
                        AtributosFicha.tsx ("Segundo os nanicos": barras e votar), estado.ts (números da função
-                       ficha-jogos e atributos), numeros.ts (conferir e escrever; puro e testado)
+                       ficha-jogos e atributos), numeros.ts (conferir e escrever; puro e testado), NoSitio.tsx
+                       (bloco "No Sítio": dias seguidos, recorde, tempo online; `ChamaNome` ao lado do nome com 3+
+                       dias) e presenca.ts (presenca_de e presenca_todos)
     perfil/            PerfilView, opgg.ts e steam.ts (limpar link, nick)
     live/              live.ts (liga tudo à sala), rtc.ts (WebRTC comum), tela.ts (transmissão), camera.ts,
                        reacoes.ts, desenho.ts, estado.ts (store + preferências), pip.ts;
@@ -257,6 +259,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
   - **Anonimato:** `atributos_votos` não tem `select` para ninguém. O site só recebe média e contagem por `atributos_de(nanico)` e `atributos_todos()`. Com menos de 3 votos, a média sai `null` ("poucos votos").
   - **Votar:** `votar_atributos(nanico, notas)` exige as 6 notas inteiras de 0 a 10, não deixa votar em si mesmo e só deixa mudar o voto em alguém uma vez a cada 7 dias (o erro diz a data).
   - **`meu_voto(nanico)`** devolve só as notas de quem chamou e quando dá para mudar.
+- **Presença pública (seção 26 do `seguranca.sql`):** `bonus_diario` e `online_diario` continuam fechadas (cada um lê só as suas). O resumo de qualquer nanico sai por `presenca_de(nanico)` (sequência de hoje ou de ontem, recorde, minutos de hoje, 7 dias e total) e a chama da lista por `presenca_todos()` (só `seq` e `hoje_min`). Não calcule sequência no navegador.
 - **Gatilhos:** `chat_protecao`, `nanicada_protecao`, `nanicada_remocao`, `escalacao_protecao` e `perfil_protecao`.
 - **"Já vi" do Log:** fica na conta, em `user_metadata.log_visto` (índice da entrada no `CHANGELOG`), gravado com `auth.updateUser({ data })` por `marcarLogVisto()` (`src/lib/dados.ts`). Vale em todos os aparelhos e não precisa de SQL. O `localStorage` (`log-visto`) fica de reserva.
 - **Logins:** são criados só pelo admin, com `criar_login_nanico(nome, usuario, senha)` e `resetar_senha_nanico(usuario, senha)`. O e-mail interno é `usuario@nanicos.app`.
