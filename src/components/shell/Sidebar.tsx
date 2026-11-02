@@ -5,6 +5,7 @@ import { fecharSeletores } from "@/components/ui/FriendPicker";
 import { CamBotoes } from "@/features/live/CamBotoes";
 import { logout } from "@/lib/dados";
 import { VERSION } from "@/lib/dados/changelog";
+import { temNovidade } from "@/lib/dados/novidades";
 import { CREW, MARCA } from "@/lib/dados/nanicos";
 import { MY_KEY, setApp, useApp } from "@/lib/store";
 import type { Aba } from "@/lib/tipos";
@@ -71,9 +72,8 @@ function Nav() {
 export function Sidebar() {
   const sideMin = useApp((s) => s.sideMin);
   const conn = useApp((s) => s.conn);
-  /* o site só monta no navegador, então dá para ler o localStorage direto aqui */
-  const logAberto = useApp((s) => s.logAberto);
-  const logNovo = !logAberto && local.get("log-visto") !== VERSION;
+  /* selo de novidade: o mesmo "já vi" do Log (conta, com o navegador de reserva) */
+  const logNovo = useApp((s) => !s.logAberto && temNovidade(s.logVisto));
 
   useEffect(() => {
     document.body.classList.toggle("side-min", sideMin);

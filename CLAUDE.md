@@ -48,7 +48,7 @@ src/
   components/
     App.tsx            casca do site: barra lateral, as 7 abas (sempre montadas, só escondidas), portas, toast
     shell/             Sidebar (marca, navegação, rodapé) e People ("Na sala agora")
-    portas/            login, primeira senha, trocar senha, log de versões
+    portas/            login, primeira senha, trocar senha, log de versões (modo "tudo" e modo "novidades")
     ui/                Avatar, FriendPicker, Toast, ícones, useSure (segundo toque)
     Fome.tsx           easter egg das 18h às 22h
   features/            uma pasta por aba / assunto
@@ -77,7 +77,8 @@ src/
     toast.ts           toast("texto")
     util.ts            norm, canon, shuffle, local (localStorage), rolarAte…
     tipos.ts           Friend, Phrase, Card, Presence…
-    dados/             campeoes.ts (CHAMPS, LANES, LANE_CAMP), nanicos.ts (NAN_MAP, artOf, bonecoOf), changelog.ts
+    dados/             campeoes.ts (CHAMPS, LANES, LANE_CAMP), nanicos.ts (NAN_MAP, artOf, bonecoOf), changelog.ts,
+                       novidades.ts (o que mostrar no Log depois de uma atualização; puro e testado)
   styles/              CSS global, numerado: 01-base.css … 22-hall.css
 public/arte/           artes dos nanicos (rosto e corpo), bonecos do hall, foto da turma, reações dos Picarétezzi
 planejamento/          PLANO.md (próximas fases e decisões), prompts/ (um por fase), demos e arte pronta
@@ -206,6 +207,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 
 - **Quem é nanico:** `public.eh_nanico()` diz se o usuário logado está ligado a um nanico.
 - **Gatilhos:** `chat_protecao`, `nanicada_protecao`, `nanicada_remocao`, `escalacao_protecao` e `perfil_protecao`.
+- **"Já vi" do Log:** fica na conta, em `user_metadata.log_visto` (índice da entrada no `CHANGELOG`), gravado com `auth.updateUser({ data })` por `marcarLogVisto()` (`src/lib/dados.ts`). Vale em todos os aparelhos e não precisa de SQL. O `localStorage` (`log-visto`) fica de reserva.
 - **Logins:** são criados só pelo admin, com `criar_login_nanico(nome, usuario, senha)` e `resetar_senha_nanico(usuario, senha)`. O e-mail interno é `usuario@nanicos.app`.
 - **SQL que ainda não rodou:** o site segue funcionando. `phrasesV2` e `opggOk` no estado dizem se as colunas novas existem.
 
@@ -222,6 +224,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 ### Navegador (`localStorage`, só conveniência de cada pessoa)
 - **Chaves:** `rift-lineup`, `rift-card`, `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `truco-mesa`, `log-visto`, `fome-fechado` e `hall-pos` (último piso no hall).
 - **As do site antigo continuam iguais**, então ninguém perde a cartela na troca.
+- **`sessionStorage`:** `log-auto` (o Log de novidades já abriu sozinho nesta sessão do navegador).
 - Nada importante pode morar só aqui.
 
 ### Arte (`public/arte/`)
@@ -234,7 +237,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 
 ## 7. Versão e Log (obrigatório a cada mudança visível)
 
-A versão (`v1.NN`) é **calculada sozinha** pelo tamanho do array `CHANGELOG` em `src/lib/dados/changelog.ts`. Toda mudança que um nanico consiga notar acrescenta **uma entrada no fim**:
+A versão (`v1.NN`) é **calculada sozinha** pelo tamanho do array `CHANGELOG` em `src/lib/dados/changelog.ts`. Toda mudança que um nanico consiga notar acrescenta **uma entrada no fim**. Depois de uma versão nova, o Log abre sozinho no primeiro acesso de cada pessoa, só com o que ela ainda não viu (`novidadesDesde`); o botão "Log" do rodapé mostra tudo:
 
 ```ts
 { data: "DD/MM/AAAA", itens: ["Frase curta dizendo o que mudou para quem usa"] },

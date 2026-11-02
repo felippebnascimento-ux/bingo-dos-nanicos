@@ -8,6 +8,8 @@ import { byName, local, norm } from "./util";
 import { toast } from "./toast";
 import { joinRoom } from "./sala";
 import { LANES } from "./dados/campeoes";
+import { VERSION } from "./dados/changelog";
+import { juntarVisto, lerVisto, temNovidade, ULTIMA } from "./dados/novidades";
 import { carregarChat } from "@/features/chat/chat";
 import { iniciarRiot } from "@/features/jogar/riot";
 import { pararTudoAoVivo } from "@/features/live/live";
@@ -28,6 +30,7 @@ export function iniciarLocal() {
     lineup: cleanLineup(local.json("rift-lineup")),
     card: card && Array.isArray(card.cells) && Array.isArray(card.marked) ? card : null,
     sideMin: local.get("side-min") === "1",
+    logVisto: lerVisto(local.get("log-visto")),
   });
   const t = local.get("rail-tab");
   if (t === "telas" || t === "chat" || t === "cartela") setApp({ railTab: t });
@@ -157,6 +160,8 @@ const recarregar = (tabela: string) => {
 };
 
 let started = false;
+/** o "já vi" do Log gravado na conta (pode estar atrás do navegador, se a gravação falhou) */
+let contaVisto: number | null = null;
 
 export async function startSession(session: Session | null) {
   if (started || !session) return;
@@ -192,6 +197,9 @@ export async function startSession(session: Session | null) {
   } catch {
     /* usa o usuário da sessão */
   }
+  /* "já vi" do Log: o da conta vale em todo aparelho; o do navegador fica de reserva */
+  contaVisto = lerVisto(u?.user_metadata?.log_visto);
+  setApp({ logVisto: juntarVisto(contaVisto, getApp().logVisto) });
   if (u?.user_metadata?.must_change) {
     setApp({ fase: "primeiraSenha", primeiroUsuario: String(u.email || "").split("@")[0] });
     return;
@@ -204,6 +212,7 @@ export function enterApp() {
   setApp({ fase: "app", conn: "Conectando…" });
   if (entrou) return;
   entrou = true;
+  abrirNovidades();
   joinRoom(recarregar);
   carregarChat();
   setTimeout(iniciarRiot, 1500);
@@ -214,6 +223,35 @@ export function enterApp() {
       later("g", loadGame);
     }
   });
+}
+
+/* ---------- Log de novidades ---------- */
+/** Saiu versão nova desde a última visita? Abre o Log só com o que mudou (uma vez por sessão do navegador). */
+function abrirNovidades() {
+  if (!temNovidade(getApp().logVisto)) return;
+  try {
+    if (sessionStorage.getItem("log-auto") === VERSION) return;
+    sessionStorage.setItem("log-auto", VERSION);
+  } catch {
+    /* sem sessionStorage: abre do mesmo jeito */
+  }
+  setApp({ logAberto: true, logModo: "novidades" });
+}
+
+/** Marca a versão atual como vista: na conta (vale em todo aparelho) e no navegador (reserva). */
+export function marcarLogVisto() {
+  local.set("log-visto", VERSION);
+  setApp({ logVisto: ULTIMA });
+  if (contaVisto === ULTIMA || !getApp().myUid) return;
+  contaVisto = ULTIMA;
+  sb()
+    .auth.updateUser({ data: { log_visto: ULTIMA } })
+    .then(({ error }) => {
+      if (error) contaVisto = null; /* tenta de novo da próxima vez; o navegador já guardou */
+    })
+    .catch(() => {
+      contaVisto = null;
+    });
 }
 
 export async function logout() {
