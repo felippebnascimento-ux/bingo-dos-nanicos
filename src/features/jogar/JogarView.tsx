@@ -13,6 +13,7 @@ import { canon, norm, rolarAte, shuffle } from "@/lib/util";
 import { CellTag } from "./CellTag";
 import { CartelaFlutuante } from "./MiniCartela";
 import { RiotBox } from "./RiotBox";
+import { Roleta } from "./Roleta";
 
 /* ---------- escalação ---------- */
 
@@ -387,6 +388,7 @@ export function JogarView({ hidden }: { hidden: boolean }) {
           {montando ? <Montar mt={montando} setMt={setMontando} M={M} friends={friends} /> : <Cartela friends={friends} />}
         </div>
       </div>
+      <Roleta />
       <CartelaFlutuante />
     </section>
   );

@@ -22,3 +22,63 @@
 .mont-item .tx .tag{display:flex;align-items:center;gap:3px;flex-wrap:wrap;font:500 11.5px var(--body);color:var(--muted)}
 .mont-foot{justify-content:space-between;margin-top:14px}
 
+
+/* ---------- roleta do rodízio (fase 17) ---------- */
+.rodizio{grid-column:1 / -1;display:grid;gap:14px;margin-top:20px}
+.rodizio-topo{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px}
+.rodizio-topo h2,.rodizio-topo h3{margin:0}
+.rodizio-topo .hint{margin:0}
+.rodizio-aviso{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.rodizio-corpo{display:grid;gap:20px}
+@media (min-width:900px){.rodizio-corpo{grid-template-columns:minmax(260px,.8fr) minmax(0,1.2fr);align-items:start}}
+.rodizio-roleta{display:grid;gap:14px;justify-items:center}
+.rodizio-botoes{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.rodizio-resultado .rodizio-botoes{justify-content:flex-start}
+
+.roda{position:relative;width:min(340px,100%);aspect-ratio:1}
+.roda svg{display:block;width:100%;height:100%}
+.roda-ponteiro{position:absolute;top:-4px;left:50%;z-index:1;width:0;height:0;margin-left:-11px;border:11px solid transparent;border-top:18px solid var(--live);border-bottom:0}
+.roda-aro{fill:var(--surface-2);stroke:var(--line);stroke-width:2}
+.roda-giro{transform-origin:0 0;transform-box:view-box}
+.roda-giro.girando{transition:transform 4.2s cubic-bezier(.12,.62,.16,1)}
+@media (prefers-reduced-motion:reduce){.roda-giro.girando{transition:none}}
+.roda-giro path,.roda-giro>g>circle{stroke:var(--surface);stroke-width:1.5}
+.roda-f0{fill:var(--olive)}
+.roda-f1{fill:var(--accent)}
+.roda-f2{fill:var(--mint)}
+.roda-f3{fill:color-mix(in srgb,var(--olive) 50%,var(--accent))}
+.roda-vazia{fill:var(--surface-2)}
+.roda-rosto-aro{fill:var(--surface);stroke:none}
+.roda-nome{font-family:var(--display);font-weight:700;fill:var(--stamp-ink);letter-spacing:.04em}
+.roda-meio{fill:var(--surface);stroke:var(--accent);stroke-width:3}
+
+.rodizio-fila{display:grid;gap:12px;min-width:0}
+.rodizio-fila ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.rodizio-fila li{display:flex;align-items:center;gap:8px;min-width:0;padding:7px 8px 7px 10px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface)}
+.rodizio-fila li .nome{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.rodizio-fila li small{color:var(--muted);font-size:12px;white-space:nowrap}
+.rodizio-fila li.eu{border-color:var(--accent)}
+.rodizio-fila li.jogou .nome{text-decoration:line-through;color:var(--muted)}
+.rodizio-fila li.jogou .av{opacity:.55}
+.rodizio-tirar{flex:none;display:grid;place-items:center;width:26px;height:26px;padding:0;border:0;border-radius:50%;background:none;color:var(--muted);cursor:pointer}
+.rodizio-tirar:hover{background:var(--surface-2);color:var(--ink)}
+.rodizio-rodada{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;font-size:13px;color:var(--muted)}
+.rodizio-rodada b{color:var(--ink)}
+.rodizio-barra{flex:1;min-width:120px;height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.rodizio-barra i{display:block;height:100%;background:var(--accent)}
+.rodizio-por{max-width:280px}
+
+.rodizio-resultado{display:grid;gap:12px}
+.rodizio-entra{display:flex;align-items:center;gap:14px;padding:14px 16px;border:2px solid var(--accent);border-radius:var(--r-md);background:var(--accent-soft)}
+.rodizio-entra b{display:block;font:800 22px/1.1 var(--display)}
+.rodizio-entra small{display:block;color:var(--muted)}
+.rodizio-rotas{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+@media (max-width:620px){.rodizio-rotas{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.rodizio-rotas button{display:grid;justify-items:center;gap:3px;min-width:0;padding:8px 4px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);color:var(--ink);cursor:pointer;text-align:center}
+.rodizio-rotas button small{font:700 10px var(--display);color:var(--muted);text-transform:uppercase}
+.rodizio-rotas button b{max-width:100%;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rodizio-rotas button span{font-size:11px;color:var(--muted)}
+.rodizio-rotas button i{width:20px;height:20px;border-radius:50%;border:2px dashed var(--line)}
+.rodizio-rotas button.sugestao span{color:var(--live)}
+.rodizio-rotas button.on{border:2px solid var(--live);background:color-mix(in srgb,var(--live) 8%,var(--surface))}
+.rodizio-resultado .hint{margin:0}

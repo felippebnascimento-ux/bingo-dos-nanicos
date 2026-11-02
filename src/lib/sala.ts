@@ -53,9 +53,9 @@ export function aoConectar(fn: () => void) {
   return () => void conectarFns.delete(fn);
 }
 
-/** Mudança numa tabela do banco (`friends`, `phrases`, `game`, `chat_messages`, `carteiras`). */
+/** Mudança numa tabela do banco (`friends`, `phrases`, `game`, `chat_messages`, `carteiras`, `rodizio`). */
 export const aoMudarTabela = (
-  tabela: "friends" | "phrases" | "game" | "chat_messages" | "carteiras",
+  tabela: "friends" | "phrases" | "game" | "chat_messages" | "carteiras" | "rodizio",
   fn: (row: Record<string, unknown> | null, ev: string) => void,
 ) => add(tabelaFns, tabela, fn);
 
@@ -234,6 +234,10 @@ function conectar() {
   /* ganhos de moedas de todo mundo: vêm do banco (a RLS deixa nanicos lerem as carteiras), nunca de broadcast */
   ch = ch.on("postgres_changes", { event: "*", schema: "public", table: "carteiras" }, (pl) => {
     tabelaFns.get("carteiras")?.forEach((fn) => fn((pl?.new as Record<string, unknown>) || null, pl?.eventType || ""));
+  });
+  /* roleta do rodízio: o sorteio vem da tabela (o banco sorteia), nunca de broadcast */
+  ch = ch.on("postgres_changes", { event: "*", schema: "public", table: "rodizio" }, (pl) => {
+    tabelaFns.get("rodizio")?.forEach((fn) => fn((pl?.new as Record<string, unknown>) || null, pl?.eventType || ""));
   });
   room = ch;
   ch.subscribe((st) => {

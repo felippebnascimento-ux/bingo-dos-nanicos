@@ -215,7 +215,7 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | 14 | `14-hall-v2.md` | `hall-v2` | 00, 2, 3 | **feita**, PR aberto (em cima da `atributos-votados`); SQL da seção 7b aplicado em 02/11/2026 |
 | 15 | `15-celular-rede-nanica.md` | `celular-rede-nanica` | 11, 12 | a fazer |
 | 16 | `16-rua-do-sitio.md` | `rua-do-sitio` | 14 | a fazer |
-| 17 | `17-roleta-rodizio.md` | `roleta-rodizio` | 0 (se a 5 existir, a roleta é por sala) | a fazer (independente, pode entrar cedo) |
+| 17 | `17-roleta-rodizio.md` | `roleta-rodizio` | 0 (se a 5 existir, a roleta é por sala) | feito (02/11/2026), uma roleta por sala de LoL; SQL da seção 19 aplicado |
 | 18 | `18-chinelada-torta.md` | `chinelada-torta` | 2, 14 | a fazer |
 | 19 | `19-emotes-boneco.md` | `emotes-boneco` | 14 (e os quadros dos emotes, que a sessão de planejamento gera antes) | a fazer |
 | 20 | `20-mesa-de-som.md` | `mesa-de-som` | 14 | a fazer |

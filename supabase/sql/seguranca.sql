@@ -1003,7 +1003,171 @@ end $$;
 revoke all on function public.presenca_todos() from public, anon;
 grant execute on function public.presenca_todos() to authenticated;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino e as 2 da presença
+-- 19) rodízio: roleta de quem entra no time, uma por sala de LoL --------------------------------
+--     Quem está de fora entra na fila; a cada partida o BANCO sorteia um (random()), e todo mundo vê a
+--     roleta parar no mesmo nome pelo tempo real da tabela. Ninguém escreve direto: só as funções abaixo.
+create table if not exists public.rodizio (
+  sala         text primary key references public.salas(id) on delete cascade,
+  fila         uuid[] not null default '{}',
+  rodada       int not null default 1,
+  ja_entraram  uuid[] not null default '{}',
+  sorteado     uuid,
+  sorteado_por uuid,
+  girado_em    timestamptz,
+  giro         int,
+  trocas       int not null default 0,
+  no_time      jsonb not null default '{}'::jsonb,
+  atualizado   timestamptz not null default now()
+);
+insert into public.rodizio (sala) select id from public.salas where jogo = 'lol' on conflict (sala) do nothing;
+alter table public.rodizio enable row level security;
+revoke all on public.rodizio from public, anon, authenticated;
+grant select on public.rodizio to authenticated;
+drop policy if exists "nanicos veem o rodizio" on public.rodizio;
+create policy "nanicos veem o rodizio" on public.rodizio for select to authenticated using (public.eh_nanico());
+do $$
+begin
+  begin alter publication supabase_realtime add table public.rodizio; exception when duplicate_object then null; end;
+end $$;
+
+-- confere quem chama e trava a linha da sala (cria a linha se a sala de LoL for nova)
+create or replace function public.rodizio_linha(p_sala text) returns public.rodizio
+language plpgsql security definer set search_path = public as $$
+declare
+  r public.rodizio;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos mexem no rodízio.' using errcode = 'P0001'; end if;
+  if not exists (select 1 from public.salas where id = p_sala and jogo = 'lol') then
+    raise exception 'O rodízio é só nas salas de LoL.' using errcode = 'P0001';
+  end if;
+  perform public.limitar('rodizio', 30, interval '10 minutes', 'Calma: muitas mudanças no rodízio. Espere um pouco.');
+  insert into public.rodizio (sala) values (p_sala) on conflict (sala) do nothing;
+  select * into r from public.rodizio where sala = p_sala for update;
+  return r;
+end $$;
+revoke all on function public.rodizio_linha(text) from public, anon, authenticated;
+
+-- candidatos da roleta: quem está na fila e ainda não entrou nesta rodada, em ordem de nome
+create or replace function public.rodizio_candidatos(p_fila uuid[], p_ja uuid[]) returns uuid[]
+language sql stable security definer set search_path = public as $$
+  select coalesce(array_agg(f.id order by lower(f.name), f.id), '{}')
+    from public.friends f where f.id = any(p_fila) and not (f.id = any(p_ja));
+$$;
+revoke all on function public.rodizio_candidatos(uuid[], uuid[]) from public, anon, authenticated;
+
+-- põe (ou tira) alguém da fila; quem está na escalação não entra
+create or replace function public.rodizio_fila(p_sala text, p_friend uuid, p_entra boolean) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  r public.rodizio := public.rodizio_linha(p_sala);
+  v_nome text;
+begin
+  select name into v_nome from public.friends where id = p_friend;
+  if v_nome is null then raise exception 'Esse nanico não existe.' using errcode = 'P0001'; end if;
+  if p_entra then
+    if p_friend = any(r.fila) then return; end if;
+    if exists (select 1 from public.game g, jsonb_array_elements(g.players) e
+                where g.sala = p_sala and e->>'friendId' = p_friend::text) then
+      raise exception '% já está na escalação.', v_nome using errcode = 'P0001';
+    end if;
+    update public.rodizio set fila = array_append(fila, p_friend), atualizado = now() where sala = p_sala;
+  else
+    update public.rodizio set fila = array_remove(fila, p_friend), ja_entraram = array_remove(ja_entraram, p_friend),
+           sorteado = case when sorteado = p_friend then null else sorteado end,
+           sorteado_por = case when sorteado = p_friend then null else sorteado_por end,
+           atualizado = now()
+     where sala = p_sala;
+  end if;
+end $$;
+revoke all on function public.rodizio_fila(text, uuid, boolean) from public, anon;
+grant execute on function public.rodizio_fila(text, uuid, boolean) to authenticated;
+
+-- gira: o sorteio é sempre daqui. Acabaram os candidatos? Começa a rodada seguinte com todo mundo.
+create or replace function public.rodizio_girar(p_sala text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  r public.rodizio := public.rodizio_linha(p_sala);
+  v_cand uuid[];
+  v_i int;
+begin
+  if r.sorteado is not null then
+    raise exception 'Coloque o sorteado no time ou diga que ele não vai jogar.' using errcode = 'P0001';
+  end if;
+  v_cand := public.rodizio_candidatos(r.fila, r.ja_entraram);
+  if cardinality(v_cand) = 0 then
+    if cardinality(r.fila) = 0 then raise exception 'A fila está vazia.' using errcode = 'P0001'; end if;
+    r.rodada := r.rodada + 1;
+    r.ja_entraram := '{}';
+    v_cand := public.rodizio_candidatos(r.fila, r.ja_entraram);
+    if cardinality(v_cand) = 0 then raise exception 'A fila está vazia.' using errcode = 'P0001'; end if;
+  end if;
+  v_i := floor(random() * cardinality(v_cand))::int;
+  update public.rodizio set rodada = r.rodada, ja_entraram = r.ja_entraram, sorteado = v_cand[v_i + 1],
+         sorteado_por = auth.uid(), girado_em = now(), giro = v_i, atualizado = now()
+   where sala = p_sala;
+  return jsonb_build_object('sorteado', v_cand[v_i + 1], 'giro', v_i, 'rodada', r.rodada);
+end $$;
+revoke all on function public.rodizio_girar(text) from public, anon;
+grant execute on function public.rodizio_girar(text) to authenticated;
+
+-- coloca o sorteado na rota (0 a 4) da escalação; quem saiu vai para a fila
+create or replace function public.rodizio_colocar(p_sala text, p_rota int) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  r public.rodizio := public.rodizio_linha(p_sala);
+  v_pl jsonb;
+  v_saiu text;
+  v_saiu_id uuid;
+  v_fila uuid[];
+  k int;
+begin
+  if r.sorteado is null then raise exception 'Gire a roleta antes.' using errcode = 'P0001'; end if;
+  if p_rota is null or p_rota < 0 or p_rota > 4 then raise exception 'Rota inválida.' using errcode = 'P0001'; end if;
+  select players into v_pl from public.game where sala = p_sala for update;
+  if v_pl is null or jsonb_typeof(v_pl) <> 'array' then v_pl := '[]'::jsonb; end if;
+  while jsonb_array_length(v_pl) < 5 loop
+    v_pl := v_pl || jsonb_build_array(jsonb_build_object('friendId', '', 'champion', ''));
+  end loop;
+  -- o sorteado não pode ficar em duas rotas
+  for k in 0..4 loop
+    if v_pl->k->>'friendId' = r.sorteado::text then
+      v_pl := jsonb_set(v_pl, array[k::text], jsonb_build_object('friendId', '', 'champion', ''));
+    end if;
+  end loop;
+  v_saiu := v_pl->p_rota->>'friendId';
+  v_pl := jsonb_set(v_pl, array[p_rota::text], jsonb_build_object('friendId', r.sorteado::text, 'champion', ''));
+  -- passa pelo gatilho escalacao_protecao, como qualquer mudança na escalação
+  update public.game set players = v_pl, updated_at = now() where sala = p_sala;
+  v_fila := array_remove(r.fila, r.sorteado);
+  if v_saiu ~ '^[0-9a-f-]{36}$' then
+    select id into v_saiu_id from public.friends where id = v_saiu::uuid;
+    if v_saiu_id is not null and not (v_saiu_id = any(v_fila)) then v_fila := array_append(v_fila, v_saiu_id); end if;
+  end if;
+  update public.rodizio set
+         fila = v_fila,
+         ja_entraram = case when r.sorteado = any(r.ja_entraram) then r.ja_entraram else array_append(r.ja_entraram, r.sorteado) end,
+         trocas = r.trocas + 1,
+         no_time = (r.no_time - coalesce(v_saiu, '')) || jsonb_build_object(r.sorteado::text, r.trocas + 1),
+         sorteado = null, sorteado_por = null, atualizado = now()
+   where sala = p_sala;
+end $$;
+revoke all on function public.rodizio_colocar(text, int) from public, anon;
+grant execute on function public.rodizio_colocar(text, int) to authenticated;
+
+-- o sorteado não vai jogar: sai da fila e libera girar de novo
+create or replace function public.rodizio_desistir(p_sala text) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  r public.rodizio := public.rodizio_linha(p_sala);
+begin
+  if r.sorteado is null then raise exception 'Ninguém foi sorteado.' using errcode = 'P0001'; end if;
+  update public.rodizio set fila = array_remove(fila, r.sorteado), sorteado = null, sorteado_por = null, atualizado = now()
+   where sala = p_sala;
+end $$;
+revoke all on function public.rodizio_desistir(text) from public, anon;
+grant execute on function public.rodizio_desistir(text) to authenticated;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença e as 4 do rodízio
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -1023,4 +1187,7 @@ select proname::text, 'cassino' from pg_proc
 union all
 select proname::text, 'presenca' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('presenca_de', 'presenca_todos')
+union all
+select proname::text, 'rodizio' from pg_proc
+ where pronamespace = 'public'::regnamespace and proname in ('rodizio_fila', 'rodizio_girar', 'rodizio_colocar', 'rodizio_desistir')
 order by 2, 1;
