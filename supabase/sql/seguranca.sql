@@ -166,6 +166,7 @@ drop policy if exists "nanico edita o proprio perfil" on public.friends;
 create policy "nanico edita o proprio perfil" on public.friends for update to authenticated
   using (user_id = auth.uid()) with check (user_id = auth.uid());
 
+-- (a versão atual desta proteção, que deixa passar também a Steam, fica na seção 8)
 create or replace function public.perfil_protecao() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
@@ -384,10 +385,70 @@ end $$;
 revoke all on function public.pulso() from public, anon;
 grant execute on function public.pulso() to authenticated;
 
--- 8) confere: deve listar as 5 proteções e as 4 funções das moedas
+-- 8) ficha do nanico: link da Steam e números dos jogos (Riot e Steam) -------------------
+--    Os números vêm da função ficha-jogos (com as chaves secretas); o site só lê.
+alter table public.friends add column if not exists steam text;
+alter table public.friends drop constraint if exists friends_steam_valido;
+alter table public.friends add constraint friends_steam_valido check (
+  steam is null or steam ~ '^https://steamcommunity\.com/(id/[A-Za-z0-9_-]{2,32}|profiles/7656\d{13})/?$');
+grant update (steam) on public.friends to authenticated;
+
+-- a mesma proteção do perfil (4b), agora deixando passar o op.gg e a Steam
+create or replace function public.perfil_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then return new; end if;   -- admin pelo SQL Editor
+  -- pelo site só mudam o op.gg e a Steam; o resto continua como estava
+  new.id := old.id; new.name := old.name; new.photo := old.photo; new.user_id := old.user_id;
+  new.username := old.username; new.created_at := old.created_at;
+  new.opgg := nullif(btrim(new.opgg), '');
+  new.steam := nullif(btrim(new.steam), '');
+  perform public.limitar('perfil', 10, interval '10 minutes', 'Calma: muitas mudanças no perfil. Espere uns minutos.');
+  return new;
+end $$;
+revoke all on function public.perfil_protecao() from public, anon, authenticated;
+
+-- números de cada nanico por fonte, guardados pela função (no máximo uma busca a cada 6 h)
+--   lol:   {tier, rank, lp, vitorias, derrotas, kda, main, partidas}
+--   steam: {cs2_horas, total_horas, privado}
+create table if not exists public.jogos_stats (
+  friend_id  uuid not null references public.friends(id) on delete cascade,
+  fonte      text not null check (fonte in ('lol', 'steam')),
+  dados      jsonb not null default '{}'::jsonb check (octet_length(dados::text) <= 2000),
+  erro       text,
+  atualizado timestamptz not null default now(),
+  primary key (friend_id, fonte)
+);
+-- partidas do LoL já lidas: o KDA das últimas 20 é calculado sem buscar tudo de novo
+create table if not exists public.riot_partidas_vistas (
+  friend_id uuid not null references public.friends(id) on delete cascade,
+  match_id  text not null,
+  kills     int not null default 0,
+  deaths    int not null default 0,
+  assists   int not null default 0,
+  campeao   text,
+  em        timestamptz,
+  primary key (friend_id, match_id)
+);
+alter table public.jogos_stats          enable row level security;
+alter table public.riot_partidas_vistas enable row level security;
+revoke all on public.jogos_stats, public.riot_partidas_vistas from public, anon, authenticated;
+grant select on public.jogos_stats to authenticated;
+drop policy if exists "nanicos leem os numeros" on public.jogos_stats;
+create policy "nanicos leem os numeros" on public.jogos_stats for select to authenticated using (public.eh_nanico());
+do $$ begin
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    grant all on public.jogos_stats, public.riot_partidas_vistas to service_role;
+  end if;
+end $$;
+
+-- 9) confere: deve listar as 5 proteções, as 4 funções das moedas e as 2 tabelas da ficha
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
 select proname::text, 'moedas' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('creditar', 'minha_carteira', 'bater_ponto', 'pulso')
+union all
+select tablename::text, 'ficha' from pg_tables
+ where schemaname = 'public' and tablename in ('jogos_stats', 'riot_partidas_vistas')
 order by 2, 1;

@@ -30,6 +30,8 @@ export type AppState = {
   phrasesV2: boolean;
   /** o SQL do op.gg já rodou */
   opggOk: boolean;
+  /** o SQL da ficha (coluna steam) já rodou */
+  steamOk: boolean;
   lineup: LineupSlot[];
 
   /* deste navegador */
@@ -54,6 +56,8 @@ export type AppState = {
   nanicadasBusca: string;
   pwAberto: boolean;
   logAberto: boolean;
+  /** id do nanico com a ficha aberta (aba Nanicos) */
+  fichaAberta: string | null;
   /** "novidades" = abriu sozinho depois de uma atualização; "tudo" = botão Log do rodapé */
   logModo: "novidades" | "tudo";
   /** índice da última entrada do CHANGELOG que a pessoa viu (conta, com o navegador de reserva) */
@@ -75,6 +79,7 @@ export const useApp = create<AppState>()(() => ({
   phrases: [],
   phrasesV2: true,
   opggOk: true,
+  steamOk: true,
   lineup: lineupVazia(),
   card: null,
   online: [],
@@ -90,6 +95,7 @@ export const useApp = create<AppState>()(() => ({
   nanicadasBusca: "",
   pwAberto: false,
   logAberto: false,
+  fichaAberta: null,
   logModo: "tudo",
   logVisto: null,
 }));

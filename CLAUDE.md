@@ -60,8 +60,10 @@ src/
                        cartela flutuante), riot.ts (consulta a função riot-ao-vivo), partida.ts (lanes, puro),
                        RiotBox, CellTag
     nanicadas/         NanicadasView: cadastro, edição, filtros e lista
-    nanicos/           NanicosView: os 14 nanicos com a arte de corpo inteiro
-    perfil/            PerfilView e opgg.ts (limpar link, nick)
+    nanicos/           NanicosView: os 14 nanicos com a arte de corpo inteiro (tocar abre a ficha)
+    ficha/             ficha do nanico: Ficha.tsx (janela), Quarto.tsx (quarto isométrico com o boneco),
+                       estado.ts (pede os números à função ficha-jogos), numeros.ts (conferir e escrever; puro e testado)
+    perfil/            PerfilView, opgg.ts e steam.ts (limpar link, nick)
     live/              live.ts (liga tudo à sala), rtc.ts (WebRTC comum), tela.ts (transmissão), camera.ts,
                        reacoes.ts, desenho.ts, estado.ts (store + preferências), pip.ts;
                        telas: LiveView, Palco, Painel, Cameras, Video, Voos, Rosto, CamNaSala, CamBotoes
@@ -82,11 +84,12 @@ src/
     tipos.ts           Friend, Phrase, Card, Presence…
     dados/             campeoes.ts (CHAMPS, LANES, LANE_CAMP), nanicos.ts (NAN_MAP, artOf, bonecoOf), changelog.ts,
                        novidades.ts (o que mostrar no Log depois de uma atualização; puro e testado)
-  styles/              CSS global, numerado: 01-base.css … 23-moedas.css
+  styles/              CSS global, numerado: 01-base.css … 24-ficha.css
 public/arte/           artes dos nanicos (rosto e corpo), bonecos do hall, foto da turma, reações dos Picarétezzi
 planejamento/          PLANO.md (próximas fases e decisões), prompts/ (um por fase), demos e arte pronta
 supabase/
-  functions/riot-ao-vivo/index.ts   Edge Function (Deno). Fora do build do Next.
+  functions/riot-ao-vivo/index.ts   Edge Function (Deno): partida ao vivo. Fora do build do Next.
+  functions/ficha-jogos/index.ts    Edge Function (Deno): números da ficha (Riot e Steam), guardados por 6 h
   sql/                 seguranca.sql, contas-e-ao-vivo.sql, supabase.sql e antigos/
 legacy/                site antigo (index.html) e o passo a passo antigo (LEIA-ME.md)
 vercel.json            cabeçalhos de segurança (CSP etc.) e framework
@@ -169,6 +172,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 
 - **Sempre** use as variáveis (`var(--accent)` etc.), nunca hex solto, para o tema claro e escuro continuarem funcionando.
 - Novas cores só se entrarem na paleta acima.
+- **Exceção: o quarto da ficha** (`24-ficha.css`) segue a mesma regra do hall, com as variáveis `--quarto-*` e as classes `q-<nome>`.
 - **Exceção: o cômodo do hall** (`22-hall.css`). Ele é uma ilustração com cores próprias (tijolo, madeira, lajota), definidas como variáveis `--hall-*` em `.hall`, cada uma com uma versão mais escura no tema escuro. O SVG usa as classes `f-<nome>` (preenchimento) e `s-<nome>` (traço). A interface em volta (placas com nome, TV, botões) continua com a paleta acima.
 
 ### Tipografia
@@ -200,7 +204,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 ### Supabase (schema `public`)
 | Tabela | O que guarda | Quem pode mexer pelo site |
 |---|---|---|
-| `friends` | os 14 nanicos (`name`, `user_id`, `username`, `opgg`) | cada um só o próprio `opgg` |
+| `friends` | os 14 nanicos (`name`, `user_id`, `username`, `opgg`, `steam`) | cada um só o próprio `opgg` e `steam` |
 | `phrases` | nanicadas (`text`, `friend_ids uuid[]`, `champions text[]`, `modo 'qualquer'\|'todos'`) | criar, editar e remover (com limite e histórico) |
 | `nanicadas_historico` | cópia de toda nanicada editada ou removida | ninguém pelo site (só o admin) |
 | `game` | escalação compartilhada (`players` = 5 rotas `{friendId, champion}`) | atualizar (formato conferido) |
@@ -211,6 +215,8 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 | `bonus_diario` | bônus de cada dia e a sequência (`dia`, `seq`, `valor`) | ninguém grava; cada um lê o seu |
 | `online_diario` | minutos com o site aberto por dia (`minutos`, `ultimo_pulso`) | ninguém grava; cada um lê o seu |
 | `riot_contas`, `riot_ao_vivo`, `riot_meta` | cache da API da Riot | só a Edge Function |
+| `jogos_stats` | números da ficha por nanico e fonte (`lol`: elo, vitórias, KDA, main; `steam`: horas) | nanicos leem; só a função `ficha-jogos` grava |
+| `riot_partidas_vistas` | partidas do LoL já lidas (KDA das últimas 20 sem buscar tudo de novo) | só a função `ficha-jogos` |
 
 - **Quem é nanico:** `public.eh_nanico()` diz se o usuário logado está ligado a um nanico.
 - **Moedas (seção 7 do `seguranca.sql`):**
@@ -282,6 +288,8 @@ A versão (`v1.NN`) é **calculada sozinha** pelo tamanho do array `CHANGELOG` e
 - **Edge Function `riot-ao-vivo`:** se mexer nela, publique de novo e confira se a aba Jogar ainda mostra "EM PARTIDA".
 - **Origens:** a função só aceita chamadas das origens listadas em `ORIGENS`, que incluem a Vercel e `localhost:8810/8811`.
 - **Chave da Riot:** fica em **Edge Functions → Secrets → `RIOT_API_KEY`**. Não copie para lugar nenhum.
+- **Chave da Steam:** fica em **Edge Functions → Secrets → `STEAM_API_KEY`** (tirada em steamcommunity.com/dev/apikey). Sem ela, a ficha mostra só os números do LoL.
+- **Edge Function `ficha-jogos`:** busca cada fonte de um nanico no máximo uma vez a cada 6 h (usa no máximo 25 chamadas à Riot por vez). As origens aceitas são as mesmas da `riot-ao-vivo`.
 
 ### Pendências conhecidas
 - **Validar a v2 com o grupo:** login, sala, live, câmera, chat, truco entre duas abas, Riot. Depois disso, apagar `legacy/`.

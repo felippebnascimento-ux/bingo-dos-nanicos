@@ -1,0 +1,64 @@
+/* Ficha do nanico: o quarto isométrico (ilustração com cores próprias, como o hall) e os números.
+   As cores do quarto são variáveis --quarto-*, com versão escura; a interface usa a paleta do site. */
+.ficha-gate{z-index:60;overflow:auto;place-items:start center}
+.ficha-card{width:min(1080px,100%);margin:auto 0;display:grid;gap:18px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px;box-shadow:0 30px 80px -20px var(--shadow)}
+@media (min-width:900px){.ficha-card{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);padding:22px;align-items:start}}
+.ficha-quarto{background:var(--surface-2);border-radius:var(--r-md);overflow:hidden}
+.quarto{display:block;width:100%;height:auto}
+.ficha{display:grid;gap:16px;align-content:start;min-width:0}
+.ficha-topo{display:flex;align-items:center;gap:14px}
+.ficha-topo .av{width:64px;height:64px;border:3px solid var(--accent)}
+.ficha-topo h2{margin:0;font:800 26px/1.1 var(--display);letter-spacing:-.02em;min-width:0;overflow-wrap:anywhere}
+.ficha-fechar{margin-left:auto;flex:none;display:grid;place-items:center;width:40px;height:40px;border:1px solid var(--line);border-radius:50%;background:none;color:var(--ink);cursor:pointer}
+.ficha-fechar:hover{border-color:var(--accent)}
+.ficha-sec{display:grid;gap:10px}
+.ficha-sec h3{display:flex;align-items:baseline;gap:8px;margin:0;font:700 12px var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.ficha-sec h3 small{margin-left:auto;font:500 12px var(--body);letter-spacing:0;text-transform:none}
+.ficha-sec .hint{margin:0}
+.ficha-reais{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.ficha .st{background:var(--surface-2);border-radius:var(--r-md);padding:10px 12px;min-width:0}
+.ficha .st b{display:block;font:700 18px var(--display);overflow-wrap:anywhere}
+.ficha .st span{font-size:12px;color:var(--muted)}
+.ficha-links{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ficha-links .btn{width:auto;text-decoration:none}
+.ficha-main{font-size:13px;font-weight:600;padding:5px 10px;border:1px solid var(--line);border-radius:var(--r-sm)}
+.ficha .linkish{justify-self:start}
+.dica-steam summary{cursor:pointer;font-size:13px;color:var(--accent-text)}
+.dica-steam p{margin:6px 0 0;font-size:13px;color:var(--muted)}
+
+/* ---------- quarto ---------- */
+.ficha-quarto{
+  --quarto-parede1:#D9D5CA; --quarto-parede2:#E3DFD5; --quarto-topo1:#A9A497; --quarto-topo2:#B5B0A3;
+  --quarto-rodape1:#C3BEB1; --quarto-rodape2:#CCC7BA; --quarto-piso0:#C9C5B8; --quarto-piso1:#D4D0C4;
+  --quarto-janela:#2B3540; --quarto-ceu:#7C93B5; --quarto-poster:#FAF9F6; --quarto-cartela0:#E0DED5; --quarto-cartela1:#3E4C59;
+  --quarto-tapete0:#B08D57; --quarto-tapete1:#C4A06A; --quarto-madeira0:#8A6A39; --quarto-madeira1:#6B522C; --quarto-madeira2:#5A4424;
+  --quarto-preto0:#262626; --quarto-preto1:#1E1E1E; --quarto-preto2:#1A1A1A; --quarto-teclado:#353535; --quarto-luz:#E0705A;
+  --quarto-cadeira0:#3E4C59; --quarto-cadeira1:#2F3A44; --quarto-cadeira2:#27313A;
+  --quarto-planta0:#6F9A5A; --quarto-planta1:#557A44; --quarto-planta2:#4A6B3A; --quarto-linha:#262626;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .ficha-quarto{
+  --quarto-parede1:#454843; --quarto-parede2:#50544C; --quarto-topo1:#2B2B2A; --quarto-topo2:#333331;
+  --quarto-rodape1:#3A3C37; --quarto-rodape2:#42453F; --quarto-piso0:#6F7366; --quarto-piso1:#7C8073; --quarto-ceu:#566B7D;
+}}
+:root[data-theme="dark"] .ficha-quarto{
+  --quarto-parede1:#454843; --quarto-parede2:#50544C; --quarto-topo1:#2B2B2A; --quarto-topo2:#333331;
+  --quarto-rodape1:#3A3C37; --quarto-rodape2:#42453F; --quarto-piso0:#6F7366; --quarto-piso1:#7C8073; --quarto-ceu:#566B7D;
+}
+.quarto .q-linha{stroke:var(--quarto-linha);stroke-width:1;stroke-linejoin:round}
+.quarto .q-parede1{fill:var(--quarto-parede1)} .quarto .q-parede2{fill:var(--quarto-parede2)}
+.quarto .q-topo1{fill:var(--quarto-topo1)} .quarto .q-topo2{fill:var(--quarto-topo2)}
+.quarto .q-rodape1{fill:var(--quarto-rodape1)} .quarto .q-rodape2{fill:var(--quarto-rodape2)}
+.quarto .q-piso0{fill:var(--quarto-piso0)} .quarto .q-piso1{fill:var(--quarto-piso1)}
+.quarto .q-janela{fill:var(--quarto-janela)} .quarto .q-ceu{fill:var(--quarto-ceu)} .quarto .q-poster{fill:var(--quarto-poster)}
+.quarto .q-cartela0{fill:var(--quarto-cartela0)} .quarto .q-cartela1{fill:var(--quarto-cartela1)}
+.quarto .q-tapete0{fill:var(--quarto-tapete0)} .quarto .q-tapete1{fill:var(--quarto-tapete1)}
+.quarto .q-madeira0{fill:var(--quarto-madeira0)} .quarto .q-madeira1{fill:var(--quarto-madeira1)} .quarto .q-madeira2{fill:var(--quarto-madeira2)}
+.quarto .q-preto0{fill:var(--quarto-preto0)} .quarto .q-preto1{fill:var(--quarto-preto1)} .quarto .q-preto2{fill:var(--quarto-preto2)}
+.quarto .q-teclado{fill:var(--quarto-teclado)} .quarto .q-luz{fill:var(--quarto-luz)}
+.quarto .q-cadeira0{fill:var(--quarto-cadeira0)} .quarto .q-cadeira1{fill:var(--quarto-cadeira1)} .quarto .q-cadeira2{fill:var(--quarto-cadeira2)}
+.quarto .q-planta0{fill:var(--quarto-planta0)} .quarto .q-planta1{fill:var(--quarto-planta1)} .quarto .q-planta2{fill:var(--quarto-planta2)}
+.quarto .q-sombra{fill:var(--shadow)}
+.quarto .q-placa{fill:var(--accent-ink)}
+.quarto .q-nome{fill:var(--accent);font:700 11px var(--display)}
+.me-block #steamForm{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.me-block form .hint{margin:0}

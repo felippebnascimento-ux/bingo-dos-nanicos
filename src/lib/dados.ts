@@ -41,13 +41,19 @@ export function iniciarLocal() {
 export async function loadFriends() {
   let rows: Friend[];
   try {
-    rows = await q<Friend[]>(sb().from("friends").select("id,name,photo,user_id,created_at,opgg"));
-    setApp({ opggOk: true });
-  } catch (e) {
-    /* se o SQL do op.gg ainda não rodou, o site segue funcionando sem a coluna */
-    console.warn("banco sem op.gg", e);
-    setApp({ opggOk: false });
-    rows = await q<Friend[]>(sb().from("friends").select("id,name,photo,user_id,created_at"));
+    rows = await q<Friend[]>(sb().from("friends").select("id,name,photo,user_id,created_at,opgg,steam"));
+    setApp({ opggOk: true, steamOk: true });
+  } catch {
+    /* se o SQL da ficha (Steam) ou do op.gg ainda não rodou, o site segue funcionando sem a coluna */
+    try {
+      rows = await q<Friend[]>(sb().from("friends").select("id,name,photo,user_id,created_at,opgg"));
+      console.warn("banco sem a coluna steam: rode a seção 8 do seguranca.sql");
+      setApp({ opggOk: true, steamOk: false });
+    } catch (e) {
+      console.warn("banco sem op.gg", e);
+      setApp({ opggOk: false, steamOk: false });
+      rows = await q<Friend[]>(sb().from("friends").select("id,name,photo,user_id,created_at"));
+    }
   }
   const friends = (rows || []).sort(byName);
   const { myUid } = getApp();
@@ -126,6 +132,8 @@ export const api = {
     q(sb().from("game").update({ players, updated_at: new Date().toISOString() }).eq("id", 1)),
   saveOpgg: (fid: string, url: string | null) =>
     q<{ id: string; opgg?: string | null }[]>(sb().from("friends").update({ opgg: url }).eq("id", fid).select("id,opgg")),
+  saveSteam: (fid: string, url: string | null) =>
+    q<{ id: string; steam?: string | null }[]>(sb().from("friends").update({ steam: url }).eq("id", fid).select("id,steam")),
 };
 
 /** Salva a escalação para todo mundo (e no navegador, para abrir rápido da próxima vez). */

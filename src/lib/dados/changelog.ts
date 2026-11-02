@@ -46,6 +46,7 @@ export const CHANGELOG: EntradaLog[] = [
   { data: "01/11/2026", itens: ["Sítio do Mitz: o hall com o boneco de cada nanico; clique no chão para andar e veja quem está no site"] },
   { data: "01/11/2026", itens: ["As novidades aparecem sozinhas na primeira vez que você entra depois de uma atualização"] },
   { data: "01/11/2026", itens: ["Moedas: bônus todo dia que você entra, maior a cada dia seguido, e moedas pelo tempo com o site aberto"] },
+  { data: "01/11/2026", itens: ["Ficha de cada nanico na aba Nanicos: elo, KDA, main e horas de CS2, com o boneco no quarto", "Perfil aceita o link da Steam"] },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
