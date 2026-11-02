@@ -144,6 +144,7 @@ src/
     cassino/           aba Cassino (moedas fictícias): regras.ts (roleta, limbo, dado, caça-níquel, conferir() e
                        refazer() com HMAC-SHA256; puro e testado), roda.ts (plano do giro da roleta animada: a bolinha termina no centro
                        da casa que o banco mandou; puro e testado), RodaRoleta.tsx (a roda em SVG, animação, sons e mudo),
+                       MaiorMenor.tsx (o maior ou menor no feltro: placas de dígitos, lados, barra, ½ ×2 Máx),
                        Aviaozinho.tsx e aviao.ts (o Aviãozinho, no lugar do Limbo: céu, curva, avião, sacar,
                        mesa; contas do voo puras e testadas), RoletaMesa.tsx (o feltro: roda, painel do resultado, mesa de fichas deitada no computador e em pé no
                        celular, desfazer/limpar/dobrar/repetir; chama apostar_roleta_mesa),

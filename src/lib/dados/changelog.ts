@@ -278,6 +278,10 @@ export const CHANGELOG: EntradaLog[] = [
       "Saque automático no Aviãozinho, últimos voos e quem está jogando agora",
     ],
   },
+  {
+    data: "02/11/2026",
+    itens: ["Maior ou menor de cara nova: placas de dígitos que param uma a uma, lados grandes, barra colorida para mudar a chance e ½, ×2 e Máx"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

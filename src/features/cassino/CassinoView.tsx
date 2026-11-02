@@ -11,7 +11,8 @@ import { sb } from "@/lib/supabase";
 import { toast } from "@/lib/toast";
 import { carregar, msgDe, useCassino, type Aposta, type Jogo, type Revelada } from "./estado";
 import { Aviaozinho } from "./Aviaozinho";
-import { CacaNiquel, MaiorMenor } from "./Jogos";
+import { CacaNiquel } from "./Jogos";
+import { MaiorMenor } from "./MaiorMenor";
 import { RoletaMesa } from "./RoletaMesa";
 import { corDa, hashDaSemente, nomeLugar, refazer, resultadoGuardado, rtpSlot, vantagemDaCasa, type TipoAposta } from "./regras";
 
@@ -108,7 +109,11 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
                 <Aviaozinho />
               </div>
             )}
-            {jogo === "dado" && <MaiorMenor />}
+            {jogo === "dado" && (
+              <div className="rm-caixa">
+                <MaiorMenor />
+              </div>
+            )}
             {jogo === "slot" && <CacaNiquel />}
             {/* a roleta fica sempre montada (a roda não pode sumir no meio do giro) */}
             <div className="rm-caixa" hidden={jogo !== "roleta"}>

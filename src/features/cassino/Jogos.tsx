@@ -11,7 +11,7 @@ import { sb } from "@/lib/supabase";
 import { toast } from "@/lib/toast";
 import { reduzMovimento } from "@/lib/util";
 import { carregar, msgDe, useCassino } from "./estado";
-import { ALVO_MAX, ALVO_MIN, chanceDado, chanceLimbo, chanceValida, FICHAS, pagamentoDado, type Lado } from "./regras";
+import { ALVO_MAX, ALVO_MIN, chanceLimbo, FICHAS } from "./regras";
 
 const pct = (c: number) => `${(c * 100).toFixed(c < 0.1 ? 2 : 1).replace(".", ",")}%`;
 const virgula = (n: number) => n.toFixed(2).replace(".", ",");
@@ -100,52 +100,6 @@ export function Limbo() {
         {jogando ? "Subindo…" : `Apostar ${ficha} moedas no ${virgula(valido ? alvo : 2)}×`}
       </button>
       <p className="hint">O número sobe a partir de 1×; se passar do seu alvo, você ganha alvo × aposta. A casa leva 3%.</p>
-    </div>
-  );
-}
-
-export function MaiorMenor() {
-  const [ficha, setFicha] = useState(10);
-  const [lado, setLado] = useState<Lado>("abaixo");
-  const [n, setN] = useState(5000);
-  const [num, setNum] = useState<number | null>(null);
-  const [jogando, setJogando] = useState(false);
-  const chance = chanceDado(lado, n);
-  const ok = chanceValida(chance);
-
-  const apostar = async () => {
-    if (!ok || jogando) return;
-    setJogando(true);
-    const r = await jogar<{ numero: number; pagou: number; saldo: number }>("apostar_dado", { p_aposta: ficha, p_lado: lado, p_n: n });
-    if (r) {
-      setNum(r.numero);
-      toast(r.pagou ? `Deu ${r.numero}! Você ganhou ${formatarMoedas(r.pagou)} moedas` : `Deu ${r.numero}. Perdeu ${ficha} moedas`);
-      carregar();
-    }
-    setJogando(false);
-  };
-
-  return (
-    <div className="block jogo">
-      <div className="limbo-num" aria-live="polite">
-        {num ?? "?"}
-      </div>
-      <div className="seg" role="radiogroup" aria-label="Abaixo ou acima">
-        {(["abaixo", "acima"] as const).map((l) => (
-          <button key={l} type="button" role="radio" aria-checked={lado === l} className={lado === l ? "on" : undefined} onClick={() => setLado(l)}>
-            {l === "abaixo" ? `Abaixo de ${n}` : `Acima de ${n}`}
-          </button>
-        ))}
-      </div>
-      <input type="range" min={1} max={9998} value={n} onChange={(e) => setN(Number(e.target.value))} aria-label="Número N, de 1 a 9998" className="dado-n" />
-      <p className="hint">
-        {ok ? `Sorteio de 0 a 9999 · chance ${pct(chance)} · se ganhar, recebe ${formatarMoedas(pagamentoDado(lado, n, ficha))} moedas` : "A chance precisa ficar entre 1% e 95%: mexa no número."}
-      </p>
-      <Fichas ficha={ficha} setFicha={setFicha} />
-      <button type="button" className="btn jogo-btn" disabled={!ok || jogando} onClick={apostar}>
-        {jogando ? "Sorteando…" : `Apostar ${ficha} moedas`}
-      </button>
-      <p className="hint">Paga 0,97 dividido pela chance: quanto menor a chance, maior o prêmio. A casa leva 3%.</p>
     </div>
   );
 }
