@@ -1,0 +1,32 @@
+/* controles do vídeo somem sozinhos (aparecem ao mexer o mouse) */
+.stage-bar{transition:opacity .25s}
+.stage.idle .stage-bar{opacity:0;pointer-events:none}
+.stage.idle{cursor:none}
+.live-grid:fullscreen.no-rail{padding:0;gap:0}
+.live-grid:fullscreen.no-rail .stage{border-radius:0;box-shadow:none}
+.live-grid:fullscreen.no-rail .minis{display:none}
+@media (prefers-reduced-motion:reduce){.stage-bar{transition:none}}
+
+/* painel da direita do Ao vivo: alça retrátil na borda.
+   Fora da tela cheia: sempre visível, num corredor próprio entre o vídeo e o painel (não fica em cima da live).
+   Na tela cheia: aparece ao mexer o mouse e some com ele parado. */
+.live-grid{position:relative}
+.rail-toggle{display:none;position:absolute;top:50%;right:346px;width:28px;height:48px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--ink);place-items:center;cursor:pointer;z-index:7;padding:0;transform:translateY(-50%) scaleX(-1);transition:opacity .15s,background .15s;box-shadow:0 2px 10px var(--shadow)}
+.rail-toggle svg{width:16px;height:16px;transform:translateX(-1px)}
+.rail-toggle:hover{background:var(--surface-2)}
+@media (min-width:1180px){
+  .live-grid{column-gap:40px}
+  .rail-toggle{display:grid}
+  .live-grid.no-rail{grid-template-columns:minmax(0,1fr) 0}
+  .live-grid.no-rail .rail{display:none}
+  .live-grid.no-rail .rail-toggle{right:6px;transform:translateY(-50%)}
+}
+.live-grid:fullscreen{column-gap:22px}
+.live-grid:fullscreen .rail-toggle{display:grid;right:371px;opacity:0}
+.live-grid:fullscreen .rail:hover ~ .rail-toggle,.live-grid:fullscreen .rail-toggle:hover,.live-grid:fullscreen .rail-toggle:focus-visible,.live-grid:fullscreen .stage-col:has(.stage:not(.idle)) ~ .rail-toggle{opacity:1}
+.live-grid:fullscreen.no-rail{grid-template-columns:minmax(0,1fr) 0;column-gap:0}
+.live-grid:fullscreen.no-rail .rail{display:none}
+.live-grid:fullscreen.no-rail .rail-toggle{right:10px;transform:translateY(-50%)}
+@media (hover:none){.live-grid:fullscreen .rail-toggle{opacity:1}}
+@media (prefers-reduced-motion:reduce){.rail-toggle{transition:none}}
+

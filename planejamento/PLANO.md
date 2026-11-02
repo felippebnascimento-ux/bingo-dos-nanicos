@@ -80,15 +80,39 @@ Decisões combinadas com o João em 01/11/2026. Vale para qualquer pessoa ou IA 
 - **Piso:** lajota clara.
 - **Objetos que levam para algum lugar:**
   - a **TV** mostra quem está ao vivo;
-  - a **porta de tábuas** com a placa "K-FOFO 2018" leva às salas de LoL e CS;
-  - a **porta de vidro** para o gramado leva à Resenha.
+  - a **porta de tábuas** com a placa "K-FOFO 2018" fica aberta e leva à rua (fase 16);
+  - a **porta de vidro** abre a escolha das salas (LoL 1, LoL 2, CS e Resenha, fase 5).
 - **Enfeites:** churrasqueira de tijolo com coifa, relógio, quadro, geladeira e freezer brancos, mesa comprida com toalha, mesa de toalha verde, cadeiras de plástico brancas e colchões infláveis azuis.
+- **Hall v2 (pedido de 01/11/2026, fase 14):** modelo em `planejamento/demo/hall-v2.html` e `.png`.
+  - **Mais espaço e mais alegre:** piso de 14×11 para caber os 14 bonecos, cores mais claras e um janelão com árvores na parede do fundo.
+  - **Móveis que abrem coisas, com placa em cima:** TV = Ao vivo, mesa verde = Truco, geladeira e freezer brancos = Loja.
+  - **Piso marcado:** contorno branco no piso embaixo do mouse.
+  - **Cantos:**
+    - "Na sala agora" em cima, à esquerda, e clicar num nome abre a ficha;
+    - ganhos de moedas de todo mundo em cima, à direita, vindos do banco e não do broadcast;
+    - carteira pequena embaixo, à esquerda.
+  - **Menu:** "Perfil" mostra o rosto de quem está logado.
+  - **Portão K-FOFO aberto,** com vista para a rua.
+  - **Fundo claro** em volta do cômodo (creme quente), em vez do escuro do site.
+- **Rua do Sítio (fase 16):** modelo em `planejamento/demo/rua.html` e `.png`.
+  - Sai-se andando pelo portão K-FOFO.
+  - Lá fora: grama, uma árvore grande à direita, bancos (só enfeite por enquanto), céu claro de fundo e cinco carros parados de fundo (Honda Fit verde-escuro, Fiat Fastback branco, Jeep Renegade, Chevrolet Onix branco e Honda HR-V azul-escuro). Os carros são desenhados só com forma e cor, sem logotipos e sem nome.
+  - A escolha das salas da fase 5 passa para a porta de vidro.
+- **Roleta do rodízio (fase 17):** modelo em `planejamento/demo/roleta.html` e `.png`.
+  - Quem está de fora entra na roleta, e ela sorteia quem entra no time.
+  - Quem já entrou fica de fora até todos jogarem na rodada.
+  - O banco sorteia, e todo mundo vê a roleta girar e parar no mesmo nome.
+  - A sugestão de quem sai é quem está há mais partidas seguidas.
+- **Celular e rede social nanica (fase 15):**
+  - é um item da loja, por **3.000 moedas** (cerca de um mês de presença), para ser a meta grande da economia;
+  - quem compra posta, curte e comenta na rede do grupo, com imagens no bucket `midias`;
+  - sem o celular, o banco não deixa ler nem postar.
 
 ### Moedas
 | Fonte | Valor |
 |---|---|
 | Ao criar a carteira | 200 |
-| Tempo online | 1 moeda a cada 6 min com o site aberto e visível, no máximo 40 por dia |
+| Tempo online | 1 moeda a cada 6 min com o site aberto (conta mesmo com a aba escondida, decisão de 01/11/2026), no máximo 40 por dia |
 | Bônus diário | `round(30 × multiplicador)`, uma vez por dia (horário de Brasília) |
 | Sequência | multiplicador = `min(1 + 0,1 × (dia − 1), 2)`: chega a ×2 no dia 11; perdeu um dia, volta a ×1 |
 | Prêmio da sequência | +100 no dia 7 e +500 no dia 30 |
@@ -141,8 +165,7 @@ Decisões combinadas com o João em 01/11/2026. Vale para qualquer pessoa ou IA 
 ## Fila de ideias (ainda sem prompt)
 Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 - **Balão do chat no hall:** a mensagem aparece por 5 s em cima do boneco de quem escreveu.
-- **Sentar e acenar:** sentar nas cadeiras e no colchão do hall, e acenar com um botão. São mais quadros gerados com IA, no mesmo estilo.
-- **Gramado da Resenha:** a área de fora do Sítio, com as cadeiras de plástico na grama, como sala.
+- **Acenar e sentar dentro do hall:** acenar com um botão, e sentar nas cadeiras e no colchão do hall. Inclui sentar nos bancos da rua (fica para depois, decisão de 02/11/2026). São mais quadros gerados com IA, no mesmo estilo.
 - **Trocar a senha de novo:** falta saber se o problema é o botão não funcionar ou se a ideia é recuperar uma senha esquecida.
 
 ## Ordem e andamento
@@ -150,13 +173,13 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | Fase | Prompt | Branch | Depende de | Estado |
 |---|---|---|---|---|
 | 0 | migração Next.js (PR #1) | `nextjs-migracao` | — | em revisão |
-| — | pasta `planejamento/` na `main` | `planejamento` | — | commitada, falta PR |
-| 00 | `00-hall-sitio-bonecos.md` | `hall-sitio` | 0 | **próxima** |
-| 1 | `01-log-novidades.md` | `log-novidades` | 0 | a fazer |
-| 2 | `02-carteira-moedas.md` | `carteira-moedas` | 0 | a fazer |
-| 3 | `03-ficha-dados-reais.md` | `ficha-dados-reais` | 0 | a fazer |
-| 4 | `04-atributos-votados.md` | `atributos-votados` | 3 | a fazer |
-| 5 | `05-salas-lan-house.md` | `salas-lan-house` | 00, 3 | a fazer |
+| — | pasta `planejamento/` na `main` | `planejamento` | — | feita (PR #2) |
+| 00 | `00-hall-sitio-bonecos.md` | `hall-sitio` | 0 | **feita**, PR aberto (em cima da `nextjs-migracao`, porque o PR #1 ainda não entrou) |
+| 1 | `01-log-novidades.md` | `log-novidades` | 0 | **feita**, PR aberto (em cima da `hall-sitio`) |
+| 2 | `02-carteira-moedas.md` | `carteira-moedas` | 0 | **feita**, PR aberto (em cima da `log-novidades`); SQL da seção 7 já aplicado no Supabase em 01/11/2026 |
+| 3 | `03-ficha-dados-reais.md` | `ficha-dados-reais` | 0 | **feita**, PR aberto (em cima da `carteira-moedas`); SQL da seção 8 aplicado e função `ficha-jogos` publicada em 01/11/2026; falta o segredo `STEAM_API_KEY` |
+| 4 | `04-atributos-votados.md` | `atributos-votados` | 3 | **feita**, PR aberto (em cima da `ficha-dados-reais`); SQL da seção 9 aplicado em 01/11/2026 |
+| 5 | `05-salas-lan-house.md` | `salas-lan-house` | 00, 3 | **feita**, PR aberto (em cima da `hall-v2`); SQL da seção 10 aplicado em 02/11/2026 |
 | 6 | `06-cassino-roleta.md` | `cassino-roleta` | 2 | a fazer |
 | 7 | `07-cassino-jogos.md` | `cassino-jogos` | 6 | a fazer |
 | 8 | `08-bingo-servidor.md` | `bingo-servidor` | 2, 5 | a fazer |
@@ -165,3 +188,7 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | 11 | `11-loja-quarto.md` | `loja-quarto` | 2, 3 | a fazer |
 | 12 | `12-midias-links.md` | `midias-links` | 5 | a fazer |
 | 13 | `13-login-convidado.md` | `login-convidado` | 5 | a fazer |
+| 14 | `14-hall-v2.md` | `hall-v2` | 00, 2, 3 | **feita**, PR aberto (em cima da `atributos-votados`); SQL da seção 7b aplicado em 02/11/2026 |
+| 15 | `15-celular-rede-nanica.md` | `celular-rede-nanica` | 11, 12 | a fazer |
+| 16 | `16-rua-do-sitio.md` | `rua-do-sitio` | 14 | a fazer |
+| 17 | `17-roleta-rodizio.md` | `roleta-rodizio` | 0 (se a 5 existir, a roleta é por sala) | a fazer (independente, pode entrar cedo) |

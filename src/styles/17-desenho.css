@@ -1,0 +1,19 @@
+/* ---------- desenhar na live ---------- */
+.draw-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;touch-action:none}
+.stage-bar,.unmute{z-index:4}
+.stage.drawing .draw-canvas{pointer-events:auto;cursor:crosshair}
+.stage.drawing.idle{cursor:crosshair}
+.draw-tools{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
+.draw-btn{display:inline-flex;align-items:center;gap:6px}
+.draw-btn[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.draw-opts{display:inline-flex;align-items:center;gap:8px;background:rgba(0,0,0,.35);padding:4px 8px;border-radius:99px}
+.draw-opts[hidden]{display:none}
+.draw-cores,.draw-esps{display:inline-flex;gap:4px;align-items:center}
+.draw-cor{width:20px;height:20px;border-radius:50%;border:2px solid rgba(255,255,255,.55);padding:0;cursor:pointer}
+.draw-cor[aria-checked="true"]{border-color:#fff;box-shadow:0 0 0 2px rgba(0,0,0,.5),0 0 0 4px #fff}
+.draw-esp{width:26px;height:26px;border-radius:50%;border:0;background:rgba(250,249,246,.14);display:grid;place-items:center;cursor:pointer;padding:0}
+.draw-esp i{display:block;border-radius:50%;background:#fff}
+.draw-esp[aria-checked="true"]{background:rgba(250,249,246,.4)}
+.draw-ver{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.draw-ver input{accent-color:var(--accent);width:15px;height:15px;margin:0;cursor:pointer}
+

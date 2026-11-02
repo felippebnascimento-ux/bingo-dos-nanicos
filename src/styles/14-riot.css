@@ -1,0 +1,28 @@
+/* ---------- partida ao vivo (API da Riot) ---------- */
+.riot-box{display:grid;gap:14px;margin-bottom:18px}
+.riot-box:empty{display:none}
+.riot-game{padding:16px 18px}
+.rg-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.rg-head b{font:700 16px var(--display)}
+.rg-time{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:600}
+.rg-head .sp{flex:1}
+.rg-auto{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer}
+.rg-auto input{accent-color:var(--accent);width:16px;height:16px;margin:0;cursor:pointer}
+.rg-teams{display:grid;gap:10px}
+@media (min-width:760px){.rg-teams{grid-template-columns:1fr 1fr}}
+.rg-team{display:grid;gap:4px;align-content:start;padding:8px;border-radius:var(--r-md);background:var(--bg)}
+.rg-team h3{margin:0 0 2px 4px;font:700 12px var(--body);color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.rg-p{display:flex;align-items:center;gap:9px;padding:4px 6px;border-radius:var(--r-sm);min-width:0}
+.rg-p.nan{background:var(--accent-soft);box-shadow:inset 0 0 0 1.5px var(--accent)}
+.rg-p img.ch{width:32px;height:32px;border-radius:8px;flex:none;background:var(--surface-2)}
+.rg-p .ch.none,.rg-bans .ch.none{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:8px;flex:none;background:var(--surface-2);color:var(--muted);font:700 12px var(--display)}
+.rg-bans .ch.none{width:22px;height:22px;border-radius:6px;font-size:9px;opacity:.75}
+.rg-p .tx{min-width:0;display:grid;line-height:1.2}
+.rg-p .tx b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rg-p .tx small{color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rg-p .av.xs{width:22px;height:22px;margin-left:auto;flex:none}
+.rg-bans{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--muted)}
+.rg-bans img{width:22px;height:22px;border-radius:6px;filter:grayscale(1);opacity:.75}
+.riot-note{font-size:12px;color:var(--muted);margin:0}
+.ingame-pill{font:700 10px var(--display);letter-spacing:.04em;color:#fff;background:var(--olive);padding:3px 7px;border-radius:99px;white-space:nowrap;flex:none}
+

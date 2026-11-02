@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Hall do Sítio v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@500;700&family=Unbounded:wght@700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:radial-gradient(ellipse at 50% 45%,#FBF4E6 0%,#F1E6D0 55%,#E4D4B6 100%);width:1400px;height:900px;font-family:Onest,sans-serif;overflow:hidden;position:relative;color:#FAF9F6}
+svg{position:absolute;left:0;top:0}
+#bonecos{position:absolute;left:0;top:0;width:1400px;height:900px;pointer-events:none}
+.bon{position:absolute;width:84px;height:134px;background-size:420px 268px;transform-origin:42px 132px}
+.nome{position:absolute;transform:translateX(-50%);font:700 10px Unbounded,sans-serif;color:#C4A06A;background:rgba(38,38,38,.85);padding:3px 8px;border-radius:6px;white-space:nowrap}
+.nome.eu{color:#262626;background:#B08D57}
+/* rótulos dos móveis */
+.rot{position:absolute;transform:translate(-50%,-100%);font:700 11px Unbounded,sans-serif;letter-spacing:.02em;color:#FAF9F6;background:rgba(38,38,38,.9);border:1.5px solid #B08D57;padding:6px 11px;border-radius:999px;white-space:nowrap;display:flex;gap:6px;align-items:center;box-shadow:0 3px 10px rgba(0,0,0,.25)}
+.rot::after{content:"";position:absolute;left:50%;bottom:-6px;width:9px;height:9px;background:rgba(38,38,38,.9);border-right:1.5px solid #B08D57;border-bottom:1.5px solid #B08D57;transform:translateX(-50%) rotate(45deg)}
+.rot .live{background:#E0705A;color:#262626;border-radius:4px;padding:1px 5px;font-size:9px}
+.rot small{font:500 10px Onest,sans-serif;color:#C9C4B8}
+/* cantos */
+.canto{position:absolute;background:rgba(30,30,29,.88);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px 14px;box-shadow:0 6px 20px rgba(0,0,0,.3)}
+h1{position:absolute;left:28px;top:18px;margin:0;font:800 20px Unbounded,sans-serif;color:#353535}
+#sala{left:22px;top:60px;width:206px}
+#sala h3{margin:0 0 8px;font:700 11px Unbounded,sans-serif;display:flex;gap:7px;align-items:center}
+#sala h3 i{width:8px;height:8px;border-radius:50%;background:#7BC47F;display:inline-block}
+#sala ul{list-style:none;margin:0;padding:0;display:grid;gap:3px}
+#sala li{display:flex;align-items:center;gap:8px;padding:3px 6px;border-radius:8px;font-size:12.5px;cursor:pointer}
+#sala li:hover,#sala li.hover{background:rgba(176,141,87,.22)}
+#sala li img{width:24px;height:24px;border-radius:50%;object-fit:cover;background:#4A4E44}
+#sala li.eu{color:#C4A06A;font-weight:700}
+#sala li .tag{margin-left:auto;font:700 8.5px Unbounded,sans-serif;border-radius:4px;padding:1px 4px;background:#E0705A;color:#262626}
+#sala li .ver{margin-left:auto;font-size:10.5px;color:#B08D57;display:none}
+#sala li.hover .ver{display:inline}
+#hud{right:22px;top:20px;width:290px;padding:0;background:none;border:0;box-shadow:none;display:grid;gap:7px}
+.ganho{display:flex;gap:10px;align-items:center;background:rgba(30,30,29,.92);border-left:3px solid #B08D57;border-radius:10px;padding:8px 12px;font-size:12.5px;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+.ganho img{width:28px;height:28px;border-radius:50%;object-fit:cover}
+.ganho b{font-family:Unbounded,sans-serif;font-size:12px;color:#E8C77E}
+.ganho small{display:block;color:#B8B6AC;font-size:11px}
+.ganho.velho{opacity:.55}
+#carteira{left:22px;bottom:22px;display:flex;align-items:center;gap:10px;padding:9px 16px 9px 10px;border-radius:999px}
+.moeda{width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#F3D58B,#C99A3E 60%,#9C7428);box-shadow:inset 0 0 0 2px #9C7428;display:grid;place-items:center;font:800 11px Unbounded,sans-serif;color:#7A5A1E}
+#carteira b{font:800 16px Unbounded,sans-serif}
+#carteira small{color:#B8B6AC;font-size:11px;display:block}
+#dica{right:22px;bottom:22px;font-size:12px;color:#C9C4B8;padding:8px 14px;border-radius:999px}
+.seta{position:absolute;font:700 11px Onest,sans-serif;color:#262626;background:#F2E6C9;border-radius:6px;padding:3px 8px}
+</style></head><body>
+<svg id="s" width="1400" height="900"><defs><clipPath id="clipJanela"><polygon id="clipPoly"/></clipPath>
+<linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8EC6EA"/><stop offset=".7" stop-color="#CFE8F2"/><stop offset="1" stop-color="#E9F2E2"/></linearGradient></defs></svg>
+<div id="bonecos"></div>
+<h1>Sítio do Mitz</h1>
+<script>
+const BON="../assets/bonecos/",ROSTO="../../public/arte/nanicos/";
+const svg=document.getElementById("s"),NS="http://www.w3.org/2000/svg";
+// sala maior: 14 x 11 pisos (antes 11 x 9)
+const X0=700,Y0=318,TW=40,TH=20,NI=14,NJ=11,WH=215;
+const p=(i,j,z=0)=>[X0+(i-j)*TW,Y0+(i+j)*TH-z];
+const el=(tag,attrs,pai=svg)=>{const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);pai.appendChild(e);return e};
+const pts=a=>a.map(q=>q.join(",")).join(" ");
+const poly=(a,fill,stroke,sw=1,pai=svg)=>el("polygon",{points:pts(a),fill,stroke:stroke||"none","stroke-width":sw,"stroke-linejoin":"round"},pai);
+let semente=11;const rnd=()=>(semente=(semente*16807)%2147483647)/2147483647;
+const escurece=(h,f)=>{const n=parseInt(h.slice(1),16);const m=v=>Math.max(0,Math.min(255,Math.round(v*f)));return"#"+((1<<24)|(m(n>>16)<<16)|(m(n>>8&255)<<8)|m(n&255)).toString(16).slice(1)};
+function caixa(i,j,w,d,h,topo,esq,dir,z=0,linha="#3a2e25"){
+  poly([p(i,j+d,z),p(i+w,j+d,z),p(i+w,j+d,z+h),p(i,j+d,z+h)],esq,linha);
+  poly([p(i+w,j,z),p(i+w,j+d,z),p(i+w,j+d,z+h),p(i+w,j,z+h)],dir,linha);
+  poly([p(i,j,z+h),p(i+w,j,z+h),p(i+w,j+d,z+h),p(i,j+d,z+h)],topo,linha);
+}
+const naParedeP=(lado,a,b,z0,z1)=>lado==="dir"?[p(a,0,z0),p(b,0,z0),p(b,0,z1),p(a,0,z1)]:[p(0,a,z0),p(0,b,z0),p(0,b,z1),p(0,a,z1)];
+const naParede=(lado,a,b,z0,z1,fill,stroke,sw,pai)=>poly(naParedeP(lado,a,b,z0,z1),fill,stroke,sw,pai);
+
+// ---------- paredes de tijolinho, mais claras e quentes
+const TIJ=["#F0DDB4","#E9D2A2","#F3E4C1","#E6CC98","#EED8AA"],VERM="#D99A72";
+function tijolos(lado,n){
+  naParede(lado,0,n,0,WH,"#DCCBA6");
+  for(let r=0,z=0;z<WH;r++,z+=9){
+    for(let a=(r%2?-.25:0);a<n;a+=.5){
+      const a0=Math.max(0,a),a1=Math.min(n,a+.5);if(a1<=a0)continue;
+      const cor=rnd()<.07?VERM:TIJ[Math.floor(rnd()*TIJ.length)];
+      naParede(lado,a0+.03,a1-.03,z+1,Math.min(WH,z+8),lado==="dir"?cor:escurece(cor,.95));
+    }
+  }
+  naParede(lado,0,n,150,162,lado==="dir"?"#A3AAB0":"#959CA2","#6d7378");
+  for(const a of lado==="dir"?[4.9,10.6]:[4.6,8.7])naParede(lado,a,a+.32,0,WH,lado==="dir"?"#A3AAB0":"#959CA2","#6d7378");
+  naParede(lado,0,n,0,6,lado==="dir"?"#AFA38B":"#A3977F");
+}
+tijolos("esq",NJ);tijolos("dir",NI);
+for(const lado of["esq","dir"]){
+  const n=lado==="dir"?NI:NJ;
+  naParede(lado,0,n,WH,WH+34,lado==="dir"?"#9C6A42":"#8B5D38","#5b3a22");
+  for(let a=.35;a<n;a+=.35)naParede(lado,a,a+.02,WH,WH+34,"#6b4428");
+  naParede(lado,0,n,WH+26,WH+38,"#7A4E2E","#3f2716");
+}
+poly([p(0,0,0),p(0,0,WH+38),[p(0,0)[0]+3,p(0,0,WH+38)[1]],[p(0,0)[0]+3,p(0,0)[1]]],"#7d7568");
+
+// ---------- janelão com árvores (parede do fundo, a da direita)
+const JA=1.0,JB=4.4,JZ0=52,JZ1=178;
+naParede("dir",JA-.12,JB+.12,JZ0-10,JZ1+10,"#8A6A45","#5b3a22",2);
+document.getElementById("clipPoly").setAttribute("points",pts(naParedeP("dir",JA,JB,JZ0,JZ1)));
+const paisagem=el("g",{"clip-path":"url(#clipJanela)"});
+{const[x0,y0]=p(JA,0,JZ1+10),[x1,y1]=p(JB,0,JZ0-10);
+ el("rect",{x:x0-10,y:y0-10,width:x1-x0+20,height:y1-y0+60,fill:"url(#ceu)"},paisagem);
+ el("circle",{cx:x0+40,cy:y0+40,r:16,fill:"#FFF3C4",opacity:.9},paisagem);
+ // morro e gramado
+ el("ellipse",{cx:(x0+x1)/2,cy:y1+30,rx:(x1-x0)*.8,ry:85,fill:"#9CCB6E"},paisagem);
+ el("ellipse",{cx:x0+30,cy:y1+10,rx:120,ry:60,fill:"#86BC5C"},paisagem);
+ // árvores
+ const arvore=(x,y,r,c1,c2)=>{el("rect",{x:x-3,y:y,width:6,height:r*1.3,fill:"#6B4A2E"},paisagem);
+   el("circle",{cx:x,cy:y-r*.2,r,fill:c1},paisagem);el("circle",{cx:x-r*.55,cy:y+r*.15,r:r*.7,fill:c2},paisagem);el("circle",{cx:x+r*.6,cy:y+r*.1,r:r*.72,fill:c1},paisagem);el("circle",{cx:x-r*.1,cy:y-r*.75,r:r*.6,fill:c2},paisagem)};
+ arvore(x0+70,y0+95,24,"#4E8F3A","#63A64A");arvore(x0+115,y0+112,18,"#3F7F33","#5C9B45");
+ arvore(x0+168,y0+128,28,"#4E8F3A","#69AE4D");arvore(x1-40,y1-34,20,"#3F7F33","#5C9B45");arvore(x1-10,y1-12,26,"#4E8F3A","#63A64A");
+}
+// caixilho: divisões
+for(const a of[JA+(JB-JA)/3,JA+2*(JB-JA)/3])naParede("dir",a-.04,a+.04,JZ0,JZ1,"#8A6A45");
+naParede("dir",JA,JB,(JZ0+JZ1)/2-2,(JZ0+JZ1)/2+2,"#8A6A45");
+naParede("dir",JA-.2,JB+.2,JZ0-14,JZ0-8,"#A57E52","#5b3a22"); // peitoril
+// cortina de cada lado
+naParede("dir",JA-.42,JA-.14,JZ0-6,JZ1+16,"#E7B65A","#B98A35");naParede("dir",JB+.14,JB+.42,JZ0-6,JZ1+16,"#E7B65A","#B98A35");
+
+// ---------- coisas na parede da esquerda
+// TV (Ao vivo): ligada mostrando a live
+naParede("esq",1.1,3.0,90,150,"#111","#000",2);
+naParede("esq",1.18,2.92,94,146,"#4C5FA8");naParede("esq",1.18,2.92,94,112,"#7E6BC4");naParede("esq",1.75,2.35,110,128,"#C4A06A");
+naParede("esq",2.0,2.12,58,90,"#222");
+// prateleira com plantinha
+naParede("esq",3.5,4.3,96,100,"#8A6A45");
+{const[x,y]=p(0,3.9,100);el("rect",{x:x-7,y:y-14,width:14,height:14,rx:2,fill:"#C9774E"});el("circle",{cx:x-5,cy:y-20,r:8,fill:"#5C9B45"});el("circle",{cx:x+5,cy:y-22,r:8,fill:"#4E8F3A"})}
+// porta de vidro (Resenha, fase 05)
+naParede("esq",5.4,7.6,0,140,"#5B4A3A","#3a2e25",3);
+naParede("esq",5.5,7.5,4,136,"#B6DCA9");naParede("esq",5.5,7.5,4,60,"#7FB86A");naParede("esq",6.0,6.7,60,128,"#5E9A4A");
+naParede("esq",6.48,6.52,4,136,"#5B4A3A");
+// janelas velhas penduradas (decoração)
+for(const[a,b]of[[1.3,2.1],[2.5,3.2]]){naParede("esq",a,b,172,208,"none","#8A6A45",4);naParede("esq",(a+b)/2-.02,(a+b)/2+.02,172,208,"#8A6A45");naParede("esq",a,b,189,191,"#8A6A45")}
+
+// ---------- parede da direita: relógio, quadro, portão K-FOFO
+{const[cx,cy]=p(6.0,0,140);el("ellipse",{cx,cy:cy+9,rx:15,ry:17,fill:"#F4F1EA",stroke:"#2b2b2b","stroke-width":3});
+ el("line",{x1:cx,y1:cy+9,x2:cx+1,y2:cy-2,stroke:"#2b2b2b","stroke-width":2});el("line",{x1:cx,y1:cy+9,x2:cx+8,y2:cy+11,stroke:"#2b2b2b","stroke-width":2})}
+for(const[a,b]of[[5.4,6.5],[11.4,12.4]]){naParede("dir",a,b,176,210,"none","#8A6A45",4);naParede("dir",(a+b)/2-.02,(a+b)/2+.02,176,210,"#8A6A45")}
+// portão K-FOFO aberto: dá para ver a rua (grama, calçada, carro e a árvore grande)
+naParede("dir",11.0,13.7,0,142,"#5b3a22","#3a2a1c",2);
+{const vao=naParedeP("dir",11.1,13.6,0,138);
+ const cp=el("clipPath",{id:"clipPortao"},svg.querySelector("defs"));el("polygon",{points:pts(vao)},cp);
+ const g=el("g",{"clip-path":"url(#clipPortao)"});
+ const[x0,y0]=p(11.1,0,138),[x1,y1]=p(13.6,0,0);
+ el("rect",{x:x0-10,y:y0-60,width:x1-x0+20,height:y1-y0+90,fill:"url(#ceu)"},g);
+ el("polygon",{points:pts([[x0-10,y0+70],[x1+10,y0+40],[x1+10,y1+10],[x0-10,y1+10]]),fill:"#5E6163"},g);
+ el("polygon",{points:pts([[x0-10,y0+92],[x1+10,y0+62],[x1+10,y1+10],[x0-10,y1+10]]),fill:"#D2CBBD"},g);
+ el("polygon",{points:pts([[x0-10,y0+104],[x1+10,y0+74],[x1+10,y1+10],[x0-10,y1+10]]),fill:"#8FC266"},g);
+ // pedaço de um carro branco parado
+ el("rect",{x:x0+12,y:y0+50,width:58,height:20,rx:5,fill:"#F2F2EF",stroke:"#666"},g);el("rect",{x:x0+24,y:y0+38,width:32,height:14,rx:4,fill:"#2B3A4A"},g);
+ el("circle",{cx:x0+24,cy:y0+71,r:6,fill:"#1d1d1d"},g);el("circle",{cx:x0+60,cy:y0+71,r:6,fill:"#1d1d1d"},g);
+ // a árvore grande
+ el("rect",{x:x1-34,y:y0+40,width:9,height:70,fill:"#7A5332"},g);
+ for(const[dx,dy,r,c]of[[-30,30,30,"#3F7F33"],[-10,15,26,"#4E9440"],[-50,20,22,"#56A046"],[-28,0,20,"#62AC4F"]])el("circle",{cx:x1+dx,cy:y0+dy,r,fill:c},g);
+}
+// folha do portão aberta para dentro, encostada (de tábuas)
+poly([p(13.6,0),p(13.6,1.35),p(13.6,1.35,136),p(13.6,0,136)],"#8B6B4A","#5b3a22",2);
+for(let b=.18;b<1.35;b+=.2)poly([p(13.6,b),p(13.6,b+.02),p(13.6,b+.02,136),p(13.6,b,136)],"#5b3a22");
+naParede("dir",11.8,12.9,144,160,"#5E4630","#3a2a1c",2);
+{const[sx,sy]=p(12.35,0,151);const t=el("text",{x:sx,y:sy+4,"text-anchor":"middle","font-family":"Unbounded,sans-serif","font-weight":"700","font-size":"11",fill:"#F1E8D9",transform:`rotate(26.6 ${sx} ${sy})`});t.textContent="K-FOFO 2018"}
+
+// ---------- piso: lajota clara e quente
+for(let i=0;i<NI;i++)for(let j=0;j<NJ;j++)poly([p(i,j),p(i+1,j),p(i+1,j+1),p(i,j+1)],(i+j)%2?"#F1ECE1":"#E7E0D2","#D4CCBB");
+// sol entrando pelo janelão
+poly([p(JA+.6,0),p(JB+.9,0),p(JB+2.2,3.2),p(JA+1.6,3.2)],"rgba(255,231,160,.28)");
+// tapete listrado perto da porta de vidro
+poly([p(1.2,5.2),p(3.4,5.2),p(3.4,8.2),p(1.2,8.2)],"#C9B286","#9f8a62");
+for(let k=0;k<6;k++)poly([p(1.2,5.4+k*.5),p(3.4,5.4+k*.5),p(3.4,5.6+k*.5),p(1.2,5.6+k*.5)],"#AE9568");
+
+// ---------- móveis (de trás para a frente)
+// churrasqueira
+caixa(7.0,0,2.2,1.1,88,"#C4A582","#D2AF88","#E0C198");
+poly([p(7.35,1.1,22),p(8.85,1.1,22),p(8.85,1.1,70),p(7.35,1.1,70)],"#141414","#000");
+for(let k=0;k<4;k++)poly([p(7.4,1.1,30+k*9),p(8.8,1.1,30+k*9),p(8.8,1.1,32+k*9),p(7.4,1.1,32+k*9)],"#555");
+caixa(7.3,0,1.6,.7,60,"#D2AF88","#D2AF88","#E0C198",88);
+caixa(7.6,0,1.0,.45,WH-148,"#C8A984","#C8A984","#D6B88F",148);
+// loja: geladeira e freezer brancos (frente da parede da esquerda)
+caixa(0,8.9,.9,.95,96,"#F7F7F5","#E4E4E1","#F2F2F0",0,"#9a9a96");
+poly([p(0,9.85,62),p(.9,9.85,62)],"none","#9a9a96");
+caixa(0,9.95,.9,1.0,60,"#F7F7F5","#E4E4E1","#F2F2F0",0,"#9a9a96");
+{const[x,y]=p(.9,9.3,70);el("rect",{x:x-2,y:y-6,width:4,height:22,rx:2,fill:"#B9B9B5"})}
+// colchão azul (fundo)
+function colchao(i,j,w,d){caixa(i,j,w,d,9,"#4A68B8","#3A5598","#405DA6",0,"#1f2f5c");for(let a=i+.3;a<i+w;a+=.45)for(let b=j+.25;b<j+d;b+=.4){const[x,y]=p(a,b,9);el("ellipse",{cx:x,cy:y,rx:4,ry:2,fill:"#3A5598"})}}
+colchao(1.5,1.6,2.6,1.0);
+function mesa(i,j,w,d,h,toalha,borda){
+  for(const[a,b]of[[i+.1,j+.1],[i+w-.2,j+.1],[i+.1,j+d-.2],[i+w-.2,j+d-.2]])caixa(a,b,.1,.1,h-4,"#555","#444","#666");
+  caixa(i,j,w,d,4,toalha,borda,escurece(borda,1.1),h-4);
+}
+function cadeira(i,j,vira){
+  for(const[a,b]of[[i,j],[i+.5,j],[i,j+.5],[i+.5,j+.5]])caixa(a,b,.08,.08,22,"#fff","#d9d9d9","#eee",0,"#9a9a9a");
+  caixa(i,j,.58,.58,3,"#FFFFFF","#DCDCDC","#EEEEEE",22,"#9a9a9a");
+  if(vira==="j")caixa(i,j,.58,.08,26,"#FFFFFF","#DCDCDC","#EEEEEE",25,"#9a9a9a");else caixa(i,j,.08,.58,26,"#FFFFFF","#DCDCDC","#EEEEEE",25,"#9a9a9a");
+}
+// truco: mesa verde com cartas e cadeiras
+cadeira(10.9,3.0,"j");
+mesa(10.3,3.6,1.6,1.4,32,"#5FA866","#4A8A50");
+{const carta=(i,j,r)=>{const[x,y]=p(i,j,32);el("rect",{x:x-6,y:y-4,width:12,height:9,rx:1.5,fill:"#FAF9F6",stroke:"#999","stroke-width":.6,transform:`rotate(${r} ${x} ${y})`})};
+ carta(10.8,4.0,-14);carta(11.2,4.3,8);carta(11.5,4.0,22);
+ const[x,y]=p(10.7,4.6,32);el("rect",{x:x-3,y:y-13,width:6,height:13,rx:2,fill:"#4E7F3E"})}
+cadeira(12.3,4.1,"i");
+// mesa comprida (frente)
+mesa(4.6,8.3,3.6,1.2,30,"#EFE3C8","#CDB78E");
+for(let a=4.9;a<8.0;a+=.5){const[x,y]=p(a,8.85,30);el("circle",{cx:x,cy:y,r:3,fill:"#8A6A39",opacity:.6})}
+cadeira(8.6,9.6,"j");
+// colchão da frente
+colchao(10.4,8.4,2.4,1.1);
+
+// ---------- piso em destaque (o mouse está em cima)
+const DEST=[6,5];
+poly([p(DEST[0],DEST[1]),p(DEST[0]+1,DEST[1]),p(DEST[0]+1,DEST[1]+1),p(DEST[0],DEST[1]+1)],"rgba(255,255,255,.22)","#FFFFFF",2.5);
+{const[x,y]=p(DEST[0]+.5,DEST[1]+.5);
+ el("path",{d:`M${x+6} ${y-2} l0 22 l6 -6 l5 10 l4 -2 l-5 -10 l8 0 z`,fill:"#fff",stroke:"#222","stroke-width":1.5,"stroke-linejoin":"round"})}
+
+// ---------- bonecos (14 nanicos, spritesheets prontas)
+const NOMES={1:["Abreutz","abreutz"],2:["Alemão","alemao"],3:["DD","dd"],4:["Gamer","gamer"],5:["Grito","grito"],6:["Guiperino","guiperino"],7:["Le Bubu","le-bubu"],8:["Henry","henry"],9:["Pitoco","pitoco"],10:["John","john"],11:["Veião","veiao"],12:["Max","max"],13:["Gordão","gordao"],14:["Pin","pin"]};
+// [n, i, j, linha(0 frente/1 costas), espelho, coluna]
+const GENTE=[[4,4,4,0,0,0],[10,5,1,1,0,2],[9,9,4,0,1,0],[1,5,6,0,1,0],[12,7,3,1,1,3],[2,2,4,0,0,0],[3,12,7,0,1,0],[5,9,8,0,0,0],[6,3,9,0,0,0],[7,6,2,1,0,0],[8,11,2,0,0,0],[11,12,10,0,1,0],[13,6,7,0,0,1],[14,1,7,0,0,0]];
+const EU=4;
+const camada=document.getElementById("bonecos");
+GENTE.sort((a,b)=>(a[1]+a[2])-(b[1]+b[2])).forEach(([n,i,j,lin,esp,col])=>{
+  const[x,y]=p(i+.5,j+.5);
+  el("ellipse",{cx:x,cy:y,rx:22,ry:8,fill:"rgba(0,0,0,.18)"});
+  const d=document.createElement("div");d.className="bon";
+  d.style.left=(x-42)+"px";d.style.top=(y-132)+"px";
+  d.style.backgroundImage=`url(${BON}${NOMES[n][1]}.webp)`;d.style.backgroundPosition=`${-col*84}px ${-lin*134}px`;
+  if(esp)d.style.transform="scaleX(-1)";camada.appendChild(d);
+  const t=document.createElement("div");t.className="nome"+(n===EU?" eu":"");t.textContent=NOMES[n][0].toUpperCase();
+  t.style.left=x+"px";t.style.top=(y-150)+"px";camada.appendChild(t);
+});
+
+// ---------- rótulos dos móveis clicáveis
+function rotulo(html,i,j,z){const[x,y]=p(i,j,z);const r=document.createElement("div");r.className="rot";r.innerHTML=html;r.style.left=x+"px";r.style.top=y+"px";document.body.appendChild(r)}
+rotulo('Ao vivo <span class="live">AO VIVO</span>',0,2.05,160);
+rotulo("Truco <small>2 na mesa</small>",11.1,4.3,72);
+rotulo("Loja",0.45,9.9,118);
+rotulo("Rua <small>sair pelo portão</small>",12.35,0,190);
+</script>
+
+<!-- cantos -->
+<div class="canto" id="sala"><h3><i></i>Na sala agora (14)</h3><ul id="lista"></ul></div>
+<div class="canto" id="hud">
+  <div class="ganho"><img src="../../public/arte/nanicos/9-rosto.webp" alt=""><div><b>Pitoco +36</b> moedas<small>bônus do dia · sequência de 3 dias</small></div></div>
+  <div class="ganho"><img src="../../public/arte/nanicos/4-rosto.webp" alt=""><div><b>Você +1</b> moeda<small>tempo online</small></div></div>
+  <div class="ganho velho"><img src="../../public/arte/nanicos/12-rosto.webp" alt=""><div><b>Max +15</b> moedas<small>venceu no truco</small></div></div>
+</div>
+<div class="canto" id="carteira"><span class="moeda">$</span><div><b>1.284</b><small>suas moedas</small></div></div>
+<div class="canto" id="dica">Clique no chão para andar · clique num rosto para ver a ficha</div>
+<script>
+const ORD=[4,1,2,3,5,6,7,8,9,10,11,12,13,14];
+const lista=document.getElementById("lista");
+for(const n of ORD){const[nm]=NOMES[n];const li=document.createElement("li");
+  if(n===EU)li.className="eu";if(n===9)li.className="hover";
+  li.innerHTML=`<img src="${ROSTO}${n}-rosto.webp" alt=""><span>${n===EU?nm+" (você)":nm}</span>`+(n===2?'<span class="tag">AO VIVO</span>':'<span class="ver">ver ficha</span>');
+  lista.appendChild(li)}
+// no navegador, o destaque segue o mouse
+const destaque=poly([[0,0]],"rgba(255,255,255,.22)","#FFFFFF",2.5);destaque.style.display="none";
+svg.addEventListener("mousemove",e=>{const a=(e.offsetX-X0)/TW,b=(e.offsetY-Y0)/TH;const i=Math.floor((a+b)/2),j=Math.floor((b-a)/2);
+  if(i<0||j<0||i>=NI||j>=NJ){destaque.style.display="none";return}
+  destaque.style.display="";destaque.setAttribute("points",pts([p(i,j),p(i+1,j),p(i+1,j+1),p(i,j+1)]))});
+</script>
+</body></html>

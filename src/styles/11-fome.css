@@ -1,0 +1,13 @@
+/* ---------- easter egg: das 18h às 22h ---------- */
+.fome-wrap{position:fixed;z-index:40;right:max(20px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+.fome-wrap[hidden]{display:none}
+.fome{position:relative;display:inline-flex;align-items:center;gap:8px;padding:13px 20px 13px 16px;border-radius:99px;background:var(--live);color:#fff;font:800 15px var(--display);letter-spacing:-.01em;text-decoration:none;box-shadow:0 10px 26px -6px color-mix(in srgb,var(--live) 70%,transparent),0 0 0 4px color-mix(in srgb,var(--live) 22%,transparent);transform-origin:70% 100%;animation:fome-pula 3.2s ease-in-out infinite}
+.fome:hover{filter:brightness(1.08);animation-play-state:paused}
+.fome:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+@keyframes fome-pula{0%,78%,100%{transform:none}82%{transform:translateY(-6px) rotate(-6deg)}86%{transform:translateY(0) rotate(5deg)}90%{transform:translateY(-3px) rotate(-3deg)}94%{transform:none}}
+@media (max-width:860px){.fome-wrap{bottom:calc(16px + env(safe-area-inset-bottom,0px));right:16px}.fome{padding:11px 16px 11px 13px;font-size:14px}}
+.fome-x{position:absolute;top:-9px;right:-7px;z-index:1;width:24px;height:24px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;background:var(--ink);color:var(--surface);cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.35);opacity:.9}
+.fome-x:hover{opacity:1;transform:scale(1.08)}
+.fome-x:focus-visible{outline:2.5px solid var(--live);outline-offset:2px}
+.fome-x svg{width:12px;height:12px}
+

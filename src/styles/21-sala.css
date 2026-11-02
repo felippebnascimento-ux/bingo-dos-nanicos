@@ -1,0 +1,7 @@
+/* quem está ao vivo na lista da sala é clicável */
+.people li[data-live]{cursor:pointer}
+.people li[data-live]:hover{background:var(--surface-2)}
+.people li[data-live]:focus-visible{outline:2.5px solid var(--accent);outline-offset:1px}
+body.side-min .people li[data-live]:hover{background:none}
+body.side-min .people li[data-live]:hover .av,body.side-min .people li[data-live]:hover .u{transform:scale(1.08)}
+.people .av,.people .u{transition:transform .12s}

@@ -1,0 +1,366 @@
+/* Hall do Sítio do Mitz: o cômodo isométrico (SVG), os bonecos por cima e a TV.
+   O cômodo é uma ilustração com cores próprias (tijolo, madeira, lajota), definidas aqui como variáveis
+   --hall-*, com uma versão um pouco mais escura no tema escuro. Exceção combinada à regra das cores
+   (veja o CLAUDE.md): a interface em volta (placas, botões) continua com a paleta do site. */
+
+/* ---------- área do hall: o palco (cômodo) e os cantos por cima dele ---------- */
+#view-hall{width:100%;max-width:1500px;margin:0 auto}
+.hall-area{position:relative;border-radius:var(--r-lg);overflow:hidden;background:radial-gradient(ellipse at 50% 45%,var(--hall-fundo-1) 0%,var(--hall-fundo-2) 55%,var(--hall-fundo-3) 100%)}
+.hall-palco{position:relative;width:100%;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.hall-camada{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.hall-fundo{z-index:0}
+.hall-fundo .parede-esq{filter:brightness(.95)}
+.hall-fundo text{font:700 11px var(--display)}
+.hall polygon{stroke-linejoin:round}
+.hall-aviso{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+/* contorno branco no piso embaixo do mouse (acima do piso, abaixo dos móveis) */
+.hall-destaque{z-index:1}
+.hall-destaque polygon{fill:rgb(255 255 255 / .22);stroke:#fff;stroke-width:2.5}
+.hall-destaque polygon.pisca{animation:hall-pisca .6s ease-out forwards}
+@keyframes hall-pisca{0%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.hall-destaque polygon.pisca{animation:none;opacity:0}}
+
+/* boneco: a célula da spritesheet (84×134) posicionada em % do palco */
+.boneco{position:absolute;pointer-events:none}
+.boneco::before{content:"";position:absolute;left:20%;right:20%;bottom:-2%;height:9%;border-radius:50%;background:var(--shadow)}
+.boneco-img{position:absolute;inset:0;background-repeat:no-repeat;background-size:500% 200%}
+.boneco-img.espelha{transform:scaleX(-1)}
+.boneco-toque{position:absolute;inset:0;padding:0;border:0;background:none;cursor:pointer;pointer-events:auto}
+.boneco-toque:focus-visible{outline-offset:-2px}
+.boneco-nome{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-2px);padding:4px 6px;border-radius:6px;font:700 10px/1 var(--display);letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;background:color-mix(in srgb,var(--accent-ink) 85%,transparent);color:var(--accent)}
+.boneco.eu .boneco-nome{background:var(--accent);color:var(--accent-ink)}
+.boneco-pino{position:absolute;left:50%;bottom:4%;transform:translateX(-50%);display:grid;justify-items:center}
+.boneco-pino::after{content:"";width:2px;height:12px;background:var(--ink)}
+@media (max-width:600px){.boneco-nome{padding:3px 4px;font-size:8px}}
+
+/* TV: botão invisível por cima da tela; as placas dos móveis que abrem coisas */
+.hall-tv{position:absolute;z-index:100;padding:0;border:0;border-radius:6px;background:none;cursor:pointer}
+.hall-tv:hover{outline:2px solid var(--accent);outline-offset:2px}
+.hall-placa{position:absolute;z-index:101;transform:translate(-50%,calc(-100% - 8px));display:flex;align-items:center;gap:6px;padding:6px 11px;border:1.5px solid var(--accent);border-radius:99px;background:color-mix(in srgb,var(--accent-ink) 90%,transparent);color:var(--stamp-ink);font:700 11px var(--display);letter-spacing:.02em;white-space:nowrap;cursor:pointer;box-shadow:0 3px 10px var(--shadow)}
+.hall-placa::after{content:"";position:absolute;left:50%;bottom:-6px;width:9px;height:9px;background:inherit;border-right:1.5px solid var(--accent);border-bottom:1.5px solid var(--accent);transform:translateX(-50%) rotate(45deg)}
+.hall-placa:hover{background:var(--accent-ink)}
+.hall-placa small{font:500 10px var(--body);color:color-mix(in srgb,var(--stamp-ink) 75%,transparent)}
+.hall-placa .live-pill{font-size:9px;padding:1px 5px;border-radius:4px}
+@media (max-width:760px){.hall-placa{padding:3px 7px;font-size:9px}.hall-placa::after{display:none}}
+
+/* ---------- cantos (escuros e legíveis por cima do cômodo) ---------- */
+.hall-canto{position:absolute;z-index:120;margin:0;color:var(--stamp-ink);background:color-mix(in srgb,var(--accent-ink) 88%,transparent);border:1px solid rgb(255 255 255 / .08);border-radius:14px;box-shadow:0 6px 20px var(--shadow)}
+.hall-sala{left:16px;top:16px;width:210px;max-height:calc(100% - 100px);overflow:auto;padding:10px 10px 8px}
+.hall-sala h3{margin:0}
+.hall-sala-alterna{display:flex;align-items:center;gap:7px;width:100%;padding:2px 4px 6px;border:0;background:none;color:inherit;font:700 11px var(--display);cursor:pointer;text-align:left}
+.hall-sala.min .hall-sala-alterna{padding-bottom:2px}
+.hall-sala .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.hall-sala ul{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.hall-sala li{display:flex;align-items:center;gap:4px}
+.hall-sala-nome{flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:3px 6px;border:0;border-radius:8px;background:none;color:inherit;font:inherit;font-size:12.5px;text-align:left;cursor:pointer}
+.hall-sala-nome:hover:not(:disabled){background:color-mix(in srgb,var(--accent) 25%,transparent)}
+.hall-sala-nome:disabled{cursor:default}
+.hall-sala-nome .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hall-sala li.eu .nm{color:var(--accent);font-weight:700}
+.hall-sala .u{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font:700 10px var(--display);background:hsl(var(--h) 30% 40%);color:#fff;flex:none}
+.hall-assistir{flex:none;padding:0;border:0;background:none;cursor:pointer}
+.hall-ganhos{right:16px;top:16px;width:290px;padding:0;background:none;border:0;box-shadow:none;display:grid;gap:7px}
+.hall-ganho{display:flex;gap:10px;align-items:center;padding:8px 12px;border-left:3px solid var(--accent);border-radius:10px;background:color-mix(in srgb,var(--accent-ink) 92%,transparent);font-size:12.5px;box-shadow:0 6px 18px var(--shadow);animation:hall-entra .25s ease-out}
+.hall-ganho b{font:700 12px var(--display);color:var(--accent)}
+.hall-ganho small{display:block;font-size:11px;color:color-mix(in srgb,var(--stamp-ink) 70%,transparent)}
+.hall-ganho.velho{opacity:.55}
+@keyframes hall-entra{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.hall-ganho{animation:none}}
+.hall-moeda{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 35%,color-mix(in srgb,var(--accent) 60%,#fff),var(--accent) 60%,var(--accent-text));color:var(--accent-ink);font:800 11px var(--display)}
+.hall-carteira{left:16px;bottom:16px;display:flex;align-items:center;gap:10px;padding:8px 16px 8px 10px;border-radius:99px;font:inherit;cursor:pointer;text-align:left}
+.hall-carteira b{display:block;font:800 16px/1.1 var(--display)}
+.hall-carteira small{display:block;font-size:11px;color:color-mix(in srgb,var(--stamp-ink) 70%,transparent)}
+.hall-dica{right:16px;bottom:16px;padding:8px 14px;border-radius:99px;font-size:12px;color:color-mix(in srgb,var(--stamp-ink) 80%,transparent)}
+
+/* celular: a lista vira uma fileira de rostos acima do hall; ganhos, carteira e dica vão para baixo */
+@media (max-width:760px){
+  .hall-area{display:flex;flex-direction:column;gap:8px;padding:8px}
+  .hall-canto{position:static}
+  .hall-sala{order:-1;width:auto;max-height:none;padding:6px 8px}
+  .hall-sala ul{display:flex;gap:4px;overflow-x:auto;padding-bottom:2px}
+  .hall-sala li{flex:none}
+  .hall-sala-nome{flex-direction:column;gap:2px;padding:3px 4px;font-size:10.5px}
+  .hall-sala-nome .nm{max-width:64px}
+  .hall-ganhos{width:auto}
+  .hall-carteira{align-self:flex-start}
+  .hall-dica{text-align:center;font-size:11px}
+}
+
+/* ---------- cores do cômodo ---------- */
+.hall{
+  --hall-fundo-1:#FBF4E6; --hall-fundo-2:#F1E6D0; --hall-fundo-3:#E4D4B6;
+  --hall-rejunte:#DCCBA6; --hall-tij0:#F0DDB4; --hall-tij1:#E9D2A2; --hall-tij2:#F3E4C1; --hall-tij3:#E6CC98; --hall-tij4:#EED8AA;
+  --hall-tijv:#D99A72; --hall-viga:#A3AAB0; --hall-viga2:#959CA2; --hall-vigal:#6D7378; --hall-rodape:#AFA38B; --hall-rodape2:#A3977F;
+  --hall-beiral:#9C6A42; --hall-beiral2:#8B5D38; --hall-beiralb:#5B3A22; --hall-ripa:#6B4428; --hall-tronco:#7A4E2E; --hall-troncol:#3F2716;
+  --hall-quina:#7D7568; --hall-janela:#8A6A45; --hall-peitoril:#A57E52; --hall-cortina:#E7B65A; --hall-cortinal:#B98A35; --hall-ceu0:#8EC6EA;
+  --hall-ceu1:#CFE8F2; --hall-ceu2:#E9F2E2; --hall-sol:#FFF3C4; --hall-morro:#9CCB6E; --hall-morro2:#86BC5C; --hall-tronco2:#6B4A2E;
+  --hall-tronco3:#7A5332; --hall-folha0:#4E8F3A; --hall-folha1:#63A64A; --hall-folha2:#3F7F33; --hall-folha3:#5C9B45; --hall-folha4:#69AE4D;
+  --hall-folha5:#4E9440; --hall-folha6:#56A046; --hall-folha7:#62AC4F; --hall-tv:#111111; --hall-tvl:#000000; --hall-tela0:#4C5FA8;
+  --hall-tela1:#7E6BC4; --hall-tela2:#C4A06A; --hall-telaoff:#2A2D33; --hall-suporte:#222222; --hall-vaso:#C9774E; --hall-madeira:#5B4A3A;
+  --hall-madeiral:#3A2E25; --hall-vidro:#B6DCA9; --hall-grama:#7FB86A; --hall-grama2:#5E9A4A; --hall-relogio:#F4F1EA; --hall-relogiol:#2B2B2B;
+  --hall-tabua:#8B6B4A; --hall-placa:#5E4630; --hall-placal:#3A2A1C; --hall-placat:#F1E8D9; --hall-asfalto:#5E6163; --hall-calcada:#D2CBBD;
+  --hall-gramarua:#8FC266; --hall-carro:#F2F2EF; --hall-carrol:#666666; --hall-carrovidro:#2B3A4A; --hall-roda:#1D1D1D; --hall-piso0:#F1ECE1;
+  --hall-piso1:#E7E0D2; --hall-pisol:#D4CCBB; --hall-solchao:#FFE7A0; --hall-tapete:#C9B286; --hall-tapetel:#9F8A62; --hall-tapete2:#AE9568;
+  --hall-churr0:#C4A582; --hall-churr1:#D2AF88; --hall-churr2:#E0C198; --hall-churr3:#C8A984; --hall-churr4:#D6B88F; --hall-boca:#141414;
+  --hall-grelha:#555555; --hall-gel0:#F7F7F5; --hall-gel1:#E4E4E1; --hall-gel2:#F2F2F0; --hall-gell:#9A9A96; --hall-puxador:#B9B9B5;
+  --hall-colch0:#4A68B8; --hall-colch1:#3A5598; --hall-colch2:#405DA6; --hall-colchl:#1F2F5C; --hall-perna0:#555555; --hall-perna1:#444444;
+  --hall-perna2:#666666; --hall-verde0:#5FA866; --hall-verde1:#4A8A50; --hall-verde2:#519858; --hall-carta:#FAF9F6; --hall-cartal:#999999;
+  --hall-bege0:#EFE3C8; --hall-bege1:#CDB78E; --hall-bege2:#E2C99C; --hall-ponto:#8A6A39; --hall-cad0:#FFFFFF; --hall-cad1:#D9D9D9;
+  --hall-cad2:#EEEEEE; --hall-cad3:#DCDCDC; --hall-cadl:#9A9A9A;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .hall{
+  --hall-fundo-1:#5A4734; --hall-fundo-2:#463728; --hall-fundo-3:#35291E;
+  --hall-rejunte:#B9AB8B; --hall-tij0:#CABA97; --hall-tij1:#C4B088; --hall-tij2:#CCC0A2; --hall-tij3:#C1AB80; --hall-tij4:#C8B58F;
+  --hall-tijv:#B68160; --hall-viga:#898F94; --hall-viga2:#7D8388; --hall-vigal:#5C6165; --hall-rodape:#938975; --hall-rodape2:#897F6B;
+  --hall-beiral:#835937; --hall-beiral2:#754E2F; --hall-beiralb:#4C311D; --hall-ripa:#5A3922; --hall-tronco:#664227; --hall-troncol:#352112;
+  --hall-quina:#696257; --hall-janela:#74593A; --hall-peitoril:#8B6A45; --hall-cortina:#C2994C; --hall-cortinal:#9B742D; --hall-ceu0:#77A6C5;
+  --hall-ceu1:#AEC3CB; --hall-ceu2:#C4CBBE; --hall-sol:#D6CCA5; --hall-morro:#83AB5C; --hall-morro2:#719E4D; --hall-tronco2:#5A3E27;
+  --hall-tronco3:#66462A; --hall-folha0:#427831; --hall-folha1:#538B3E; --hall-folha2:#356B2B; --hall-folha3:#4D823A; --hall-folha4:#589241;
+  --hall-folha5:#427C36; --hall-folha6:#48863B; --hall-folha7:#529042; --hall-tv:#0E0E0E; --hall-tvl:#000000; --hall-tela0:#40508D;
+  --hall-tela1:#6A5AA5; --hall-tela2:#A58659; --hall-telaoff:#23262B; --hall-suporte:#1D1D1D; --hall-vaso:#A96442; --hall-madeira:#4C3E31;
+  --hall-madeiral:#31271F; --hall-vidro:#99B98E; --hall-grama:#6B9B59; --hall-grama2:#4F813E; --hall-relogio:#CDCAC5; --hall-relogiol:#242424;
+  --hall-tabua:#755A3E; --hall-placa:#4F3B28; --hall-placal:#312318; --hall-placat:#CAC3B6; --hall-asfalto:#4F5153; --hall-calcada:#B0AB9F;
+  --hall-gramarua:#78A356; --hall-carro:#CBCBC9; --hall-carrol:#565656; --hall-carrovidro:#24313E; --hall-roda:#181818; --hall-piso0:#CAC6BD;
+  --hall-piso1:#C2BCB0; --hall-pisol:#B2AB9D; --hall-solchao:#D6C286; --hall-tapete:#A99671; --hall-tapetel:#867452; --hall-tapete2:#927D57;
+  --hall-churr0:#A58B6D; --hall-churr1:#B09372; --hall-churr2:#BCA280; --hall-churr3:#A88E6F; --hall-churr4:#B49B78; --hall-boca:#111111;
+  --hall-grelha:#474747; --hall-gel0:#CFCFCE; --hall-gel1:#C0C0BD; --hall-gel2:#CBCBCA; --hall-gell:#81817E; --hall-puxador:#9B9B98;
+  --hall-colch0:#3E579B; --hall-colch1:#314780; --hall-colch2:#364E8B; --hall-colchl:#1A274D; --hall-perna0:#474747; --hall-perna1:#393939;
+  --hall-perna2:#565656; --hall-verde0:#508D56; --hall-verde1:#3E7443; --hall-verde2:#44804A; --hall-carta:#D2D1CF; --hall-cartal:#818181;
+  --hall-bege0:#C9BFA8; --hall-bege1:#AC9A77; --hall-bege2:#BEA983; --hall-ponto:#745930; --hall-cad0:#D6D6D6; --hall-cad1:#B6B6B6;
+  --hall-cad2:#C8C8C8; --hall-cad3:#B9B9B9; --hall-cadl:#818181;
+}}
+:root[data-theme="dark"] .hall{
+  --hall-fundo-1:#5A4734; --hall-fundo-2:#463728; --hall-fundo-3:#35291E;
+  --hall-rejunte:#B9AB8B; --hall-tij0:#CABA97; --hall-tij1:#C4B088; --hall-tij2:#CCC0A2; --hall-tij3:#C1AB80; --hall-tij4:#C8B58F;
+  --hall-tijv:#B68160; --hall-viga:#898F94; --hall-viga2:#7D8388; --hall-vigal:#5C6165; --hall-rodape:#938975; --hall-rodape2:#897F6B;
+  --hall-beiral:#835937; --hall-beiral2:#754E2F; --hall-beiralb:#4C311D; --hall-ripa:#5A3922; --hall-tronco:#664227; --hall-troncol:#352112;
+  --hall-quina:#696257; --hall-janela:#74593A; --hall-peitoril:#8B6A45; --hall-cortina:#C2994C; --hall-cortinal:#9B742D; --hall-ceu0:#77A6C5;
+  --hall-ceu1:#AEC3CB; --hall-ceu2:#C4CBBE; --hall-sol:#D6CCA5; --hall-morro:#83AB5C; --hall-morro2:#719E4D; --hall-tronco2:#5A3E27;
+  --hall-tronco3:#66462A; --hall-folha0:#427831; --hall-folha1:#538B3E; --hall-folha2:#356B2B; --hall-folha3:#4D823A; --hall-folha4:#589241;
+  --hall-folha5:#427C36; --hall-folha6:#48863B; --hall-folha7:#529042; --hall-tv:#0E0E0E; --hall-tvl:#000000; --hall-tela0:#40508D;
+  --hall-tela1:#6A5AA5; --hall-tela2:#A58659; --hall-telaoff:#23262B; --hall-suporte:#1D1D1D; --hall-vaso:#A96442; --hall-madeira:#4C3E31;
+  --hall-madeiral:#31271F; --hall-vidro:#99B98E; --hall-grama:#6B9B59; --hall-grama2:#4F813E; --hall-relogio:#CDCAC5; --hall-relogiol:#242424;
+  --hall-tabua:#755A3E; --hall-placa:#4F3B28; --hall-placal:#312318; --hall-placat:#CAC3B6; --hall-asfalto:#4F5153; --hall-calcada:#B0AB9F;
+  --hall-gramarua:#78A356; --hall-carro:#CBCBC9; --hall-carrol:#565656; --hall-carrovidro:#24313E; --hall-roda:#181818; --hall-piso0:#CAC6BD;
+  --hall-piso1:#C2BCB0; --hall-pisol:#B2AB9D; --hall-solchao:#D6C286; --hall-tapete:#A99671; --hall-tapetel:#867452; --hall-tapete2:#927D57;
+  --hall-churr0:#A58B6D; --hall-churr1:#B09372; --hall-churr2:#BCA280; --hall-churr3:#A88E6F; --hall-churr4:#B49B78; --hall-boca:#111111;
+  --hall-grelha:#474747; --hall-gel0:#CFCFCE; --hall-gel1:#C0C0BD; --hall-gel2:#CBCBCA; --hall-gell:#81817E; --hall-puxador:#9B9B98;
+  --hall-colch0:#3E579B; --hall-colch1:#314780; --hall-colch2:#364E8B; --hall-colchl:#1A274D; --hall-perna0:#474747; --hall-perna1:#393939;
+  --hall-perna2:#565656; --hall-verde0:#508D56; --hall-verde1:#3E7443; --hall-verde2:#44804A; --hall-carta:#D2D1CF; --hall-cartal:#818181;
+  --hall-bege0:#C9BFA8; --hall-bege1:#AC9A77; --hall-bege2:#BEA983; --hall-ponto:#745930; --hall-cad0:#D6D6D6; --hall-cad1:#B6B6B6;
+  --hall-cad2:#C8C8C8; --hall-cad3:#B9B9B9; --hall-cadl:#818181;
+}
+/* cada cor vira uma classe de preenchimento (f-) e de traço (s-) para os desenhos do SVG; o céu é um degradê */
+.hall .f-rejunte{fill:var(--hall-rejunte)}
+.hall .f-tij0{fill:var(--hall-tij0)}
+.hall .f-tij1{fill:var(--hall-tij1)}
+.hall .f-tij2{fill:var(--hall-tij2)}
+.hall .f-tij3{fill:var(--hall-tij3)}
+.hall .f-tij4{fill:var(--hall-tij4)}
+.hall .f-tijv{fill:var(--hall-tijv)}
+.hall .f-viga{fill:var(--hall-viga)}
+.hall .f-viga2{fill:var(--hall-viga2)}
+.hall .f-vigal{fill:var(--hall-vigal)}
+.hall .f-rodape{fill:var(--hall-rodape)}
+.hall .f-rodape2{fill:var(--hall-rodape2)}
+.hall .f-beiral{fill:var(--hall-beiral)}
+.hall .f-beiral2{fill:var(--hall-beiral2)}
+.hall .f-beiralb{fill:var(--hall-beiralb)}
+.hall .f-ripa{fill:var(--hall-ripa)}
+.hall .f-tronco{fill:var(--hall-tronco)}
+.hall .f-troncol{fill:var(--hall-troncol)}
+.hall .f-quina{fill:var(--hall-quina)}
+.hall .f-janela{fill:var(--hall-janela)}
+.hall .f-peitoril{fill:var(--hall-peitoril)}
+.hall .f-cortina{fill:var(--hall-cortina)}
+.hall .f-cortinal{fill:var(--hall-cortinal)}
+.hall .f-ceu0{fill:var(--hall-ceu0)}
+.hall .f-ceu1{fill:var(--hall-ceu1)}
+.hall .f-ceu2{fill:var(--hall-ceu2)}
+.hall .f-sol{fill:var(--hall-sol)}
+.hall .f-morro{fill:var(--hall-morro)}
+.hall .f-morro2{fill:var(--hall-morro2)}
+.hall .f-tronco2{fill:var(--hall-tronco2)}
+.hall .f-tronco3{fill:var(--hall-tronco3)}
+.hall .f-folha0{fill:var(--hall-folha0)}
+.hall .f-folha1{fill:var(--hall-folha1)}
+.hall .f-folha2{fill:var(--hall-folha2)}
+.hall .f-folha3{fill:var(--hall-folha3)}
+.hall .f-folha4{fill:var(--hall-folha4)}
+.hall .f-folha5{fill:var(--hall-folha5)}
+.hall .f-folha6{fill:var(--hall-folha6)}
+.hall .f-folha7{fill:var(--hall-folha7)}
+.hall .f-tv{fill:var(--hall-tv)}
+.hall .f-tvl{fill:var(--hall-tvl)}
+.hall .f-tela0{fill:var(--hall-tela0)}
+.hall .f-tela1{fill:var(--hall-tela1)}
+.hall .f-tela2{fill:var(--hall-tela2)}
+.hall .f-telaoff{fill:var(--hall-telaoff)}
+.hall .f-suporte{fill:var(--hall-suporte)}
+.hall .f-vaso{fill:var(--hall-vaso)}
+.hall .f-madeira{fill:var(--hall-madeira)}
+.hall .f-madeiral{fill:var(--hall-madeiral)}
+.hall .f-vidro{fill:var(--hall-vidro)}
+.hall .f-grama{fill:var(--hall-grama)}
+.hall .f-grama2{fill:var(--hall-grama2)}
+.hall .f-relogio{fill:var(--hall-relogio)}
+.hall .f-relogiol{fill:var(--hall-relogiol)}
+.hall .f-tabua{fill:var(--hall-tabua)}
+.hall .f-placa{fill:var(--hall-placa)}
+.hall .f-placal{fill:var(--hall-placal)}
+.hall .f-placat{fill:var(--hall-placat)}
+.hall .f-asfalto{fill:var(--hall-asfalto)}
+.hall .f-calcada{fill:var(--hall-calcada)}
+.hall .f-gramarua{fill:var(--hall-gramarua)}
+.hall .f-carro{fill:var(--hall-carro)}
+.hall .f-carrol{fill:var(--hall-carrol)}
+.hall .f-carrovidro{fill:var(--hall-carrovidro)}
+.hall .f-roda{fill:var(--hall-roda)}
+.hall .f-piso0{fill:var(--hall-piso0)}
+.hall .f-piso1{fill:var(--hall-piso1)}
+.hall .f-pisol{fill:var(--hall-pisol)}
+.hall .f-solchao{fill:var(--hall-solchao)}
+.hall .f-tapete{fill:var(--hall-tapete)}
+.hall .f-tapetel{fill:var(--hall-tapetel)}
+.hall .f-tapete2{fill:var(--hall-tapete2)}
+.hall .f-churr0{fill:var(--hall-churr0)}
+.hall .f-churr1{fill:var(--hall-churr1)}
+.hall .f-churr2{fill:var(--hall-churr2)}
+.hall .f-churr3{fill:var(--hall-churr3)}
+.hall .f-churr4{fill:var(--hall-churr4)}
+.hall .f-boca{fill:var(--hall-boca)}
+.hall .f-grelha{fill:var(--hall-grelha)}
+.hall .f-gel0{fill:var(--hall-gel0)}
+.hall .f-gel1{fill:var(--hall-gel1)}
+.hall .f-gel2{fill:var(--hall-gel2)}
+.hall .f-gell{fill:var(--hall-gell)}
+.hall .f-puxador{fill:var(--hall-puxador)}
+.hall .f-colch0{fill:var(--hall-colch0)}
+.hall .f-colch1{fill:var(--hall-colch1)}
+.hall .f-colch2{fill:var(--hall-colch2)}
+.hall .f-colchl{fill:var(--hall-colchl)}
+.hall .f-perna0{fill:var(--hall-perna0)}
+.hall .f-perna1{fill:var(--hall-perna1)}
+.hall .f-perna2{fill:var(--hall-perna2)}
+.hall .f-verde0{fill:var(--hall-verde0)}
+.hall .f-verde1{fill:var(--hall-verde1)}
+.hall .f-verde2{fill:var(--hall-verde2)}
+.hall .f-carta{fill:var(--hall-carta)}
+.hall .f-cartal{fill:var(--hall-cartal)}
+.hall .f-bege0{fill:var(--hall-bege0)}
+.hall .f-bege1{fill:var(--hall-bege1)}
+.hall .f-bege2{fill:var(--hall-bege2)}
+.hall .f-ponto{fill:var(--hall-ponto)}
+.hall .f-cad0{fill:var(--hall-cad0)}
+.hall .f-cad1{fill:var(--hall-cad1)}
+.hall .f-cad2{fill:var(--hall-cad2)}
+.hall .f-cad3{fill:var(--hall-cad3)}
+.hall .f-cadl{fill:var(--hall-cadl)}
+.hall .s-rejunte{stroke:var(--hall-rejunte)}
+.hall .s-tij0{stroke:var(--hall-tij0)}
+.hall .s-tij1{stroke:var(--hall-tij1)}
+.hall .s-tij2{stroke:var(--hall-tij2)}
+.hall .s-tij3{stroke:var(--hall-tij3)}
+.hall .s-tij4{stroke:var(--hall-tij4)}
+.hall .s-tijv{stroke:var(--hall-tijv)}
+.hall .s-viga{stroke:var(--hall-viga)}
+.hall .s-viga2{stroke:var(--hall-viga2)}
+.hall .s-vigal{stroke:var(--hall-vigal)}
+.hall .s-rodape{stroke:var(--hall-rodape)}
+.hall .s-rodape2{stroke:var(--hall-rodape2)}
+.hall .s-beiral{stroke:var(--hall-beiral)}
+.hall .s-beiral2{stroke:var(--hall-beiral2)}
+.hall .s-beiralb{stroke:var(--hall-beiralb)}
+.hall .s-ripa{stroke:var(--hall-ripa)}
+.hall .s-tronco{stroke:var(--hall-tronco)}
+.hall .s-troncol{stroke:var(--hall-troncol)}
+.hall .s-quina{stroke:var(--hall-quina)}
+.hall .s-janela{stroke:var(--hall-janela)}
+.hall .s-peitoril{stroke:var(--hall-peitoril)}
+.hall .s-cortina{stroke:var(--hall-cortina)}
+.hall .s-cortinal{stroke:var(--hall-cortinal)}
+.hall .s-ceu0{stroke:var(--hall-ceu0)}
+.hall .s-ceu1{stroke:var(--hall-ceu1)}
+.hall .s-ceu2{stroke:var(--hall-ceu2)}
+.hall .s-sol{stroke:var(--hall-sol)}
+.hall .s-morro{stroke:var(--hall-morro)}
+.hall .s-morro2{stroke:var(--hall-morro2)}
+.hall .s-tronco2{stroke:var(--hall-tronco2)}
+.hall .s-tronco3{stroke:var(--hall-tronco3)}
+.hall .s-folha0{stroke:var(--hall-folha0)}
+.hall .s-folha1{stroke:var(--hall-folha1)}
+.hall .s-folha2{stroke:var(--hall-folha2)}
+.hall .s-folha3{stroke:var(--hall-folha3)}
+.hall .s-folha4{stroke:var(--hall-folha4)}
+.hall .s-folha5{stroke:var(--hall-folha5)}
+.hall .s-folha6{stroke:var(--hall-folha6)}
+.hall .s-folha7{stroke:var(--hall-folha7)}
+.hall .s-tv{stroke:var(--hall-tv)}
+.hall .s-tvl{stroke:var(--hall-tvl)}
+.hall .s-tela0{stroke:var(--hall-tela0)}
+.hall .s-tela1{stroke:var(--hall-tela1)}
+.hall .s-tela2{stroke:var(--hall-tela2)}
+.hall .s-telaoff{stroke:var(--hall-telaoff)}
+.hall .s-suporte{stroke:var(--hall-suporte)}
+.hall .s-vaso{stroke:var(--hall-vaso)}
+.hall .s-madeira{stroke:var(--hall-madeira)}
+.hall .s-madeiral{stroke:var(--hall-madeiral)}
+.hall .s-vidro{stroke:var(--hall-vidro)}
+.hall .s-grama{stroke:var(--hall-grama)}
+.hall .s-grama2{stroke:var(--hall-grama2)}
+.hall .s-relogio{stroke:var(--hall-relogio)}
+.hall .s-relogiol{stroke:var(--hall-relogiol)}
+.hall .s-tabua{stroke:var(--hall-tabua)}
+.hall .s-placa{stroke:var(--hall-placa)}
+.hall .s-placal{stroke:var(--hall-placal)}
+.hall .s-placat{stroke:var(--hall-placat)}
+.hall .s-asfalto{stroke:var(--hall-asfalto)}
+.hall .s-calcada{stroke:var(--hall-calcada)}
+.hall .s-gramarua{stroke:var(--hall-gramarua)}
+.hall .s-carro{stroke:var(--hall-carro)}
+.hall .s-carrol{stroke:var(--hall-carrol)}
+.hall .s-carrovidro{stroke:var(--hall-carrovidro)}
+.hall .s-roda{stroke:var(--hall-roda)}
+.hall .s-piso0{stroke:var(--hall-piso0)}
+.hall .s-piso1{stroke:var(--hall-piso1)}
+.hall .s-pisol{stroke:var(--hall-pisol)}
+.hall .s-solchao{stroke:var(--hall-solchao)}
+.hall .s-tapete{stroke:var(--hall-tapete)}
+.hall .s-tapetel{stroke:var(--hall-tapetel)}
+.hall .s-tapete2{stroke:var(--hall-tapete2)}
+.hall .s-churr0{stroke:var(--hall-churr0)}
+.hall .s-churr1{stroke:var(--hall-churr1)}
+.hall .s-churr2{stroke:var(--hall-churr2)}
+.hall .s-churr3{stroke:var(--hall-churr3)}
+.hall .s-churr4{stroke:var(--hall-churr4)}
+.hall .s-boca{stroke:var(--hall-boca)}
+.hall .s-grelha{stroke:var(--hall-grelha)}
+.hall .s-gel0{stroke:var(--hall-gel0)}
+.hall .s-gel1{stroke:var(--hall-gel1)}
+.hall .s-gel2{stroke:var(--hall-gel2)}
+.hall .s-gell{stroke:var(--hall-gell)}
+.hall .s-puxador{stroke:var(--hall-puxador)}
+.hall .s-colch0{stroke:var(--hall-colch0)}
+.hall .s-colch1{stroke:var(--hall-colch1)}
+.hall .s-colch2{stroke:var(--hall-colch2)}
+.hall .s-colchl{stroke:var(--hall-colchl)}
+.hall .s-perna0{stroke:var(--hall-perna0)}
+.hall .s-perna1{stroke:var(--hall-perna1)}
+.hall .s-perna2{stroke:var(--hall-perna2)}
+.hall .s-verde0{stroke:var(--hall-verde0)}
+.hall .s-verde1{stroke:var(--hall-verde1)}
+.hall .s-verde2{stroke:var(--hall-verde2)}
+.hall .s-carta{stroke:var(--hall-carta)}
+.hall .s-cartal{stroke:var(--hall-cartal)}
+.hall .s-bege0{stroke:var(--hall-bege0)}
+.hall .s-bege1{stroke:var(--hall-bege1)}
+.hall .s-bege2{stroke:var(--hall-bege2)}
+.hall .s-ponto{stroke:var(--hall-ponto)}
+.hall .s-cad0{stroke:var(--hall-cad0)}
+.hall .s-cad1{stroke:var(--hall-cad1)}
+.hall .s-cad2{stroke:var(--hall-cad2)}
+.hall .s-cad3{stroke:var(--hall-cad3)}
+.hall .s-cadl{stroke:var(--hall-cadl)}
+.hall .f-solchao{fill-opacity:.28}
+.hall .st-ceu0{stop-color:var(--hall-ceu0)} .hall .st-ceu1{stop-color:var(--hall-ceu1)} .hall .st-ceu2{stop-color:var(--hall-ceu2)}
