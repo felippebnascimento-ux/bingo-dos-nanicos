@@ -313,7 +313,7 @@ Mais de uma pessoa (e mais de uma IA) mexe no site. **Toda tarefa começa assim,
 3. **Vercel:** veja se a última publicação deu certo antes de publicar outra por cima.
 4. Só então planeje e faça a mudança. No fim, diga em uma linha o que encontrou de novo dos outros, se encontrou.
 
-1. Crie uma **branch** (`git checkout -b minha-mudanca`). Não faça commit direto na principal sem combinar com o Felippe.
+1. Crie uma **branch** (`git checkout -b minha-mudanca`) para cada mudança.
 2. Faça a mudança **pequena e focada**. Não reformate arquivos que você não mudou.
 3. Antes do commit, confira:
    - [ ] `npm run check` passa (typecheck, lint, testes e build);
@@ -323,7 +323,7 @@ Mais de uma pessoa (e mais de uma IA) mexe no site. **Toda tarefa começa assim,
    - [ ] a entrada nova está no `CHANGELOG`;
    - [ ] se mexeu no banco: o SQL roda duas vezes seguidas sem erro, e as permissões continuam fechadas.
 4. Commit com mensagem em português dizendo **o quê** e **por quê** (ex.: `Truco: botão de ir ao mazo pede confirmação`).
-5. Abra um Pull Request e espere outra pessoa olhar antes de juntar.
+5. **Juntar na principal:** desde 02/11/2026 (decisão do João, com o ok do grupo), quem terminou e conferiu tudo acima pode juntar direto na principal, sem esperar revisão ("trocar a roda com o carro andando"). Abrir Pull Request continua bom para registrar o que mudou, mas não é obrigatório. Antes de juntar, refaça o passo 0 (pegue o que os outros juntaram) e rode o `npm run check` de novo.
 
 ### Mudanças no Supabase
 - **Nunca** apague tabelas nem dados pelo Table Editor sem avisar o grupo.
