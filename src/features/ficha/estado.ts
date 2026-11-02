@@ -3,6 +3,7 @@
  * A Riot e a Steam nunca são chamadas do navegador: a chave fica no servidor.
  */
 import { create } from "zustand";
+import { aoMudarTabela } from "@/lib/sala";
 import { sb } from "@/lib/supabase";
 import { lerNumeros, type NumerosFicha } from "./numeros";
 import { lerAtributos, lerTodos, limparNotas, type Atributos, type Notas } from "@/features/nanicos/atributos";
@@ -39,9 +40,28 @@ type EstadoAtributos = { todos: Record<string, Atributos> | null; meu: Record<st
 /** `todos` = null enquanto não carregou (ou se o SQL dos atributos ainda não rodou: aí fica escondido). */
 export const useAtributos = create<EstadoAtributos>()(() => ({ todos: null, meu: {} }));
 
+/** Pede de novo as médias de um nanico e põe na grade (também ao abrir a ficha dele). */
+export async function recarregarDe(fid: string) {
+  const { data } = await sb().rpc("atributos_de", { p_para: fid });
+  const at = lerAtributos(data);
+  if (at) useAtributos.setState((s) => ({ todos: { ...(s.todos ?? {}), [fid]: at } }));
+}
+
+/* alguém votou: o banco avisa em atributos_aviso (só o nanico votado, nunca quem votou) e a ficha atualiza na hora */
+let ouvindo = false;
+function ouvirVotos() {
+  if (ouvindo) return;
+  ouvindo = true;
+  aoMudarTabela("atributos_aviso", (row) => {
+    const fid = typeof row?.para === "string" ? row.para : "";
+    if (/^[0-9a-f-]{36}$/i.test(fid) && useAtributos.getState().todos) void recarregarDe(fid);
+  });
+}
+
 let pedindoTodos = false;
 /** Médias de todos os nanicos de uma vez (uma chamada só para a grade inteira). */
 export async function carregarAtributos() {
+  ouvirVotos();
   if (pedindoTodos) return;
   pedindoTodos = true;
   try {
@@ -71,8 +91,6 @@ export async function votar(fid: string, notas: Notas) {
   if (!limpas) throw new Error("Cada nota é um número inteiro de 0 a 10.");
   const { error } = await sb().rpc("votar_atributos", { p_para: fid, p_notas: limpas });
   if (error) throw error;
-  const { data } = await sb().rpc("atributos_de", { p_para: fid });
-  const at = lerAtributos(data);
-  if (at) useAtributos.setState((s) => ({ todos: { ...(s.todos ?? {}), [fid]: at } }));
+  await recarregarDe(fid);
   await carregarMeuVoto(fid);
 }

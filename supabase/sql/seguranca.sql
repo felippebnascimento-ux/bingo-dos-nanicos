@@ -488,6 +488,21 @@ alter table public.atributos_votos enable row level security;
 revoke all on public.atributos_votos from public, anon, authenticated;
 
 -- vota nas 6 notas de um nanico (nunca em si mesmo); dá para mudar uma vez por semana
+-- aviso público de "alguém votou no fulano agora" (sem quem nem as notas): o tempo real desta tabela faz a ficha
+-- de todo mundo pedir as médias de novo na hora (decisão do João, 02/11/2026)
+create table if not exists public.atributos_aviso (
+  para uuid primary key references public.friends(id) on delete cascade,
+  em   timestamptz not null default now()
+);
+alter table public.atributos_aviso enable row level security;
+revoke all on public.atributos_aviso from public, anon, authenticated;
+grant select on public.atributos_aviso to authenticated;
+drop policy if exists atributos_aviso_ler on public.atributos_aviso;
+create policy atributos_aviso_ler on public.atributos_aviso for select to authenticated using (public.eh_nanico());
+do $$ begin
+  begin alter publication supabase_realtime add table public.atributos_aviso; exception when duplicate_object then null; end;
+end $$;
+
 create or replace function public.votar_atributos(p_para uuid, p_notas jsonb) returns void
 language plpgsql security definer set search_path = public as $$
 declare
@@ -522,11 +537,12 @@ begin
   insert into public.atributos_votos (de, para, atributo, nota, em)
     select v_uid, p_para, c, ((p_notas ->> c)::numeric)::smallint, now() from unnest(v_chaves) c
   on conflict (de, para, atributo) do update set nota = excluded.nota, em = excluded.em;
+  insert into public.atributos_aviso (para, em) values (p_para, now()) on conflict (para) do update set em = now();
 end $$;
 revoke all on function public.votar_atributos(uuid, jsonb) from public, anon;
 grant execute on function public.votar_atributos(uuid, jsonb) to authenticated;
 
--- média (só com 3 votos ou mais) e contagem de cada atributo de um nanico
+-- média (desde o 1º voto; antes era só com 3 ou mais) e contagem de cada atributo de um nanico
 create or replace function public.atributos_de(p_para uuid) returns jsonb
 language plpgsql stable security definer set search_path = public as $$
 begin
@@ -534,7 +550,7 @@ begin
   return (
     select jsonb_object_agg(t.atributo, jsonb_build_object('media', t.media, 'votos', t.votos))
       from (select a.atributo, count(v.nota)::int as votos,
-                   case when count(v.nota) >= 3 then round(avg(v.nota), 1)::numeric(3, 1) end as media
+                   case when count(v.nota) >= 1 then round(avg(v.nota), 1)::numeric(3, 1) end as media
               from unnest(array['tilt', 'choro', 'clutch', 'farm', 'sorte', 'call']) a(atributo)
               left join public.atributos_votos v on v.atributo = a.atributo and v.para = p_para
              group by a.atributo) t);

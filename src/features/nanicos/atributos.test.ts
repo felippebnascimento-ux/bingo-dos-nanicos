@@ -22,7 +22,7 @@ describe("médias", () => {
     expect(a.choro).toEqual({ media: null, votos: 2 });
     expect(a.call).toEqual({ media: null, votos: 0 });
     expect(textoMedia(a.tilt)).toBe("8,7");
-    expect(textoMedia(a.choro)).toBe("poucos votos");
+    expect(textoMedia(a.choro)).toBe("sem votos");
     expect(textoMedia({ media: 7, votos: 3 })).toBe("7,0");
     expect(totalVotos(a)).toBe(4);
   });

@@ -60,8 +60,8 @@ export function lerTodos(v: unknown): Record<string, Atributos> {
   return out;
 }
 
-/** 8.7 → "8,7"; sem média (menos de 3 votos) → "poucos votos". */
-export const textoMedia = (m: Media) => (m.media === null ? "poucos votos" : m.media.toFixed(1).replace(".", ","));
+/** 8.7 → "8,7"; sem nenhum voto → "sem votos" (a média aparece desde o 1º voto). */
+export const textoMedia = (m: Media) => (m.media === null ? "sem votos" : m.media.toFixed(1).replace(".", ","));
 
 /** Quantos votaram (todos os atributos têm a mesma contagem). */
 export const totalVotos = (a: Atributos) => Math.max(...CHAVES.map((k) => a[k].votos));

@@ -205,6 +205,10 @@ export const CHANGELOG: EntradaLog[] = [
       "Sons da roleta com botão de mudo e os seus últimos 10 números",
     ],
   },
+  {
+    data: "02/11/2026",
+    itens: ["Atributos votados aparecem desde o primeiro voto e se atualizam na hora, a cada voto novo"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

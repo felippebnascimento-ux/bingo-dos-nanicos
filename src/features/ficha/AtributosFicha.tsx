@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { ATRIBUTOS, diaMes, notasPadrao, textoMedia, totalVotos, type Notas } from "@/features/nanicos/atributos";
 import type { Friend } from "@/lib/tipos";
 import { toast } from "@/lib/toast";
-import { carregarAtributos, carregarMeuVoto, useAtributos, votar } from "./estado";
+import { carregarAtributos, carregarMeuVoto, recarregarDe, useAtributos, votar } from "./estado";
 
 export function AtributosFicha({ f, eu }: { f: Friend; eu: boolean }) {
   const at = useAtributos((s) => s.todos?.[f.id]);
@@ -17,6 +17,8 @@ export function AtributosFicha({ f, eu }: { f: Friend; eu: boolean }) {
 
   useEffect(() => {
     if (!carregou) carregarAtributos();
+    /* ao abrir a ficha, as médias vêm frescas (os votos novos também chegam pelo tempo real) */
+    else void recarregarDe(f.id);
     if (!eu) carregarMeuVoto(f.id);
   }, [carregou, eu, f.id]);
 
