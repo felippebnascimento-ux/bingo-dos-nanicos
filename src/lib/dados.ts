@@ -2,8 +2,8 @@
 import type { Session, User } from "@supabase/supabase-js";
 import { EMAIL_DOMAIN } from "./config";
 import { errMsg, q, sb } from "./supabase";
-import { getApp, lineupVazia, setApp } from "./store";
-import type { Card, Friend, LineupSlot, Modo, Phrase } from "./tipos";
+import { getApp, lineupVazia, salaLol, setApp } from "./store";
+import type { Card, Friend, LineupSlot, Modo, Phrase, Sala } from "./tipos";
 import { byName, local, norm } from "./util";
 import { toast } from "./toast";
 import { joinRoom } from "./sala";
@@ -96,8 +96,27 @@ export async function loadPhrases() {
   setApp({ phrases });
 }
 
+/** Salas tipo lan house (se o SQL das salas ainda não rodou, fica sem salas e tudo continua como antes). */
+export async function loadSalas() {
+  try {
+    const rows = await q<Sala[]>(sb().from("salas").select("id,nome,jogo,discord,ordem").order("ordem"));
+    setApp({ salas: (rows || []).filter((r) => /^[a-z0-9-]{2,20}$/.test(r.id)).slice(0, 20) });
+  } catch {
+    console.warn("banco sem salas: rode a seção 10 do seguranca.sql");
+    setApp({ salas: [] });
+  }
+}
+
+/** Escalação da minha sala de LoL (sem salas no banco, a linha 1 de sempre). */
+const filtroGame = (): { col: "sala" | "id"; val: string | number | null } => {
+  const s = getApp();
+  return s.salas.length ? { col: "sala", val: salaLol(s)?.id ?? null } : { col: "id", val: 1 };
+};
+
 export async function loadGame() {
-  const rows = await q<{ players: unknown }[]>(sb().from("game").select("players").eq("id", 1));
+  const f = filtroGame();
+  if (f.val === null) return;
+  const rows = await q<{ players: unknown }[]>(sb().from("game").select("players").eq(f.col, f.val));
   const pl = rows?.[0]?.players;
   if (!Array.isArray(pl)) return;
   const lineup = cleanLineup(pl);
@@ -128,8 +147,11 @@ export const api = {
         .select("id"),
     ),
   delPhrase: (id: string) => q<{ id: string }[]>(sb().from("phrases").delete().eq("id", id).select("id")),
-  saveGame: (players: LineupSlot[]) =>
-    q(sb().from("game").update({ players, updated_at: new Date().toISOString() }).eq("id", 1)),
+  saveGame: (players: LineupSlot[]) => {
+    const f = filtroGame();
+    if (f.val === null) return Promise.resolve(null);
+    return q(sb().from("game").update({ players, updated_at: new Date().toISOString() }).eq(f.col, f.val));
+  },
   saveOpgg: (fid: string, url: string | null) =>
     q<{ id: string; opgg?: string | null }[]>(sb().from("friends").update({ opgg: url }).eq("id", fid).select("id,opgg")),
   saveSteam: (fid: string, url: string | null) =>
@@ -182,7 +204,8 @@ export async function startSession(session: Session | null) {
     /* sem tempo real: o resto funciona */
   }
   try {
-    await Promise.all([loadFriends(), loadPhrases(), loadGame()]);
+    await Promise.all([loadFriends(), loadPhrases(), loadSalas()]);
+    await loadGame();
     setApp({ db: true });
   } catch (e) {
     console.error(e);

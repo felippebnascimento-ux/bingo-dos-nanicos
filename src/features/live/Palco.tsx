@@ -66,7 +66,7 @@ type Pop = null | "react" | "opt";
 /** Palco do Ao vivo: a tela principal, o desenho, as reações e a barra de controles. */
 export function Palco() {
   useLive((s) => s.v);
-  const online = useApp((s) => s.online);
+  const online = useApp((s) => s.onlineSala);
   const unmute = useLive((s) => s.unmute);
   const vol = useLive((s) => s.vol);
   const voando = useLive((s) => s.voando);

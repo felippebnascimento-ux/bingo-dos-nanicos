@@ -56,6 +56,14 @@ export const CHANGELOG: EntradaLog[] = [
       "Quem está na sala, a sua carteira e os ganhos de moedas de todo mundo aparecem nos cantos do Sítio",
     ],
   },
+  {
+    data: "02/11/2026",
+    itens: [
+      "Salas tipo lan house: LoL 1, LoL 2, CS e Resenha, cada uma com live, câmeras e chat próprios",
+      "Lobby com quem está em cada sala e chat geral",
+      "No celular, as abas ficam numa barra embaixo da tela",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

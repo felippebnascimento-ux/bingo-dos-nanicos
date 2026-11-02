@@ -171,7 +171,7 @@ function camFail(w: Entrada) {
   avisar();
   if (w.tries < 3)
     setTimeout(() => {
-      const p = getApp().online.find((x) => x.key === w.key);
+      const p = getApp().onlineSala.find((x) => x.key === w.key);
       if (CAM.in.get(w.key) !== w || !p || p.cam !== w.sid) return;
       CAM.in.delete(w.key);
       camOpenIn(p, w.tries + 1);
@@ -230,7 +230,7 @@ export function camOnBye(m: MsgRtc) {
 
 /** Presença mudou: liga as câmeras novas, desliga as que acabaram. */
 export function syncCams() {
-  const online = getApp().online;
+  const online = getApp().onlineSala;
   for (const [key, w] of [...CAM.in]) {
     const p = online.find((x) => x.key === key);
     if (!p || !p.cam || p.cam !== w.sid) camCloseIn(key, true);
@@ -254,7 +254,7 @@ export type CamAtiva = { key: string; name: string; st: MediaStream };
 
 /** Câmeras ligadas agora (a minha também), em ordem de nome. */
 export function activeCams(): CamAtiva[] {
-  const { online, friends, myName } = getApp();
+  const { onlineSala: online, friends, myName } = getApp();
   const list: CamAtiva[] = [];
   if (CAM.stream) list.push({ key: MY_KEY, name: myName, st: CAM.stream });
   for (const [key, w] of CAM.in)

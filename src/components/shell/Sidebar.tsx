@@ -5,11 +5,12 @@ import { fecharSeletores } from "@/components/ui/FriendPicker";
 import { Avatar } from "@/components/ui/Avatar";
 import { CamBotoes } from "@/features/live/CamBotoes";
 import { CarteiraChip } from "@/features/moedas/Moedas";
+import { VoceEsta } from "@/features/salas/Salas";
 import { logout } from "@/lib/dados";
 import { VERSION } from "@/lib/dados/changelog";
 import { temNovidade } from "@/lib/dados/novidades";
 import { CREW, MARCA } from "@/lib/dados/nanicos";
-import { friendOf, MY_KEY, setApp, useApp } from "@/lib/store";
+import { friendOf, MY_KEY, salaLol, setApp, useApp } from "@/lib/store";
 import type { Aba } from "@/lib/tipos";
 import { local } from "@/lib/util";
 import { People } from "./People";
@@ -33,11 +34,13 @@ function Nav() {
   const aba = useApp((s) => s.aba);
   const nFrases = useApp((s) => s.phrases.length);
   const nAmigos = useApp((s) => s.friends.length);
-  const nLive = useApp((s) => s.online.filter((p) => p.live && p.key !== MY_KEY).length + (s.myLiveSid ? 1 : 0));
+  const nLive = useApp((s) => s.onlineSala.filter((p) => p.live && p.key !== MY_KEY).length + (s.myLiveSid ? 1 : 0));
   const nTruco = useApp((s) => s.trucoAbertas);
   const unread = useApp((s) => s.chatUnread > 0);
   /* o item Perfil mostra o meu rosto (sem nanico, continua o ícone) */
   const eu = useApp((s) => friendOf(s.myFid, s.friends));
+  /* a aba Jogar (escalação e bingo) só existe nas salas de LoL; sem o SQL das salas, sempre aparece */
+  const temJogar = useApp((s) => !s.salas.length || !!salaLol(s));
 
   const contagem = (a: Aba) => {
     if (a === "frases") return <span className="count" id="nFrases">{nFrases || ""}</span>;
@@ -49,7 +52,7 @@ function Nav() {
 
   return (
     <nav className="nav" role="tablist" aria-label="Seções">
-      {ABAS.map(({ aba: a, t, Ic }) => (
+      {ABAS.filter((x) => x.aba !== "jogar" || temJogar).map(({ aba: a, t, Ic }) => (
         <button
           key={a}
           role="tab"
@@ -109,6 +112,7 @@ export function Sidebar() {
         </div>
       </div>
 
+      <VoceEsta />
       <People />
       <Nav />
       <CamBotoes />

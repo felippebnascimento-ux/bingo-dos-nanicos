@@ -567,9 +567,66 @@ end $$;
 revoke all on function public.meu_voto(uuid) from public, anon;
 grant execute on function public.meu_voto(uuid) to authenticated;
 
--- 10) confere: deve listar as 5 proteções, as 4 funções das moedas, as 2 tabelas da ficha e as 4 funções dos atributos
+-- 10) salas tipo lan house: LoL 1, LoL 2, CS e Resenha --------------------------------------
+--     O lobby continua no canal "bingo-dos-nanicos" (quem está com o site antigo aberto segue funcionando).
+--     Cada sala tem o seu canal "sala:<id>" para a live, as câmeras, as reações e o desenho.
+create table if not exists public.salas (
+  id      text primary key check (id ~ '^[a-z0-9-]{2,20}$'),
+  nome    text not null check (char_length(nome) between 1 and 30),
+  jogo    text not null check (jogo in ('lol', 'cs', 'outro')),
+  discord text check (discord is null or char_length(discord) <= 40),
+  ordem   int not null default 0
+);
+insert into public.salas (id, nome, jogo, ordem) values
+  ('lol-1', 'LoL 1', 'lol', 1), ('lol-2', 'LoL 2', 'lol', 2), ('cs', 'CS', 'cs', 3), ('resenha', 'Resenha', 'outro', 4)
+on conflict (id) do nothing;
+alter table public.salas enable row level security;
+revoke all on public.salas from public, anon, authenticated;
+grant select on public.salas to authenticated;
+drop policy if exists "nanicos veem as salas" on public.salas;
+create policy "nanicos veem as salas" on public.salas for select to authenticated using (public.eh_nanico());
+
+-- canal do lobby (o mesmo de antes) e um canal por sala existente; sempre só nanicos
+drop policy if exists "nanicos entram na sala" on realtime.messages;
+drop policy if exists "nanicos falam na sala"  on realtime.messages;
+create policy "nanicos entram na sala" on realtime.messages for select to authenticated
+  using (public.eh_nanico() and (realtime.topic() = 'bingo-dos-nanicos'
+         or exists (select 1 from public.salas s where 'sala:' || s.id = realtime.topic())));
+create policy "nanicos falam na sala" on realtime.messages for insert to authenticated
+  with check (public.eh_nanico() and (realtime.topic() = 'bingo-dos-nanicos'
+         or exists (select 1 from public.salas s where 'sala:' || s.id = realtime.topic())));
+
+-- chat: 'geral' é o do lobby; nas salas, o id da sala (o chat antigo vira o geral)
+alter table public.chat_messages add column if not exists sala text not null default 'geral';
+create index if not exists chat_messages_sala on public.chat_messages (sala, created_at desc);
+grant insert (text, sala) on public.chat_messages to authenticated;
+create or replace function public.chat_sala_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.sala <> 'geral' and not exists (select 1 from public.salas where id = new.sala) then
+    raise exception 'Essa sala não existe.' using errcode = 'P0001';
+  end if;
+  return new;
+end $$;
+revoke all on function public.chat_sala_protecao() from public, anon, authenticated;
+drop trigger if exists chat_sala_protecao on public.chat_messages;
+create trigger chat_sala_protecao before insert on public.chat_messages for each row execute function public.chat_sala_protecao();
+
+-- escalação: uma linha por sala de LoL (a linha 1, a de sempre, vira a da LoL 1)
+alter table public.game add column if not exists sala text;
+alter table public.game drop constraint if exists game_id_check;
+alter table public.game drop constraint if exists game_id_faixa;
+alter table public.game add constraint game_id_faixa check (id between 1 and 100);
+update public.game set sala = 'lol-1' where id = 1 and sala is null;
+insert into public.game (id, sala) values (2, 'lol-2') on conflict (id) do nothing;
+create unique index if not exists game_sala on public.game (sala);
+drop policy if exists "nanicos mudam a escalacao" on public.game;
+create policy "nanicos mudam a escalacao" on public.game for update to authenticated
+  using (public.eh_nanico() and sala is not null) with check (public.eh_nanico() and sala is not null);
+
+-- 11) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos e as 4 salas
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
- where tgname in ('chat_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
+ where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
 select proname::text, 'moedas' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('creditar', 'minha_carteira', 'bater_ponto', 'pulso')
@@ -579,4 +636,6 @@ select tablename::text, 'ficha' from pg_tables
 union all
 select proname::text, 'atributos' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('votar_atributos', 'atributos_de', 'atributos_todos', 'meu_voto')
+union all
+select id, 'sala' from public.salas
 order by 2, 1;

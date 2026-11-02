@@ -183,7 +183,7 @@ function SuaTela() {
 /** "Transmitindo agora": quem está ao vivo, com assistir / abrir sem som / fechar. */
 function Transmitindo() {
   useLive((s) => s.v);
-  const online = useApp((s) => s.online);
+  const online = useApp((s) => s.onlineSala);
   const friends = useApp((s) => s.friends);
   const ls = liveStreams(online);
   return (

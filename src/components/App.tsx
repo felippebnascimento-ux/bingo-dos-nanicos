@@ -5,6 +5,7 @@ import { PortaLog, PortaLogin, PortaPrimeiraSenha, PortaTrocarSenha } from "./po
 import { Sidebar } from "./shell/Sidebar";
 import { Toast } from "./ui/Toast";
 import { FichaNanico } from "@/features/ficha/Ficha";
+import { SalasJanela } from "@/features/salas/Salas";
 import { HallView } from "@/features/hall/HallView";
 import { JogarView } from "@/features/jogar/JogarView";
 import { NanicadasView } from "@/features/nanicadas/NanicadasView";
@@ -54,6 +55,7 @@ export default function App() {
       <PortaLog />
       <PortaTrocarSenha />
       <FichaNanico />
+      <SalasJanela />
 
       <Fome />
       <datalist id="champs">

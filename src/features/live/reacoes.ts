@@ -3,7 +3,7 @@
  * Quem assiste toca num emoji; ele sobe na tela de todo mundo que está vendo a mesma transmissão
  * (e no canto da tela de quem está transmitindo). Os emojis sobem pelo lado esquerdo para não tapar o minimapa.
  */
-import { enviar, estaNaSala, limitePorPessoa, salaConectada } from "@/lib/sala";
+import { enviar, naMinhaSala, limitePorPessoa, salaConectada } from "@/lib/sala";
 import { friendDaPresenca, getApp, MY_KEY } from "@/lib/store";
 import { local } from "@/lib/util";
 import { getLive, setLive, useLive, type Voo } from "./estado";
@@ -38,9 +38,9 @@ export function onReacao(m: Record<string, unknown>) {
   if (!getLive().reacoesVer || typeof m.from !== "string" || typeof m.alvo !== "string" || m.from === MY_KEY) return;
   const i = Number(m.i);
   if (!Number.isInteger(i) || i < 0 || i >= N_REACOES) return;
-  if (!estaNaSala(m.from)) return; /* só de quem está na sala */
+  if (!naMinhaSala(m.from)) return; /* só de quem está na sala */
   if (!limDeles(m.from)) return;
-  const p = getApp().online.find((x) => x.key === m.from)!;
+  const p = getApp().onlineSala.find((x) => x.key === m.from)!;
   const f = friendDaPresenca(p);
   mostrarReacao(i, f ? f.name : p.name, m.alvo);
 }

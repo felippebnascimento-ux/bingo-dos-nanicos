@@ -53,8 +53,13 @@ export type Presence = {
   cam: string | null;
   /** onde o boneco está no hall (conferido por `posValida`) */
   pos: { i: number; j: number } | null;
+  /** sala tipo lan house onde a pessoa está (null = no lobby) */
+  sala: string | null;
   at: number;
 };
+
+/** Sala tipo lan house (tabela `salas`, criada só pelo admin). */
+export type Sala = { id: string; nome: string; jogo: "lol" | "cs" | "outro"; discord: string | null; ordem: number };
 
 export type Aba = "hall" | "jogar" | "frases" | "nanicos" | "live" | "truco" | "perfil";
 export type RailTab = "telas" | "chat" | "cartela";
