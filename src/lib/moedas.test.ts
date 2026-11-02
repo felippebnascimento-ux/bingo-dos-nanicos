@@ -39,3 +39,16 @@ describe("textos", () => {
     expect(textoBonus(48, 100, 7)).toBe("+48 moedas e +100 de prêmio: 7 dias seguidos");
   });
 });
+
+describe("motivo dos ganhos", () => {
+  it("cada motivo vira um texto curto, e o desconhecido fica vazio", async () => {
+    const { motivoGanho } = await import("./moedas");
+    expect(motivoGanho("diario")).toBe("bônus do dia");
+    expect(motivoGanho("online")).toBe("tempo online");
+    expect(motivoGanho("truco")).toBe("venceu no truco");
+    expect(motivoGanho("bingo")).toBe("bingo!");
+    expect(motivoGanho("sequencia")).toBe("prêmio da sequência");
+    expect(motivoGanho("xpto")).toBe("");
+    expect(motivoGanho(null)).toBe("");
+  });
+});

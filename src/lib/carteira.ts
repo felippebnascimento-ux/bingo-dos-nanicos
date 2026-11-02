@@ -70,6 +70,12 @@ async function pulsar() {
   }
 }
 
+/** O saldo mudou no banco (tempo real das carteiras): atualiza o meu sem pedir de novo. */
+export function ajustarSaldo(saldo: number) {
+  const c = useCarteira.getState().carteira;
+  if (c && c.saldo !== saldo) useCarteira.setState({ carteira: { ...c, saldo: Math.max(0, Math.trunc(saldo)) } });
+}
+
 /** Últimas 30 linhas do meu extrato. */
 export async function carregarExtrato() {
   const { data, error } = await sb().from("extrato").select("id,valor,motivo,ref,em").order("em", { ascending: false }).limit(30);

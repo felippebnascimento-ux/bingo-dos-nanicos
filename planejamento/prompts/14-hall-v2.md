@@ -8,10 +8,12 @@ O modelo novo está em `planejamento/demo/hall-v2.html` e `hall-v2.png`. Abra os
   - o piso passa de 11×9 para **14×11**, com o meio livre para os 14 bonecos andarem;
   - tijolo, lajota e madeira ficam mais claros e quentes;
   - na parede do fundo entra um **janelão com árvores**, céu e sol, e a luz dele aparece no chão.
+  - **fundo claro em volta do cômodo:** um creme quente em degradê (`--hall-fundo-1`/`--hall-fundo-2`) no lugar do fundo escuro do site. No tema escuro, fica um marrom acolhedor, mais fechado, mas nunca preto. Os cantos (lista, ganhos, carteira) continuam escuros e legíveis por cima.
 - **Móveis que abrem coisas,** cada um com uma **placa com o nome** em cima (no estilo das placas de nome dos bonecos, com borda `--accent`):
   - **TV → "Ao vivo"** (abre a aba Ao vivo). Quando alguém transmite, a placa mostra o selo `AO VIVO`;
   - **mesa verde → "Truco"** (abre a aba Truco). A placa mostra quantos estão numa mesa, se houver ("2 na mesa");
   - **geladeira e freezer brancos → "Loja"**. Até a fase 11 existir, o clique mostra `toast("A loja abre em breve")`; depois, abre a loja.
+- **Portão K-FOFO aberto** (ver `hall-v2.png`): a folha de tábuas fica aberta para dentro, encostada na parede, e pelo vão aparecem a rua, a calçada, um carro branco parado e a árvore grande. A placa "Rua" só aparece quando a fase 16 existir; até lá, o portão é só paisagem e o piso dele continua bloqueado.
 - **Piso em destaque:** com o mouse em cima de um piso livre, ele ganha um **contorno branco** (e um véu branco leve). Piso com móvel não ganha destaque. No celular, o piso tocado pisca o contorno uma vez.
 - **Cantos da tela do hall:**
   - **em cima, à esquerda: "Na sala agora"**, com rosto e nome de quem está no site. Clicar num nome abre a **ficha** daquela pessoa. Quem está ao vivo tem o selo `AO VIVO` e um botão "Assistir" (o que o `goWatch` já faz);
