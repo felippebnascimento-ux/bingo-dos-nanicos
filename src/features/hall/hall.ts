@@ -102,6 +102,53 @@ export function posValida(v: unknown): v is Piso {
   return Number.isInteger(i) && Number.isInteger(j) && livre(i as number, j as number);
 }
 
+/* ---------- assentos: sofás e poltronas ---------- */
+/**
+ * Um lugar para sentar: o centro do assento (i, j, fracionários, em cima do móvel), o piso livre de onde
+ * a pessoa senta (`chegar`, que é o `pos` dela) e para onde o boneco olha sentado.
+ */
+export type Assento = { id: string; i: number; j: number; chegar: Piso; olha: Sentido };
+export const ASSENTOS: readonly Assento[] = [
+  /* sofá na parede da esquerda: encosto na parede, olha para a sala */
+  { id: "sofa-a", i: 0.62, j: 7.0, chegar: { i: 1, j: 7 }, olha: "frente-direita" },
+  { id: "sofa-b", i: 0.62, j: 8.0, chegar: { i: 1, j: 8 }, olha: "frente-direita" },
+  { id: "sofa-c", i: 0.62, j: 9.0, chegar: { i: 1, j: 9 }, olha: "frente-direita" },
+  /* sofá do canto: encosto do lado da cozinha */
+  { id: "canto-a", i: 12.95, j: 7.7, chegar: { i: 11, j: 7 }, olha: "costas-esquerda" },
+  { id: "canto-b", i: 12.95, j: 8.6, chegar: { i: 11, j: 8 }, olha: "costas-esquerda" },
+  { id: "canto-c", i: 12.95, j: 9.5, chegar: { i: 11, j: 9 }, olha: "costas-esquerda" },
+  /* as duas poltronas da frente */
+  { id: "poltrona-1", i: 2.6, j: 10.15, chegar: { i: 2, j: 9 }, olha: "costas-direita" },
+  { id: "poltrona-2", i: 4.1, j: 10.15, chegar: { i: 4, j: 9 }, olha: "costas-direita" },
+];
+export const assentoDe = (id: unknown) => (typeof id === "string" ? (ASSENTOS.find((a) => a.id === id) ?? null) : null);
+
+/** Posição no hall: o piso e, se estiver sentado, o assento (só vale um assento que sai daquele piso). */
+export type PosHall = Piso & { s?: string };
+export function posHall(v: unknown): PosHall | null {
+  if (!posValida(v)) return null;
+  const a = assentoDe((v as { s?: unknown }).s);
+  return a && a.chegar.i === v.i && a.chegar.j === v.j ? { i: v.i, j: v.j, s: a.id } : { i: v.i, j: v.j };
+}
+
+/** O assento embaixo de um ponto da tela (tocar no sofá ou na poltrona), ou null. */
+export function assentoNaTela(x: number, y: number): Assento | null {
+  const a = (x - X0) / TW, b = (y - Y0) / TH;
+  /* o ponto no chão (contínuo) e um pouco acima, porque o toque costuma cair no encosto ou no assento */
+  let melhor: Assento | null = null, dMin = 1.1;
+  for (const z of [0, 0.6]) {
+    const i = (a + b + z) / 2, j = (b - a + z) / 2;
+    for (const s of ASSENTOS) {
+      const d = Math.hypot(s.i - i, s.j - j);
+      if (d < dMin) {
+        dMin = d;
+        melhor = s;
+      }
+    }
+  }
+  return melhor;
+}
+
 /** Vizinhos só em ±i e ±j: assim todo passo é numa das 4 diagonais da tela. */
 const PASSOS: readonly Piso[] = [
   { i: 1, j: 0 },

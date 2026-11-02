@@ -61,7 +61,8 @@ export type AppState = {
   /** canal de texto aberto na aba Chat ("geral" ou o id de uma sala) */
   canalTexto: string;
   /** meu piso no hall (vai na presença; só muda quando o boneco chega) */
-  hallPos: { i: number; j: number } | null;
+  /** piso do meu boneco e, se estiver sentado, o assento (`s`) */
+  hallPos: { i: number; j: number; s?: string } | null;
 
   /* tela */
   aba: Aba;

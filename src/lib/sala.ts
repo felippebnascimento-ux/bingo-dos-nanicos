@@ -14,7 +14,7 @@ import { sb } from "./supabase";
 import { getApp, MY_KEY, setApp, useApp } from "./store";
 import type { Presence } from "./tipos";
 import { bingoLines } from "./bingo";
-import { posValida } from "@/features/hall/hall";
+import { posHall } from "@/features/hall/hall";
 
 /** Eventos de broadcast. Evento novo: acrescente aqui e escreva o handler com as conferências. */
 export const EVENTOS = ["rtc", "reacao", "risco", "hall"] as const;
@@ -143,7 +143,7 @@ export function cleanPresence(key: unknown, d: unknown): Presence | null {
     lines: Math.max(0, Math.min(12, Math.floor(Number(o.lines)) || 0)),
     live: sidValido(o.live) ? o.live : null,
     cam: sidValido(o.cam) ? o.cam : null,
-    pos: posValida(o.pos) ? { i: o.pos.i, j: o.pos.j } : null,
+    pos: posHall(o.pos),
     sala: typeof o.sala === "string" && getApp().salas.some((x) => x.id === o.sala) ? o.sala : null,
     voz: sidValido(o.voz) ? o.voz : null,
     mudo: o.mudo === true,

@@ -8,7 +8,7 @@ import { aoMudarPresenca, aoReceber, enviar, estaNaSala, limitePorPessoa } from 
 import { getApp, MY_KEY, setApp, useApp } from "@/lib/store";
 import { umPorNanico, type PresencaNanico } from "@/lib/presenca";
 import { local, reduzMovimento } from "@/lib/util";
-import { caminho, entradaDe, entradaSorteada, posValida, sentido, type Piso, type Sentido } from "./hall";
+import { assentoDe, caminho, entradaDe, entradaSorteada, posHall, posValida, sentido, type Piso, type Sentido } from "./hall";
 
 export type Boneco = {
   key: string;
@@ -20,6 +20,8 @@ export type Boneco = {
   sentido: Sentido;
   /** 0 = parado, 1 a 4 = quadros do andar */
   quadro: number;
+  /** assento onde está sentado (null = em pé) */
+  senta: string | null;
 };
 
 type Interno = Boneco & {
@@ -29,6 +31,8 @@ type Interno = Boneco & {
   fila: Piso[];
   progresso: number;
   desde: number;
+  /** assento onde vai sentar quando chegar */
+  vaiSentar: string | null;
 };
 
 export const useHall = create<{ bonecos: Boneco[]; aviso: string }>()(() => ({ bonecos: [], aviso: "" }));
@@ -44,13 +48,17 @@ let primeiraLista = true;
 
 const publicar = () =>
   useHall.setState({
-    bonecos: [...B.values()].map(({ key, name, fid, i, j, sentido: s, quadro }) => ({ key, name, fid, i, j, sentido: s, quadro })),
+    bonecos: [...B.values()].map(({ key, name, fid, i, j, sentido: s, quadro, senta }) => ({ key, name, fid, i, j, sentido: s, quadro, senta })),
   });
 
 const visivel = () => getApp().aba === "hall" && typeof document !== "undefined" && !document.hidden;
 
-function novo(key: string, name: string, fid: string | null, p: Piso): Interno {
-  return { key, name, fid, i: p.i, j: p.j, sentido: "frente-direita", quadro: 0, de: { ...p }, alvo: { ...p }, fila: [], progresso: 0, desde: 0 };
+function novo(key: string, name: string, fid: string | null, p: Piso & { s?: string }): Interno {
+  const a = assentoDe(p.s);
+  return {
+    key, name, fid, i: p.i, j: p.j, sentido: a?.olha ?? "frente-direita", quadro: 0, senta: a?.id ?? null,
+    de: { i: p.i, j: p.j }, alvo: { i: p.i, j: p.j }, fila: [], progresso: 0, desde: 0, vaiSentar: null,
+  };
 }
 
 /** Chegou ao fim do caminho: para no quadro "parado" e, se for o meu, avisa a presença. */
@@ -61,10 +69,16 @@ function parar(b: Interno) {
   b.fila = [];
   b.progresso = 0;
   b.quadro = 0;
+  /* chegou no piso do assento: senta, olhando para o lado do móvel */
+  const a = assentoDe(b.vaiSentar);
+  b.senta = a && a.chegar.i === b.alvo.i && a.chegar.j === b.alvo.j ? a.id : null;
+  if (a && b.senta) b.sentido = a.olha;
+  b.vaiSentar = null;
   if (b.key === MY_KEY) {
-    const pos = { ...b.alvo };
+    const pos = b.senta ? { ...b.alvo, s: b.senta } : { ...b.alvo };
     setApp({ hallPos: pos });
-    local.setJson("hall-pos", pos);
+    /* o assento não fica salvo: ao voltar ao site, a pessoa aparece em pé */
+    local.setJson("hall-pos", { ...b.alvo });
   }
 }
 
@@ -80,9 +94,12 @@ function proximoPasso(b: Interno) {
 }
 
 /** Leva o boneco até `para`. Se estiver no meio de um passo, termina o passo e segue dali. */
-function rota(b: Interno, para: Piso): boolean {
+function rota(b: Interno, para: Piso, sentar: string | null = null): boolean {
   const c = caminho(b.alvo, para);
   if (!c.length) return false;
+  /* levanta para andar (ou para trocar de assento no mesmo piso) */
+  b.senta = null;
+  b.vaiSentar = sentar;
   b.fila = c.slice(1);
   if (!andando(b)) {
     b.desde = performance.now();
@@ -188,8 +205,8 @@ function sincronizar() {
     }
     b.name = eu ? s.myName : p.name;
     b.fid = eu ? s.myFid : p.fid;
-    /* perdeu algum destino? a presença corrige, andando até o piso certo */
-    if (!eu && p.pos && !andando(b) && (b.alvo.i !== p.pos.i || b.alvo.j !== p.pos.j)) rota(b, p.pos);
+    /* perdeu algum destino? a presença corrige, andando até o piso certo (e sentando, se ela estiver sentada) */
+    if (!eu && p.pos && !andando(b) && (b.alvo.i !== p.pos.i || b.alvo.j !== p.pos.j || b.senta !== (p.pos.s ?? null))) rota(b, p.pos, p.pos.s ?? null);
   }
   for (const k of [...B.keys()]) if (!ids.has(k)) B.delete(k);
   if (entraram.length && !primeiraLista) useHall.setState({ aviso: `${entraram.join(", ")} entrou no hall` });
@@ -198,11 +215,12 @@ function sincronizar() {
 }
 
 /* ---------- comandos ---------- */
-/** Leva o meu boneco até o piso e avisa a sala. */
-export function andarAte(para: Piso) {
+/** Leva o meu boneco até o piso (e senta no assento `sentar`, que tem que sair daquele piso) e avisa a sala. */
+export function andarAte(para: Piso, sentar: string | null = null) {
   const b = B.get(MY_KEY);
-  if (!b || !posValida(para)) return;
-  if (rota(b, para)) enviar("hall", { para: { i: para.i, j: para.j } });
+  const p = posHall(sentar ? { ...para, s: sentar } : para);
+  if (!b || !p) return;
+  if (rota(b, p, p.s ?? null)) enviar("hall", { para: p.s ? { i: p.i, j: p.j, s: p.s } : { i: p.i, j: p.j } });
 }
 
 /** Setas do teclado: um piso a partir de onde o boneco vai parar. */
@@ -216,11 +234,12 @@ export function andarUmPiso(di: number, dj: number) {
 /* o destino vem de outro navegador: confere tudo antes de andar */
 const hallLimite = limitePorPessoa(8, 2000);
 function onHall(m: Record<string, unknown>) {
-  if (typeof m.from !== "string" || m.from === MY_KEY || !posValida(m.para)) return;
+  const para = posHall(m.para);
+  if (typeof m.from !== "string" || m.from === MY_KEY || !para) return;
   if (!estaNaSala(m.from) || !hallLimite(m.from)) return;
   /* qualquer aba daquele nanico move o mesmo boneco (inclusive uma outra aba minha move o meu) */
   const b = B.get(chaveDoBoneco.get(m.from) ?? m.from);
-  if (b) rota(b, { i: m.para.i, j: m.para.j });
+  if (b) rota(b, { i: para.i, j: para.j }, para.s ?? null);
 }
 
 let iniciado = false;

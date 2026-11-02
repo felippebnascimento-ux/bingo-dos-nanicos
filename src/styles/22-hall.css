@@ -439,3 +439,7 @@
 .hall-efeito-item{display:block;width:14px}
 .hall-efeito-item svg{display:block;width:100%;height:auto;max-height:28px}
 @media (max-width:760px){.hall-efeito{transform:none;align-self:center}}
+
+/* sentado no sofá ou na poltrona: o boneco todo (nome e chapéu juntos) desce até o assento e as pernas somem */
+.boneco.sentado{transform:translateY(19%)}
+.boneco.sentado .boneco-img,.boneco.sentado .boneco-pino{clip-path:inset(0 0 30% 0)}

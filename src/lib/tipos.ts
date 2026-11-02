@@ -54,7 +54,7 @@ export type Presence = {
   live: string | null;
   cam: string | null;
   /** onde o boneco está no hall (conferido por `posValida`) */
-  pos: { i: number; j: number } | null;
+  pos: { i: number; j: number; s?: string } | null;
   /** sala tipo lan house onde a pessoa está (null = no lobby) */
   sala: string | null;
   /** id da minha conexão de voz na sala (null = fora da voz) */

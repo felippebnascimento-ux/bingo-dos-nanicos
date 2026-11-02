@@ -2,6 +2,9 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { BONECO_ARQ } from "@/lib/dados/nanicos";
 import {
+  ASSENTOS,
+  assentoNaTela,
+  posHall,
   BLOQUEADOS,
   CLICAVEIS,
   pisoLivreNaTela,
@@ -148,5 +151,27 @@ describe("arquivos dos bonecos", () => {
     expect(json.celula).toEqual({ largura: 84, altura: 134 });
     expect(json.sentidos).toEqual(SENTIDOS);
     expect(BONECO_ARQ).toEqual(Object.fromEntries(Object.entries(json.arquivos).map(([n, a]) => [Number(n), a])));
+  });
+});
+
+describe("assentos", () => {
+  it("cada assento sai de um piso livre e fica em cima de um móvel", () => {
+    for (const a of ASSENTOS) {
+      expect(livre(a.chegar.i, a.chegar.j), a.id).toBe(true);
+      expect(livre(Math.floor(a.i), Math.floor(a.j)), a.id).toBe(false);
+    }
+  });
+  it("a posição só leva o assento se ele sai daquele piso", () => {
+    expect(posHall({ i: 1, j: 7, s: "sofa-a" })).toEqual({ i: 1, j: 7, s: "sofa-a" });
+    expect(posHall({ i: 1, j: 8, s: "sofa-a" })).toEqual({ i: 1, j: 8 });
+    expect(posHall({ i: 1, j: 7, s: "trono" })).toEqual({ i: 1, j: 7 });
+    expect(posHall({ i: 0, j: 7 })).toBeNull();
+  });
+  it("tocar no sofá acha o assento mais perto", () => {
+    const a = ASSENTOS[1];
+    const [x, y] = tela(a.i, a.j);
+    expect(assentoNaTela(x, y)?.id).toBe(a.id);
+    const [x2, y2] = tela(7, 5);
+    expect(assentoNaTela(x2, y2)).toBeNull();
   });
 });

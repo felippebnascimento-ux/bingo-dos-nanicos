@@ -242,6 +242,10 @@ export const CHANGELOG: EntradaLog[] = [
       "Cigarrinho, latinha e os outros duram minutos, com um contador do seu efeito embaixo do K-FOFO",
     ],
   },
+  {
+    data: "02/11/2026",
+    itens: ["Dá para sentar nos sofás e nas poltronas do K-FOFO: toque no móvel e o boneco vai até lá e senta"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
