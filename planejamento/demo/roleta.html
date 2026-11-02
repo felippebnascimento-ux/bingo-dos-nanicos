@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Roleta do rodízio</title>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@500;700&family=Unbounded:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FAF9F6;--ink:#353535;--muted:#7A776F;--accent:#B08D57;--olive:#4A4E44;--mint:#3E4C59;--live:#B4442F;--line:#E4E0D6;--card:#FFFFFF}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Onest,sans-serif;width:1240px;height:800px;overflow:hidden}
+.wrap{padding:28px 36px}
+h1{margin:0;font:800 22px Unbounded,sans-serif}
+.sub{margin:6px 0 20px;color:var(--muted);font-size:14px}
+.grid{display:grid;grid-template-columns:430px 1fr;gap:22px}
+.block{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+.block h2{margin:0 0 12px;font:700 14px Unbounded,sans-serif;display:flex;justify-content:space-between;align-items:center}
+.block h2 small{font:500 12px Onest,sans-serif;color:var(--muted)}
+.roda{position:relative;width:390px;height:390px;margin:4px auto 10px}
+.roda svg{width:390px;height:390px}
+.ponteiro{position:absolute;left:50%;top:-6px;transform:translateX(-50%);width:0;height:0;border-left:15px solid transparent;border-right:15px solid transparent;border-top:28px solid var(--live);filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
+.btn{font:700 13px Onest,sans-serif;border:0;border-radius:999px;padding:10px 18px;background:var(--accent);color:#fff;cursor:pointer}
+.btn.soft{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.sm{padding:6px 12px;font-size:12px}
+.acoes{display:flex;gap:10px;justify-content:center}
+.fila{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.fila li{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:10px;border:1px solid var(--line);font-size:13.5px}
+.fila li img{width:28px;height:28px;border-radius:50%;object-fit:cover;background:#ddd}
+.fila li .t{margin-left:auto;font-size:11px;color:var(--muted)}
+.fila li.jogou{opacity:.55}
+.fila li.jogou span:first-of-type{text-decoration:line-through}
+.fila li.eu{border-color:var(--accent)}
+.rodada{display:flex;gap:8px;align-items:center;margin:12px 0 0;font-size:12.5px;color:var(--muted)}
+.barra{flex:1;height:6px;border-radius:9px;background:var(--line);overflow:hidden}.barra i{display:block;height:100%;width:40%;background:var(--accent)}
+.res{margin-top:16px;border:2px solid var(--accent);background:#FBF5EA;border-radius:14px;padding:14px 16px;display:grid;grid-template-columns:64px 1fr;gap:14px;align-items:center}
+.res img{width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid var(--accent)}
+.res b{font:800 18px Unbounded,sans-serif}
+.res p{margin:3px 0 0;font-size:13px;color:var(--muted)}
+.lanes{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}
+.lane{border:1.5px solid var(--line);border-radius:12px;padding:8px;text-align:center;font-size:12px;background:#fff}
+.lane .r{font:700 10px Unbounded,sans-serif;color:var(--muted);letter-spacing:.04em}
+.lane img{width:40px;height:40px;border-radius:50%;object-fit:cover;display:block;margin:6px auto 4px}
+.lane small{display:block;color:var(--muted);font-size:10.5px}
+.lane.sai{border-color:var(--live);background:#FBEDEA}
+.lane.sai small{color:var(--live);font-weight:700}
+.dica{font-size:12px;color:var(--muted);margin-top:10px}
+</style></head><body><div class="wrap">
+<h1>Roleta do rodízio</h1>
+<p class="sub">Aba Jogar · quem está de fora entra na roleta; a cada partida, um é sorteado para entrar no time, até todo mundo jogar</p>
+<div class="grid">
+  <div class="block">
+    <h2>Roleta <small>sorteio feito pelo banco</small></h2>
+    <div class="roda"><div class="ponteiro"></div><svg id="roda" viewBox="-200 -200 400 400"></svg></div>
+    <div class="acoes"><button class="btn">Girar a roleta</button><button class="btn soft">Sair da fila</button></div>
+  </div>
+  <div>
+    <div class="block">
+      <h2>Querem jogar (6) <small>quem já entrou nesta rodada fica riscado</small></h2>
+      <ul class="fila" id="fila"></ul>
+      <div class="rodada">Rodada 3 · <b>2 de 6</b> já entraram <div class="barra"><i></i></div></div>
+      <div class="res"><img src="../../public/arte/nanicos/9-rosto.webp" alt=""><div><b>Pitoco entra!</b><p>Sorteado agora por Gamer. Escolha quem sai para ele entrar:</p></div></div>
+      <div class="lanes" id="lanes"></div>
+      <div class="acoes" style="margin-top:12px;justify-content:flex-start"><button class="btn">Colocar na escalação</button><button class="btn soft">Pitoco não vai jogar</button></div>
+      <p class="dica">Sugestão: sai quem está há mais partidas seguidas (Max, 4 seguidas). Quem sai entra na roleta da próxima.</p>
+    </div>
+  </div>
+</div></div>
+<script>
+const R="../../public/arte/nanicos/";
+const FILA=[[9,"Pitoco",0,"esperando 2"],[2,"Alemão",0,"esperando 2"],[5,"Grito",1,"jogou"],[11,"Veião",0,"esperando 1"],[14,"Pin",1,"jogou"],[4,"Gamer",0,"você",1]];
+const ul=document.getElementById("fila");
+for(const[n,nm,jogou,t,eu]of FILA){const li=document.createElement("li");li.className=(jogou?"jogou":"")+(eu?" eu":"");li.innerHTML=`<img src="${R}${n}-rosto.webp" alt=""><span>${nm}</span><span class="t">${t}</span>`;ul.appendChild(li)}
+const L=[["TOP",12,"Max","4 seguidas · sai",1],["JG",1,"Abreutz","2 seguidas"],["MID",10,"John","1 seguida"],["ADC",8,"Henry","3 seguidas"],["SUP",3,"DD","1 seguida"]];
+const ln=document.getElementById("lanes");
+for(const[r,n,nm,s,sai]of L){const d=document.createElement("div");d.className="lane"+(sai?" sai":"");d.innerHTML=`<div class="r">${r}</div><img src="${R}${n}-rosto.webp" alt=""><b>${nm}</b><small>${s}</small>`;ln.appendChild(d)}
+// roleta: só quem ainda não entrou nesta rodada
+const NS="http://www.w3.org/2000/svg",svg=document.getElementById("roda");
+const el=(t,a,p=svg)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e};
+const vivos=FILA.filter(f=>!f[2]);const n=vivos.length,CORES=["#4A4E44","#B08D57","#3E4C59","#8A7A5A"];
+const giro=-90-(360/n)*0.5; // o sorteado (Pitoco, fatia 0) parou embaixo do ponteiro
+const g=el("g",{transform:`rotate(${giro})`});
+el("circle",{r:192,fill:"#fff",stroke:"#E4E0D6","stroke-width":4},g);
+vivos.forEach(([num,nm],k)=>{
+  const a0=(k/n)*2*Math.PI,a1=((k+1)/n)*2*Math.PI,r=184;
+  el("path",{d:`M0 0 L${r*Math.cos(a0)} ${r*Math.sin(a0)} A${r} ${r} 0 0 1 ${r*Math.cos(a1)} ${r*Math.sin(a1)} Z`,fill:CORES[k%CORES.length],stroke:"#fff","stroke-width":3},g);
+  const am=(a0+a1)/2,deg=am*180/Math.PI;
+  const gg=el("g",{transform:`rotate(${deg}) translate(140 0)`},g);
+  const cp=el("clipPath",{id:"c"+k},gg);el("circle",{r:24},cp);
+  el("circle",{r:27,fill:"#fff"},gg);
+  el("image",{href:`${R}${num}-rosto.webp`,x:-24,y:-24,width:48,height:48,"clip-path":`url(#c${k})`,transform:`rotate(${-deg-giro})`},gg);
+  const t=el("text",{x:0,y:0,transform:`translate(-58 0) rotate(${(deg+giro+90)%360>180?180:0})`,"text-anchor":"middle","dominant-baseline":"middle","font-family":"Unbounded,sans-serif","font-weight":"700","font-size":"10.5",fill:"#fff"},gg);t.textContent=nm.toUpperCase();
+});
+el("circle",{r:34,fill:"#FAF9F6",stroke:"#B08D57","stroke-width":4});
+const t=el("text",{x:0,y:2,"text-anchor":"middle","dominant-baseline":"middle","font-family":"Unbounded,sans-serif","font-weight":"800","font-size":"11",fill:"#353535"});t.textContent="GIRAR";
+</script>
+</body></html>
