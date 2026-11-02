@@ -12,7 +12,7 @@ import { aoConectar, aoMudarTabela } from "@/lib/sala";
 import { errMsg, sb } from "@/lib/supabase";
 import { getApp, setApp } from "@/lib/store";
 import { toast } from "@/lib/toast";
-import { trValido, type Carta, type MaoBase, type MesaPub, type Vaza } from "./engine";
+import { TR_TEMPO_MS, trValido, type Carta, type MaoBase, type MesaPub, type Vaza } from "./engine";
 import { TR_ID, TR_MAX_JSON, trLimpaPub } from "./valida";
 
 /** Minhas cartas, como chegaram do banco (`n` = número da mão, `lugar` = onde estou sentado). */
@@ -47,6 +47,9 @@ const TRU = {
   falas: new Map<string, number>(),
   /** cartas que já apareceram na mesa (só as novas animam) */
   vistas: new Set<string>(),
+  /** relógio da jogada: quando vi cada `desde` (mesa:n:desde → hora local) e o aviso de "tempo" agendado */
+  relogio: new Map<string, number>(),
+  tempo: new Map<string, ReturnType<typeof setTimeout>>(),
 };
 
 const FALA_MS = 3500;
@@ -134,6 +137,47 @@ function agendarProxima(pub: MesaPub) {
   );
 }
 
+/* ---------- o tempo de cada jogada (20 s) ---------- */
+const chaveRelogio = (pub: MesaPub) => (pub.h && typeof pub.h.desde === "number" ? `${pub.id}:${pub.h.n}:${pub.h.desde}` : "");
+
+/**
+ * Até quando (hora deste aparelho) vai a jogada de agora; null = sem relógio. Conta a partir de quando a mesa
+ * chegou aqui (o relógio do servidor pode estar adiantado ou atrasado em relação ao do aparelho).
+ */
+export function fimDaJogada(pub: MesaPub): number | null {
+  const k = chaveRelogio(pub);
+  if (!k || pub.fase !== "jogo" || !pub.h || pub.h.fim) return null;
+  if (!TRU.relogio.has(k)) {
+    if (TRU.relogio.size > 100) TRU.relogio.clear();
+    TRU.relogio.set(k, Date.now());
+  }
+  return TRU.relogio.get(k)! + TR_TEMPO_MS;
+}
+
+/* acabou o tempo e eu estou sentado: aviso o juiz (todos avisam; ele confere no relógio dele e vale o primeiro) */
+function agendarTempo(pub: MesaPub) {
+  const fim = fimDaJogada(pub), eu = meuLugar(pub, getApp().myUid), k = chaveRelogio(pub);
+  if (fim === null || eu < 0 || TRU.tempo.has(k)) return;
+  if (TRU.tempo.size > 20) {
+    TRU.tempo.forEach((t) => clearTimeout(t));
+    TRU.tempo.clear();
+  }
+  const avisar = (tentativa: number) => {
+    const atual = TRU.mesas.get(pub.id)?.pub;
+    if (!atual || chaveRelogio(atual) !== k || atual.h?.fim || atual.fase !== "jogo") return;
+    void chamar({ acao: "tempo", mesa: pub.id, n: atual.h!.n }, true);
+    /* o relógio do servidor pode estar um pouco atrás: tenta de novo enquanto nada mudou */
+    if (tentativa < 5) TRU.tempo.set(k, setTimeout(() => avisar(tentativa + 1), 2000));
+  };
+  TRU.tempo.set(k, setTimeout(() => avisar(0), Math.max(0, fim - Date.now()) + 500 + eu * 250));
+}
+
+/** A tela garante o aviso de "tempo" da mesa aberta (a mesa pode ter chegado antes de eu saber quem sou). */
+export function garantirTempo(id: string) {
+  const pub = TRU.mesas.get(id)?.pub;
+  if (pub) agendarTempo(pub);
+}
+
 /* ---------- o que vem do banco ---------- */
 function onMesa(row: Record<string, unknown> | null, ev: string) {
   const id = typeof row?.id === "string" ? row.id : "";
@@ -167,6 +211,7 @@ function guardarMesa(raw: unknown, at: number) {
   if (antes && antes.at > at) return; /* chegou fora de ordem */
   TRU.mesas.set(M.id, { pub: M, at, js });
   agendarProxima(M);
+  agendarTempo(M);
 }
 
 function onMao(row: Record<string, unknown> | null, ev: string) {

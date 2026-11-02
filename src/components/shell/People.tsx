@@ -2,10 +2,9 @@
 import { useEffect, useState } from "react";
 import { ChamaNome } from "@/features/ficha/NoSitio";
 import { Avatar } from "@/components/ui/Avatar";
-import { IcFoneDesligado, IcMic, IcMicDesligado, IcVoltar } from "@/components/ui/icones";
+import { IcVoltar } from "@/components/ui/icones";
 import { CamNaSala } from "@/features/live/CamNaSala";
 import { assistir } from "@/features/live/live";
-import { useVoz } from "@/features/live/voz";
 import { nomeDaSala } from "@/features/salas/trocar";
 import { bingoLines } from "@/lib/bingo";
 import { umPorNanico, type PresencaNanico } from "@/lib/presenca";
@@ -70,7 +69,8 @@ export function useNanicosOnline(): PresencaNanico[] {
 }
 
 /** Uma pessoa na lista de membros: rosto (ou câmera), nome, onde está e o que está fazendo. */
-function Membro({ p, f, falando }: { p: PresencaNanico | null; f: Friend | undefined; falando: boolean }) {
+/* quem está falando aparece só nos canais de voz (à esquerda), não aqui */
+function Membro({ p, f }: { p: PresencaNanico | null; f: Friend | undefined }) {
   const salas = useApp((s) => s.salas);
   const minhaSala = useApp((s) => s.minhaSala);
   const nome = f?.name ?? p?.name ?? "";
@@ -94,7 +94,7 @@ function Membro({ p, f, falando }: { p: PresencaNanico | null; f: Friend | undef
   return (
     <li
       data-key={p?.key}
-      className={(eu ? "me" : "") + (p?.live ? " live" : "") + (online ? "" : " offline") + (falando ? " falando" : "")}
+      className={(eu ? "me" : "") + (p?.live ? " live" : "") + (online ? "" : " offline")}
       title={titulo}
       role={f || assiste ? "button" : undefined}
       tabIndex={f || assiste ? 0 : undefined}
@@ -127,7 +127,6 @@ function Membro({ p, f, falando }: { p: PresencaNanico | null; f: Friend | undef
         </span>
         {onde && (
           <small className="onde">
-            {p?.voz && (p.surdo ? <IcFoneDesligado tam={12} /> : p.mudo ? <IcMicDesligado tam={12} /> : <IcMic tam={12} />)}
             {onde}
           </small>
         )}
@@ -154,12 +153,11 @@ function useEstreita() {
 /**
  * Membros (barra da direita, como no Discord): os 14 nanicos, primeiro quem está online e depois
  * quem está offline. Com a câmera no círculo, AO VIVO (clica para assistir), BINGO e onde cada um está.
- * Some no Início e no Sítio (o Sítio tem a própria lista no canto).
+ * Some no Nanico Hotel (ele tem a própria lista no canto).
  */
 export function Membros() {
   const friends = useApp((s) => s.friends);
   const min = useApp((s) => s.membrosMin);
-  const falando = useVoz((s) => s.falando);
   const estreita = useEstreita();
   const pessoas = useNanicosOnline();
 
@@ -178,7 +176,6 @@ export function Membros() {
     .filter((f) => !linhas.some((l) => l.f?.id === f.id))
     .map((f) => ({ p: null, f, nome: f.name }))
     .sort(porNome);
-  const fala = (p: PresencaNanico) => p.chaves.some((k) => falando.includes(k));
 
   return (
     <aside className="membros" aria-label="Membros">
@@ -203,7 +200,7 @@ export function Membros() {
       </h3>
       <ul className="people">
         {online.map(({ p, f }) => (
-          <Membro key={p.id} p={p} f={f} falando={fala(p)} />
+          <Membro key={p.id} p={p} f={f} />
         ))}
       </ul>
       {offline.length > 0 && (
@@ -214,7 +211,7 @@ export function Membros() {
           </h3>
           <ul className="people">
             {offline.map(({ f }) => (
-              <Membro key={f.id} p={null} f={f} falando={false} />
+              <Membro key={f.id} p={null} f={f} />
             ))}
           </ul>
         </>

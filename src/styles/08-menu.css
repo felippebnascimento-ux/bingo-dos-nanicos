@@ -1,5 +1,7 @@
 /* ---------- menu recolhível ---------- */
-:root{--side-w:320px}
+/* o mais estreito que cabe: ícone e nome do mesmo tamanho, e o AO VIVO ao lado do nome nos canais */
+:root{--side-w:236px}
+@media (min-width:861px){.side{padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:12px}}
 .app{grid-template-columns:var(--side-w) minmax(0,1fr)}
 .wm{left:var(--side-w)}
 body.side-min{--side-w:112px}
@@ -64,7 +66,24 @@ body.side-min .side-toggle{transform:translateY(-50%) scaleX(-1)}
 .nav .nav-rosto{width:20px;height:20px;flex:none}
 @media (max-width:860px){.nav .nav-rosto{display:none}}
 
-/* menu em grupos (Lugares, Turma, Moedas): título pequeno em cima de cada grupo */
-.nav-grupo{margin:10px 12px 2px;font:700 11px var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+/* menu em grupos que recolhem (Jogos, Bingo, Turma), no mesmo jeito das categorias de canais */
+.nav button.nav-grupo{justify-content:flex-start;gap:4px;margin:10px 0 2px;padding:2px 4px;border-radius:6px;background:none;color:var(--muted);font:700 11px var(--display);letter-spacing:.04em;text-transform:uppercase}
+.nav button.nav-grupo:first-child{margin-top:0}
+.nav button.nav-grupo:hover{background:none;color:var(--ink)}
+.nav-grupo svg{transition:transform .15s}
+.nav-grupo.min svg{transform:rotate(-90deg)}
+@media (prefers-reduced-motion:reduce){.nav-grupo svg{transition:none}}
+@media (min-width:861px){.nav .nav-recolhido{display:none}}
 body.side-min .nav-grupo{display:none}
-@media (max-width:860px){.nav-grupo,.nav .so-computador{display:none}}
+body.side-min .nav .nav-recolhido:not(.so-celular){display:flex}
+@media (max-width:860px){.nav .nav-grupo,.nav .so-computador{display:none}}
+
+/* nome curto na barra de baixo do celular ("Hotel"); a barra rola de lado se não couber */
+.nav .t-curto{display:none}
+@media (max-width:860px){
+  .nav .t-longo{display:none}
+  .nav .t-curto{display:inline}
+  .nav{overflow-x:auto;scrollbar-width:none}
+  .nav::-webkit-scrollbar{display:none}
+  .nav button{white-space:nowrap}
+}

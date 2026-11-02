@@ -92,7 +92,7 @@ export async function comprar(it: ItemLoja) {
     const saldo = (data as { saldo?: unknown } | null)?.saldo;
     if (typeof saldo === "number") ajustarSaldo(saldo);
     await carregarMochila();
-    toast(it.espaco === "consumivel" ? `${it.nome} na mochila. Use no Sítio.` : `${it.nome} na sua mochila`);
+    toast(it.espaco === "consumivel" ? `${it.nome} na mochila. Use no Nanico Hotel.` : `${it.nome} na sua mochila`);
   } catch (e) {
     erro(e, "Não deu para comprar agora. Confira a internet.");
   } finally {

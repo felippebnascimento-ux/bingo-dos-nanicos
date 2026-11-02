@@ -103,7 +103,7 @@ export function TrofeusView({ hidden }: { hidden: boolean }) {
   return (
     <section id="view-trofeus" className="inner" hidden={hidden}>
       <button type="button" className="linkish trofeus-voltar" onClick={() => setApp({ aba: "hall" })}>
-        <IcVoltar tam={14} /> Voltar ao Sítio
+        <IcVoltar tam={14} /> Voltar ao Nanico Hotel
       </button>
       <header className="hero">
         <h1>Troféus da semana</h1>

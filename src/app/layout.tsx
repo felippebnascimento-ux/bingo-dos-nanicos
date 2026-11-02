@@ -27,7 +27,6 @@ import "@/styles/23-moedas.css";
 import "@/styles/24-ficha.css";
 import "@/styles/25-salas.css";
 import "@/styles/26-cassino.css";
-import "@/styles/27-inicio.css";
 import "@/styles/28-trofeus.css";
 import "@/styles/29-canais.css";
 import "@/styles/30-loja.css";

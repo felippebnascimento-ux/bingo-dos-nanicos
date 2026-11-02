@@ -1,4 +1,6 @@
 {
+  "escala": 3,
+  "obs_escala": "a folha tem 3x o tamanho das medidas abaixo (célula de 252x402 px), para ficar nítida ampliada; o código usa as medidas abaixo",
   "celula": {
     "largura": 84,
     "altura": 134

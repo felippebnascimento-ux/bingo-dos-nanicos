@@ -125,3 +125,10 @@
 }
 @media (prefers-reduced-motion:reduce){.tr-fala,.tr-jogada.novo .tc,.tr-pergunta{animation:none}.tr-mao .tc{transition:none}}
 
+
+/* relógio da jogada (20 s): pílula com a barra que esvazia; nos 5 últimos segundos fica vermelha */
+.tr-relogio{position:relative;overflow:hidden;min-width:44px;padding:2px 8px;border-radius:99px;font:700 11px var(--display);font-variant-numeric:tabular-nums;text-align:center;color:var(--ink);background:var(--surface-2);isolation:isolate}
+.tr-relogio::before{content:"";position:absolute;inset:0;z-index:-1;background:color-mix(in srgb,var(--accent) 55%,transparent);transform-origin:left;transform:scaleX(var(--resta,1))}
+.tr-relogio.urgente{color:#FAF9F6}
+.tr-relogio.urgente::before{background:var(--live)}
+.tr-relogio.urgente{background:color-mix(in srgb,var(--live) 35%,var(--surface-2))}

@@ -3,7 +3,7 @@
 // O site chama esta função mais ou menos a cada minuto. Ela:
 //   1. confere se quem chamou é um nanico logado;
 //   2. no máximo uma vez a cada 55 s (para todo mundo junto), pergunta à Riot
-//      quem dos nanicos com op.gg salvo está em partida agora;
+//      quem dos nanicos com op.gg salvo (ou o do smurf) está em partida agora;
 //   3. abre as apostas de cada partida nova e, quando a partida acaba, pergunta à Riot quem venceu e paga;
 //   4. devolve as partidas guardadas no banco.
 // A chave da Riot fica só aqui, no segredo RIOT_API_KEY do Supabase. Nunca no site.
@@ -100,43 +100,71 @@ async function campeoes() {
   return CAMPEOES;
 }
 
-type Conta = { friend_id: string; riot_id: string; puuid: string | null; atualizado: string };
+type Conta = {
+  friend_id: string; riot_id: string; puuid: string | null; atualizado: string;
+  riot_id_smurf?: string | null; puuid_smurf?: string | null; atualizado_smurf?: string | null;
+};
 
 async function atualizar(admin: any): Promise<string | null> {
-  const { data: amigos } = await admin.from("friends").select("id,name,opgg").not("opgg", "is", null);
-  const { data: contasArr } = await admin.from("riot_contas").select("friend_id,riot_id,puuid,atualizado");
+  const { data: amigos } = await admin.from("friends").select("id,name,opgg,opgg_smurf").or("opgg.not.is.null,opgg_smurf.not.is.null");
+  const { data: contasArr } = await admin.from("riot_contas").select("friend_id,riot_id,puuid,atualizado,riot_id_smurf,puuid_smurf,atualizado_smurf");
   const contas = new Map<string, Conta>((contasArr ?? []).map((c: Conta) => [c.friend_id, c]));
   const alvos: { fid: string; puuid: string; plataforma: string }[] = [];
   let erro: string | null = null;
 
-  // 1) Riot ID do op.gg → PUUID (só pergunta de novo se o link mudou ou depois de 1 dia sem achar)
-  for (const f of amigos ?? []) {
-    const id = lerOpgg(f.opgg);
-    if (!id) continue;
+  // Riot ID → PUUID (só pergunta de novo se o link mudou ou depois de 1 dia sem achar).
+  // "erro" = a Riot recusou a chave ou pediu para esperar: para tudo
+  async function puuidDe(id: { nome: string; tag: string; plataforma: string }, guardado: { riot_id?: string | null; puuid?: string | null; atualizado?: string | null } | null) {
     const chave = `${id.nome}#${id.tag}@${id.plataforma}`.toLowerCase();
-    let c = contas.get(f.id);
-    const velho = c && !c.puuid && Date.now() - Date.parse(c.atualizado) > 86400000;
-    if (!c || c.riot_id !== chave || velho) {
-      const r = await riot(`https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(id.nome)}/${encodeURIComponent(id.tag)}`);
-      if (r.status === 401 || r.status === 403) return "A chave da Riot está errada ou venceu.";
-      if (r.status === 429) return "A Riot pediu para esperar (limite de consultas).";
-      const puuid = r.status === 200 && typeof r.body?.puuid === "string" ? r.body.puuid : null;
-      if (r.status !== 200 && r.status !== 404) { erro = `Riot respondeu ${r.status} ao buscar uma conta.`; continue; }
-      c = { friend_id: f.id, riot_id: chave, puuid, atualizado: new Date().toISOString() };
-      await admin.from("riot_contas").upsert(c);
-    }
-    if (c.puuid) alvos.push({ fid: f.id, puuid: c.puuid, plataforma: id.plataforma });
+    const velho = guardado && !guardado.puuid && Date.now() - Date.parse(guardado.atualizado ?? "") > 86400000;
+    if (guardado && guardado.riot_id === chave && !velho) return { chave, puuid: guardado.puuid ?? null, novo: false };
+    const r = await riot(`https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(id.nome)}/${encodeURIComponent(id.tag)}`);
+    if (r.status === 401 || r.status === 403) return { erro: "A chave da Riot está errada ou venceu." };
+    if (r.status === 429) return { erro: "A Riot pediu para esperar (limite de consultas)." };
+    if (r.status !== 200 && r.status !== 404) return { aviso: `Riot respondeu ${r.status} ao buscar uma conta.` };
+    return { chave, puuid: r.status === 200 && typeof r.body?.puuid === "string" ? (r.body.puuid as string) : null, novo: true };
   }
 
-  // 2) quem está em partida agora (Spectator-V5)
+  // 1) as contas de cada nanico: a do op.gg e, se tiver, a do smurf (as duas na mesma linha de riot_contas)
+  for (const f of amigos ?? []) {
+    const c = contas.get(f.id) ?? null;
+    const id = f.opgg ? lerOpgg(f.opgg) : null;
+    if (id) {
+      const r = await puuidDe(id, c);
+      if ("erro" in r) return r.erro!;
+      if ("aviso" in r) erro = r.aviso!;
+      else {
+        if (r.novo) await admin.from("riot_contas").upsert({ friend_id: f.id, riot_id: r.chave, puuid: r.puuid, atualizado: new Date().toISOString() });
+        if (r.puuid) alvos.push({ fid: f.id, puuid: r.puuid, plataforma: id.plataforma });
+      }
+    }
+    const sm = f.opgg_smurf ? lerOpgg(f.opgg_smurf) : null;
+    if (sm) {
+      const r = await puuidDe(sm, c && { riot_id: c.riot_id_smurf, puuid: c.puuid_smurf, atualizado: c.atualizado_smurf });
+      if ("erro" in r) return r.erro!;
+      if ("aviso" in r) erro = r.aviso!;
+      else {
+        if (r.novo) {
+          const linha = { friend_id: f.id, riot_id_smurf: r.chave, puuid_smurf: r.puuid, atualizado_smurf: new Date().toISOString() };
+          // sem linha da principal ainda, a coluna riot_id (obrigatória) fica vazia até a principal aparecer
+          if (c) await admin.from("riot_contas").update(linha).eq("friend_id", f.id);
+          else await admin.from("riot_contas").upsert({ ...linha, riot_id: "" });
+        }
+        if (r.puuid) alvos.push({ fid: f.id, puuid: r.puuid, plataforma: sm.plataforma });
+      }
+    }
+  }
+
+  // 2) quem está em partida agora (Spectator-V5); com duas contas, vale a que estiver jogando
   const nanicoPorPuuid = new Map(alvos.map((a) => [a.puuid, a.fid]));
   const resultado = new Map<string, any>(); // friend_id → partida
   let completo = true; // todos os nanicos foram consultados (sem isso, não dá para dizer que uma partida acabou)
   for (const a of alvos) {
+    if (resultado.get(a.fid)) continue; // a outra conta já está em partida
     const r = await riot(`https://${a.plataforma}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${encodeURIComponent(a.puuid)}`);
     if (r.status === 401 || r.status === 403) return "A chave da Riot está errada ou venceu.";
     if (r.status === 429) { erro = "A Riot pediu para esperar (limite de consultas)."; completo = false; break; }
-    if (r.status === 404) { resultado.set(a.fid, null); continue; }
+    if (r.status === 404) { if (!resultado.has(a.fid)) resultado.set(a.fid, null); continue; }
     if (r.status !== 200 || !r.body) { erro = `Riot respondeu ${r.status} ao procurar partida.`; completo = false; continue; }
     resultado.set(a.fid, r.body);
   }

@@ -14,15 +14,36 @@ import { errMsg } from "@/lib/supabase";
 import type { Friend } from "@/lib/tipos";
 import { toast } from "@/lib/toast";
 import { byName } from "@/lib/util";
-import { cleanOpgg, opggNick, opggOf } from "./opgg";
+import { cleanOpgg, opggNick, opggOf, opggSmurfOf } from "./opgg";
 import { cleanSteam, steamOf } from "./steam";
 
-/** Meu bloco: rosto, nome e o formulário do op.gg. */
+/** Meu bloco: rosto, nome, o op.gg (e o do smurf), a Steam e os outros links. */
 function MeuPerfil({ me }: { me: Friend }) {
-  const cur = opggOf(me);
+  const smurfOk = useApp((s) => s.smurfOk);
+  return (
+    <>
+      <div className="me-head">
+        <Avatar f={me} size="lg" />
+        <div>
+          <b>{me.name}</b>
+          <span>Seu perfil</span>
+        </div>
+      </div>
+      <CampoOpgg me={me} smurf={false} />
+      {smurfOk && <CampoOpgg me={me} smurf />}
+      <CampoSteam me={me} />
+      <CampoLinks />
+    </>
+  );
+}
+
+/** Link do op.gg (a conta principal ou a do smurf): a partida ao vivo procura nas duas. */
+function CampoOpgg({ me, smurf }: { me: Friend; smurf: boolean }) {
+  const cur = smurf ? opggSmurfOf(me) : opggOf(me);
   /* enquanto a pessoa edita, o texto fica aqui; fora isso, o campo mostra o link salvo */
   const [rascunho, setRascunho] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const id = smurf ? "opggSmurf" : "opgg";
 
   const salvar = async (v: string) => {
     if (!getApp().opggOk) return toast("Para salvar o op.gg, rode o SQL novo no Supabase.");
@@ -30,9 +51,9 @@ function MeuPerfil({ me }: { me: Friend }) {
     if (url === null) return toast("Esse link não é do op.gg. Copie o endereço da página do seu perfil no op.gg.");
     setSalvando(true);
     try {
-      const r = await api.saveOpgg(me.id, url || null);
+      const r = await api.saveOpgg(me.id, url || null, smurf);
       if (!r || !r.length) throw new Error("nada salvo");
-      toast(url ? "op.gg salvo" : "Link tirado");
+      toast(url ? (smurf ? "op.gg do smurf salvo" : "op.gg salvo") : "Link tirado");
       await loadFriends().catch(() => {});
       setRascunho(null);
     } catch (err) {
@@ -44,58 +65,46 @@ function MeuPerfil({ me }: { me: Friend }) {
   };
 
   return (
-    <>
-      <div className="me-head">
-        <Avatar f={me} size="lg" />
-        <div>
-          <b>{me.name}</b>
-          <span>Seu perfil</span>
-        </div>
-      </div>
-      <form
-        id="opggForm"
-        noValidate
-        onSubmit={(e) => {
-          e.preventDefault();
-          salvar(rascunho ?? cur);
-        }}
-      >
-        <label className="lbl" htmlFor="opggInput">
-          Link do seu op.gg
-        </label>
-        <input
-          id="opggInput"
-          type="url"
-          inputMode="url"
-          maxLength={300}
-          autoComplete="off"
-          spellCheck={false}
-          placeholder="https://op.gg/lol/summoners/br/Nome-BR1"
-          value={rascunho ?? cur}
-          onChange={(e) => setRascunho(e.target.value)}
-        />
-        <p className="hint" style={{ margin: 0 }}>
-          No op.gg, procure seu nome, abra seu perfil e copie o endereço da página.
-        </p>
-        <div className="row">
-          <button className="btn" type="submit" id="opggSave" disabled={salvando}>
-            Salvar
-          </button>
-          {cur && (
-            <a className="btn soft" id="opggOpen" href={cur} target="_blank" rel="noopener noreferrer">
-              Abrir meu op.gg
-            </a>
-          )}
-        </div>
+    <form
+      id={id + "Form"}
+      className="opgg-form"
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        salvar(rascunho ?? cur);
+      }}
+    >
+      <label className="lbl" htmlFor={id + "Input"}>
+        {smurf ? "op.gg do seu smurf (opcional)" : "Link do seu op.gg"}
+      </label>
+      <input
+        id={id + "Input"}
+        type="url"
+        inputMode="url"
+        maxLength={300}
+        autoComplete="off"
+        spellCheck={false}
+        placeholder="https://op.gg/lol/summoners/br/Nome-BR1"
+        value={rascunho ?? cur}
+        onChange={(e) => setRascunho(e.target.value)}
+      />
+      {!smurf && <p className="hint opgg-dica">No op.gg, procure seu nome, abra seu perfil e copie o endereço da página.</p>}
+      <div className="row">
+        <button className="btn" type="submit" id={id + "Save"} disabled={salvando}>
+          Salvar
+        </button>
         {cur && (
-          <button type="button" className="linkish" id="opggClear" onClick={() => salvar("")}>
-            Tirar o link
-          </button>
+          <a className="btn soft" id={id + "Open"} href={cur} target="_blank" rel="noopener noreferrer">
+            {smurf ? "Abrir o smurf" : "Abrir meu op.gg"}
+          </a>
         )}
-      </form>
-      <CampoSteam me={me} />
-      <CampoLinks />
-    </>
+      </div>
+      {cur && (
+        <button type="button" className="linkish" id={id + "Clear"} onClick={() => salvar("")}>
+          Tirar o link
+        </button>
+      )}
+    </form>
   );
 }
 
@@ -202,6 +211,7 @@ export function PerfilView({ hidden }: { hidden: boolean }) {
           <ul className="opgg-list" id="opggList">
             {list.map((f) => {
               const u = opggOf(f),
+                smurf = opggSmurfOf(f),
                 ch = emJogo.get(f.id);
               return (
                 <li key={f.id} className={f.id === myFid ? "me" : ""}>
@@ -220,7 +230,12 @@ export function PerfilView({ hidden }: { hidden: boolean }) {
                       op.gg
                     </a>
                   ) : (
-                    <span className="opgg-none">sem link</span>
+                    !smurf && <span className="opgg-none">sem link</span>
+                  )}
+                  {smurf && (
+                    <a className="btn sm soft opgg-go" href={smurf} target="_blank" rel="noopener noreferrer" title={opggNick(smurf)} aria-label={`Abrir o op.gg do smurf de ${f.name}`}>
+                      smurf
+                    </a>
                   )}
                 </li>
               );

@@ -6,11 +6,13 @@
 // e grava só o que cada um pode ver: a mesa pública em truco_mesas e a mão de cada lugar em truco_maos
 // (o RLS deixa cada um ler só a sua). O site recebe tudo pelo tempo real dessas duas tabelas.
 // A resposta nunca traz cartas: só { ok } ou { erro }.
+// Cada jogada tem 20 s (TR_TEMPO_MS): quem está na mesa manda "tempo" quando acaba, e a função joga uma carta
+// sorteada (ou aceita o pedido) por quem não jogou, se o relógio dela também disser que acabou.
 // No fim da partida chama truco_premiar (+15 por vencedor, até 3 vitórias pagas por dia).
 
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 import {
-  TR_APOSTAS, trAcao, trLog, trNovaMao, trNovaMesa, trPublica, trValido,
+  TR_APOSTAS, trAcao, trLog, trNovaMao, trNovaMesa, trPublica, trTempoEsgotado, trValido,
   type Aposta, type Mesa,
 } from "./engine.ts";
 
@@ -114,6 +116,13 @@ function aplicar(E: Estado, eu: Eu, acao: string, b: Record<string, unknown>): b
     if (Date.now() - (E.fimEm ?? 0) < PAUSA_MAO_MS) return false;
     trNovaMao(M, rnd);
     E.fimEm = M.h?.fim ? Date.now() : null;
+    return true;
+  }
+  if (acao === "tempo") {
+    /* acabou os 20 s da jogada: quem está na mesa avisa, e só vale se o relógio daqui concordar */
+    if (M.fase !== "jogo" || !M.h || M.h.fim || M.h.n !== b.n) return false;
+    if (!trTempoEsgotado(M, Date.now(), rnd)) return false;
+    if (M.h?.fim && !E.fimEm) E.fimEm = Date.now();
     return true;
   }
   if (!JOGO.includes(acao)) throw new Recusa("Ação desconhecida.");

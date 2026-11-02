@@ -32,6 +32,8 @@ export type AppState = {
   opggOk: boolean;
   /** o SQL da ficha (coluna steam) já rodou */
   steamOk: boolean;
+  /** o banco já tem a coluna do op.gg de smurf (seção 27 do seguranca.sql) */
+  smurfOk: boolean;
   lineup: LineupSlot[];
 
   /* deste navegador */
@@ -99,6 +101,7 @@ export const useApp = create<AppState>()(() => ({
   phrasesV2: true,
   opggOk: true,
   steamOk: true,
+  smurfOk: true,
   lineup: lineupVazia(),
   card: null,
   online: [],
@@ -114,7 +117,7 @@ export const useApp = create<AppState>()(() => ({
   vozSurdo: false,
   canalTexto: "geral",
   hallPos: null,
-  aba: "inicio",
+  aba: "hall",
   sideMin: false,
   membrosMin: false,
   railTab: "chat",

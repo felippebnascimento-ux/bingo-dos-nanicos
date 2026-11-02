@@ -27,6 +27,9 @@ export function cleanOpgg(v: unknown): string | null {
 /** op.gg salvo do nanico (só se ainda for um link válido). */
 export const opggOf = (f: Friend | null | undefined) => (f && typeof f.opgg === "string" ? cleanOpgg(f.opgg) : "") || "";
 
+/** op.gg da segunda conta (smurf), se tiver. */
+export const opggSmurfOf = (f: Friend | null | undefined) => (f && typeof f.opgg_smurf === "string" ? cleanOpgg(f.opgg_smurf) : "") || "";
+
 /** Nick do jogador a partir do link: ".../summoners/br/Nome-BR1" → "Nome". */
 export function opggNick(url: string) {
   try {

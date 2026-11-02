@@ -14,7 +14,6 @@ import { FichaNanico } from "@/features/ficha/Ficha";
 import { PainelCarteira } from "@/features/moedas/Ranking";
 import { SalasJanela } from "@/features/salas/Salas";
 import { HallView } from "@/features/hall/HallView";
-import { InicioView } from "@/features/inicio/InicioView";
 import { LojaView } from "@/features/loja/LojaView";
 import { TrofeusView } from "@/features/trofeus/TrofeusView";
 import { JogarView } from "@/features/jogar/JogarView";
@@ -38,11 +37,9 @@ export default function App() {
   useEffect(() => {
     boot();
   }, []);
-  /* no Início a barra lateral some: os cartões levam a cada lugar */
+  /* a lista de membros some no Nanico Hotel (ele tem a própria lista no canto) */
   useEffect(() => {
-    document.body.classList.toggle("no-inicio", aba === "inicio");
-    /* a lista de membros some no Início e no Sítio (o Sítio tem a própria lista no canto) */
-    document.body.classList.toggle("sem-membros", aba === "inicio" || aba === "hall");
+    document.body.classList.toggle("sem-membros", aba === "hall");
   }, [aba]);
 
   return (
@@ -55,7 +52,6 @@ export default function App() {
         <Sidebar />
         <main className="main">
           <div className="inner">
-            <InicioView hidden={aba !== "inicio"} />
             <HallView hidden={aba !== "hall"} />
             <TrofeusView hidden={aba !== "trofeus"} />
             <LojaView hidden={aba !== "loja"} />

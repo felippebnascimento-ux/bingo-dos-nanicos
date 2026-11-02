@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  trAcao, trBaralho, trDecide, trEmbaralha, trEnvido, trFalta, trFlor, trForca, trNovaMao, trNovaMesa,
-  trOpcoes, trPublica, trTemFlor, trTime, type Carta, type Mesa,
+  TR_TEMPO_MS, trAcao, trBaralho, trDecide, trEmbaralha, trEnvido, trFalta, trFlor, trForca, trNovaMao, trNovaMesa,
+  trOpcoes, trPublica, trQuemDeve, trRestante, trTemFlor, trTempoEsgotado, trTime, type Carta, type Mesa,
 } from "./engine";
 import { trLimpaPub } from "./valida";
 
@@ -451,5 +451,57 @@ describe("mesa pública", () => {
     /* texto comprido é cortado, não recusado */
     const longo = trLimpaPub({ ...pub, log: ["x".repeat(500)] }, M.host);
     expect(longo!.log[0]).toHaveLength(120);
+  });
+});
+
+describe("tempo de cada jogada (20 s)", () => {
+  it("a mão nova liga o relógio e cada jogada recomeça", () => {
+    const M = novaMesa();
+    trNovaMao(M, rndPara(baralhoCom([ANA, BETO])), 1000);
+    expect(trRestante(M, 1000)).toBe(TR_TEMPO_MS);
+    expect(trRestante(M, 6000)).toBe(TR_TEMPO_MS - 5000);
+    expect(trAcao(M, 0, "jogar", "4c", 9000)).toBeNull();
+    expect(M.h!.desde).toBe(9000);
+    expect(trPublica(M).h!.desde).toBe(9000);
+  });
+
+  it("antes dos 20 s não faz nada; depois, joga uma carta da mão de quem devia", () => {
+    const M = novaMesa();
+    trNovaMao(M, rndPara(baralhoCom([ANA, BETO])), 0);
+    expect(trTempoEsgotado(M, TR_TEMPO_MS - 1)).toBe(false);
+    expect(trQuemDeve(M)).toBe(0);
+    expect(trTempoEsgotado(M, TR_TEMPO_MS, () => 0.99)).toBe(true);
+    expect(M.h!.vazas[0].cartas).toEqual([{ s: 0, c: "5c" }]);
+    expect(M.h!.maos[0]).toEqual(["1e", "4c"]);
+    expect(M.h!.vez).toBe(1);
+    expect(M.h!.desde).toBe(TR_TEMPO_MS);
+  });
+
+  it("pedido sem resposta: o tempo aceita (quero) por quem tinha que responder", () => {
+    const M = novaMesa();
+    trNovaMao(M, rndPara(baralhoCom([ANA, BETO])), 0);
+    expect(trAcao(M, 0, "truco", undefined, 100)).toBeNull();
+    expect(trQuemDeve(M)).toBe(1);
+    expect(trTempoEsgotado(M, 100 + TR_TEMPO_MS)).toBe(true);
+    expect(M.h!.truco).toMatchObject({ valor: 2, pend: null, dono: 1 });
+  });
+
+  it("no 2x2, o relógio cobra do primeiro do outro time depois de quem pediu", () => {
+    const M = novaMesa(4);
+    trNovaMao(M, rndPara(baralhoCom([ANA, BETO, ["2c", "3c", "6c"], ["2o", "3o", "6o"]])), 0);
+    const mano = M.h!.mano;
+    expect(trAcao(M, mano, "envido", "envido", 0)).toBeNull();
+    expect(trQuemDeve(M)).toBe((mano + 1) % 4);
+  });
+
+  it("mão que acabou ou mesa antiga (sem relógio) não tem tempo", () => {
+    const M = novaMesa();
+    trNovaMao(M, rndPara(baralhoCom([ANA, BETO])), 0);
+    delete M.h!.desde;
+    expect(trRestante(M, 1e9)).toBeNull();
+    expect(trTempoEsgotado(M, 1e9)).toBe(false);
+    M.h!.desde = 0;
+    expect(trAcao(M, 0, "mazo", undefined, 10)).toBeNull();
+    expect(trRestante(M, 1e9)).toBeNull();
   });
 });

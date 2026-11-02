@@ -137,7 +137,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
   return (
     <section id="view-hall" className="inner" hidden={hidden}>
       <header className="hero">
-        <h1>Sítio do Mitz</h1>
+        <h1>Nanico Hotel</h1>
       </header>
       <FaixaEvento />
       <div className="hall hall-area">
@@ -146,7 +146,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
           style={{ aspectRatio: `${vb.w} / ${vb.h}` }}
           tabIndex={0}
           role="group"
-          aria-label="Hall do Sítio. Clique no chão ou use as setas para andar."
+          aria-label="Hall do Nanico Hotel. Clique no chão ou use as setas para andar."
           onClick={tocar}
           onKeyDown={tecla}
           onPointerMove={mover}

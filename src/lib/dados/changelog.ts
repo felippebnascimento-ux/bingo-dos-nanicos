@@ -46,7 +46,7 @@ export const CHANGELOG: EntradaLog[] = [
   { data: "01/11/2026", itens: ["Sítio do Mitz: o hall com o boneco de cada nanico; clique no chão para andar e veja quem está no site"] },
   { data: "01/11/2026", itens: ["As novidades aparecem sozinhas na primeira vez que você entra depois de uma atualização"] },
   { data: "01/11/2026", itens: ["Moedas: bônus todo dia que você entra, maior a cada dia seguido, e moedas pelo tempo com o site aberto"] },
-  { data: "01/11/2026", itens: ["Ficha de cada nanico na aba Nanicos: elo, KDA, main e horas de CS2, com o boneco no quarto", "Perfil aceita o link da Steam"] },
+  { data: "01/11/2026", itens: [{ t: "Ficha de cada nanico na aba Nanicos: elo, KDA, main e horas de CS2, com o boneco no quarto", off: "trocado só pelos links do op.gg e da Steam na ficha na v1.68" }, "Perfil aceita o link da Steam"] },
   { data: "01/11/2026", itens: ["Atributos na ficha: tilt, choro, clutch, farm, sorte e call, com voto anônimo do grupo"] },
   {
     data: "02/11/2026",
@@ -67,7 +67,7 @@ export const CHANGELOG: EntradaLog[] = [
   { data: "02/11/2026", itens: ["Cassino com moedas: roleta europeia, com a vantagem da casa à mostra e resultado que dá para conferir"] },
   { data: "02/11/2026", itens: ["Cassino: limbo, maior ou menor e caça-níquel com o rosto dos nanicos"] },
   { data: "02/11/2026", itens: ["Sítio: cada nanico aparece uma vez só, e quem entra aparece na hora, mesmo depois de deixar o site em segundo plano"] },
-  { data: "02/11/2026", itens: ["Tela de início: escolha para onde ir (Sítio, Truco, Ao vivo, Jogar, Cassino, Nanicadas) e veja o que está rolando em cada um"] },
+  { data: "02/11/2026", itens: [{ t: "Tela de início: escolha para onde ir (Sítio, Truco, Ao vivo, Jogar, Cassino, Nanicadas) e veja o que está rolando em cada um", off: "o site volta a abrir no Nanico Hotel na v1.68" }] },
   { data: "02/11/2026", itens: ["Ranking de quem tem mais moedas: clique na carteira para ver a sua posição"] },
   { data: "02/11/2026", itens: ["Na ficha de cada um: dias seguidos no Sítio, recorde e tempo online (hoje, na semana e no total)"] },
   { data: "02/11/2026", itens: ["Roleta do rodízio na aba Jogar: quem está de fora entra na roleta e todo mundo joga na sua vez"] },
@@ -189,9 +189,9 @@ export const CHANGELOG: EntradaLog[] = [
   {
     data: "02/11/2026",
     itens: [
-      "Menu arrumado em grupos (Lugares, Turma e Moedas), com ícones diferentes para o Início e o Sítio",
-      "Ranking, Loja e Troféus direto no menu",
-      "Início novo: o seu dia (moedas, sequência, bônus e missões), o que está acontecendo agora e o ranking de moedas",
+      { t: "Menu arrumado em grupos (Lugares, Turma e Moedas), com ícones diferentes para o Início e o Sítio", off: "trocado pelos grupos Jogos, Bingo e Turma na v1.68" },
+      { t: "Ranking, Loja e Troféus direto no menu", off: "o Ranking saiu do menu na v1.68 (continua na carteira)" },
+      { t: "Início novo: o seu dia (moedas, sequência, bônus e missões), o que está acontecendo agora e o ranking de moedas", off: "o site volta a abrir no Nanico Hotel na v1.68" },
     ],
   },
   {
@@ -203,6 +203,19 @@ export const CHANGELOG: EntradaLog[] = [
     itens: [
       "Roleta do Cassino de verdade: a roda gira, a bolinha corre, quica e cai no número sorteado",
       "Sons da roleta com botão de mudo e os seus últimos 10 números",
+    ],
+  },
+  {
+    data: "02/11/2026",
+    itens: [
+      "O Sítio agora se chama Nanico Hotel, e o site volta a abrir direto nele",
+      "Menu em grupos que recolhem: Jogos (Nanico Hotel, Truco, Cassino e Loja), Bingo (Nanicadas e Jogar) e Turma",
+      "Menu mais estreito",
+      "Truco: 20 segundos para cada jogada. Acabou o tempo, sai uma carta sorteada (ou o pedido é aceito)",
+      "Perfil aceita um segundo op.gg, do smurf, e a partida ao vivo procura nas duas contas",
+      "Ficha mais limpa: só os links do op.gg e da Steam, sem a zoeira da semana, e os atributos em ordem alfabética",
+      "Bonecos do Nanico Hotel mais nítidos",
+      "A lista de membros à direita não mostra mais quem está falando (isso fica nos canais de voz)",
     ],
   },
 ];

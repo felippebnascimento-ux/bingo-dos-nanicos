@@ -2679,6 +2679,34 @@ begin
   begin alter publication supabase_realtime add table public.apostas;          exception when duplicate_object then null; end;
 end $$;
 
+-- 27) op.gg de smurf: um segundo link no perfil (a partida ao vivo procura nas duas contas) --------------------------
+alter table public.friends add column if not exists opgg_smurf text;
+alter table public.friends drop constraint if exists friends_opgg_smurf_valido;
+alter table public.friends add constraint friends_opgg_smurf_valido check (
+  opgg_smurf is null or (char_length(opgg_smurf) <= 300 and opgg_smurf ~* '^https://([a-z0-9-]+\.)?op\.gg(/[^\s<>"'']*)?$'));
+grant update (opgg_smurf) on public.friends to authenticated;
+
+-- a mesma proteção do perfil (4b e 8), agora deixando passar o op.gg, o op.gg de smurf e a Steam
+create or replace function public.perfil_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then return new; end if;   -- admin pelo SQL Editor
+  -- pelo site só mudam os op.gg e a Steam; o resto continua como estava
+  new.id := old.id; new.name := old.name; new.photo := old.photo; new.user_id := old.user_id;
+  new.username := old.username; new.created_at := old.created_at;
+  new.opgg := nullif(btrim(new.opgg), '');
+  new.opgg_smurf := nullif(btrim(new.opgg_smurf), '');
+  new.steam := nullif(btrim(new.steam), '');
+  perform public.limitar('perfil', 10, interval '10 minutes', 'Calma: muitas mudanças no perfil. Espere uns minutos.');
+  return new;
+end $$;
+revoke all on function public.perfil_protecao() from public, anon, authenticated;
+
+-- a conta Riot do smurf fica na mesma linha da principal (só a função riot-ao-vivo usa)
+alter table public.riot_contas add column if not exists riot_id_smurf text;
+alter table public.riot_contas add column if not exists puuid_smurf text;
+alter table public.riot_contas add column if not exists atualizado_smurf timestamptz;
+
 -- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica e as 3 funções das apostas
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')

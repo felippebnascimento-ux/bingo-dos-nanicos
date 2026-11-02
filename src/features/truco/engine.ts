@@ -7,6 +7,8 @@
  * Truco 2, retruco 3, vale quatro 4; quem não quer dá o valor anterior. Mão sem truco vale 1.
  * Envido 2, real envido 3, falta envido = o que falta para quem está na frente ganhar. Não querer dá 1 (ou o que já estava aceito).
  * Flor vale 3 por flor; se os dois times têm, a maior leva tudo (sem contraflor).
+ * Tempo: cada jogada (carta, canto ou resposta) tem 20 s. Acabou o tempo, a carta sai sozinha (sorteada) e
+ * um pedido sem resposta é aceito ("quero").
  *
  * Os nomes das funções são os mesmos do site antigo (trForca, trEnvido, trOpcoes, trAcao…).
  * Lugares: 0..modo-1, em sentido anti-horário. Time de um lugar = lugar % 2.
@@ -51,6 +53,8 @@ export type MaoBase = {
   env: EnvEstado;
   flor: { quem: number[]; team: number } | null;
   fim: FimMao | null;
+  /** quando começou a espera pela jogada de agora (ms, relógio do servidor); sem ele, sem tempo (mesa antiga) */
+  desde?: number;
 };
 /** Mão completa (só o servidor tem): `maos` são as cartas na mão de cada lugar, `orig` as três que recebeu. */
 export type Mao = MaoBase & { maos: Record<number, Carta[]>; orig: Record<number, Carta[]> };
@@ -92,6 +96,8 @@ export const TR_NUMS = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12] as const;
 export const TR_APOSTAS: readonly Aposta[] = ["envido", "real", "falta"];
 export const TR_TRUCO: Record<number, string> = { 2: "Truco", 3: "Retruco", 4: "Vale quatro" };
 export const TR_ENV: Record<Aposta, string> = { envido: "Envido", real: "Real envido", falta: "Falta envido" };
+/** Tempo de cada jogada. */
+export const TR_TEMPO_MS = 20_000;
 
 export const trN = (c: Carta) => parseInt(c, 10);
 export const trS = (c: Carta) => c.slice(-1) as Naipe;
@@ -200,7 +206,7 @@ export function trNovaMesa(id: string, dono: Lugar, modo: 2 | 4, alvo: number, c
 }
 
 /** Começa uma mão nova (o anfitrião chama). Com flor, a flor já é cantada e paga aqui. */
-export function trNovaMao(M: Mesa, rnd: () => number = Math.random) {
+export function trNovaMao(M: Mesa, rnd: () => number = Math.random, agora = Date.now()) {
   const N = M.modo, d = trEmbaralha(trBaralho(), rnd);
   M.dealer = M.h ? (M.dealer + 1) % N : (M.dealer ?? N - 1);
   const mano = (M.dealer + 1) % N, maos: Record<number, Carta[]> = {}, orig: Record<number, Carta[]> = {};
@@ -214,7 +220,7 @@ export function trNovaMao(M: Mesa, rnd: () => number = Math.random) {
     n: M.maoN, mano, maos, orig, vazas: [{ lider: mano, cartas: [], vence: null, por: null }], vez: mano,
     truco: { valor: 1, pend: null, dono: null },
     env: { st: "livre", apostas: [], de: null, por: null, res: null },
-    flor: null, fim: null,
+    flor: null, fim: null, desde: agora,
   };
   trLog(M, `Mão ${M.maoN}: ${nomeDe(M, mano)} é mão`);
   if (M.comFlor) {
@@ -304,8 +310,57 @@ export function trResolveEnvido(M: Mesa) {
 const envNaoQuerido = (M: Mesa, ap: Aposta[]) =>
   ap.length === 1 ? 1 : ap.slice(0, -1).reduce((x, k) => x + trValorEnv(M, k), 0);
 
-/** Aplica uma ação do lugar s; devolve texto de erro ou null. */
-export function trAcao(M: Mesa, s: number, a: string, arg?: unknown): string | null {
+/** Aplica uma ação do lugar s; devolve texto de erro ou null. Deu certo e a mão segue: o relógio recomeça. */
+export function trAcao(M: Mesa, s: number, a: string, arg?: unknown, agora = Date.now()): string | null {
+  const erro = trAcaoSemRelogio(M, s, a, arg);
+  if (!erro && M.h && !M.h.fim) M.h.desde = agora;
+  return erro;
+}
+
+/**
+ * De quem é a vez de agir: com envido ou truco pedido, o primeiro do outro time depois de quem pediu
+ * (no 2x2 qualquer um do time pode responder; o relógio cobra deste); senão, quem joga a carta.
+ */
+export function trQuemDeve(M: { modo: number; h: MaoBase | null }): number | null {
+  const h = M.h;
+  if (!h || h.fim) return null;
+  const pedido = h.env.st === "pend" ? { de: h.env.de, por: h.env.por } : h.truco.pend;
+  if (!pedido || pedido.de === null) return h.vez;
+  const por = pedido.por ?? 0;
+  for (let k = 1; k <= M.modo; k++) {
+    const i = (por + k) % M.modo;
+    if (i % 2 !== pedido.de) return i;
+  }
+  return h.vez;
+}
+
+/** Quanto falta (ms) para a jogada de agora; null = sem relógio (mão parada, acabou ou mesa antiga). */
+export function trRestante(M: { fase: Fase; h: MaoBase | null }, agora = Date.now()): number | null {
+  if (M.fase !== "jogo" || !M.h || M.h.fim || typeof M.h.desde !== "number") return null;
+  return Math.max(0, M.h.desde + TR_TEMPO_MS - agora);
+}
+
+/**
+ * Acabou o tempo: quem devia agir aceita o pedido ("quero") ou joga uma carta sorteada.
+ * Devolve true se mudou a mesa (false = ainda tem tempo ou não há o que fazer).
+ */
+export function trTempoEsgotado(M: Mesa, agora = Date.now(), rnd: () => number = Math.random): boolean {
+  if (trRestante(M, agora) !== 0) return false;
+  const h = M.h!, s = trQuemDeve(M);
+  if (s === null) return false;
+  const nome = nomeDe(M, s);
+  if (h.env.st === "pend" || h.truco.pend) {
+    trLog(M, `${nome}: acabou o tempo`);
+    return trAcao(M, s, "quero", undefined, agora) === null;
+  }
+  const mao = h.maos[s] ?? [];
+  if (!mao.length) return false;
+  const c = mao[Math.floor(rnd() * mao.length)];
+  trLog(M, `${nome}: acabou o tempo, carta sorteada`);
+  return trAcao(M, s, "jogar", c, agora) === null;
+}
+
+function trAcaoSemRelogio(M: Mesa, s: number, a: string, arg?: unknown): string | null {
   if (M.fase !== "jogo" || !M.h || M.h.fim) return "A mão não está em jogo.";
   const h = M.h, t = s % 2, op = trOpcoes(M, s), nome = nomeDe(M, s);
   if (a === "jogar") {
@@ -409,7 +464,7 @@ export function trPublica(M: Mesa): MesaPub {
           nc: Object.fromEntries(Object.entries(h.maos).map(([k, v]) => [k, v.length])),
           vazas: h.vazas, truco: h.truco,
           env: { st: h.env.st, apostas: h.env.apostas, de: h.env.de, por: h.env.por, res: h.env.res },
-          flor: h.flor, fim: h.fim,
+          flor: h.flor, fim: h.fim, desde: h.desde,
           /* no fim da mão, mostra as cartas que sobraram de todo mundo */
           sobra: h.fim ? h.maos : null,
         }
