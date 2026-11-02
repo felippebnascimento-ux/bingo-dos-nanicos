@@ -442,7 +442,101 @@ do $$ begin
   end if;
 end $$;
 
--- 9) confere: deve listar as 5 proteções, as 4 funções das moedas e as 2 tabelas da ficha
+-- 9) atributos: a metade zoeira da ficha (tilt, choro, clutch, farm, sorte e call), com voto anônimo -----
+--    Ninguém lê os votos direto (nem select): o site só recebe a média e a contagem por atributo.
+--    Com menos de 3 votos a média não aparece, para ninguém adivinhar quem votou.
+create table if not exists public.atributos_votos (
+  de       uuid not null references auth.users(id) on delete cascade,
+  para     uuid not null references public.friends(id) on delete cascade,
+  atributo text not null check (atributo in ('tilt', 'choro', 'clutch', 'farm', 'sorte', 'call')),
+  nota     smallint not null check (nota between 0 and 10),
+  em       timestamptz not null default now(),
+  primary key (de, para, atributo)
+);
+alter table public.atributos_votos enable row level security;
+revoke all on public.atributos_votos from public, anon, authenticated;
+
+-- vota nas 6 notas de um nanico (nunca em si mesmo); dá para mudar uma vez por semana
+create or replace function public.votar_atributos(p_para uuid, p_notas jsonb) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid    uuid := auth.uid();
+  v_chaves text[] := array['tilt', 'choro', 'clutch', 'farm', 'sorte', 'call'];
+  v_nome   text;
+  v_ultimo timestamptz;
+  k        text;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos votam.' using errcode = 'P0001'; end if;
+  select name into v_nome from public.friends where id = p_para;
+  if v_nome is null then raise exception 'Nanico não encontrado.' using errcode = 'P0001'; end if;
+  if exists (select 1 from public.friends where id = p_para and user_id = v_uid) then
+    raise exception 'Você não pode votar em você mesmo.' using errcode = 'P0001';
+  end if;
+  if p_notas is null or jsonb_typeof(p_notas) <> 'object'
+     or (select count(*) from jsonb_object_keys(p_notas)) <> 6
+     or exists (select 1 from jsonb_object_keys(p_notas) c where c <> all (v_chaves)) then
+    raise exception 'Mande as 6 notas: tilt, choro, clutch, farm, sorte e call.' using errcode = 'P0001';
+  end if;
+  foreach k in array v_chaves loop
+    if jsonb_typeof(p_notas -> k) <> 'number' or (p_notas ->> k)::numeric not in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10) then
+      raise exception 'Cada nota é um número inteiro de 0 a 10.' using errcode = 'P0001';
+    end if;
+  end loop;
+  select max(em) into v_ultimo from public.atributos_votos where de = v_uid and para = p_para;
+  if v_ultimo > now() - interval '7 days' then
+    raise exception 'Você já votou no % esta semana. Dá para mudar a partir de %.', v_nome,
+      to_char((v_ultimo + interval '7 days') at time zone 'America/Sao_Paulo', 'DD/MM') using errcode = 'P0001';
+  end if;
+  perform public.limitar('votar', 20, interval '10 minutes', 'Calma: muitos votos seguidos. Espere uns minutos.');
+  insert into public.atributos_votos (de, para, atributo, nota, em)
+    select v_uid, p_para, c, ((p_notas ->> c)::numeric)::smallint, now() from unnest(v_chaves) c
+  on conflict (de, para, atributo) do update set nota = excluded.nota, em = excluded.em;
+end $$;
+revoke all on function public.votar_atributos(uuid, jsonb) from public, anon;
+grant execute on function public.votar_atributos(uuid, jsonb) to authenticated;
+
+-- média (só com 3 votos ou mais) e contagem de cada atributo de um nanico
+create or replace function public.atributos_de(p_para uuid) returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos veem os atributos.' using errcode = 'P0001'; end if;
+  return (
+    select jsonb_object_agg(t.atributo, jsonb_build_object('media', t.media, 'votos', t.votos))
+      from (select a.atributo, count(v.nota)::int as votos,
+                   case when count(v.nota) >= 3 then round(avg(v.nota), 1)::numeric(3, 1) end as media
+              from unnest(array['tilt', 'choro', 'clutch', 'farm', 'sorte', 'call']) a(atributo)
+              left join public.atributos_votos v on v.atributo = a.atributo and v.para = p_para
+             group by a.atributo) t);
+end $$;
+revoke all on function public.atributos_de(uuid) from public, anon;
+grant execute on function public.atributos_de(uuid) to authenticated;
+
+-- os atributos de todos os nanicos de uma vez ({id do nanico: atributos_de})
+create or replace function public.atributos_todos() returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos veem os atributos.' using errcode = 'P0001'; end if;
+  return (select coalesce(jsonb_object_agg(f.id, public.atributos_de(f.id)), '{}'::jsonb) from public.friends f);
+end $$;
+revoke all on function public.atributos_todos() from public, anon;
+grant execute on function public.atributos_todos() to authenticated;
+
+-- as MINHAS notas para um nanico e a partir de quando posso mudar (nunca as dos outros)
+create or replace function public.meu_voto(p_para uuid) returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  v_notas jsonb;
+  v_em    timestamptz;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos votam.' using errcode = 'P0001'; end if;
+  select jsonb_object_agg(atributo, nota), max(em) into v_notas, v_em
+    from public.atributos_votos where de = auth.uid() and para = p_para;
+  return jsonb_build_object('notas', v_notas, 'muda_em', case when v_em is not null then v_em + interval '7 days' end);
+end $$;
+revoke all on function public.meu_voto(uuid) from public, anon;
+grant execute on function public.meu_voto(uuid) to authenticated;
+
+-- 10) confere: deve listar as 5 proteções, as 4 funções das moedas, as 2 tabelas da ficha e as 4 funções dos atributos
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -451,4 +545,7 @@ select proname::text, 'moedas' from pg_proc
 union all
 select tablename::text, 'ficha' from pg_tables
  where schemaname = 'public' and tablename in ('jogos_stats', 'riot_partidas_vistas')
+union all
+select proname::text, 'atributos' from pg_proc
+ where pronamespace = 'public'::regnamespace and proname in ('votar_atributos', 'atributos_de', 'atributos_todos', 'meu_voto')
 order by 2, 1;

@@ -83,6 +83,19 @@ Decisões combinadas com o João em 01/11/2026. Vale para qualquer pessoa ou IA 
   - a **porta de tábuas** com a placa "K-FOFO 2018" leva às salas de LoL e CS;
   - a **porta de vidro** para o gramado leva à Resenha.
 - **Enfeites:** churrasqueira de tijolo com coifa, relógio, quadro, geladeira e freezer brancos, mesa comprida com toalha, mesa de toalha verde, cadeiras de plástico brancas e colchões infláveis azuis.
+- **Hall v2 (pedido de 01/11/2026, fase 14):** modelo em `planejamento/demo/hall-v2.html` e `.png`.
+  - **Mais espaço e mais alegre:** piso de 14×11 para caber os 14 bonecos, cores mais claras e um janelão com árvores na parede do fundo.
+  - **Móveis que abrem coisas, com placa em cima:** TV = Ao vivo, mesa verde = Truco, geladeira e freezer brancos = Loja.
+  - **Piso marcado:** contorno branco no piso embaixo do mouse.
+  - **Cantos:**
+    - "Na sala agora" em cima, à esquerda, e clicar num nome abre a ficha;
+    - ganhos de moedas de todo mundo em cima, à direita, vindos do banco e não do broadcast;
+    - carteira pequena embaixo, à esquerda.
+  - **Menu:** "Perfil" mostra o rosto de quem está logado.
+- **Celular e rede social nanica (fase 15):**
+  - é um item da loja;
+  - quem compra posta, curte e comenta na rede do grupo, com imagens no bucket `midias`;
+  - sem o celular, o banco não deixa ler nem postar.
 
 ### Moedas
 | Fonte | Valor |
@@ -155,7 +168,7 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | 1 | `01-log-novidades.md` | `log-novidades` | 0 | **feita**, PR aberto (em cima da `hall-sitio`) |
 | 2 | `02-carteira-moedas.md` | `carteira-moedas` | 0 | **feita**, PR aberto (em cima da `log-novidades`); SQL da seção 7 já aplicado no Supabase em 01/11/2026 |
 | 3 | `03-ficha-dados-reais.md` | `ficha-dados-reais` | 0 | **feita**, PR aberto (em cima da `carteira-moedas`); SQL da seção 8 aplicado e função `ficha-jogos` publicada em 01/11/2026; falta o segredo `STEAM_API_KEY` |
-| 4 | `04-atributos-votados.md` | `atributos-votados` | 3 | a fazer |
+| 4 | `04-atributos-votados.md` | `atributos-votados` | 3 | **feita**, PR aberto (em cima da `ficha-dados-reais`); SQL da seção 9 aplicado em 01/11/2026 |
 | 5 | `05-salas-lan-house.md` | `salas-lan-house` | 00, 3 | a fazer |
 | 6 | `06-cassino-roleta.md` | `cassino-roleta` | 2 | a fazer |
 | 7 | `07-cassino-jogos.md` | `cassino-jogos` | 6 | a fazer |
@@ -165,3 +178,5 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | 11 | `11-loja-quarto.md` | `loja-quarto` | 2, 3 | a fazer |
 | 12 | `12-midias-links.md` | `midias-links` | 5 | a fazer |
 | 13 | `13-login-convidado.md` | `login-convidado` | 5 | a fazer |
+| 14 | `14-hall-v2.md` | `hall-v2` | 00, 2, 3 | a fazer (pode vir logo depois da 3) |
+| 15 | `15-celular-rede-nanica.md` | `celular-rede-nanica` | 11, 12 | a fazer |
