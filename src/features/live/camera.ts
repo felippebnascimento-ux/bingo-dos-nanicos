@@ -1,6 +1,7 @@
 /*
- * Câmera: quem liga manda um vídeo pequeno (até 480p, 24 fps) para todo mundo que está na sala.
- * Na lista "Na sala agora", o vídeo aparece no lugar do personagem. Só imagem: o som continua no Meet.
+ * Câmera: quem liga manda um vídeo pequeno (até 480p, 24 fps) para quem está na voz da sala com ela.
+ * Só quem está na voz se vê (os dois lados conferem). Na lista de membros, o vídeo aparece no lugar do rosto.
+ * Só imagem: o som vai pela voz (voz.ts). Trocar de sala mantém a câmera ligada; sair para o lobby desliga.
  */
 import { toast } from "@/lib/toast";
 import { friendDaPresenca, getApp, MY_KEY, setApp } from "@/lib/store";
@@ -8,6 +9,7 @@ import type { Presence } from "@/lib/tipos";
 import { newId } from "@/lib/util";
 import { avisar } from "./estado";
 import { ajustarSender, canCam, novaConexao, sendRtc, type MsgRtc } from "./rtc";
+import { naVoz } from "./voz";
 import { abrirJanelaPip, canPip, type JanelaPip } from "./pip";
 
 type Saida = { pc: RTCPeerConnection; queue: RTCIceCandidateInit[]; at: number };
@@ -62,7 +64,8 @@ export async function startCam() {
   }
 }
 
-export function stopCam() {
+/** Fecha as conexões de quem está vendo a minha câmera (ao trocar de sala), sem desligar a câmera. */
+export function fecharSaidasCam() {
   if (!CAM.sid) return;
   for (const [key, o] of CAM.out) {
     sendRtc({ t: "cb", to: key, sid: CAM.sid, role: "s" });
@@ -71,6 +74,11 @@ export function stopCam() {
     } catch {}
   }
   CAM.out.clear();
+}
+
+export function stopCam() {
+  if (!CAM.sid) return;
+  fecharSaidasCam();
   CAM.stream?.getTracks().forEach((t) => t.stop());
   CAM.stream = null;
   CAM.sid = null;
@@ -96,7 +104,8 @@ function camCloseOut(key: string) {
 }
 
 export async function camOnWatch(m: MsgRtc) {
-  if (!CAM.sid || !CAM.stream || m.sid !== CAM.sid) {
+  /* só manda a câmera estando na voz (quem pede só pede estando na voz também) */
+  if (!CAM.sid || !CAM.stream || m.sid !== CAM.sid || !naVoz()) {
     sendRtc({ t: "cb", to: m.from, sid: m.sid, role: "s" });
     return;
   }
@@ -228,18 +237,26 @@ export function camOnBye(m: MsgRtc) {
   } else if (m.sid === CAM.sid) camCloseOut(m.from);
 }
 
-/** Presença mudou: liga as câmeras novas, desliga as que acabaram. */
+/**
+ * Presença (ou a minha voz) mudou: liga as câmeras de quem está na voz comigo, desliga as que acabaram
+ * ou de quem saiu da voz. Fora da voz, não vejo nem mando câmera.
+ */
 export function syncCams() {
   const online = getApp().onlineSala;
+  const euNaVoz = naVoz();
   for (const [key, w] of [...CAM.in]) {
     const p = online.find((x) => x.key === key);
-    if (!p || !p.cam || p.cam !== w.sid) camCloseIn(key, true);
+    if (!euNaVoz || !p || !p.cam || !p.voz || p.cam !== w.sid) camCloseIn(key, true);
   }
-  for (const p of online) {
-    if (p.key === MY_KEY || !p.cam || CAM.in.has(p.key)) continue;
-    camOpenIn(p);
+  if (euNaVoz)
+    for (const p of online) {
+      if (p.key === MY_KEY || !p.cam || !p.voz || CAM.in.has(p.key)) continue;
+      camOpenIn(p);
+    }
+  for (const [key, o] of [...CAM.out]) {
+    const p = online.find((x) => x.key === key);
+    if (!euNaVoz || (p && !p.voz) || (!p && Date.now() - o.at > 15000)) camCloseOut(key);
   }
-  for (const [key, o] of [...CAM.out]) if (!online.some((x) => x.key === key) && Date.now() - o.at > 15000) camCloseOut(key);
   avisar();
 }
 

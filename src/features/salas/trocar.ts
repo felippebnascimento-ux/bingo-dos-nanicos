@@ -1,9 +1,10 @@
 /*
  * Salas tipo lan house: entrar, trocar e voltar para o lobby.
- * Trocar de sala encerra a tela e a câmera (são só de quem está na sala), troca o canal da sala,
+ * Trocar de sala encerra a tela e a voz (são só de quem está na sala) e mantém a câmera ligada; voltar para o
+ * lobby (o "desligar" do menu) encerra tudo, câmera também. Depois troca o canal da sala,
  * avisa a presença do lobby e carrega a escalação (nas salas de LoL) e o chat da sala nova.
  */
-import { pararTudoAoVivo } from "@/features/live/live";
+import { pararAoTrocarDeSala, pararTudoAoVivo } from "@/features/live/live";
 import { loadGame } from "@/lib/dados";
 import { entrarCanalSala } from "@/lib/sala";
 import { getApp, salaLol, setApp } from "@/lib/store";
@@ -16,7 +17,8 @@ export function entrarSala(id: string | null) {
   const sala = id ? s.salas.find((x) => x.id === id) : null;
   if (id && !sala) return;
   try {
-    pararTudoAoVivo();
+    if (id) pararAoTrocarDeSala();
+    else pararTudoAoVivo();
   } catch {
     /* nada transmitindo */
   }

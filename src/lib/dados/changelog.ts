@@ -93,6 +93,7 @@ export const CHANGELOG: EntradaLog[] = [
       "Canais de texto no menu: o #geral e o chat de cada sala, com as mensagens novas e quem está lendo agora",
       "Lista de membros à direita, com quem está online e quem está offline, onde cada um está e a câmera no rosto",
       "Embaixo do menu ficam fixos a voz, a câmera, o seu perfil e as suas moedas",
+      "A câmera agora é da voz: só quem está no mesmo canal de voz se vê, e ela continua ligada quando você troca de canal",
     ],
   },
 ];

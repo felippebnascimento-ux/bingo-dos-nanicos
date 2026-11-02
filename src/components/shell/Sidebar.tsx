@@ -107,6 +107,7 @@ export function Sidebar() {
   const conn = useApp((s) => s.conn);
   /* selo de novidade: o mesmo "já vi" do Log (conta, com o navegador de reserva) */
   const logNovo = useApp((s) => !s.logAberto && temNovidade(s.logVisto));
+  const mostraCam = useApp((s) => !!s.myVozSid || !!s.myCamSid || !s.salas.length);
 
   useEffect(() => {
     document.body.classList.toggle("side-min", sideMin);
@@ -147,7 +148,8 @@ export function Sidebar() {
 
       <div className="side-base">
         <VozPainel />
-        <CamBotoes />
+        {/* a câmera é da voz: o botão aparece na voz (ou com a câmera ligada, para dar para desligar) */}
+        {mostraCam && <CamBotoes />}
         <EuPainel />
         <div className="side-foot">
           <div className="links">

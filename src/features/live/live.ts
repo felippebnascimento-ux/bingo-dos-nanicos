@@ -5,8 +5,8 @@
  * `assistir` (lista da sala) e `pararTudoAoVivo` (ao sair).
  */
 import { aoMudarPresenca, aoReceber, naMinhaSala, limitePorPessoa, sidValido } from "@/lib/sala";
-import { MY_KEY } from "@/lib/store";
-import { camOnAnswer, camOnBye, camOnIce, camOnOffer, camOnWatch, closeAllCams, stopCam, syncCams } from "./camera";
+import { MY_KEY, useApp } from "@/lib/store";
+import { camOnAnswer, camOnBye, camOnIce, camOnOffer, camOnWatch, closeAllCams, fecharSaidasCam, stopCam, syncCams } from "./camera";
 import { onRisco, pintar } from "./desenho";
 import { onReacao } from "./reacoes";
 import type { MsgRtc } from "./rtc";
@@ -73,6 +73,10 @@ export function iniciarLive() {
     syncCams();
     syncVoz();
   });
+  /* entrei ou saí da voz: as câmeras são só de quem está na voz junto */
+  useApp.subscribe((s, p) => {
+    if (s.myVozSid !== p.myVozSid) syncCams();
+  });
   addEventListener("resize", () => pintar());
   document.addEventListener("fullscreenchange", () => setTimeout(pintar, 60));
   addEventListener("pagehide", () => {
@@ -94,6 +98,18 @@ export function pararTudoAoVivo(): void {
   stopLive();
   closeAllWatches();
   stopCam();
+  closeAllCams();
+  sairVoz();
+}
+
+/**
+ * Trocar de uma sala para outra: para a minha transmissão, as que estou assistindo e a voz, e fecha as câmeras
+ * da sala antiga, mas a minha câmera continua ligada (quem está na voz da sala nova passa a ver).
+ */
+export function pararAoTrocarDeSala(): void {
+  stopLive();
+  closeAllWatches();
+  fecharSaidasCam();
   closeAllCams();
   sairVoz();
 }
