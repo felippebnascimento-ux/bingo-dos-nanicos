@@ -39,6 +39,8 @@ export type AppState = {
   myLiveSid: string | null;
   /** id da minha câmera (vai na presença) */
   myCamSid: string | null;
+  /** meu piso no hall (vai na presença; só muda quando o boneco chega) */
+  hallPos: { i: number; j: number } | null;
 
   /* tela */
   aba: Aba;
@@ -74,7 +76,8 @@ export const useApp = create<AppState>()(() => ({
   online: [],
   myLiveSid: null,
   myCamSid: null,
-  aba: "jogar",
+  hallPos: null,
+  aba: "hall",
   sideMin: false,
   railTab: "telas",
   chatUnread: 0,

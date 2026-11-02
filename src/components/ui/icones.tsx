@@ -25,6 +25,14 @@ export const IcVoltar = (p: P) => (
     <path d="M15 6l-6 6 6 6" />
   </Base>
 );
+/** Casa do sítio (aba Sítio). */
+export const IcSitio = (p: P) => (
+  <Base {...p}>
+    <path d="M3.5 11 12 4l8.5 7" />
+    <path d="M5.5 9.5V20h13V9.5" />
+    <path d="M10 20v-5.5h4V20" />
+  </Base>
+);
 export const IcJogar = (p: P) => (
   <Base {...p}>
     <rect x="4" y="4" width="16" height="16" rx="3" />

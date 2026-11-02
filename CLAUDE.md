@@ -46,12 +46,15 @@ npm start            # serve out/ localmente para testar o build
 src/
   app/                 layout.tsx (fontes, CSS na ordem certa), page.tsx (monta o App só no navegador), ícones
   components/
-    App.tsx            casca do site: barra lateral, as 6 abas (sempre montadas, só escondidas), portas, toast
+    App.tsx            casca do site: barra lateral, as 7 abas (sempre montadas, só escondidas), portas, toast
     shell/             Sidebar (marca, navegação, rodapé) e People ("Na sala agora")
     portas/            login, primeira senha, trocar senha, log de versões
     ui/                Avatar, FriendPicker, Toast, ícones, useSure (segundo toque)
     Fome.tsx           easter egg das 18h às 22h
   features/            uma pasta por aba / assunto
+    hall/              aba Sítio (tela inicial): hall.ts (grade, móveis, caminho, ordem de desenho; puro e
+                       testado), bonecos.ts (movimento, evento `hall`, presença), Sala.tsx (o cômodo em SVG,
+                       um móvel por camada), Boneco.tsx, HallView
     jogar/             JogarView (escalação, cartela, montar cartela), MiniCartela (painel do Ao vivo e
                        cartela flutuante), riot.ts (consulta a função riot-ao-vivo), partida.ts (lanes, puro),
                        RiotBox, CellTag
@@ -74,9 +77,10 @@ src/
     toast.ts           toast("texto")
     util.ts            norm, canon, shuffle, local (localStorage), rolarAte…
     tipos.ts           Friend, Phrase, Card, Presence…
-    dados/             campeoes.ts (CHAMPS, LANES, LANE_CAMP), nanicos.ts (NAN_MAP, artOf), changelog.ts
-  styles/              CSS global, numerado: 01-base.css … 21-sala.css
-public/arte/           artes dos nanicos (rosto e corpo), foto da turma, reações dos Picarétezzi
+    dados/             campeoes.ts (CHAMPS, LANES, LANE_CAMP), nanicos.ts (NAN_MAP, artOf, bonecoOf), changelog.ts
+  styles/              CSS global, numerado: 01-base.css … 22-hall.css
+public/arte/           artes dos nanicos (rosto e corpo), bonecos do hall, foto da turma, reações dos Picarétezzi
+planejamento/          PLANO.md (próximas fases e decisões), prompts/ (um por fase), demos e arte pronta
 supabase/
   functions/riot-ao-vivo/index.ts   Edge Function (Deno). Fora do build do Next.
   sql/                 seguranca.sql, contas-e-ao-vivo.sql, supabase.sql e antigos/
@@ -122,7 +126,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 - `useApp(s => s.campo)` dentro de componente (assine só o que usa). `getApp()` / `setApp({...})` fora do React.
 - Dados do banco (`friends`, `phrases`, `lineup`) só mudam por `src/lib/dados.ts`. A escalação se salva com `salvarEscalacao(lineup)`.
 - A cartela muda por `src/lib/bingo.ts` (`novaCartela`, `toggleCell`, `limparMarcacoes`).
-- A presença (`trackMe`) acompanha sozinha `card`, `myLiveSid` e `myCamSid`: basta mudar o estado.
+- A presença (`trackMe`) acompanha sozinha `card`, `myLiveSid`, `myCamSid` e `hallPos`: basta mudar o estado.
 
 ### Sala em tempo real (`src/lib/sala.ts`)
 - **Mandar:** `enviar("truco", {...})`. O `from` é acrescentado sozinho.
@@ -161,6 +165,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 
 - **Sempre** use as variáveis (`var(--accent)` etc.), nunca hex solto, para o tema claro e escuro continuarem funcionando.
 - Novas cores só se entrarem na paleta acima.
+- **Exceção: o cômodo do hall** (`22-hall.css`). Ele é uma ilustração com cores próprias (tijolo, madeira, lajota), definidas como variáveis `--hall-*` em `.hall`, cada uma com uma versão mais escura no tema escuro. O SVG usa as classes `f-<nome>` (preenchimento) e `s-<nome>` (traço). A interface em volta (placas com nome, TV, botões) continua com a paleta acima.
 
 ### Tipografia
 - **Unbounded** (`var(--display)`) só em títulos, placar, números e etiquetas curtas.
@@ -205,22 +210,24 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 - **SQL que ainda não rodou:** o site segue funcionando. `phrasesV2` e `opggOk` no estado dizem se as colunas novas existem.
 
 ### Sala em tempo real (canal privado `bingo-dos-nanicos`)
-- **Presença:** `{name, fid, lines, live, cam, at}`, conferida por `cleanPresence()`.
+- **Presença:** `{name, fid, lines, live, cam, pos, at}`, conferida por `cleanPresence()`. `pos` é o piso do boneco no hall (`{i, j}`, conferido por `posValida`); só muda quando o boneco chega.
 - **Eventos de broadcast:**
   - `rtc`: sinalização da tela e da câmera;
   - `reacao`: emojis e fotos;
   - `risco`: desenho na live;
-  - `truco`: mesas, jogadas e mão de cada um.
+  - `truco`: mesas, jogadas e mão de cada um;
+  - `hall`: `{ para: {i, j} }`, o destino do boneco. Cada navegador calcula o caminho e anima sozinho (limite de 8 a cada 2 s).
 - **Mudanças no banco:** chegam por `postgres_changes` em `friends`, `phrases`, `game` e `chat_messages`.
 
 ### Navegador (`localStorage`, só conveniência de cada pessoa)
-- **Chaves:** `rift-lineup`, `rift-card`, `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `truco-mesa`, `log-visto` e `fome-fechado`.
-- **São as mesmas do site antigo**, então ninguém perde a cartela na troca.
+- **Chaves:** `rift-lineup`, `rift-card`, `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `truco-mesa`, `log-visto`, `fome-fechado` e `hall-pos` (último piso no hall).
+- **As do site antigo continuam iguais**, então ninguém perde a cartela na troca.
 - Nada importante pode morar só aqui.
 
 ### Arte (`public/arte/`)
 - **`nanicos/{n}-rosto.webp` e `{n}-corpo.webp`:** o número vem de `NAN_MAP` (nome do nanico → número). Os nomes são Abreutz, Alemão, DD, Gamer, Grito, Guiperino, Le Bubu, Henry, Pitoco, John, Veião, Max, Gordão e Pin.
 - **Tamanhos:** o rosto tem 160×160 e o corpo, 440 px de altura. Use `artOf(friend)`.
+- **`bonecos/*.webp`:** uma spritesheet por nanico para o hall (células de 84×134, linhas `frente`/`costas`, colunas `parado` + 4 de andar; os lados esquerdos são o espelho). O formato está em `bonecos/bonecos.json`. Use `bonecoOf(friend)`; quem não tem boneco aparece com o rosto num pino.
 - **`turma.webp`:** foto da turma. **`marca.png`:** bola de bingo. **`reacoes/`:** os Picarétezzi.
 
 ---

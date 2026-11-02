@@ -50,8 +50,10 @@ export type Presence = {
   lines: number;
   live: string | null;
   cam: string | null;
+  /** onde o boneco está no hall (conferido por `posValida`) */
+  pos: { i: number; j: number } | null;
   at: number;
 };
 
-export type Aba = "jogar" | "frases" | "nanicos" | "live" | "truco" | "perfil";
+export type Aba = "hall" | "jogar" | "frases" | "nanicos" | "live" | "truco" | "perfil";
 export type RailTab = "telas" | "chat" | "cartela";

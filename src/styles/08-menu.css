@@ -45,3 +45,5 @@ body.side-min .side-toggle{transform:translateY(-50%) scaleX(-1)}
 @media (hover:none) and (min-width:861px){.side-toggle{opacity:1}}
 @media (max-width:860px){.side-toggle{display:none}.nav svg{display:none}.nav button{justify-content:center}.nav button .t{flex:none}}
 
+/* celular estreito: com 7 abas, cada botão fica do tamanho do texto (colunas iguais apertavam "Ao vivo") */
+@media (max-width:480px){.nav{grid-auto-columns:auto}.nav button{padding:9px 3px;font-size:12.5px}}

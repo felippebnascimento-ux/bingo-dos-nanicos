@@ -150,8 +150,8 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | Fase | Prompt | Branch | Depende de | Estado |
 |---|---|---|---|---|
 | 0 | migração Next.js (PR #1) | `nextjs-migracao` | — | em revisão |
-| — | pasta `planejamento/` na `main` | `planejamento` | — | commitada, falta PR |
-| 00 | `00-hall-sitio-bonecos.md` | `hall-sitio` | 0 | **próxima** |
+| — | pasta `planejamento/` na `main` | `planejamento` | — | feita (PR #2) |
+| 00 | `00-hall-sitio-bonecos.md` | `hall-sitio` | 0 | **feita**, PR aberto (em cima da `nextjs-migracao`, porque o PR #1 ainda não entrou) |
 | 1 | `01-log-novidades.md` | `log-novidades` | 0 | a fazer |
 | 2 | `02-carteira-moedas.md` | `carteira-moedas` | 0 | a fazer |
 | 3 | `03-ficha-dados-reais.md` | `ficha-dados-reais` | 0 | a fazer |

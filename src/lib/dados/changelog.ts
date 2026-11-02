@@ -43,6 +43,7 @@ export const CHANGELOG: EntradaLog[] = [
   { data: "31/10/2026", itens: ["Visual mais limpo: controles da live em ícones, reações e ajustes num balão", "Câmeras sempre embaixo da live, e botão das câmeras no menu com a contagem", "Live com mais qualidade: mais bitrate, H.264 High e som em 192 kbps"] },
   { data: "31/10/2026", itens: ["Aba Truco gaudério: mesas de 1 contra 1 e 2 contra 2, com envido, flor, truco, retruco e vale quatro"] },
   { data: "01/11/2026", itens: ["Site novo por dentro: abre mais rápido e as artes dos nanicos ficam guardadas no navegador"] },
+  { data: "01/11/2026", itens: ["Sítio do Mitz: o hall com o boneco de cada nanico; clique no chão para andar e veja quem está no site"] },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

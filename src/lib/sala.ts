@@ -12,9 +12,10 @@ import { sb } from "./supabase";
 import { getApp, MY_KEY, setApp, useApp } from "./store";
 import type { Presence } from "./tipos";
 import { bingoLines } from "./bingo";
+import { posValida } from "@/features/hall/hall";
 
 /** Eventos de broadcast da sala. Evento novo: acrescente aqui e escreva o handler com as conferências. */
-export const EVENTOS = ["rtc", "reacao", "risco", "truco"] as const;
+export const EVENTOS = ["rtc", "reacao", "risco", "truco", "hall"] as const;
 export type Evento = (typeof EVENTOS)[number];
 
 type Payload = Record<string, unknown> & { from?: unknown };
@@ -99,16 +100,17 @@ export function cleanPresence(key: unknown, d: unknown): Presence | null {
     lines: Math.max(0, Math.min(12, Math.floor(Number(o.lines)) || 0)),
     live: sidValido(o.live) ? o.live : null,
     cam: sidValido(o.cam) ? o.cam : null,
+    pos: posValida(o.pos) ? { i: o.pos.i, j: o.pos.j } : null,
     at: Number(o.at) || 0,
   };
 }
 
-/** Atualiza a minha presença (nome, linhas de bingo, transmissão e câmera). */
+/** Atualiza a minha presença (nome, linhas de bingo, transmissão, câmera e piso do hall). */
 export function trackMe() {
   const s = getApp();
   if (!room || !s.myName) return;
   room
-    .track({ name: s.myName, fid: s.myFid, lines: bingoLines(s.card), live: s.myLiveSid, cam: s.myCamSid, at: Date.now() })
+    .track({ name: s.myName, fid: s.myFid, lines: bingoLines(s.card), live: s.myLiveSid, cam: s.myCamSid, pos: s.hallPos, at: Date.now() })
     .catch(() => {});
 }
 
@@ -153,9 +155,9 @@ export function joinRoom(onTabela: (tabela: string) => void) {
     }
   });
 
-  /* a presença acompanha sozinha a cartela (linhas de bingo), a transmissão e a câmera */
+  /* a presença acompanha sozinha a cartela (linhas de bingo), a transmissão, a câmera e o piso do hall */
   useApp.subscribe((s, p) => {
-    if (s.myLiveSid !== p.myLiveSid || s.myCamSid !== p.myCamSid || s.myName !== p.myName || bingoLines(s.card) !== bingoLines(p.card))
+    if (s.myLiveSid !== p.myLiveSid || s.myCamSid !== p.myCamSid || s.myName !== p.myName || s.hallPos !== p.hallPos || bingoLines(s.card) !== bingoLines(p.card))
       trackMe();
   });
 }

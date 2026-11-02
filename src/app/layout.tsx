@@ -22,6 +22,7 @@ import "@/styles/18-ao-vivo-icones.css";
 import "@/styles/19-cameras-faixa.css";
 import "@/styles/20-truco.css";
 import "@/styles/21-sala.css";
+import "@/styles/22-hall.css";
 
 /* fontes servidas pelo próprio site (a CSP não precisa liberar o Google Fonts) */
 const unbounded = Unbounded({ subsets: ["latin"], weight: ["500", "700", "800"], variable: "--font-unbounded", display: "swap" });

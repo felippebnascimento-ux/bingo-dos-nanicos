@@ -30,7 +30,7 @@ export function People() {
 
   const list: Presence[] = online.slice();
   if (myName && !list.some((p) => p.key === MY_KEY))
-    list.unshift({ key: MY_KEY, name: myName, fid: myFid, lines: bingoLines(card), live: myLiveSid, cam: myCamSid, at: 0 });
+    list.unshift({ key: MY_KEY, name: myName, fid: myFid, lines: bingoLines(card), live: myLiveSid, cam: myCamSid, pos: null, at: 0 });
   list.sort((a, b) => (a.key === MY_KEY ? -1 : b.key === MY_KEY ? 1 : String(a.name).localeCompare(String(b.name), "pt-BR")));
 
   return (

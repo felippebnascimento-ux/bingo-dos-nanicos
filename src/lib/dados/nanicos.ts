@@ -28,6 +28,19 @@ export function artOf(f: Rosto | null | undefined): Arte | null {
   };
 }
 
+/** Spritesheet do boneco de cada nanico em `public/arte/bonecos/` (igual ao `bonecos.json`). */
+export const BONECO_ARQ: Readonly<Record<number, string>> = {
+  1: "abreutz.webp", 2: "alemao.webp", 3: "dd.webp", 4: "gamer.webp", 5: "grito.webp", 6: "guiperino.webp",
+  7: "le-bubu.webp", 8: "henry.webp", 9: "pitoco.webp", 10: "john.webp", 11: "veiao.webp", 12: "max.webp",
+  13: "gordao.webp", 14: "pin.webp",
+};
+
+/** Boneco do hall (folha 84×134 por quadro, veja `features/hall/hall.ts`), ou null para quem não tem. */
+export function bonecoOf(f: Rosto | null | undefined): string | null {
+  const n = f ? NAN_MAP[norm(f.name)] : 0;
+  return n && BONECO_ARQ[n] ? `/arte/bonecos/${BONECO_ARQ[n]}` : null;
+}
+
 /** Foto da turma (1100 px de largura, fundo transparente). */
 export const CREW = "/arte/turma.webp";
 /** Bola de bingo (ícone do site), usada no menu recolhido. */
