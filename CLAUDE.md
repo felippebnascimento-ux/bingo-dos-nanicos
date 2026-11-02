@@ -47,15 +47,18 @@ src/
   app/                 layout.tsx (fontes, CSS na ordem certa), page.tsx (monta o App só no navegador), ícones
   components/
     App.tsx            casca do site: barra lateral, as 7 abas (sempre montadas, só escondidas), portas, toast
-    shell/             Sidebar (marca, navegação, rodapé) e People ("Na sala agora")
+    shell/             Sidebar (marca, navegação, rodapé; Perfil com o rosto) e People ("Na sala agora";
+                       `usePessoasNaSala()` também serve o Sítio, e a lista da barra some na aba Sítio)
     portas/            login, primeira senha, trocar senha, log de versões (modo "tudo" e modo "novidades")
     ui/                Avatar, FriendPicker, Toast, ícones, useSure (segundo toque)
     Fome.tsx           easter egg das 18h às 22h
   features/            uma pasta por aba / assunto
     moedas/            Moedas.tsx: selinho do saldo no menu (CarteiraChip) e quadro do Perfil (MoedasBloco)
-    hall/              aba Sítio (tela inicial): hall.ts (grade, móveis, caminho, ordem de desenho; puro e
-                       testado), bonecos.ts (movimento, evento `hall`, presença), Sala.tsx (o cômodo em SVG,
-                       um móvel por camada), Boneco.tsx, HallView
+    hall/              aba Sítio (tela inicial), sala de 14×11: hall.ts (grade, móveis, CLICAVEIS, caminho, ordem
+                       de desenho; puro e testado), bonecos.ts (movimento, evento `hall`, presença), Sala.tsx
+                       (cômodo em SVG com janelão e portão, um móvel por camada, destaque do piso), Boneco.tsx
+                       (tocar abre a ficha), Cantos.tsx ("Na sala agora", ganhos, carteira, dica), ganhos.ts
+                       (ganhos de moedas de todo mundo pelo tempo real das carteiras), HallView
     jogar/             JogarView (escalação, cartela, montar cartela), MiniCartela (painel do Ao vivo e
                        cartela flutuante), riot.ts (consulta a função riot-ao-vivo), partida.ts (lanes, puro),
                        RiotBox, CellTag
@@ -212,7 +215,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 | `game` | escalação compartilhada (`players` = 5 rotas `{friendId, champion}`) | atualizar (formato conferido) |
 | `chat_messages` | chat da live (apaga sozinho após 30 dias) | enviar (o autor é sempre quem está logado) |
 | `limites` | contador anti-spam | ninguém |
-| `carteiras` | saldo de moedas de cada um (`user_id`, `saldo >= 0`) | ninguém grava; nanicos leem todas (ranking) |
+| `carteiras` | saldo de moedas de cada um (`user_id`, `saldo >= 0`) e o último ganho (`ultimo_valor`, `ultimo_motivo`, `ultimo_em`) | ninguém grava; nanicos leem todas (ranking e ganhos no Sítio) |
 | `extrato` | cada entrada e saída de moedas (`valor`, `motivo`, `ref`) | ninguém grava; cada um lê o seu |
 | `bonus_diario` | bônus de cada dia e a sequência (`dia`, `seq`, `valor`) | ninguém grava; cada um lê o seu |
 | `online_diario` | minutos com o site aberto por dia (`minutos`, `ultimo_pulso`) | ninguém grava; cada um lê o seu |
@@ -245,10 +248,10 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
   - `risco`: desenho na live;
   - `truco`: mesas, jogadas e mão de cada um;
   - `hall`: `{ para: {i, j} }`, o destino do boneco. Cada navegador calcula o caminho e anima sozinho (limite de 8 a cada 2 s).
-- **Mudanças no banco:** chegam por `postgres_changes` em `friends`, `phrases`, `game` e `chat_messages`.
+- **Mudanças no banco:** chegam por `postgres_changes` em `friends`, `phrases`, `game`, `chat_messages` e `carteiras`. Os ganhos de moedas de todo mundo no Sítio vêm do tempo real de `carteiras` (gravado por `creditar()`), **nunca de broadcast**.
 
 ### Navegador (`localStorage`, só conveniência de cada pessoa)
-- **Chaves:** `rift-lineup`, `rift-card`, `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `truco-mesa`, `log-visto`, `fome-fechado` e `hall-pos` (último piso no hall).
+- **Chaves:** `rift-lineup`, `rift-card`, `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `truco-mesa`, `log-visto`, `fome-fechado`, `hall-pos` (último piso no hall) e `hall-sala-min` (lista "Na sala agora" do Sítio recolhida).
 - **As do site antigo continuam iguais**, então ninguém perde a cartela na troca.
 - **`sessionStorage`:** `log-auto` (o Log de novidades já abriu sozinho nesta sessão do navegador).
 - Nada importante pode morar só aqui.

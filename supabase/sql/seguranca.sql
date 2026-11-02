@@ -385,6 +385,37 @@ end $$;
 revoke all on function public.pulso() from public, anon;
 grant execute on function public.pulso() to authenticated;
 
+-- 7b) moedas ao vivo: o último ganho de cada um, para o Sítio mostrar os ganhos de todo mundo ---------
+--     Vem do banco (tempo real da tabela carteiras), nunca de broadcast: ninguém consegue forjar.
+alter table public.carteiras add column if not exists ultimo_valor  int;
+alter table public.carteiras add column if not exists ultimo_motivo text;
+alter table public.carteiras add column if not exists ultimo_em     timestamptz;
+
+-- a mesma creditar() da seção 7, agora gravando o último ganho no mesmo update do saldo
+create or replace function public.creditar(p_user uuid, p_valor int, p_motivo text, p_ref text default null)
+returns int language plpgsql security definer set search_path = public as $$
+declare
+  v_saldo int;
+begin
+  if p_user is null then raise exception 'Sem usuário para creditar.' using errcode = 'P0001'; end if;
+  insert into public.carteiras (user_id) values (p_user) on conflict (user_id) do nothing;
+  if found then insert into public.extrato (user_id, valor, motivo) values (p_user, 200, 'inicio'); end if;
+  select saldo into v_saldo from public.carteiras where user_id = p_user for update;
+  if v_saldo + p_valor < 0 then raise exception 'Saldo insuficiente.' using errcode = 'P0001'; end if;
+  if p_valor <> 0 then
+    update public.carteiras set saldo = saldo + p_valor, ultimo_valor = p_valor, ultimo_motivo = p_motivo, ultimo_em = now()
+     where user_id = p_user returning saldo into v_saldo;
+    insert into public.extrato (user_id, valor, motivo, ref) values (p_user, p_valor, p_motivo, p_ref);
+  end if;
+  return v_saldo;
+end $$;
+revoke all on function public.creditar(uuid, int, text, text) from public, anon, authenticated;
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.carteiras; exception when duplicate_object then null; end;
+end $$;
+
 -- 8) ficha do nanico: link da Steam e números dos jogos (Riot e Steam) -------------------
 --    Os números vêm da função ficha-jogos (com as chaves secretas); o site só lê.
 alter table public.friends add column if not exists steam text;

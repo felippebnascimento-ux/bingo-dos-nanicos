@@ -1,20 +1,25 @@
 /*
  * Hall do Sítio do Mitz: a grade do piso, os móveis, o caminho dos bonecos e a ordem de desenho.
  * Regra pura (sem React), usada pela tela, pelo movimento e pela sala (`cleanPresence`).
- * A geometria é a do modelo em planejamento/demo/hall.html.
+ * A geometria é a do modelo em planejamento/demo/hall-v2.html (sala de 14×11).
  */
 
 /** Grade do piso: `i` corre ao longo da parede da direita, `j` ao longo da parede da esquerda. */
-export const NI = 11;
-export const NJ = 9;
+export const NI = 14;
+export const NJ = 11;
 /** Origem, meia largura e meia altura do piso na tela, e altura das paredes (unidades do SVG). */
-export const X0 = 560;
+export const X0 = 700;
 export const Y0 = 318;
 export const TW = 40;
 export const TH = 20;
 export const WH = 215;
-/** Parte do SVG que aparece (as paredes, o piso e um respiro para os nomes). */
-export const VB = { x: 190, y: 55, w: 820, h: 675 } as const;
+export type Caixa2D = { x: number; y: number; w: number; h: number };
+/**
+ * Parte do SVG que aparece. Na tela larga sobra espaço em volta do cômodo para os cantos
+ * (quem está na sala, ganhos, carteira); no celular, o cômodo ocupa tudo e os cantos vão para fora.
+ */
+export const VB_LARGO: Caixa2D = { x: 0, y: 10, w: 1400, h: 860 };
+export const VB_ESTREITO: Caixa2D = { x: 240, y: 50, w: 1040, h: 790 };
 
 export type Piso = { i: number; j: number };
 export type Sentido = "frente-direita" | "frente-esquerda" | "costas-direita" | "costas-esquerda";
@@ -35,16 +40,26 @@ export function pisoNaTela(x: number, y: number): Piso | null {
 export type Movel = { id: string; i: number; j: number; w: number; d: number };
 
 export const MOVEIS: readonly Movel[] = [
-  { id: "churrasqueira", i: 5.5, j: 0, w: 2.2, d: 1.1 },
-  { id: "geladeira", i: 0, j: 7, w: 0.85, d: 0.9 },
-  { id: "freezer", i: 0, j: 7.95, w: 0.85, d: 0.95 },
-  { id: "colchao-fundo", i: 1.4, j: 1.9, w: 2.4, d: 1 },
-  { id: "cadeira-verde", i: 8, j: 2.5, w: 0.58, d: 0.58 },
-  { id: "mesa-verde", i: 7.4, j: 3.1, w: 1.5, d: 1.3 },
-  { id: "cadeira-canto", i: 9.2, j: 3.5, w: 0.58, d: 0.58 },
-  { id: "mesa-comprida", i: 3.2, j: 6.4, w: 3.4, d: 1.2 },
-  { id: "cadeira-frente", i: 7, j: 8, w: 0.58, d: 0.58 },
-  { id: "colchao-frente", i: 7.7, j: 6.1, w: 2.3, d: 0.9 },
+  { id: "churrasqueira", i: 7, j: 0, w: 2.2, d: 1.1 },
+  { id: "geladeira", i: 0, j: 8.9, w: 0.9, d: 0.95 },
+  { id: "freezer", i: 0, j: 9.95, w: 0.9, d: 1 },
+  { id: "colchao-fundo", i: 1.5, j: 1.6, w: 2.6, d: 1 },
+  { id: "cadeira-verde", i: 11, j: 3, w: 0.58, d: 0.58 },
+  { id: "mesa-verde", i: 10.3, j: 3.6, w: 1.6, d: 1.4 },
+  { id: "cadeira-canto", i: 12.3, j: 4.1, w: 0.58, d: 0.58 },
+  { id: "mesa-comprida", i: 4.6, j: 8.3, w: 3.6, d: 1.2 },
+  { id: "cadeira-frente", i: 8.5, j: 9.5, w: 0.58, d: 0.58 },
+  { id: "colchao-frente", i: 10.4, j: 8.4, w: 2.4, d: 1.1 },
+  /* a folha do portão K-FOFO, aberta para dentro e encostada: o piso dela continua bloqueado */
+  { id: "portao", i: 13, j: 0, w: 1, d: 1.5 },
+];
+
+/** Móveis que abrem alguma coisa, e o ponto (i, j, z) onde fica a placa com o nome. */
+export type Clicavel = { id: "tv" | "truco" | "loja"; rotulo: { i: number; j: number; z: number } };
+export const CLICAVEIS: readonly Clicavel[] = [
+  { id: "tv", rotulo: { i: 0, j: 2.05, z: 160 } },
+  { id: "truco", rotulo: { i: 11.1, j: 4.3, z: 72 } },
+  { id: "loja", rotulo: { i: 0.45, j: 9.9, z: 118 } },
 ];
 
 /** Quanto do intervalo [a, a+w] cai dentro do piso k. */
@@ -63,6 +78,12 @@ export const BLOQUEADOS: ReadonlySet<string> = new Set(
 );
 
 export const livre = (i: number, j: number) => i >= 0 && i < NI && j >= 0 && j < NJ && !BLOQUEADOS.has(chave(i, j));
+
+/** Piso livre embaixo de um ponto da tela (para o destaque do mouse), ou null. */
+export function pisoLivreNaTela(x: number, y: number): Piso | null {
+  const p = pisoNaTela(x, y);
+  return p && livre(p.i, p.j) ? p : null;
+}
 
 /** Confere uma posição vinda da sala: `{i, j}` inteiros, dentro da grade e fora dos móveis. */
 export function posValida(v: unknown): v is Piso {
@@ -138,12 +159,12 @@ export function quadroSprite(s: Sentido, quadro: number) {
 /* ---------- entrada ---------- */
 /** Pisos livres perto da porta de vidro, onde quem chega aparece. */
 export const ENTRADA: readonly Piso[] = [
-  { i: 0, j: 5 },
   { i: 0, j: 6 },
-  { i: 1, j: 5 },
+  { i: 0, j: 7 },
   { i: 1, j: 6 },
-  { i: 1, j: 4 },
-  { i: 2, j: 5 },
+  { i: 1, j: 7 },
+  { i: 1, j: 5 },
+  { i: 2, j: 6 },
 ];
 
 export const entradaSorteada = (rnd = Math.random) => ({ ...ENTRADA[Math.floor(rnd() * ENTRADA.length) % ENTRADA.length] });

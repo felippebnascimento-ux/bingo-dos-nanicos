@@ -33,6 +33,20 @@ export function textoBonus(ganhou: number, extra: number, seq: number) {
   return seq > 1 ? `${base}: ${diasSeguidos(seq)}` : `${base}: bônus do dia`;
 }
 
+/** Por que alguém ganhou moedas, para o aviso de ganhos do Sítio. Motivo desconhecido fica sem texto. */
+export const MOTIVO_GANHO: Readonly<Record<string, string>> = {
+  inicio: "carteira nova",
+  diario: "bônus do dia",
+  sequencia: "prêmio da sequência",
+  online: "tempo online",
+  truco: "venceu no truco",
+  bingo: "bingo!",
+  cassino: "ganhou no cassino",
+  aposta: "acertou a aposta",
+  admin: "presente do admin",
+};
+export const motivoGanho = (m: string | null | undefined) => (m && MOTIVO_GANHO[m]) || "";
+
 /** Nome de cada motivo do extrato, para a tela. */
 export const MOTIVOS: Readonly<Record<string, string>> = {
   inicio: "Carteira nova",

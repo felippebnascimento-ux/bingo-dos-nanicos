@@ -48,6 +48,14 @@ export const CHANGELOG: EntradaLog[] = [
   { data: "01/11/2026", itens: ["Moedas: bônus todo dia que você entra, maior a cada dia seguido, e moedas pelo tempo com o site aberto"] },
   { data: "01/11/2026", itens: ["Ficha de cada nanico na aba Nanicos: elo, KDA, main e horas de CS2, com o boneco no quarto", "Perfil aceita o link da Steam"] },
   { data: "01/11/2026", itens: ["Atributos na ficha: tilt, choro, clutch, farm, sorte e call, com voto anônimo do grupo"] },
+  {
+    data: "02/11/2026",
+    itens: [
+      "Sítio maior e mais claro, com janelão para as árvores",
+      "No Sítio: TV, mesa do truco e loja abrem com um clique, e o piso fica marcado embaixo do mouse",
+      "Quem está na sala, a sua carteira e os ganhos de moedas de todo mundo aparecem nos cantos do Sítio",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

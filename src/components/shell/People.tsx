@@ -18,20 +18,26 @@ export function goWatch(key: string) {
   if (ehCelular()) setTimeout(() => rolarAte(document.getElementById("stage")), 0);
 }
 
-/** "Na sala agora": quem está com o site aberto, com BINGO e AO VIVO. */
-export function People() {
+/** Quem está na sala agora, comigo primeiro e o resto em ordem alfabética (usado aqui e no Sítio). */
+export function usePessoasNaSala(): Presence[] {
   const online = useApp((s) => s.online);
-  const friends = useApp((s) => s.friends);
   const myName = useApp((s) => s.myName);
   const myFid = useApp((s) => s.myFid);
   const card = useApp((s) => s.card);
   const myLiveSid = useApp((s) => s.myLiveSid);
   const myCamSid = useApp((s) => s.myCamSid);
-
   const list: Presence[] = online.slice();
   if (myName && !list.some((p) => p.key === MY_KEY))
     list.unshift({ key: MY_KEY, name: myName, fid: myFid, lines: bingoLines(card), live: myLiveSid, cam: myCamSid, pos: null, at: 0 });
-  list.sort((a, b) => (a.key === MY_KEY ? -1 : b.key === MY_KEY ? 1 : String(a.name).localeCompare(String(b.name), "pt-BR")));
+  return list.sort((a, b) => (a.key === MY_KEY ? -1 : b.key === MY_KEY ? 1 : String(a.name).localeCompare(String(b.name), "pt-BR")));
+}
+
+/** "Na sala agora": quem está com o site aberto, com BINGO e AO VIVO. No Sítio, a lista fica no canto do hall. */
+export function People() {
+  const friends = useApp((s) => s.friends);
+  const noSitio = useApp((s) => s.aba === "hall");
+  const list = usePessoasNaSala();
+  if (noSitio) return null;
 
   return (
     <section className="room" aria-labelledby="roomTitle">

@@ -2,13 +2,14 @@
 import { useEffect, type ComponentType } from "react";
 import { IcAoVivo, IcJogar, IcSitio, IcNanicadas, IcNanicos, IcPerfil, IcTruco, IcVoltar } from "@/components/ui/icones";
 import { fecharSeletores } from "@/components/ui/FriendPicker";
+import { Avatar } from "@/components/ui/Avatar";
 import { CamBotoes } from "@/features/live/CamBotoes";
 import { CarteiraChip } from "@/features/moedas/Moedas";
 import { logout } from "@/lib/dados";
 import { VERSION } from "@/lib/dados/changelog";
 import { temNovidade } from "@/lib/dados/novidades";
 import { CREW, MARCA } from "@/lib/dados/nanicos";
-import { MY_KEY, setApp, useApp } from "@/lib/store";
+import { friendOf, MY_KEY, setApp, useApp } from "@/lib/store";
 import type { Aba } from "@/lib/tipos";
 import { local } from "@/lib/util";
 import { People } from "./People";
@@ -35,6 +36,8 @@ function Nav() {
   const nLive = useApp((s) => s.online.filter((p) => p.live && p.key !== MY_KEY).length + (s.myLiveSid ? 1 : 0));
   const nTruco = useApp((s) => s.trucoAbertas);
   const unread = useApp((s) => s.chatUnread > 0);
+  /* o item Perfil mostra o meu rosto (sem nanico, continua o ícone) */
+  const eu = useApp((s) => friendOf(s.myFid, s.friends));
 
   const contagem = (a: Aba) => {
     if (a === "frases") return <span className="count" id="nFrases">{nFrases || ""}</span>;
@@ -60,7 +63,7 @@ function Nav() {
             fecharSeletores();
           }}
         >
-          <Ic />
+          {a === "perfil" && eu ? <Avatar f={eu} size="xs" className="nav-rosto" /> : <Ic />}
           <span className="t">{t}</span>
           {contagem(a)}
         </button>

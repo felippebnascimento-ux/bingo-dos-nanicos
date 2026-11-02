@@ -48,9 +48,9 @@ export function aoConectar(fn: () => void) {
   return () => void conectarFns.delete(fn);
 }
 
-/** Mudança numa tabela do banco (`friends`, `phrases`, `game`, `chat_messages`). */
+/** Mudança numa tabela do banco (`friends`, `phrases`, `game`, `chat_messages`, `carteiras`). */
 export const aoMudarTabela = (
-  tabela: "friends" | "phrases" | "game" | "chat_messages",
+  tabela: "friends" | "phrases" | "game" | "chat_messages" | "carteiras",
   fn: (row: Record<string, unknown> | null, ev: string) => void,
 ) => add(tabelaFns, tabela, fn);
 
@@ -143,6 +143,10 @@ export function joinRoom(onTabela: (tabela: string) => void) {
   }
   ch = ch.on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, (pl) => {
     tabelaFns.get("chat_messages")?.forEach((fn) => fn((pl?.new as Record<string, unknown>) || null, "INSERT"));
+  });
+  /* ganhos de moedas de todo mundo: vêm do banco (a RLS deixa nanicos lerem as carteiras), nunca de broadcast */
+  ch = ch.on("postgres_changes", { event: "*", schema: "public", table: "carteiras" }, (pl) => {
+    tabelaFns.get("carteiras")?.forEach((fn) => fn((pl?.new as Record<string, unknown>) || null, pl?.eventType || ""));
   });
   room = ch;
   ch.subscribe((st) => {
