@@ -54,6 +54,10 @@ export type AppState = {
   nanicadasBusca: string;
   pwAberto: boolean;
   logAberto: boolean;
+  /** "novidades" = abriu sozinho depois de uma atualização; "tudo" = botão Log do rodapé */
+  logModo: "novidades" | "tudo";
+  /** índice da última entrada do CHANGELOG que a pessoa viu (conta, com o navegador de reserva) */
+  logVisto: number | null;
 };
 
 export const lineupVazia = (): LineupSlot[] => LANES.map(() => ({ friendId: "", champion: "" }));
@@ -86,6 +90,8 @@ export const useApp = create<AppState>()(() => ({
   nanicadasBusca: "",
   pwAberto: false,
   logAberto: false,
+  logModo: "tudo",
+  logVisto: null,
 }));
 
 /** Atalho para mudar o estado de fora do React (sala, WebRTC, truco…). */

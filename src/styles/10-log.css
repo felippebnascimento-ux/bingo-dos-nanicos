@@ -4,7 +4,8 @@
 .log-btn{position:relative;border:1px solid var(--line);background:none;color:var(--muted);font:600 11px/1.4 var(--body);padding:1px 8px;border-radius:99px;cursor:pointer}
 .log-btn:hover{color:var(--ink);border-color:var(--muted)}
 .log-btn.new::after{content:"";position:absolute;top:-3px;right:-3px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
-.log-card{width:min(520px,100%);max-height:calc(100vh - 40px);overflow:auto;gap:14px}
+/* a coluna nunca passa da largura da janela: no celular o texto quebra em vez de rolar para o lado */
+.log-card{width:min(520px,100%);max-height:calc(100vh - 40px);overflow:auto;gap:14px;grid-template-columns:minmax(0,1fr)}
 .log-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .gate-card .log-head .btn{width:auto;flex:none}
 .log-list{display:grid;gap:16px}
@@ -14,5 +15,7 @@
 .log-entry ul{margin:0;padding-left:18px;display:grid;gap:3px;color:var(--ink);font-size:14px}
 .log-entry li.off{color:var(--muted)}
 .log-entry li.off s{text-decoration-thickness:1.5px;text-decoration-color:var(--muted)}
-.off-why{font-size:12px;font-style:italic;white-space:nowrap}
+.off-why{font-size:12px;font-style:italic}
 
+.log-obs{margin:-6px 0 0}
+.gate-card .log-todas{justify-self:start;width:auto}

@@ -1,13 +1,13 @@
 "use client";
 /* Janelas que cobrem o site: login, primeira senha, trocar senha e o log de versões. */
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { enterApp, logout, startSession, toEmail } from "@/lib/dados";
-import { CHANGELOG, VERSION, versionAt } from "@/lib/dados/changelog";
+import { enterApp, logout, marcarLogVisto, startSession, toEmail } from "@/lib/dados";
+import { novidadesDesde, todasAsVersoes, ULTIMA } from "@/lib/dados/novidades";
 import { CREW } from "@/lib/dados/nanicos";
 import { getApp, setApp, useApp } from "@/lib/store";
 import { sb } from "@/lib/supabase";
 import { toast } from "@/lib/toast";
-import { local, norm } from "@/lib/util";
+import { norm } from "@/lib/util";
 
 const Turma = () => (
   // eslint-disable-next-line @next/next/no-img-element
@@ -219,36 +219,47 @@ function FormTrocarSenha() {
   );
 }
 
-/** Log de versões (botão "Log" no rodapé). */
+/**
+ * Log de versões. Pelo botão "Log" do rodapé mostra tudo; depois de uma atualização abre sozinho
+ * no modo novidades, só com o que mudou desde a última visita. Fechar marca a versão como vista.
+ */
 export function PortaLog() {
   const aberto = useApp((s) => s.logAberto);
+  const modo = useApp((s) => s.logModo);
+  const visto = useApp((s) => s.logVisto);
   const fecharRef = useRef<HTMLButtonElement>(null);
-  const fechar = () => setApp({ logAberto: false });
+  const fechar = () => {
+    marcarLogVisto();
+    setApp({ logAberto: false, logModo: "tudo" });
+  };
   useEffect(() => {
     if (!aberto) return;
-    local.set("log-visto", VERSION);
+    if (modo === "tudo") marcarLogVisto();
     fecharRef.current?.focus();
     const esc = (e: KeyboardEvent) => e.key === "Escape" && fechar();
     document.addEventListener("keydown", esc);
     return () => document.removeEventListener("keydown", esc);
-  }, [aberto]);
+  }, [aberto, modo]);
   if (!aberto) return null;
-  const lista = CHANGELOG.map((e, i) => ({ ...e, v: versionAt(i) })).reverse();
+  const novidades = modo === "novidades" ? novidadesDesde(visto) : [];
+  const soNovidades = novidades.length > 0;
+  const lista = soNovidades ? novidades : todasAsVersoes();
+  const temRiscado = lista.some((e) => e.itens.some((t) => typeof t !== "string"));
   return (
     <div className="gate" id="logGate" role="dialog" aria-modal="true" aria-labelledby="logTitle" onClick={(e) => e.target === e.currentTarget && fechar()}>
       <div className="gate-card log-card">
         <div className="log-head">
-          <h2 id="logTitle">Atualizações</h2>
+          <h2 id="logTitle">{soNovidades ? "Novidades desde a sua última visita" : "Atualizações"}</h2>
           <button className="btn soft sm" id="logClose" type="button" ref={fecharRef} onClick={fechar}>Fechar</button>
         </div>
-        <p className="status" style={{ margin: "-6px 0 0" }}>Itens riscados não funcionam mais.</p>
+        {temRiscado && <p className="status log-obs">Itens riscados não funcionam mais.</p>}
         <div className="log-list" id="logList">
-          {lista.map((e, k) => (
+          {lista.map((e) => (
             <section className="log-entry" key={e.v}>
               <h3>
                 {e.v}
                 <time>{e.data}</time>
-                {k === 0 && <span className="atual">ATUAL</span>}
+                {e.i === ULTIMA && <span className="atual">ATUAL</span>}
               </h3>
               <ul>
                 {e.itens.map((t, j) =>
@@ -264,6 +275,11 @@ export function PortaLog() {
             </section>
           ))}
         </div>
+        {soNovidades && (
+          <button className="btn soft log-todas" type="button" onClick={() => setApp({ logModo: "tudo" })}>
+            Ver todas as versões
+          </button>
+        )}
       </div>
     </div>
   );
