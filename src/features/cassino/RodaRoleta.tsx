@@ -155,7 +155,11 @@ export type Giro = { id: number; casa: number };
 /** Estilos da roda (só cores e materiais, em 26-cassino.css): madeira clássica, laca preta com ouro, mogno com cromo, neon. */
 export type TemaRoda = "classica" | "luxo" | "monaco" | "neon";
 
-export function RodaRoleta({ giro, onFim, tema = "classica" }: { giro: Giro | null; onFim?: (casa: number, cor: Cor) => void; tema?: TemaRoda }) {
+/**
+ * `semSom`: a roda gira mas não toca nada (a mesa é ao vivo e a roleta fica montada escondida quando a pessoa está
+ * em outra aba ou outro jogo; quem não está olhando não pode ouvir o giro dos outros).
+ */
+export function RodaRoleta({ giro, onFim, tema = "classica", semSom = false }: { giro: Giro | null; onFim?: (casa: number, cor: Cor) => void; tema?: TemaRoda; semSom?: boolean }) {
   const id = useId().replace(/:/g, "");
   const rodaRef = useRef<SVGGElement>(null);
   const bolaRef = useRef<SVGGElement>(null);
@@ -169,10 +173,12 @@ export function RodaRoleta({ giro, onFim, tema = "classica" }: { giro: Giro | nu
   const fimRef = useRef(onFim);
   const [mudo, setMudo] = useState(() => local.get("roleta-som") === "0");
   const mudoRef = useRef(mudo);
-  /* o giro em andamento lê sempre o callback e o mudo mais novos */
+  const semSomRef = useRef(semSom);
+  /* o giro em andamento lê sempre o callback, o mudo e o "sem som" mais novos */
   useEffect(() => {
     fimRef.current = onFim;
     mudoRef.current = mudo;
+    semSomRef.current = semSom;
   });
   const [final, setFinal] = useState<number | null>(null);
   const [rodando, setRodando] = useState(false);
@@ -185,7 +191,9 @@ export function RodaRoleta({ giro, onFim, tema = "classica" }: { giro: Giro | nu
     setRodando(true);
     const p: Plano = planoDoGiro(giro.casa, aleatorio, angulo.current);
     let bolaAntes = quadroDoGiro(p, 0).bola;
-    const som = mudoRef.current || reduzMovimento() ? null : abrirSom();
+    /* calado: no mudo, fora da tela do cassino (semSom) ou com a aba do navegador escondida */
+    const calado = () => mudoRef.current || semSomRef.current || document.hidden;
+    const som = calado() || reduzMovimento() ? null : abrirSom();
     const desenhar = (t: number) => {
       const q = quadroDoGiro(p, t);
       angulo.current = q.roda;
@@ -221,7 +229,7 @@ export function RodaRoleta({ giro, onFim, tema = "classica" }: { giro: Giro | nu
       if (acabou) return;
       acabou = true;
       desenhar(p.total);
-      tec(som, true);
+      if (!calado()) tec(som, true);
       setTimeout(() => som?.parar(), 400);
       const a0 = anguloDa(giro.casa) - FATIA / 2;
       brilhoRef.current?.setAttribute("d", setor(R_CASA_INT, R_NUM_EXT, a0, a0 + FATIA));
@@ -240,15 +248,15 @@ export function RodaRoleta({ giro, onFim, tema = "classica" }: { giro: Giro | nu
       if (t >= p.total) return terminar();
       const q = desenhar(t);
       if (som) {
-        som.rolar.gain.setTargetAtTime(mudoRef.current ? 0 : 0.05 * q.rolando, som.ctx.currentTime, 0.05);
+        som.rolar.gain.setTargetAtTime(calado() ? 0 : 0.05 * q.rolando, som.ctx.currentTime, 0.05);
         const k = p.quiques.findIndex((x) => t >= x.ini && t < x.fim);
         if (k !== quiqueVisto && k >= 0) {
           quiqueVisto = k;
-          if (!mudoRef.current) tec(som);
+          if (!calado()) tec(som);
         }
         if (q.assentou && quiqueVisto !== 99) {
           quiqueVisto = 99;
-          if (!mudoRef.current) tec(som);
+          if (!calado()) tec(som);
         }
       }
       quadro = requestAnimationFrame(passo);

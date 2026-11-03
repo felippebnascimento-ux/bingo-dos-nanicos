@@ -316,6 +316,10 @@ export const CHANGELOG: EntradaLog[] = [
       "Roleta nova em laca preta com ouro, maior e com números mais fáceis de ler; a ficha de 5 ganhou listras azuis para não sumir",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: ["A roleta ao vivo não toca mais som para quem está fora da tela da Roleta (em outra aba, outro jogo ou com o navegador escondido)"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
