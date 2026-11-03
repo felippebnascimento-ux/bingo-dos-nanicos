@@ -354,10 +354,10 @@
 .cn-rolo::after{content:"";position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(180deg,color-mix(in srgb,var(--cn-sombra) 75%,transparent),transparent 30%,transparent 70%,color-mix(in srgb,var(--cn-sombra) 75%,transparent)),
   linear-gradient(90deg,rgb(0 0 0 / .18),transparent 18%,transparent 82%,rgb(0 0 0 / .18))}
-.cn-tira{display:flex;flex-direction:column;transform:translateY(calc(var(--y) * -1 * var(--cn-h)))}
+.cn-tira{display:flex;flex-direction:column;transform:translateY(calc(var(--y) * -1 * var(--cn-h)));will-change:filter,transform}
 .cn-tira.parando{transition:transform var(--dur) cubic-bezier(.12,.62,.3,1.1);filter:blur(1.2px)}
 .cn-tira.parado{filter:none;animation:cn-tranco .18s ease-out}
-.cn-tira.loop{animation:cn-gira .32s linear infinite;filter:blur(2.5px)}
+.cn-tira.loop{animation:cn-gira .32s linear infinite;filter:blur(1px)}
 .cn.rapido .cn-tira.loop{animation-duration:.2s}
 @keyframes cn-gira{from{transform:translateY(0)}to{transform:translateY(-50%)}}
 @keyframes cn-tranco{40%{translate:0 5px}}

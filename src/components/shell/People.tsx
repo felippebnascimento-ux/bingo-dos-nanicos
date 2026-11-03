@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChamaNome } from "@/features/ficha/NoSitio";
 import { Avatar } from "@/components/ui/Avatar";
 import { IcQuarto, IcSeta, IcVoltar } from "@/components/ui/icones";
@@ -66,7 +66,7 @@ export function usePessoasNaSala(todos = false): Presence[] {
   const myLiveSid = useApp((s) => s.myLiveSid);
   const myCamSid = useApp((s) => s.myCamSid);
   /* um por nanico: as várias abas de alguém viram uma linha só */
-  const juntos = umPorNanico(online, MY_KEY);
+  const juntos = useMemo(() => umPorNanico(online, MY_KEY), [online]);
   const list: Presence[] = todos ? juntos : juntos.filter((p) => p.sala === minhaSala || p.key === MY_KEY);
   if (myName && !list.some((p) => p.key === MY_KEY))
     list.unshift({ key: MY_KEY, name: myName, fid: myFid, lines: bingoLines(card), live: myLiveSid, cam: myCamSid, pos: null, sala: minhaSala, at: 0 });
@@ -90,8 +90,9 @@ export function useNanicosOnline(): PresencaNanico[] {
   const surdo = useApp((s) => s.vozSurdo);
   const texto = useApp((s) => (s.aba === "chat" ? s.canalTexto : null));
   const quarto = useApp((s) => s.meuQuarto);
-  const lista = umPorNanico(online, MY_KEY);
+  const base = useMemo(() => umPorNanico(online, MY_KEY), [online]);
   const meu = { sala, live: live ?? null, cam: cam ?? null, voz, mudo: !!voz && mudo, surdo: !!voz && surdo, texto, quarto };
+  const lista = [...base];
   const i = lista.findIndex((p) => p.chaves.includes(MY_KEY));
   if (i >= 0) lista[i] = { ...lista[i], ...meu, live: live ?? lista[i].live, cam: cam ?? lista[i].cam, chaveCam: cam ? MY_KEY : lista[i].chaveCam };
   else if (myName)

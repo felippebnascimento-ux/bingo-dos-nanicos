@@ -387,7 +387,7 @@ button.pk-livre:hover,.pk-livre.on{background:rgb(210 174 106 / .22)}
 .mesa-hist b{flex:none;display:grid;place-items:center;min-width:26px;height:22px;padding:0 7px;border-radius:7px;background:var(--surface-2);color:var(--ink);font:800 11px var(--display)}
 .mesa-hist b.v{background:var(--mj-verde);color:var(--mj-branco)}.mesa-hist b.p{background:var(--mj-verm);color:var(--mj-branco)}.mesa-hist b.o{background:var(--mj-ouro);color:var(--mj-escuro)}
 /* o aviso grande em cima do feltro */
-.mesa-faixa{display:grid;justify-items:center;gap:.6cqw;padding:1cqw 3cqw;border-radius:1.4cqw;background:rgb(10 8 6 / .62);backdrop-filter:blur(6px);box-shadow:0 0 0 .15cqw rgb(210 174 106 / .45);animation:mesa-selo .35s cubic-bezier(.2,1.4,.4,1) both;pointer-events:none}
+.mesa-faixa{display:grid;justify-items:center;gap:.6cqw;padding:1cqw 3cqw;border-radius:1.4cqw;background:rgb(10 8 6 / .78);box-shadow:0 0 0 .15cqw rgb(210 174 106 / .45);animation:mesa-selo .35s cubic-bezier(.2,1.4,.4,1) both;pointer-events:none}
 .mesa-faixa b{font:900 max(14px,2.2cqw) var(--display);letter-spacing:.06em;color:var(--mj-ouro);white-space:nowrap}
 .mesa-faixa small{font:600 max(11px,1.2cqw) var(--body);color:rgb(255 255 255 / .8);white-space:nowrap}
 .mesa-faixa .mesa-prazo{width:min(260px,26cqw);height:4px;background:rgb(255 255 255 / .15)}

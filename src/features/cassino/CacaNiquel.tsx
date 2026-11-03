@@ -92,7 +92,7 @@ function JackpotPainel() {
     lerJackpotAgora = () => void ler();
     void ler();
     /* só com o Cassino na tela (a aba fica montada escondida) */
-    const t = setInterval(() => !document.hidden && getApp().aba === "cassino" && void ler(), 4000);
+    const t = setInterval(() => !document.hidden && getApp().aba === "cassino" && void ler(), 10_000);
     return () => {
       vivo = false;
       clearInterval(t);

@@ -62,10 +62,14 @@ type Pre = { chave: string; tipo: "passar-desistir" | "pagar" | "qualquer"; apos
 /** O relógio do banco, andando de 1/4 em 1/4 de segundo (para as contagens). */
 function useAgora(agoraBanco: () => number) {
   const [agora, setAgora] = useState(() => Date.now());
+  const ref = useRef(agoraBanco);
+  useEffect(() => { ref.current = agoraBanco; });
   useEffect(() => {
-    const t = setInterval(() => setAgora(agoraBanco()), 250);
+    const t = setInterval(() => {
+      if (!document.hidden) setAgora(ref.current());
+    }, 250);
     return () => clearInterval(t);
-  }, [agoraBanco]);
+  }, []);
   return agora;
 }
 

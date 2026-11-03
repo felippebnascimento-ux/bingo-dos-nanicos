@@ -8,7 +8,7 @@
  * - "Canais de texto": só o #geral (o único chat de todo mundo), com as não lidas e quem está olhando agora.
  * Cada categoria recolhe (fica só o canal onde eu estou). O painel da voz conectada fica em features/live/PainelVoz.tsx.
  */
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { IcFoneDesligado, IcHash, IcMicDesligado, IcSeta, IcVolume } from "@/components/ui/icones";
 import { abrirCanalTexto, useChat } from "@/features/chat/chat";
@@ -89,9 +89,10 @@ export function Canais() {
   const falando = useVoz((s) => s.falando);
   const friends = useApp((s) => s.friends);
   const pessoas = useNanicosOnline();
+  const falandoSet = useMemo(() => new Set(falando), [falando]);
   if (!salas.length) return null;
 
-  const fala = (p: PresencaNanico) => p.chaves.some((k) => falando.includes(k));
+  const fala = (p: PresencaNanico) => p.chaves.some((k) => falandoSet.has(k));
   /* o chat de cada sala é o do canal de voz (no Ao vivo); de texto, só o geral */
   const canaisTexto = [{ id: "geral", nome: "geral" }];
 

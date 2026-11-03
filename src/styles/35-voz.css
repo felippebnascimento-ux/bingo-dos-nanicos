@@ -70,7 +70,7 @@
 .vz-chave.on i::after{left:17px;background:var(--stamp-ink)}
 .vz-sep{height:1px;margin:4px 2px;background:var(--line)}
 .vz-medidor{height:6px;margin:6px 9px 8px;border-radius:3px;background:var(--line);overflow:hidden}
-.vz-medidor span{display:block;height:100%;background:var(--accent);transform-origin:left;transform:scaleX(0);transition:transform .08s linear}
+.vz-medidor span{display:block;height:100%;background:var(--accent);transform-origin:left;transform:scaleX(0);transition:transform .08s linear;will-change:transform}
 .vz-vol{display:flex;align-items:center;gap:10px;padding:4px 9px 8px}
 .vz-vol input{flex:1;accent-color:var(--accent)}
 .vz-vol b{min-width:38px;text-align:right;font:600 12px var(--body);color:var(--muted)}
@@ -79,7 +79,7 @@
 .vz-ping-l{display:flex;justify-content:space-between;gap:10px;font-size:12.5px}
 .vz-ping-l b{color:var(--accent-text)}
 .vz-grafico{height:34px;display:flex;align-items:flex-end;gap:3px}
-.vz-grafico i{flex:1;max-width:16px;border-radius:2px 2px 0 0;background:var(--accent);opacity:.75}
+.vz-grafico i{flex:1;max-width:16px;border-radius:2px 2px 0 0;background:var(--accent);opacity:.75;will-change:transform}
 .vz-reacoes{width:250px}
 .vz-emojis{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:4px}
 .vz-emojis button{display:grid;place-items:center;aspect-ratio:1;border:0;border-radius:8px;background:none;font-size:22px;cursor:pointer}

@@ -15,7 +15,7 @@ export function useLaco<T>(ler: () => Promise<T | null>, espera: (lido: T | null
   const esperaAgora = useRef(espera);
   useEffect(() => {
     esperaAgora.current = espera;
-  });
+  }, [espera]);
 
   useEffect(() => {
     if (!ativo) return;

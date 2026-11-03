@@ -44,10 +44,14 @@ type Lance = { n: number; zb: Zona; zg: Zona; gol: boolean; fase: "voando" | "re
 /** O relógio do banco, andando de 1/4 em 1/4 de segundo. */
 function useAgora(agoraBanco: () => number) {
   const [agora, setAgora] = useState(() => Date.now());
+  const ref = useRef(agoraBanco);
+  useEffect(() => { ref.current = agoraBanco; });
   useEffect(() => {
-    const t = setInterval(() => setAgora(agoraBanco()), 250);
+    const t = setInterval(() => {
+      if (!document.hidden) setAgora(ref.current());
+    }, 250);
     return () => clearInterval(t);
-  }, [agoraBanco]);
+  }, []);
   return agora;
 }
 

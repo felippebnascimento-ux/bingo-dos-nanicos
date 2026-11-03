@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useSure } from "@/components/ui/useSure";
 import { friendOf, useApp } from "@/lib/store";
 import { TR_ENV, TR_TEMPO_MS, TR_TRUCO, trOpcoes, trQuemDeve, trValido, type Carta as TCarta, type MesaPub } from "./engine";
@@ -40,11 +40,14 @@ function MinhaMao({ cartas, pode }: { cartas: TCarta[]; pode: boolean }) {
 /** Quanto falta do tempo da jogada (de 0 a 1), para o anel do lugar de quem está na vez. */
 function useFalta(fim: number | null) {
   const [agora, setAgora] = useState(() => Date.now());
+  const fimRef = useRef(fim);
+  useEffect(() => { fimRef.current = fim; });
   useEffect(() => {
-    if (fim === null) return;
-    const t = setInterval(() => setAgora(Date.now()), 250);
+    const t = setInterval(() => {
+      if (fimRef.current !== null && !document.hidden) setAgora(Date.now());
+    }, 250);
     return () => clearInterval(t);
-  }, [fim]);
+  }, []);
   return fim === null ? null : Math.max(0, Math.min(1, (fim - agora) / TR_TEMPO_MS));
 }
 

@@ -7,7 +7,7 @@
  * Dobrar) ou os botões redondos da vez (Pedir, Parar, Dobrar, Dividir). Quem dá as cartas, conta e paga é o banco
  * (seção 43); aqui só mostra.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useApp } from "@/lib/store";
 import { formatarMoedas } from "@/lib/moedas";
 import { useCarteira } from "@/lib/carteira";
@@ -33,10 +33,14 @@ const fmt = (n: number) => n.toLocaleString("pt-BR");
 /** O relógio do banco, andando de 1/4 em 1/4 de segundo (para as contagens). */
 function useAgora(agoraBanco: () => number) {
   const [agora, setAgora] = useState(() => Date.now());
+  const ref = useRef(agoraBanco);
+  useEffect(() => { ref.current = agoraBanco; });
   useEffect(() => {
-    const t = setInterval(() => setAgora(agoraBanco()), 250);
+    const t = setInterval(() => {
+      if (!document.hidden) setAgora(ref.current());
+    }, 250);
     return () => clearInterval(t);
-  }, [agoraBanco]);
+  }, []);
   return agora;
 }
 

@@ -30,6 +30,7 @@
 html,body{margin:0}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 [hidden]{display:none!important}
+section.inner[hidden]{content-visibility:hidden}
 img{max-width:100%}
 body{background:var(--bg);color:var(--ink);font:400 15px/1.5 var(--body);-webkit-font-smoothing:antialiased}
 button{font:inherit;color:inherit}
