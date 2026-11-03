@@ -15,6 +15,7 @@ import { BotaoCelular } from "@/features/celular/Celular";
 import { Missoes } from "@/features/missoes/Missoes";
 import { CarteiraCanto, Dica, Ganhos, NaSala } from "./Cantos";
 import { MochilaCanto } from "@/features/loja/MochilaPainel";
+import { Chegadas, iniciarChegadas } from "./Chegadas";
 import { iniciarGanhos } from "./ganhos";
 import { cambalear } from "./zoeira";
 import { iniciarZoeira, useZoeira } from "./zoeiraSala";
@@ -92,6 +93,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
     iniciarZoeira();
     iniciarEventos();
     iniciarConsumo();
+    iniciarChegadas();
   }, []);
 
   /* z-index de cada móvel, encosto e boneco, do fundo para a frente (quem senta fica por cima do estofado) */
@@ -229,7 +231,10 @@ export function HallView({ hidden }: { hidden: boolean }) {
             return b ? <MenuBoneco key={b.key} b={b} vb={vb} /> : null;
           })()}
         </div>
-        <NaSala />
+        <div className="hall-esq">
+          <NaSala />
+          <Chegadas />
+        </div>
         <Ganhos />
         <div className="hall-bolso">
           <CarteiraCanto />

@@ -74,7 +74,7 @@ src/
                        de desenho; puro e testado), bonecos.ts (movimento, evento `hall`, presença), Sala.tsx
                        (cômodo em SVG com janelão e porta do banheiro, um móvel por camada, destaque do piso; a disposição segue a
                        planta do grupo de 02/11/2026: entrada pelo vão da frente, sem o portão K-FOFO), Boneco.tsx
-                       (tocar abre a ficha), Cantos.tsx ("Na sala agora", ganhos, carteira, dica), ganhos.ts
+                       (tocar abre a ficha), Cantos.tsx ("Na sala agora", ganhos, carteira, dica), Chegadas.tsx ("Fulano entrou!" embaixo do "Na sala agora", pela presença do lobby; não avisa quem só piscou), ganhos.ts
                        (ganhos de moedas de todo mundo pelo tempo real das carteiras), HallView; zoeira:
                        zoeira.ts (arco do voo e cambaleio; puro e testado), zoeiraSala.ts (chama zoar(), recebe
                        a tabela zoeiras, anima) e ZoeiraTela.tsx (menu do boneco, voo, PLAFT!, revidar);
