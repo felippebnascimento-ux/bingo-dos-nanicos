@@ -817,7 +817,7 @@ grant execute on function public.cassino_feed() to authenticated;
 -- 11b) cassino, parte 2: limbo, maior ou menor (dado) e caça-níquel dos nanicos -----------------
 --      Mesmo motor (cassino_numero), mesmas regras: aposta de 5 a 100, creditar, limitar e cassino_apostas.
 alter table public.cassino_apostas drop constraint if exists cassino_apostas_jogo_check;
-alter table public.cassino_apostas add constraint cassino_apostas_jogo_check check (jogo in ('roleta', 'limbo', 'dado', 'slot', 'aviao', 'penalti')); -- a lista completa: rodar o arquivo de novo não pode recusar apostas que já existem
+alter table public.cassino_apostas add constraint cassino_apostas_jogo_check check (jogo in ('roleta', 'limbo', 'dado', 'slot', 'aviao', 'penalti', 'blackjack')); -- a lista completa: rodar o arquivo de novo não pode recusar apostas que já existem
 
 -- limbo: resultado = max(1, floor(0,97 / (1 − u) × 100) / 100); ganha alvo × aposta se o resultado ≥ alvo (a casa leva 3%)
 create or replace function public.apostar_limbo(p_aposta int, p_alvo numeric) returns jsonb
@@ -2972,7 +2972,7 @@ grant execute on function public.apostar_roleta_mesa(jsonb) to authenticated;
 -- conferido pelo relógio do banco: multiplicador = floor(e^(0,07 × segundos) × 100) / 100 desde a decolagem.
 -- Saque automático em X×: vale se X ≤ ponto de queda (igual ao limbo). Cada um voa sozinho; a mesa só mostra os voos.
 alter table public.cassino_apostas drop constraint if exists cassino_apostas_jogo_check;
-alter table public.cassino_apostas add constraint cassino_apostas_jogo_check check (jogo in ('roleta', 'limbo', 'dado', 'slot', 'aviao', 'penalti')); -- a lista completa: rodar o arquivo de novo não pode recusar apostas que já existem
+alter table public.cassino_apostas add constraint cassino_apostas_jogo_check check (jogo in ('roleta', 'limbo', 'dado', 'slot', 'aviao', 'penalti', 'blackjack')); -- a lista completa: rodar o arquivo de novo não pode recusar apostas que já existem
 
 create table if not exists public.aviao_voos (
   id      bigint generated always as identity primary key,
@@ -3129,7 +3129,7 @@ alter table public.jogos_stats add constraint jogos_stats_fonte_check check (fon
 --   Os jogos antigos (apostar_roleta_mesa, aviao_decolar, apostar_dado) continuam no banco, fora da tela.
 alter table public.cassino_apostas drop constraint if exists cassino_apostas_jogo_check;
 alter table public.cassino_apostas add constraint cassino_apostas_jogo_check
-  check (jogo in ('roleta', 'limbo', 'dado', 'slot', 'aviao', 'penalti'));
+  check (jogo in ('roleta', 'limbo', 'dado', 'slot', 'aviao', 'penalti', 'blackjack'));
 
 create table if not exists public.mesa_rodadas (
   id        bigint generated always as identity primary key,
@@ -4680,7 +4680,316 @@ grant execute on function public.quarto_mover(bigint, int, int, boolean) to auth
 grant execute on function public.quarto_guardar(bigint) to authenticated;
 grant execute on function public.quarto_de(uuid) to authenticated;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo e as 2 tabelas e 3 funções do quarto próprio
+-- 43) blackjack ao vivo (03/11/2026): todos na mesma mesa contra o mesmo dealer, como num cassino -----------------------
+--   A mesa fica parada até alguém apostar. A primeira aposta abre a rodada com 10 s de apostas (até 5 lugares, de 5 a
+--   200 moedas). No fechamento o banco dá as cartas de um sapato de 6 baralhos e cada um joga a sua vez (pedir, parar,
+--   dobrar, dividir uma vez) em até 15 s; acabou o tempo, a mão para. Depois o dealer pede até 16 e para em 17 (em
+--   todos os 17) e paga: blackjack 3 para 2 (empata com o do dealer), ganhou 1 para 1, empate devolve.
+--   Justo: o sapato é embaralhado pelo segredo da rodada (cada carta k vai para a posição de HMAC-SHA256(segredo,
+--   "bj:id:k")); o sha256 do segredo (hash) aparece antes de apostar e o segredo sai no fim, para conferir.
+--   Sem servidor: bj_estado (o site pergunta toda hora) e as jogadas fazem a mesa andar, com uma trava.
+--   Ninguém lê as tabelas direto: só pelas funções. As cartas são públicas (no blackjack todas ficam viradas para cima),
+--   menos a segunda do dealer, que bj_estado só mostra quando a vez dele chega.
+alter table public.cassino_apostas drop constraint if exists cassino_apostas_jogo_check;
+alter table public.cassino_apostas add constraint cassino_apostas_jogo_check
+  check (jogo in ('roleta', 'limbo', 'dado', 'slot', 'aviao', 'penalti', 'blackjack')); -- a lista completa
+
+create table if not exists public.bj_rodadas (
+  id        bigint generated always as identity primary key,
+  abre_em   timestamptz not null default clock_timestamp(),
+  fecha_em  timestamptz not null,
+  segredo   bytea not null,
+  hash      text not null,
+  sapato    text[],
+  pos       int not null default 0,
+  fase      text not null default 'apostas' check (fase in ('apostas', 'jogo', 'fim')),
+  vez_ate   timestamptz,
+  dealer    text[] not null default '{}',
+  fim_em    timestamptz
+);
+create table if not exists public.bj_maos (
+  id        bigint generated always as identity primary key,
+  rodada_id bigint not null references public.bj_rodadas(id) on delete cascade,
+  user_id   uuid not null references auth.users(id) on delete cascade,
+  lugar     int not null check (lugar between 1 and 5),
+  mao       int not null default 1 check (mao in (1, 2)),
+  ordem     int not null,
+  aposta    int not null check (aposta between 5 and 400),
+  cartas    text[] not null default '{}',
+  estado    text not null default 'aposta' check (estado in ('aposta', 'jogando', 'parou', 'estourou', 'blackjack')),
+  dobrou    boolean not null default false,
+  pagou     int,
+  unique (rodada_id, user_id, mao)
+);
+create index if not exists bj_maos_rodada on public.bj_maos (rodada_id, ordem);
+alter table public.bj_rodadas enable row level security;
+alter table public.bj_maos    enable row level security;
+revoke all on public.bj_rodadas, public.bj_maos from public, anon, authenticated;
+
+-- pontos de uma mão: Ás vale 11 ou 1, figuras 10
+create or replace function public.bj_pontos(p_cartas text[]) returns int
+language plpgsql immutable as $$
+declare
+  c text; v text; t int := 0; ases int := 0;
+begin
+  foreach c in array coalesce(p_cartas, '{}') loop
+    v := left(c, length(c) - 1);
+    if v = 'A' then t := t + 11; ases := ases + 1;
+    elsif v in ('J', 'Q', 'K', '10') then t := t + 10;
+    else t := t + v::int; end if;
+  end loop;
+  while t > 21 and ases > 0 loop t := t - 10; ases := ases - 1; end loop;
+  return t;
+end $$;
+
+-- valor para dividir (10, J, Q e K valem igual)
+create or replace function public.bj_valor(p_carta text) returns int
+language sql immutable as $$
+  select case left(p_carta, length(p_carta) - 1) when 'A' then 11 when 'J' then 10 when 'Q' then 10 when 'K' then 10 else left(p_carta, length(p_carta) - 1)::int end;
+$$;
+
+-- o sapato da rodada (6 baralhos), embaralhado pelo segredo: a mesma conta que o site refaz para conferir
+create or replace function public.bj_sapato(p_segredo bytea, p_id bigint) returns text[]
+language sql immutable set search_path = public, extensions as $$
+  select array_agg(c order by h)
+  from (
+    select (array['A','2','3','4','5','6','7','8','9','10','J','Q','K'])[k % 13 + 1] || (array['s','h','d','c'])[(k / 13) % 4 + 1] as c,
+           extensions.hmac(convert_to('bj:' || p_id || ':' || k, 'UTF8'), p_segredo, 'sha256') as h
+    from generate_series(0, 311) k
+  ) x;
+$$;
+revoke all on function public.bj_sapato(bytea, bigint) from public, anon, authenticated;
+
+-- tira a próxima carta do sapato
+create or replace function public.bj_tirar(p_id bigint) returns text
+language plpgsql security definer set search_path = public as $$
+declare v_c text;
+begin
+  update public.bj_rodadas set pos = pos + 1 where id = p_id returning sapato[pos] into v_c;
+  return v_c;
+end $$;
+revoke all on function public.bj_tirar(bigint) from public, anon, authenticated;
+
+-- paga a rodada: o dealer joga (pede até 16) e cada mão recebe o que deu
+create or replace function public.bj_dealer(p_id bigint) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  r     public.bj_rodadas;
+  m     record;
+  v_d   int;
+  v_dbj boolean;
+  v_p   int;
+  v_pg  int;
+  v_n   int := 0;
+  v_vivo boolean;
+begin
+  select * into r from public.bj_rodadas where id = p_id for update;
+  if r.fase <> 'jogo' then return; end if;
+  -- o dealer só tira mais cartas se alguém ainda está no jogo (sem estourar e sem blackjack)
+  v_vivo := exists (select 1 from public.bj_maos where rodada_id = r.id and estado = 'parou');
+  while v_vivo and public.bj_pontos(r.dealer) < 17 loop
+    r.dealer := r.dealer || public.bj_tirar(r.id);
+    v_n := v_n + 1;
+  end loop;
+  v_d := public.bj_pontos(r.dealer);
+  v_dbj := v_d = 21 and coalesce(array_length(r.dealer, 1), 0) = 2;
+  for m in select * from public.bj_maos where rodada_id = r.id order by ordem loop
+    v_p := public.bj_pontos(m.cartas);
+    v_pg := case
+      when m.estado = 'estourou' then 0
+      when m.estado = 'blackjack' then case when v_dbj then m.aposta else floor(m.aposta * 2.5)::int end
+      when v_dbj then 0
+      when v_d > 21 or v_p > v_d then m.aposta * 2
+      when v_p = v_d then m.aposta
+      else 0 end;
+    update public.bj_maos set pagou = v_pg where id = m.id;
+    if v_pg > 0 then perform public.creditar(m.user_id, v_pg, 'cassino', 'blackjack'); end if;
+    insert into public.cassino_apostas (user_id, jogo, aposta, escolha, resultado, pagou, hash, nonce)
+    values (m.user_id, 'blackjack', m.aposta,
+            jsonb_build_object('rodada', r.id, 'mao', m.mao, 'dobrou', m.dobrou),
+            jsonb_build_object('cartas', m.cartas, 'pontos', v_p, 'dealer', r.dealer, 'dealer_pontos', v_d, 'estado', m.estado),
+            v_pg, r.hash, r.id::int);
+  end loop;
+  -- a tela mostra o dealer virando as cartas (um pouco por carta) e o resultado por uns segundos
+  update public.bj_rodadas set dealer = r.dealer, pos = (select pos from public.bj_rodadas where id = r.id), fase = 'fim', vez_ate = null,
+    fim_em = clock_timestamp() + make_interval(secs => 4 + v_n * 0.9) where id = r.id;
+end $$;
+revoke all on function public.bj_dealer(bigint) from public, anon, authenticated;
+
+-- a mão da vez (a primeira ainda jogando, na ordem dos lugares)
+create or replace function public.bj_vez(p_id bigint) returns public.bj_maos
+language sql stable security definer set search_path = public as $$
+  select * from public.bj_maos where rodada_id = p_id and estado = 'jogando' order by ordem limit 1;
+$$;
+revoke all on function public.bj_vez(bigint) from public, anon, authenticated;
+
+-- faz a mesa andar: dá as cartas no fechamento, para a mão que estourou o tempo e paga quando ninguém mais joga
+create or replace function public.bj_avancar() returns public.bj_rodadas
+language plpgsql security definer set search_path = public as $$
+declare
+  r   public.bj_rodadas;
+  m   record;
+  v_v public.bj_maos;
+  v_c text;
+begin
+  perform pg_advisory_xact_lock(hashtext('mesa:blackjack'));
+  select * into r from public.bj_rodadas order by id desc limit 1;
+  if not found then return null; end if;
+  if r.fase = 'apostas' and clock_timestamp() >= r.fecha_em then
+    if not exists (select 1 from public.bj_maos where rodada_id = r.id) then
+      update public.bj_rodadas set fase = 'fim', fim_em = clock_timestamp() where id = r.id returning * into r;
+      return r;
+    end if;
+    update public.bj_rodadas set sapato = public.bj_sapato(r.segredo, r.id), pos = 0 where id = r.id;
+    -- uma carta para cada um, uma para o dealer, a segunda para cada um e a segunda do dealer (a escondida)
+    for m in select id from public.bj_maos where rodada_id = r.id order by ordem loop
+      update public.bj_maos set cartas = array[public.bj_tirar(r.id)] where id = m.id;
+    end loop;
+    v_c := public.bj_tirar(r.id);
+    update public.bj_rodadas set dealer = array[v_c] where id = r.id;
+    for m in select id from public.bj_maos where rodada_id = r.id order by ordem loop
+      update public.bj_maos set cartas = cartas || public.bj_tirar(r.id) where id = m.id;
+    end loop;
+    v_c := public.bj_tirar(r.id);
+    update public.bj_rodadas set dealer = dealer || v_c, fase = 'jogo',
+      vez_ate = clock_timestamp() + interval '15 seconds' where id = r.id;
+    update public.bj_maos set estado = case when public.bj_pontos(cartas) = 21 then 'blackjack' else 'jogando' end where rodada_id = r.id;
+    select * into r from public.bj_rodadas where id = r.id;
+  end if;
+  if r.fase = 'jogo' then
+    v_v := public.bj_vez(r.id);
+    -- acabou o tempo de quem está na vez: a mão para como está
+    if v_v.id is not null and clock_timestamp() > r.vez_ate then
+      update public.bj_maos set estado = 'parou' where id = v_v.id;
+      update public.bj_rodadas set vez_ate = clock_timestamp() + interval '15 seconds' where id = r.id;
+      v_v := public.bj_vez(r.id);
+    end if;
+    if v_v.id is null then perform public.bj_dealer(r.id); end if;
+    select * into r from public.bj_rodadas where id = r.id;
+  end if;
+  return r;
+end $$;
+revoke all on function public.bj_avancar() from public, anon, authenticated;
+
+-- o estado da mesa para a tela (sem o sapato e, até a vez do dealer, sem a segunda carta dele)
+create or replace function public.bj_estado() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  r     public.bj_rodadas;
+  v_v   public.bj_maos;
+  v_dl  text[];
+begin
+  if not public.eh_membro() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
+  r := public.bj_avancar();
+  if r.id is null then return jsonb_build_object('agora', clock_timestamp(), 'rodada', null, 'maos', '[]'::jsonb); end if;
+  v_v := public.bj_vez(r.id);
+  v_dl := case when r.fase = 'fim' then r.dealer when r.fase = 'jogo' then r.dealer[1:1] || array['X'] else '{}' end;
+  return jsonb_build_object(
+    'agora', clock_timestamp(),
+    'rodada', jsonb_build_object(
+      'id', r.id, 'fase', r.fase, 'fecha_em', r.fecha_em, 'vez_ate', r.vez_ate, 'fim_em', r.fim_em, 'hash', r.hash,
+      'segredo', case when r.fase = 'fim' then encode(r.segredo, 'hex') end,
+      'dealer', to_jsonb(v_dl),
+      'dealer_pontos', public.bj_pontos(case when r.fase = 'fim' then r.dealer else r.dealer[1:1] end),
+      'vez', v_v.id),
+    'maos', coalesce((
+      select jsonb_agg(jsonb_build_object('id', m.id, 'user_id', m.user_id, 'lugar', m.lugar, 'mao', m.mao, 'aposta', m.aposta,
+        'cartas', to_jsonb(m.cartas), 'pontos', public.bj_pontos(m.cartas), 'estado', m.estado, 'dobrou', m.dobrou, 'pagou', m.pagou) order by m.ordem)
+      from public.bj_maos m where m.rodada_id = r.id), '[]'::jsonb));
+end $$;
+revoke all on function public.bj_estado() from public, anon;
+grant execute on function public.bj_estado() to authenticated;
+
+-- apostar (ou trocar a aposta) na rodada aberta; abre uma se a mesa estiver parada
+create or replace function public.bj_apostar(p_aposta int) returns jsonb
+language plpgsql security definer set search_path = public, extensions as $$
+declare
+  v_uid uuid := auth.uid();
+  r     public.bj_rodadas;
+  v_m   public.bj_maos;
+  v_l   int;
+  v_s   bytea;
+begin
+  if not public.eh_membro() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
+  if p_aposta is null or p_aposta not between 5 and 200 then raise exception 'A aposta vai de 5 a 200 moedas.' using errcode = 'P0001'; end if;
+  perform public.limitar('cassino', 30, interval '1 minute', 'Calma: muitas apostas seguidas. Espere um pouco.');
+  r := public.bj_avancar();
+  if r.id is null or (r.fase = 'fim' and clock_timestamp() >= r.fim_em) then
+    v_s := extensions.gen_random_bytes(32);
+    insert into public.bj_rodadas (fecha_em, segredo, hash)
+      values (clock_timestamp() + interval '10 seconds', v_s, encode(extensions.digest(v_s, 'sha256'), 'hex')) returning * into r;
+  elsif r.fase <> 'apostas' or clock_timestamp() >= r.fecha_em then
+    raise exception 'A rodada já começou. Espere a próxima.' using errcode = 'P0001';
+  end if;
+  select * into v_m from public.bj_maos where rodada_id = r.id and user_id = v_uid and mao = 1;
+  if v_m.id is not null then
+    -- trocou a aposta: devolve a antiga e cobra a nova
+    perform public.creditar(v_uid, v_m.aposta, 'cassino', 'blackjack');
+    perform public.creditar(v_uid, -p_aposta, 'cassino', 'blackjack');
+    update public.bj_maos set aposta = p_aposta where id = v_m.id;
+  else
+    select min(l) into v_l from generate_series(1, 5) l where l not in (select lugar from public.bj_maos where rodada_id = r.id);
+    if v_l is null then raise exception 'A mesa está cheia (5 lugares). Espere a próxima rodada.' using errcode = 'P0001'; end if;
+    perform public.creditar(v_uid, -p_aposta, 'cassino', 'blackjack');
+    insert into public.bj_maos (rodada_id, user_id, lugar, mao, ordem, aposta) values (r.id, v_uid, v_l, 1, v_l * 10 + 1, p_aposta);
+  end if;
+  return public.bj_estado();
+end $$;
+revoke all on function public.bj_apostar(int) from public, anon;
+grant execute on function public.bj_apostar(int) to authenticated;
+
+-- jogar a vez: pedir, parar, dobrar ou dividir
+create or replace function public.bj_acao(p_acao text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+  r     public.bj_rodadas;
+  v_v   public.bj_maos;
+  v_p   int;
+  v_c   text;
+begin
+  if not public.eh_membro() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
+  if p_acao not in ('pedir', 'parar', 'dobrar', 'dividir') then raise exception 'Jogada desconhecida.' using errcode = 'P0001'; end if;
+  r := public.bj_avancar();
+  if r.id is null or r.fase <> 'jogo' then raise exception 'Não é hora de jogar.' using errcode = 'P0001'; end if;
+  perform pg_advisory_xact_lock(hashtext('mesa:blackjack'));
+  v_v := public.bj_vez(r.id);
+  if v_v.id is null or v_v.user_id <> v_uid then raise exception 'Não é a sua vez.' using errcode = 'P0001'; end if;
+  if p_acao = 'pedir' then
+    v_c := public.bj_tirar(r.id);
+    v_p := public.bj_pontos(v_v.cartas || v_c);
+    update public.bj_maos set cartas = cartas || v_c, estado = case when v_p > 21 then 'estourou' when v_p = 21 then 'parou' else 'jogando' end where id = v_v.id;
+  elsif p_acao = 'parar' then
+    update public.bj_maos set estado = 'parou' where id = v_v.id;
+  elsif p_acao = 'dobrar' then
+    if coalesce(array_length(v_v.cartas, 1), 0) <> 2 or v_v.dobrou then raise exception 'Só dá para dobrar com as duas primeiras cartas.' using errcode = 'P0001'; end if;
+    perform public.creditar(v_uid, -v_v.aposta, 'cassino', 'blackjack');
+    v_c := public.bj_tirar(r.id);
+    v_p := public.bj_pontos(v_v.cartas || v_c);
+    update public.bj_maos set cartas = cartas || v_c, aposta = aposta * 2, dobrou = true, estado = case when v_p > 21 then 'estourou' else 'parou' end where id = v_v.id;
+  else
+    if coalesce(array_length(v_v.cartas, 1), 0) <> 2 or v_v.mao <> 1 or public.bj_valor(v_v.cartas[1]) <> public.bj_valor(v_v.cartas[2]) then
+      raise exception 'Só dá para dividir duas cartas iguais, uma vez.' using errcode = 'P0001';
+    end if;
+    perform public.creditar(v_uid, -v_v.aposta, 'cassino', 'blackjack');
+    insert into public.bj_maos (rodada_id, user_id, lugar, mao, ordem, aposta, cartas, estado)
+      values (r.id, v_uid, v_v.lugar, 2, v_v.ordem + 1, v_v.aposta, array[v_v.cartas[2], public.bj_tirar(r.id)], 'jogando');
+    update public.bj_maos set cartas = array[v_v.cartas[1], public.bj_tirar(r.id)] where id = v_v.id;
+    -- dividiu ases: uma carta para cada e para (como nos cassinos); 21 depois de dividir não é blackjack
+    if left(v_v.cartas[1], length(v_v.cartas[1]) - 1) = 'A' then
+      update public.bj_maos set estado = 'parou' where rodada_id = r.id and user_id = v_uid;
+    else
+      update public.bj_maos set estado = 'parou' where rodada_id = r.id and user_id = v_uid and public.bj_pontos(cartas) = 21;
+    end if;
+  end if;
+  update public.bj_rodadas set vez_ate = clock_timestamp() + interval '15 seconds' where id = r.id;
+  if (public.bj_vez(r.id)).id is null then perform public.bj_dealer(r.id); end if;
+  return public.bj_estado();
+end $$;
+revoke all on function public.bj_acao(text) from public, anon;
+grant execute on function public.bj_acao(text) to authenticated;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo e as 2 tabelas e 3 funções do quarto próprio e as 2 tabelas e 3 funções do blackjack
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -4769,4 +5078,10 @@ select tablename::text, 'quarto' from pg_tables
 union all
 select proname::text, 'quarto' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('quarto_por', 'quarto_mover', 'quarto_guardar')
+union all
+select tablename::text, 'blackjack' from pg_tables
+ where schemaname = 'public' and tablename in ('bj_rodadas', 'bj_maos')
+union all
+select proname::text, 'blackjack' from pg_proc
+ where pronamespace = 'public'::regnamespace and proname in ('bj_estado', 'bj_apostar', 'bj_acao')
 order by 2, 1;
