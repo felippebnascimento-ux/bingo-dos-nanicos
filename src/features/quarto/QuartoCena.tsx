@@ -280,10 +280,12 @@ function BonecoNoQuarto({ b, p }: { b: BonecoCena; p: (i: number, j: number, z?:
   const q = quadroSprite(b.sentido, b.sentado ? 0 : b.quadro);
   const w = CEL_W * ESCALA_VISITA, h = CEL_H * ESCALA_VISITA;
   const vx = -q.x, vy = -q.y;
+  /* sentado, as pernas somem dentro do estofado (como no K-FOFO): a janela do quadro corta o terço de baixo */
+  const corte = b.sentado ? 0.68 : 1;
   return (
     <g className={"quarto-boneco" + (b.eu ? " eu" : "")} pointerEvents="none">
       {b.folha ? (
-        <svg x={x - ANCORA.x * ESCALA_VISITA} y={y - ANCORA.y * ESCALA_VISITA} width={w} height={h} viewBox={`${vx} ${vy} ${CEL_W} ${CEL_H}`}>
+        <svg x={x - ANCORA.x * ESCALA_VISITA} y={y - ANCORA.y * ESCALA_VISITA} width={w} height={h * corte} viewBox={`${vx} ${vy} ${CEL_W} ${CEL_H * corte}`}>
           <g transform={q.espelha ? `translate(${2 * vx + CEL_W} 0) scale(-1 1)` : undefined}>
             <image href={b.folha} width={CEL_W * 5} height={CEL_H * 2} />
           </g>

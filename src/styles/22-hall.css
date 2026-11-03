@@ -546,3 +546,19 @@
 .mural-recado p{margin:2px 0 0;font-size:13.5px;overflow-wrap:anywhere;white-space:pre-wrap}
 .mural-recado small{opacity:.7;font-size:11px}
 .mural-recado .linkish{color:var(--hall-nota-tinta)}
+/* o menu da porta de vidro (rua, corredor dos quartos, salas), com o mesmo jeito do menu do boneco */
+.hall-porta-menu{position:absolute}
+/* lupa (Lupa.tsx): a cena cresce dentro de uma caixa que rola; o resto do K-FOFO (cantos, botões) fica parado por cima */
+.hall-zoom{position:relative;width:100%;overflow:hidden}
+.hall-zoom.ampliado{overflow:auto;cursor:grab;scrollbar-width:thin}
+.hall-zoom > .hall-palco{width:calc(var(--zoom,1) * 100%)}
+.hall-zoom > .quarto-visita .quarto-cena{max-height:calc(min(78vh,860px) * var(--zoom,1));width:calc(var(--zoom,1) * 100%)}
+.hall-zoom.ampliado{max-height:min(82vh,900px)}
+.hall-lupa{position:absolute;z-index:121;right:16px;top:50%;transform:translateY(-50%);display:grid;justify-items:center;gap:2px;padding:4px;border-radius:14px;background:color-mix(in srgb,var(--accent-ink) 88%,transparent);color:var(--stamp-ink);box-shadow:0 6px 20px var(--shadow)}
+.hall-lupa button{display:grid;place-items:center;width:34px;height:34px;padding:0;border:0;border-radius:10px;background:none;color:inherit;cursor:pointer}
+.hall-lupa button:hover:not(:disabled){background:color-mix(in srgb,var(--stamp-ink) 14%,transparent)}
+.hall-lupa button:disabled{opacity:.35;cursor:default}
+.hall-lupa button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.hall-lupa svg{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.hall-lupa span{font:700 10px var(--display)}
+@media (max-width:760px){.hall-lupa{position:static;transform:none;grid-auto-flow:column;align-self:flex-end;align-items:center}}

@@ -48,7 +48,7 @@ export const MOVEIS: readonly Movel[] = [
   /* cozinha: balcão com pia e fogão, e a geladeira (que é a Loja) na ponta */
   { id: "cozinha", i: 13.05, j: 1.3, w: 0.95, d: 1.75 },
   { id: "geladeira", i: 13.05, j: 3.05, w: 0.95, d: 0.95 },
-  { id: "mesa-comprida", i: 4.6, j: 1.4, w: 5.6, d: 1.1 },
+  { id: "mesa-comprida", i: 4.5, j: 1.4, w: 5.5, d: 1.1 },
   { id: "mesa-jogos", i: 2.5, j: 6.3, w: 2.0, d: 2.0 },
   { id: "mesa-lado", i: 9.1, j: 6.1, w: 1.5, d: 2.8 },
   { id: "sofa-parede", i: 0, j: 6.3, w: 1.05, d: 3.3 },

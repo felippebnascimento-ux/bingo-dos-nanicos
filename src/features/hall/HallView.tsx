@@ -37,6 +37,8 @@ import { BotaoMeuQuarto, QuartoVisita, TopoQuarto } from "@/features/quarto/Quar
 import { BaloesHall, ChatBarra } from "./ChatHabbo";
 import { BotaoMural, MuralJanela, QuadroMural } from "./Mural";
 import { abrirMural } from "./muralDados";
+import { Lupa, ZoomCaixa } from "./Lupa";
+import { irParaQuarto } from "@/features/quarto/visita";
 
 /** Setas → um piso: direita/esquerda seguem a parede da direita, cima/baixo a da esquerda. */
 const SETAS: Record<string, [number, number]> = {
@@ -111,6 +113,8 @@ export function HallView({ hidden }: { hidden: boolean }) {
     [bonecos, mv.sentados],
   );
   const [assistindo, setAssistindo] = useState<string | null>(null);
+  /* a porta de vidro abre um menu: a rua, o corredor dos quartos e as salas da lan house */
+  const [porta, setPorta] = useState(false);
   const fecharAssistindo = useCallback(() => setAssistindo(null), []);
 
   /* z-index de cada móvel, encosto e boneco, do fundo para a frente (quem senta fica por cima do estofado) */
@@ -149,7 +153,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
   };
 
   const abrir = (c: Clicavel["id"]) => {
-    if (c === "salas") setApp({ salasAberto: true });
+    if (c === "salas") setPorta((v) => !v);
     else if (c === "tv") {
       /* a TV assiste direto quem estiver transmitindo (de outra sala, entra só para ver); senão, abre o Ao vivo */
       const p = getApp().online.find((x) => x.live && x.key !== MY_KEY);
@@ -182,6 +186,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
       )}
       <FaixaEvento />
       <div className="hall hall-area">
+        <ZoomCaixa>
         {quarto ? (
           <QuartoVisita dono={quarto} />
         ) : (
@@ -191,7 +196,10 @@ export function HallView({ hidden }: { hidden: boolean }) {
           tabIndex={0}
           role="group"
           aria-label="Hall do K-FOFO. Clique no chão ou use as setas para andar."
-          onClick={tocar}
+          onClick={(e) => {
+            setPorta(false);
+            tocar(e);
+          }}
           onKeyDown={tecla}
           onPointerMove={mover}
           onPointerLeave={() => setDestaque(null)}
@@ -251,9 +259,9 @@ export function HallView({ hidden }: { hidden: boolean }) {
           />
           <BotaoMural vb={vb} />
           <PlacaChurrasco vb={vb} />
-          {CLICAVEIS.filter((c) => c.id !== "salas" || temSalas).map((c) => {
+          {CLICAVEIS.map((c) => {
             const pos = emPorcento(vb, c.rotulo.i, c.rotulo.j, c.rotulo.z);
-            const rotulo = c.id === "tv" ? "Ao vivo" : c.id === "truco" ? (mv.mesa ? "Truco · ao vivo" : "Truco") : c.id === "salas" ? "Salas" : c.id === "mural" ? "Mural" : "Loja";
+            const rotulo = c.id === "tv" ? "Ao vivo" : c.id === "truco" ? (mv.mesa ? "Truco · ao vivo" : "Truco") : c.id === "salas" ? "Rua · Salas" : c.id === "mural" ? "Mural" : "Loja";
             return (
               <button
                 key={c.id}
@@ -274,12 +282,33 @@ export function HallView({ hidden }: { hidden: boolean }) {
               </button>
             );
           })}
+          {porta &&
+            (() => {
+              const pos = emPorcento(vb, 0, 5.6, 140);
+              return (
+                <div className="boneco-menu hall-porta-menu" role="menu" aria-label="Para onde ir" style={{ left: pct(pos.left), top: pct(pos.top) }} onClick={(e) => e.stopPropagation()}>
+                  <button type="button" role="menuitem" onClick={() => (setPorta(false), irParaQuarto("rua"))}>
+                    Ir para a rua
+                  </button>
+                  <button type="button" role="menuitem" onClick={() => (setPorta(false), irParaQuarto("corredor"))}>
+                    Corredor dos quartos
+                  </button>
+                  {temSalas && (
+                    <button type="button" role="menuitem" onClick={() => (setPorta(false), setApp({ salasAberto: true }))}>
+                      Salas da lan house
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
           {(() => {
             const b = menu ? bonecos.find((x) => x.key === menu && x.key !== MY_KEY) : null;
             return b ? <MenuBoneco key={b.key} b={b} vb={vb} /> : null;
           })()}
         </div>
         )}
+        </ZoomCaixa>
+        <Lupa />
         <div className="hall-esq">
           <NaSala />
           <Chegadas />

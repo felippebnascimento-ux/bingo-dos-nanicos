@@ -15,20 +15,29 @@ import { assentoDoQuarto, gradeDoQuarto } from "./grade";
 import { QuartoCena, type BonecoCena } from "./QuartoCena";
 import { moveisDe, useQuartos } from "./quartoDados";
 import { irParaQuarto, paraCena } from "./visita";
+import { ehCenaEspecial, gradeEspecial, GOL_RUA, moveisDaCena, NOME_CENA, portasDoCorredor, TAM_CENA } from "./cenas";
+import { abrirDuelo } from "@/features/cassino/dueloDados";
+import { soNanicos } from "@/lib/dados/nanicos";
+import { toast } from "@/lib/toast";
 
 const SETAS: Record<string, [number, number]> = { ArrowRight: [1, 0], ArrowLeft: [-1, 0], ArrowDown: [0, 1], ArrowUp: [0, -1] };
 
 export function QuartoVisita({ dono }: { dono: string }) {
   const friends = useApp((s) => s.friends);
-  const f = friends.find((x) => x.id === dono);
-  const tamanho = useQuartos((s) => (f?.user_id ? s.quartos[f.user_id] : undefined));
+  /* a rua e o corredor (cenas.ts) usam a mesma tela, com o desenho e a grade fixos deles */
+  const especial = ehCenaEspecial(dono) ? dono : null;
+  const f = especial ? undefined : friends.find((x) => x.id === dono);
+  const tamQuarto = useQuartos((s) => (f?.user_id ? s.quartos[f.user_id] : undefined));
+  const tamanho = especial ? TAM_CENA[especial] : tamQuarto;
+  const quartos = useQuartos((s) => s.quartos);
   const todos = useQuartos((s) => s.moveis);
   const itens = useLoja((s) => s.itens);
   const eq = useEquipados(f?.user_id);
+  const portas = useMemo(() => (especial === "corredor" ? portasDoCorredor(soNanicos(friends), (uid) => !!quartos[uid]) : undefined), [especial, friends, quartos]);
   const bonecos = useHall((s) => s.bonecos);
   const brilhos = useHall((s) => s.brilhos);
-  const cena = useMemo(() => paraCena(moveisDe(todos, f?.user_id), itens), [todos, f?.user_id, itens]);
-  const grade = useMemo(() => (tamanho ? gradeDoQuarto(tamanho, cena) : null), [tamanho, cena]);
+  const cena = useMemo(() => (especial ? [...moveisDaCena(especial)] : paraCena(moveisDe(todos, f?.user_id), itens)), [especial, todos, f?.user_id, itens]);
+  const grade = useMemo(() => (especial ? gradeEspecial(especial) : tamanho ? gradeDoQuarto(tamanho, cena) : null), [especial, tamanho, cena]);
   const equip = useMemo(() => ({ parede: eq.parede?.dados.cor, luz: eq.luz?.dados.cor, poster: eq.poster?.dados.cor }), [eq]);
   const vistos = useMemo<BonecoCena[]>(
     () =>
@@ -50,10 +59,13 @@ export function QuartoVisita({ dono }: { dono: string }) {
     [bonecos, grade, friends],
   );
 
-  if (!f || !tamanho || !grade) return <p className="hint quarto-visita-vazio">Abrindo o quarto…</p>;
+  if ((!especial && !f) || !tamanho || !grade) return <p className="hint quarto-visita-vazio">Abrindo o quarto…</p>;
+  const nomeCena = especial ? NOME_CENA[especial] : `Quarto de ${f!.name}`;
 
   /* sentar: o lugar daquele móvel mais perto de onde estou */
   const sentarNo = (movel: number) => {
+    /* na rua, o gol abre o pênalti x1 */
+    if (movel === GOL_RUA) return abrirDuelo();
     const eu = bonecos.find((b) => b.key === MY_KEY);
     const lugares = grade.assentos.filter((a) => a.movel === movel);
     if (!lugares.length) return;
@@ -74,8 +86,27 @@ export function QuartoVisita({ dono }: { dono: string }) {
   };
 
   return (
-    <div className="hall-palco quarto-visita quarto-vars" tabIndex={0} role="group" aria-label={`Quarto de ${f.name}. Toque no chão ou use as setas para andar.`} onKeyDown={tecla}>
-      <QuartoCena tamanho={tamanho} equip={equip} moveis={cena} nome={f.name} aoTocarPiso={tocarPiso} aoTocarMovel={sentarNo} bonecos={vistos} brilhos={brilhos} />
+    <div
+      className={"hall-palco quarto-visita quarto-vars" + (especial ? " cena-" + especial : "")}
+      tabIndex={0}
+      role="group"
+      aria-label={`${nomeCena}. Toque no chão ou use as setas para andar.`}
+      onKeyDown={tecla}
+    >
+      <QuartoCena
+        tamanho={tamanho}
+        equip={equip}
+        moveis={cena}
+        nome={especial ? undefined : f!.name}
+        aoTocarPiso={tocarPiso}
+        aoTocarMovel={sentarNo}
+        bonecos={vistos}
+        brilhos={brilhos}
+        tipo={especial ?? "quarto"}
+        portas={portas}
+        aoTocarPorta={(fid) => (portas?.find((p) => p.fid === fid)?.aberta ? irParaQuarto(fid) : toast("Esse nanico ainda não comprou o quarto: a porta está fechada."))}
+        aoTocarSaida={especial ? () => irParaQuarto(null) : undefined}
+      />
     </div>
   );
 }
@@ -100,7 +131,12 @@ export function TopoQuarto({ dono }: { dono: string }) {
   const eu = useApp((s) => s.myFid === dono);
   return (
     <header className="hero quarto-topo">
-      <h1>{eu ? "Meu quarto" : `Quarto do ${nome}`}</h1>
+      <h1>{ehCenaEspecial(dono) ? NOME_CENA[dono] : eu ? "Meu quarto" : `Quarto do ${nome}`}</h1>
+      {!ehCenaEspecial(dono) && (
+        <button type="button" className="btn soft sm" onClick={() => irParaQuarto("corredor")}>
+          Corredor dos quartos
+        </button>
+      )}
       <button type="button" className="btn soft sm" onClick={() => irParaQuarto(null)}>
         Voltar ao K-FOFO
       </button>

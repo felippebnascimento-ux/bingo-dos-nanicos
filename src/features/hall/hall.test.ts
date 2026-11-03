@@ -36,7 +36,7 @@ const vizinhos = (a: Piso, b: Piso) => Math.abs(a.i - b.i) + Math.abs(a.j - b.j)
 
 describe("piso", () => {
   it("os móveis ocupam os pisos certos", () => {
-    for (const k of ["11,0", "12,0", "13,1", "13,2", "13,3", "4,3", "9,3", "2,6", "3,7", "9,6", "10,8", "0,6", "0,9", "12,7", "13,9", "2,10", "4,10"])
+    for (const k of ["11,0", "12,0", "13,1", "13,2", "13,3", "4,2", "9,1", "2,6", "3,7", "9,6", "10,8", "0,6", "0,9", "12,7", "13,9", "2,10", "4,10"])
       expect(BLOQUEADOS.has(k), k).toBe(true);
     expect(livre(10, 5)).toBe(true); /* entre a mesa comprida e a mesa do lado dá para ficar */
     expect(livre(6, 5)).toBe(true); /* o meio fica livre para os bonecos */
@@ -62,11 +62,11 @@ describe("piso", () => {
 
 describe("caminho", () => {
   it("contorna a mesa comprida", () => {
-    /* a mesa ocupa i 4–10 na fileira j = 3: de (6, 2) a (6, 4) dá a volta pela ponta de i = 3 */
-    const c = caminho({ i: 6, j: 2 }, { i: 6, j: 4 });
-    expect(c[0]).toEqual({ i: 6, j: 2 });
-    expect(c.at(-1)).toEqual({ i: 6, j: 4 });
-    expect(c).toHaveLength(9);
+    /* a mesa ocupa i 4–10 nas fileiras j = 1 e 2: de (6, 0) a (6, 3) dá a volta pela ponta de i = 3 */
+    const c = caminho({ i: 6, j: 0 }, { i: 6, j: 3 });
+    expect(c[0]).toEqual({ i: 6, j: 0 });
+    expect(c.at(-1)).toEqual({ i: 6, j: 3 });
+    expect(c).toHaveLength(10);
     for (let k = 1; k < c.length; k++) {
       expect(vizinhos(c[k - 1], c[k])).toBe(true);
       expect(livre(c[k].i, c[k].j)).toBe(true);

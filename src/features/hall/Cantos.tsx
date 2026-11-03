@@ -65,6 +65,11 @@ export function NaSala() {
                     <ChamaNome fid={f?.id} />
                   </span>
                 </button>
+                {quarto && !eu && (quarto === "rua" || quarto === "corredor") && (
+                  <button type="button" className="linkish hall-sala-quarto" aria-label={quarto === "rua" ? "Ir para a rua" : "Ir para o corredor dos quartos"} onClick={() => irParaQuarto(quarto)}>
+                    {quarto === "rua" ? "na rua" : "no corredor"}
+                  </button>
+                )}
                 {dono && quarto && !eu && (
                   <button type="button" className="linkish hall-sala-quarto" aria-label={`Ir para o quarto do ${dono.name}`} onClick={() => irParaQuarto(quarto)}>
                     no quarto do {dono.name}
