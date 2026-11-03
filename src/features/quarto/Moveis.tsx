@@ -111,6 +111,10 @@ const DESENHO_QUARTO: Record<string, Desenho> = {
     if (giro) k.box(f.i + 0.38, r.j + 0.3, 0.02, 0.4, 30, "ouro0", "ouro0", "ouro1", 26);
     else k.box(r.i + 0.3, f.j + 0.38, 0.4, 0.02, 30, "ouro0", "ouro1", "ouro0", 26);
   },
+  caixa: (k, r) => {
+    k.box(r.i + 0.28, r.j + 0.3, 0.44, 0.4, 52, "preto0", "preto1", "preto2");
+    k.box(r.i + 0.36, r.j + 0.36, 0.28, 0.28, 3, "cinza1", "cinza1", "cinza2", 52);
+  },
   /* raros (seção 55) */
   estatua: (k, r) => {
     k.box(r.i + 0.22, r.j + 0.22, 0.56, 0.56, 22, "madeira0", "madeira1", "madeira2");

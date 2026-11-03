@@ -6933,6 +6933,58 @@ $$;
 revoke all on function public.gatilho_apagar(bigint) from public, anon;
 grant execute on function public.gatilho_apagar(bigint) to authenticated;
 
+-- 60) caixa de som no quarto (03/11/2026, pedido do João) -----------------------------------------------------------------
+--   Um móvel que faz algo (como os da seção 53): o dono escolhe a estação (lo-fi, eletrônica ou samba) e quem está no
+--   quarto ouve. A música é feita no navegador (Web Audio, notas e batidas simples), sem arquivo e sem site de fora.
+--   usar_movel ganha o caso 'caixa' (estado {estacao}); o resto da função é o mesmo da seção 53.
+insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem) values
+  ('movel-caixa', 'Caixa de som', 'Escolha a estação e quem estiver no seu quarto ouve junto.', 'movel', 600, '{"w":1,"d":1,"desenho":"caixa"}', 215)
+on conflict (id) do update set nome = excluded.nome, descricao = excluded.descricao, espaco = excluded.espaco,
+  preco = excluded.preco, dados = excluded.dados, ordem = excluded.ordem;
+
+create or replace function public.usar_movel(p_id bigint, p_arg text default null) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+  v_dono uuid;
+  v_est jsonb;
+  v_des text;
+  v_txt text;
+begin
+  if v_uid is null or not public.eh_membro() then raise exception 'Só os membros mexem nos móveis.' using errcode = 'P0001'; end if;
+  select q.user_id, q.estado, l.dados->>'desenho' into v_dono, v_est, v_des
+    from public.quarto_moveis q join public.loja_itens l on l.id = q.item_id where q.id = p_id for update of q;
+  if not found then raise exception 'Esse móvel não está mais aí.' using errcode = 'P0001'; end if;
+  if v_des in ('luminaria', 'regulador', 'recado', 'caixa') and v_dono <> v_uid then
+    raise exception 'Só o dono do quarto mexe nisso.' using errcode = 'P0001';
+  end if;
+  perform public.limitar('movel', 30, interval '1 minute', 'Calma: muitos toques seguidos.');
+  if v_des = 'dado' then
+    v_est := jsonb_build_object('n', 1 + floor(random() * 6)::int, 'em', (extract(epoch from clock_timestamp()) * 1000)::bigint);
+  elsif v_des = 'luminaria' then
+    v_est := jsonb_build_object('liga', not coalesce((v_est->>'liga')::boolean, true));
+  elsif v_des = 'regulador' then
+    if p_arg is null or p_arg not in ('desligado', 'ambar', 'azul', 'rosa', 'verde', 'roxo') then
+      raise exception 'Escolha uma das cores.' using errcode = 'P0001';
+    end if;
+    v_est := jsonb_build_object('cor', p_arg);
+  elsif v_des = 'recado' then
+    v_txt := left(btrim(regexp_replace(coalesce(p_arg, ''), '[\x00-\x1F\x7F]', ' ', 'g')), 120);
+    v_est := case when v_txt = '' then '{}'::jsonb else jsonb_build_object('texto', v_txt) end;
+  elsif v_des = 'caixa' then
+    if p_arg is null or p_arg not in ('desligada', 'lofi', 'eletro', 'samba') then
+      raise exception 'Escolha uma das estações.' using errcode = 'P0001';
+    end if;
+    v_est := jsonb_build_object('estacao', p_arg);
+  else
+    raise exception 'Esse móvel não faz nada.' using errcode = 'P0001';
+  end if;
+  update public.quarto_moveis set estado = v_est where id = p_id;
+  return v_est;
+end $$;
+revoke all on function public.usar_movel(bigint, text) from public, anon;
+grant execute on function public.usar_movel(bigint, text) to authenticated;
+
 -- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo e as 2 tabelas e 3 funções do quarto próprio e as 2 tabelas e 3 funções do blackjack e as 4 tabelas e 6 funções do pôquer
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')

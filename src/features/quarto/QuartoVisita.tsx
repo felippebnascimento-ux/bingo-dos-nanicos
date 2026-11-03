@@ -15,7 +15,9 @@ import { friendDaPresenca, MY_KEY, useApp } from "@/lib/store";
 import { assentoDoQuarto, gradeDoQuarto } from "./grade";
 import { QuartoCena, type BonecoCena } from "./QuartoCena";
 import { moveisDe, usarMovel, useQuartos } from "./quartoDados";
-import { CORES_LUZ, ehInterativo, NOME_COR, soDono, type CorLuz } from "./interativo";
+import { CORES_LUZ, ehInterativo, estacaoDoQuarto, NOME_COR, soDono, type CorLuz } from "./interativo";
+import { ESTACOES, mudoRadio, NOME_ESTACAO, pararRadio, tocarRadio } from "./radio";
+import { local } from "@/lib/util";
 import type { MovelCena } from "./QuartoCena";
 import { CurtirQuarto } from "./NavegadorQuartos";
 import { useArena } from "./arena";
@@ -100,7 +102,7 @@ export function QuartoVisita({ dono }: { dono: string }) {
       if (m.desenho === "recado") return toast(m.estado?.texto ? `Recado de ${f?.name}: ${m.estado.texto}` : "O quadro de recados está vazio.");
       return toast("Só o dono do quarto mexe nisso.");
     }
-    if (m.desenho === "regulador" || m.desenho === "recado") return setPainel(m);
+    if (m.desenho === "regulador" || m.desenho === "recado" || m.desenho === "caixa") return setPainel(m);
     void usarMovel(id);
   };
   const tocarPiso = (i: number, j: number) => {
@@ -141,6 +143,7 @@ export function QuartoVisita({ dono }: { dono: string }) {
       />
       {especial === "banheiro" && <PixarForm />}
       {especial === "arena" && <ArenaPainel />}
+      <RadioDoQuarto moveis={cena} />
       {!especial && f?.user_id && f.user_id === myUid && <GatilhosPainel uid={f.user_id} tam={tamanho} />}
       {painel && <PainelMovel key={painel.id} m={painel} fechar={() => setPainel(null)} />}
     </div>
@@ -202,7 +205,32 @@ export function FichaQuarto({ fid, uid, eu }: { fid: string; uid: string | null 
 
 const NOME_PIXO: Record<CorPixo, string> = { preto: "Preto", vermelho: "Vermelho", azul: "Azul", verde: "Verde", rosa: "Rosa", amarelo: "Amarelo" };
 
-/** O painel do dono: as cores do regulador de luz ou o bilhete do quadro de recados. */
+/** A caixa de som (seção 60): toca a estação do quarto para quem está nele, com um mudo só meu. */
+function RadioDoQuarto({ moveis }: { moveis: readonly MovelCena[] }) {
+  const est = estacaoDoQuarto(moveis);
+  const [mudo, setMudo] = useState(() => local.get("radio-mudo") === "1");
+  useEffect(() => {
+    if (est && !mudo) tocarRadio(est);
+    else pararRadio();
+  }, [est, mudo]);
+  useEffect(() => () => pararRadio(), []);
+  if (!est) return null;
+  return (
+    <button
+      type="button"
+      className="btn soft sm radio-mudo"
+      aria-pressed={mudo}
+      onClick={() => {
+        mudoRadio(!mudo);
+        setMudo(!mudo);
+      }}
+    >
+      {mudo ? "🔇 Ouvir a música" : `♪ ${NOME_ESTACAO[est]} · tirar o som`}
+    </button>
+  );
+}
+
+/** O painel do dono: as cores do regulador de luz, o bilhete do quadro de recados ou a estação da caixa de som. */
 function PainelMovel({ m, fechar }: { m: MovelCena; fechar: () => void }) {
   const [texto, setTexto] = useState(m.estado?.texto ?? "");
   const [indo, setIndo] = useState(false);
@@ -212,14 +240,22 @@ function PainelMovel({ m, fechar }: { m: MovelCena; fechar: () => void }) {
     setIndo(false);
   };
   return (
-    <div className="movel-painel" role="dialog" aria-label={m.desenho === "regulador" ? "Cor da luz do quarto" : "Quadro de recados"} onClick={(e) => e.stopPropagation()}>
+    <div className="movel-painel" role="dialog" aria-label={m.desenho === "regulador" ? "Cor da luz do quarto" : m.desenho === "caixa" ? "Caixa de som" : "Quadro de recados"} onClick={(e) => e.stopPropagation()}>
       <header>
-        <b>{m.desenho === "regulador" ? "Cor da luz do quarto" : "Quadro de recados"}</b>
+        <b>{m.desenho === "regulador" ? "Cor da luz do quarto" : m.desenho === "caixa" ? "Caixa de som" : "Quadro de recados"}</b>
         <button type="button" className="perfil-fechar" aria-label="Fechar" onClick={fechar}>
           ×
         </button>
       </header>
-      {m.desenho === "regulador" ? (
+      {m.desenho === "caixa" ? (
+        <div className="movel-cores" role="radiogroup" aria-label="Estação">
+          {ESTACOES.map((e) => (
+            <button key={e} type="button" role="radio" aria-checked={(m.estado?.estacao ?? "desligada") === e} className="movel-cor" disabled={indo} onClick={() => void ir(e)}>
+              {NOME_ESTACAO[e]}
+            </button>
+          ))}
+        </div>
+      ) : m.desenho === "regulador" ? (
         <div className="movel-cores" role="radiogroup" aria-label="Cor da luz">
           {CORES_LUZ.map((c: CorLuz) => (
             <button key={c} type="button" role="radio" aria-checked={(m.estado?.cor ?? "desligado") === c} className={"movel-cor t-" + c} disabled={indo} onClick={() => void ir(c)}>

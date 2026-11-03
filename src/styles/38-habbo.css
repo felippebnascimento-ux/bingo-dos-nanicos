@@ -83,3 +83,8 @@
 .gatilhos-form select,.gatilhos-form input{padding:7px 9px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:500 14px var(--body)}
 .gatilhos-piso{display:flex;gap:6px}
 .gatilhos-piso input{width:70px}
+
+/* caixa de som (seção 60) */
+.quarto-nota{font:800 22px var(--display);fill:var(--accent);animation:boneco-icone 1s ease-in-out infinite}
+.radio-mudo{position:absolute;left:12px;bottom:12px;z-index:5}
+@media (prefers-reduced-motion:reduce){.quarto-nota{animation:none}}

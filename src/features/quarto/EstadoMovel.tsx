@@ -46,6 +46,14 @@ export function EstadoNoMovel({ m, p }: { m: MovelCena; p: (i: number, j: number
       </g>
     );
   }
+  if (m.desenho === "caixa" && m.estado?.estacao && m.estado.estacao !== "desligada") {
+    const [x, y] = p(ci, cj, 70);
+    return (
+      <text className="quarto-nota" x={x} y={y} textAnchor="middle" pointerEvents="none">
+        ♪
+      </text>
+    );
+  }
   if (m.desenho === "recado" && m.estado?.texto) {
     const [x, y] = p(ci, cj, 96);
     return (

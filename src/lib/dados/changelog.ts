@@ -720,6 +720,12 @@ export const CHANGELOG: EntradaLog[] = [
       "Gatilhos no quarto: no seu quarto, o botão ⚙ Gatilhos monta regras como \"quando alguém entra, aparece um aviso\" ou \"quando alguém pisa no piso 2,3, vai para a porta\". Também dá para tocar a campainha",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Caixa de som na Loja: no seu quarto, escolha a estação (lo-fi, eletrônica ou samba) e quem estiver lá ouve junto. Cada um pode tirar o som só para si",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

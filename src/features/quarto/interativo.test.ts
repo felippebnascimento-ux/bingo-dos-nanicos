@@ -21,3 +21,14 @@ describe("móveis que fazem algo", () => {
     expect(corDoQuarto([{ desenho: "sofa" }])).toBeNull();
   });
 });
+
+describe("caixa de som (seção 60)", () => {
+  it("lê a estação e acha a que toca no quarto", async () => {
+    const { estacaoDoQuarto, lerEstado, ehInterativo } = await import("./interativo");
+    expect(ehInterativo("caixa")).toBe(true);
+    expect(lerEstado({ estacao: "samba" })).toEqual({ estacao: "samba" });
+    expect(lerEstado({ estacao: "funk" })).toEqual({});
+    expect(estacaoDoQuarto([{ desenho: "caixa", estado: { estacao: "desligada" } }, { desenho: "caixa", estado: { estacao: "lofi" } }])).toBe("lofi");
+    expect(estacaoDoQuarto([{ desenho: "sofa" }])).toBeNull();
+  });
+});
