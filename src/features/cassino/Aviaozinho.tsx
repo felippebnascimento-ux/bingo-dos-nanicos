@@ -30,6 +30,27 @@ const naTela = ([x, y]: [number, number]): [number, number] => [X0 + x * (X1 - X
 function Aviao({ trem }: { trem?: boolean }) {
   return (
     <svg viewBox="0 0 170 80">
+      <defs>
+        {/* volume: luz em cima, sombra embaixo (como um cilindro) */}
+        <linearGradient id="avp-corpo" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" className="avp-st-luz" />
+          <stop offset=".35" className="avp-st-corpo" />
+          <stop offset="1" className="avp-st-sombra" />
+        </linearGradient>
+        <linearGradient id="avp-asa" x1="0" y1="0" x2=".3" y2="1">
+          <stop offset="0" className="avp-st-corpo" />
+          <stop offset="1" className="avp-st-sombra" />
+        </linearGradient>
+        <linearGradient id="avp-vidro" x1="0" y1="0" x2=".6" y2="1">
+          <stop offset="0" className="avp-st-vidro0" />
+          <stop offset="1" className="avp-st-vidro1" />
+        </linearGradient>
+        <radialGradient id="avp-disco">
+          <stop offset="0" className="avp-st-disco" stopOpacity=".05" />
+          <stop offset=".8" className="avp-st-disco" stopOpacity=".28" />
+          <stop offset="1" className="avp-st-disco" stopOpacity="0" />
+        </radialGradient>
+      </defs>
       {trem && (
         <g className="av-trem">
           <path d="M84 50 L86 63 M32 47 L31 55" />
@@ -37,17 +58,25 @@ function Aviao({ trem }: { trem?: boolean }) {
           <circle cx="31" cy="57" r="3" />
         </g>
       )}
-      <path d="M15 37 L7 11 Q7 8 10 8 L21 8 L42 33 Z" className="av-cauda" />
-      <path d="M10 41 L36 40 L31 48 L13 49 Q8 47 10 41 Z" className="av-cauda" />
-      <path d="M10 34 C40 28 96 24 126 26 C142 27 152 32 154 39 C152 46 142 50 126 51 C96 53 40 50 10 44 Q5 39 10 34 Z" className="av-corpo" />
-      <path d="M10 44 C40 50 96 53 126 51 C142 50 152 46 154 39 C150 49 136 54 118 54 C86 55 40 52 12 46 Z" className="av-barriga" />
+      <path d="M15 37 L7 11 Q7 8 10 8 L21 8 L42 33 Z" fill="url(#avp-asa)" className="av-cauda" />
+      <path d="M10 41 L36 40 L31 48 L13 49 Q8 47 10 41 Z" fill="url(#avp-asa)" className="av-cauda" />
+      <path d="M10 34 C40 28 96 24 126 26 C142 27 152 32 154 39 C152 46 142 50 126 51 C96 53 40 50 10 44 Q5 39 10 34 Z" fill="url(#avp-corpo)" className="av-corpo" />
+      {/* chapas, rebites e a faixa */}
+      <path d="M48 30 L49 49 M88 26 L89 51 M138 30 L139 48" className="av-chapa" />
+      {[56, 64, 72, 80, 96, 104, 112, 120].map((x) => (
+        <circle key={x} cx={x} cy={33.5 - (x - 56) * 0.02} r=".7" className="av-rebite" />
+      ))}
       <path d="M22 37 C60 33 104 32 146 35" className="av-faixa" />
-      <path d="M97 27 C101 15 119 13 129 26 Z" className="av-vidro" />
-      <path d="M103 24 C106 18 113 17 118 19" className="av-reflexo" />
-      <path d="M62 42 L104 42 Q107 43 104 46 L81 66 Q79 68 75 68 L61 68 Q57 68 58 64 Z" className="av-asa" />
+      <path d="M22 40 C60 36.5 104 35.5 146 38" className="av-faixa fina escura" />
+      <path d="M97 27 C101 15 119 13 129 26 Z" fill="url(#avp-vidro)" className="av-vidro" />
+      <path d="M112 15.5 L114 26" className="av-chapa" />
+      <path d="M103 24 C106 18 111 17 115 18" className="av-reflexo" />
+      <path d="M62 42 L104 42 Q107 43 104 46 L81 66 Q79 68 75 68 L61 68 Q57 68 58 64 Z" fill="url(#avp-asa)" className="av-asa" />
       <path d="M61 63 L80 63" className="av-faixa fina" />
+      <path d="M66 45 L64 60 M80 45 L74 60" className="av-chapa" />
+      <path d="M140 46 L130 48" className="av-escape" />
       <path d="M152 32 Q164 39 152 46 Z" className="av-nariz" />
-      <ellipse cx="160" cy="39" rx="4" ry="25" className="av-disco" />
+      <ellipse cx="160" cy="39" rx="5" ry="26" fill="url(#avp-disco)" />
       <ellipse cx="160" cy="39" rx="2.2" ry="24" className="av-helice" />
     </svg>
   );
@@ -142,6 +171,7 @@ export function Aviaozinho() {
   const areaRef = useRef<SVGPathElement>(null);
   const aviaoRef = useRef<HTMLDivElement>(null);
   const fumacaRef = useRef<HTMLDivElement>(null);
+  const rastroRef = useRef<HTMLDivElement>(null);
   const t0 = useRef(0);
   const fimRef = useRef<Fim | null>(null);
   const somRef = useRef<Som | null>(null);
@@ -201,6 +231,17 @@ export function Aviaozinho() {
       areaRef.current?.setAttribute("d", `${d} L${ux.toFixed(1)} ${Y0} L${X0} ${Y0} Z`);
       const [px, py] = pts[pts.length - 2] ?? pts[0];
       const ang = (Math.atan2(uy - py, ux - px || 1) * 180) / Math.PI;
+      /* fumaça do rastro: bolinhas em pontos mais antigos da curva, maiores e mais apagadas */
+      const bolhas = rastroRef.current?.children;
+      if (bolhas)
+        for (let k = 0; k < bolhas.length; k++) {
+          const el = bolhas[k] as HTMLElement;
+          const pt = pts[Math.max(0, pts.length - 2 - k * 2)];
+          el.style.left = `${(pt[0] / W) * 100}%`;
+          el.style.top = `${(pt[1] / H) * 100}%`;
+          el.style.opacity = acabou || ms < 400 ? "0" : String(0.7 * (1 - k / bolhas.length));
+          el.style.setProperty("--t", String(1 + k * 0.35));
+        }
       if (aviaoRef.current && !acabou) {
         aviaoRef.current.style.left = `${(ux / W) * 100}%`;
         aviaoRef.current.style.top = `${(uy / H) * 100}%`;
@@ -334,8 +375,17 @@ export function Aviaozinho() {
         {/* nuvens em duas camadas (a de trás mais lenta); só andam durante o voo */}
         {[0, 1].map((c) => (
           <svg key={c} className={"av-nuvens c" + c} viewBox="0 0 2000 220" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <linearGradient id={"av-nuvem" + c} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" className="av-st-nuvem0" />
+                <stop offset="1" className="av-st-nuvem1" />
+              </linearGradient>
+              <filter id={"av-macia" + c}>
+                <feGaussianBlur stdDeviation={c ? 5 : 3} />
+              </filter>
+            </defs>
             {[0, 1000].map((dx) =>
-              NUVENS.map(([x, y, e], k) => <path key={dx + "-" + k} d={`M0 0${NUVEM}`} transform={`translate(${dx + x + c * 90} ${y + c * 30}) scale(${(c ? 1.6 : 2.4) * e})`} className="av-nuvem" />),
+              NUVENS.map(([x, y, e], k) => <path key={dx + "-" + k} d={`M0 0${NUVEM}`} transform={`translate(${dx + x + c * 90} ${y + c * 30}) scale(${(c ? 1.6 : 2.4) * e})`} fill={`url(#av-nuvem${c})`} filter={`url(#av-macia${c})`} className="av-nuvem" />),
             )}
           </svg>
         ))}
@@ -345,6 +395,13 @@ export function Aviaozinho() {
           <rect x="0" y="108" width="1000" height="12" className="av-pista" />
           {Array.from({ length: 14 }, (_, k) => (
             <rect key={k} x={20 + k * 72} y="113" width="30" height="2" className="av-pista-faixa" />
+          ))}
+          {/* luzes da cidade no morro e as da beira da pista */}
+          {Array.from({ length: 26 }, (_, k) => (
+            <circle key={"c" + k} cx={(k * 389) % 1000} cy={95 + ((k * 7) % 9)} r={k % 3 ? 0.9 : 1.3} className="av-luz-cidade" />
+          ))}
+          {Array.from({ length: 11 }, (_, k) => (
+            <circle key={"p" + k} cx={10 + k * 100} cy="108" r="1.6" className={"av-luz-pista" + (k % 2 ? " b" : "")} />
           ))}
         </svg>
         <svg className="av-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
@@ -359,6 +416,11 @@ export function Aviaozinho() {
             </li>
           ))}
         </ol>
+        <div ref={rastroRef} className="av-rastro" aria-hidden="true">
+          {Array.from({ length: 9 }, (_, k) => (
+            <i key={k} />
+          ))}
+        </div>
         {(!voo || caiu) && (
           <div className={"av-aviao parado" + (caiu ? " volta" : "")} aria-hidden="true">
             <Aviao trem />

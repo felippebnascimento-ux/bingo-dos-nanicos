@@ -110,12 +110,21 @@ function Roda({ id }: { id: string }) {
       {ORDEM.map((_, i) => {
         const a = i * FATIA - FATIA / 2;
         const [x0, y0] = polar(R_CASA_INT, a), [x1, y1] = polar(R_NUM_EXT, a);
-        return <line key={i} x1={x0} y1={y0} x2={x1} y2={y1} className="rr-divisa" />;
+        return (
+          <g key={i}>
+            <line x1={x0} y1={y0} x2={x1} y2={y1} className="rr-divisa-sombra" transform="translate(1 1.2)" />
+            <line x1={x0} y1={y0} x2={x1} y2={y1} className="rr-divisa" />
+          </g>
+        );
       })}
-      <circle r={R_NUM_EXT} className="rr-fio" />
-      <circle r={R_NUM_INT} className="rr-fio" />
+      <circle r={R_NUM_EXT} stroke={`url(#${id}-cromo)`} className="rr-fio" />
+      <circle r={R_NUM_INT} stroke={`url(#${id}-cromo)`} className="rr-fio" />
+      <circle r={R_CASA_INT + 1} stroke={`url(#${id}-cromo)`} className="rr-fio fino" />
       <circle r={R_CONE} fill={`url(#${id}-cone)`} className="rr-cone" />
-      {/* anéis da madeira do cone */}
+      {/* cone torneado: anéis finos de torno e dois frisos mais marcados */}
+      {Array.from({ length: 14 }, (_, k) => (
+        <circle key={k} r={R_CONE * (0.58 + k * 0.03)} className={"rr-torno" + (k % 3 ? "" : " forte")} />
+      ))}
       {[0.86, 0.72].map((k) => (
         <circle key={k} r={R_CONE * k} className="rr-anel" />
       ))}
@@ -127,7 +136,7 @@ function Roda({ id }: { id: string }) {
         const [p0x, p0y] = polar(1.6, a - 90), [p1x, p1y] = polar(1.6, a + 90);
         return (
           <g key={a}>
-            <path d={`M${l0x} ${l0y}L${x + p0x} ${y + p0y}L${x + p1x} ${y + p1y}L${l1x} ${l1y}Z`} fill={`url(#${id}-ouro)`} className="rr-braco" />
+            <path d={`M${l0x} ${l0y}L${x + p0x} ${y + p0y}L${x + p1x} ${y + p1y}L${l1x} ${l1y}Z`} fill={`url(#${id}-ouro-cromo)`} className="rr-braco" />
             <circle cx={x} cy={y} r={6.5} fill={`url(#${id}-ouro)`} className="rr-ponta" />
             <circle cx={x - 2} cy={y - 2} r={2} className="rr-brilho" />
           </g>
@@ -151,6 +160,7 @@ export function RodaRoleta({ giro, onFim }: { giro: Giro | null; onFim?: (casa: 
   /* a moldura do vencedor fica acima do reflexo, num grupo que gira junto com a roda */
   const molduraRef = useRef<SVGGElement>(null);
   const molduraCasaRef = useRef<SVGPathElement>(null);
+  const rastroRef = useRef<SVGGElement>(null);
   const angulo = useRef(0);
   const fimRef = useRef(onFim);
   const [mudo, setMudo] = useState(() => local.get("roleta-som") === "0");
@@ -170,6 +180,7 @@ export function RodaRoleta({ giro, onFim }: { giro: Giro | null; onFim?: (casa: 
     setFinal(null);
     setRodando(true);
     const p: Plano = planoDoGiro(giro.casa, aleatorio, angulo.current);
+    let bolaAntes = quadroDoGiro(p, 0).bola;
     const som = mudoRef.current || reduzMovimento() ? null : abrirSom();
     const desenhar = (t: number) => {
       const q = quadroDoGiro(p, t);
@@ -179,6 +190,19 @@ export function RodaRoleta({ giro, onFim }: { giro: Giro | null; onFim?: (casa: 
       const [x, y] = polar(raioDaBola(q.raio), q.bola);
       bola.setAttribute("transform", `translate(${x} ${y})`);
       bola.style.opacity = "1";
+      /* rastro: cópias apagadas um pouco atrás, só enquanto ela anda rápido */
+      const delta = q.bola - bolaAntes;
+      bolaAntes = q.bola;
+      const fantasmas = rastroRef.current?.children;
+      if (fantasmas)
+        for (let k = 0; k < fantasmas.length; k++) {
+          const c = fantasmas[k] as SVGCircleElement;
+          const rapido = Math.abs(delta) > 2.5 && !q.assentou;
+          const [gx, gy] = polar(raioDaBola(q.raio), q.bola - delta * 0.45 * (k + 1));
+          c.setAttribute("cx", gx.toFixed(1));
+          c.setAttribute("cy", gy.toFixed(1));
+          c.setAttribute("opacity", rapido ? String(c.dataset.o) : "0");
+        }
       return q;
     };
     let quadro = 0, ini = 0, quiqueVisto = -1, acabou = false;
@@ -287,13 +311,39 @@ export function RodaRoleta({ giro, onFim }: { giro: Giro | null; onFim?: (casa: 
             <filter id={`${id}-brilha`} x="-50%" y="-50%" width="200%" height="200%">
               <feGaussianBlur stdDeviation="3.5" />
             </filter>
+            {/* veio da madeira: ruído esticado, escurecendo a cor de baixo (só nas peças paradas) */}
+            <filter id={`${id}-madeira`} x="0" y="0" width="100%" height="100%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.008 0.16" numOctaves="3" seed="7" result="r" />
+              <feColorMatrix in="r" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.6 1.15" result="veio" />
+              <feComposite in="veio" in2="SourceGraphic" operator="in" result="v" />
+              <feBlend in="SourceGraphic" in2="v" mode="multiply" />
+            </filter>
+            <linearGradient id={`${id}-cromo`} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" className="rr-st-branco" />
+              <stop offset=".35" className="rr-st-prata" />
+              <stop offset=".55" className="rr-st-prata-esc" />
+              <stop offset=".75" className="rr-st-branco" />
+              <stop offset="1" className="rr-st-prata-esc" />
+            </linearGradient>
+            <linearGradient id={`${id}-ouro-cromo`} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" className="rr-st-ouro0" />
+              <stop offset=".4" className="rr-st-ouro1" />
+              <stop offset=".6" className="rr-st-ouro0" />
+              <stop offset="1" className="rr-st-ouro1" />
+            </linearGradient>
+            {/* sombra que o aro joga na pista */}
+            <radialGradient id={`${id}-borda`} gradientUnits="userSpaceOnUse" cx="0" cy="0" r={R_PISTA_EXT}>
+              <stop offset=".9" className="rr-st-escuro" stopOpacity="0" />
+              <stop offset="1" className="rr-st-escuro" stopOpacity=".55" />
+            </radialGradient>
           </defs>
           {/* parados: aro, madeira, pista e os 8 losangos */}
-          <circle r={R_ARO} fill={`url(#${id}-aro)`} className="rr-aro" />
+          <circle r={R_ARO} fill={`url(#${id}-aro)`} className="rr-aro" filter={`url(#${id}-madeira)`} />
           <circle r={R_ARO - 3} fill="none" stroke={`url(#${id}-bisel)`} strokeWidth={3} />
-          <circle r={R_MADEIRA} className="rr-madeira" />
+          <circle r={R_MADEIRA} className="rr-madeira" filter={`url(#${id}-madeira)`} />
           <circle r={R_MADEIRA - 1} className="rr-madeira-fio" />
-          <circle r={R_PISTA_EXT} fill={`url(#${id}-pista)`} />
+          <circle r={R_PISTA_EXT} fill={`url(#${id}-pista)`} filter={`url(#${id}-madeira)`} />
+          <circle r={R_PISTA_EXT} fill={`url(#${id}-borda)`} />
           {/* veios da madeira da pista */}
           {[171, 166, 160, 155].map((r) => (
             <circle key={r} r={r} className="rr-veio" />
@@ -322,6 +372,12 @@ export function RodaRoleta({ giro, onFim }: { giro: Giro | null; onFim?: (casa: 
           </g>
           <circle r={R_MADEIRA} fill={`url(#${id}-luz)`} className="rr-sem-toque" />
           {/* a bolinha (some até o primeiro giro) */}
+          {/* rastro da bolinha quando ela está rápida (posto pela animação) */}
+          <g ref={rastroRef} className="rr-rastro">
+            {[0.3, 0.18, 0.09].map((o, k) => (
+              <circle key={k} r={6.5 - k} opacity={0} data-o={o} className="rr-bola-fantasma" />
+            ))}
+          </g>
           <g ref={bolaRef} style={{ opacity: 0 }}>
             <circle r={7.5} cx={2} cy={2.5} className="rr-sombra" />
             <circle r={6.5} fill={`url(#${id}-bola)`} className="rr-bola" />

@@ -295,6 +295,7 @@ export const CHANGELOG: EntradaLog[] = [
     itens: [
       "Roleta mais bonita: vermelho de cassino de verdade, números maiores, cruzeta dourada brilhando e um brilho na casa que saiu",
       "Aviãozinho de cara nova: avião desenhado de novo, esperando na pista, nuvens passando, lua, montanhas, escala do multiplicador e fumaça quando ele vai embora",
+      "Cassino mais real: roda de madeira com veio, frisos cromados e inclinada como numa mesa, rastro da bolinha, feltro com textura e borda de madeira, fichas com relevo, avião com volume e fumaça de rastro, nuvens macias e luzes na pista",
     ],
   },
 ];
