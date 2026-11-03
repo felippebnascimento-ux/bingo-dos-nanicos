@@ -646,6 +646,7 @@ export const CHANGELOG: EntradaLog[] = [
     itens: ["Aviãozinho: quem apostou no último voo volta a ter o botão de apostar com a mesa parada (antes ficava preso até outra pessoa abrir um voo)"],
   },
   { data: "03/11/2026", itens: ["O baú do Sítio abre uma prévia dos Campeões Selados"] },
+  { data: "03/11/2026", itens: ["A aba K-FOFO Teste foi retirada por enquanto; o K-FOFO continua no menu de Jogos"] },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
