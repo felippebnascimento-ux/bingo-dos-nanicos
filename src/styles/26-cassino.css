@@ -706,3 +706,35 @@
 .dl-voltar{justify-self:center}
 @media (max-width:520px){.dl-lado{grid-template-columns:auto minmax(0,1fr);padding:6px 8px}.dl-gols{grid-column:2;font-size:22px}.dl-bolinhas li{width:16px;height:16px;font-size:9px}.dl-relogio{width:42px;height:42px}.dl-relogio b{font-size:15px}}
 @media (prefers-reduced-motion:reduce){.duelo .pn-bola.dz,.dl-relogio-anel{transition:none}.duelo .pn-bola.dz .pn-bola-svg{animation:none}}
+
+/* pênalti x1, seção 50: o ranking no saguão (posição, V, D e saldo; a minha linha em ouro) */
+.dl-ranking{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0 4px;font:600 13px var(--body);font-variant-numeric:tabular-nums}
+.dl-ranking th{font:700 11px var(--display);letter-spacing:.06em;text-transform:uppercase;opacity:.7;text-align:right;padding:0 8px}
+.dl-ranking th:nth-child(1){width:42px;text-align:left}.dl-ranking th:nth-child(2){text-align:left}
+.dl-ranking th:nth-child(3),.dl-ranking th:nth-child(4){width:36px}.dl-ranking th:nth-child(5){width:84px}
+.dl-ranking td{padding:6px 8px;text-align:right;background:rgb(0 0 0 / .25)}
+.dl-ranking td:first-child{border-radius:12px 0 0 12px;text-align:left}.dl-ranking td:last-child{border-radius:0 12px 12px 0}
+.dl-ranking tr.eu td{background:color-mix(in srgb,var(--rm-ouro) 18%,rgb(0 0 0 / .25))}
+.dl-ranking tr.eu .dl-pos{color:var(--rm-ouro)}
+.dl-pos{font:800 14px var(--display)}
+.dl-quem{text-align:left}
+.dl-quem-in{display:flex;align-items:center;gap:8px;min-width:0}
+.dl-quem span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.dl-quem small{opacity:.7;font-weight:600}
+.dl-saldo{font:800 13px var(--display)}.dl-saldo.mais{color:var(--pn-gol)}.dl-saldo.menos{color:var(--pn-defendeu)}
+
+/* o chat do duelo: as últimas mensagens, as reações rápidas e o campo (só para os dois jogadores) */
+.dl-chat{display:grid;gap:8px;min-width:0;padding:12px;border-radius:16px;background:rgb(0 0 0 / .25);border:1px solid color-mix(in srgb,var(--rm-creme) 15%,transparent)}
+.dl-chat .rm-rotulo{margin:0}
+.dl-chat-lista{list-style:none;margin:0;padding:0;display:grid;gap:4px;max-height:180px;overflow-y:auto;overscroll-behavior:contain}
+.dl-chat-lista li{font:500 14px/1.35 var(--body);overflow-wrap:anywhere}
+.dl-chat-lista b{font-weight:700;color:var(--rm-creme)}
+.dl-chat-lista li.eu b{color:var(--rm-ouro)}
+.dl-chat-vazio{margin:0;color:color-mix(in srgb,var(--rm-creme) 75%,transparent)}
+.dl-chat-reacoes{display:flex;gap:6px}
+.dl-chat-reacoes button{flex:1;min-width:0;padding:6px 0;border-radius:12px;border:1px solid color-mix(in srgb,var(--rm-creme) 25%,transparent);background:rgb(0 0 0 / .25);font-size:20px;line-height:1;cursor:pointer}
+.dl-chat-reacoes button:disabled{opacity:.5;cursor:default}
+.dl-chat-form{display:flex;gap:8px;min-width:0}
+.dl-chat-form input{flex:1;min-width:0;padding:10px 12px;border-radius:12px;background:rgb(0 0 0 / .35);border:1px solid color-mix(in srgb,var(--rm-creme) 25%,transparent);color:var(--stamp-ink);font:500 15px var(--body)}
+.dl-chat-form input:focus-visible,.dl-chat-reacoes button:focus-visible{outline:3px solid var(--rm-ouro);outline-offset:2px}
+@media (max-width:520px){.dl-ranking th:nth-child(5){width:70px}.dl-ranking td,.dl-ranking th{padding-left:6px;padding-right:6px}}
