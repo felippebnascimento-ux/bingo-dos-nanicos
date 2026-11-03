@@ -87,7 +87,9 @@ src/
                        lojaDados.ts (vitrine, mochila, equipados de todos; comprar, equipar, usar; `useEquipados`),
                        consumoSala.ts (tempo real de `consumos`: o boneco fuma ou bebe em todas as telas),
                        Itens.tsx (desenhos dos consumíveis e do escudo, ConsumoCamada do Sítio, TituloNanico) e
-                       LojaView.tsx (vitrine com prévia, mochila; `MochilaLista` também aparece na ficha)
+                       LojaView.tsx (vitrine com prévia, mochila; `MochilaLista` também aparece na ficha) e
+                       MochilaPainel.tsx (botão "Mochila" ao lado da carteira no K-FOFO e a janela do inventário,
+                       `mochilaAberta` no `useLoja`; fecha ao usar um item)
     midias/            aba Mídias (aba `midias`, no menu): Imagem.tsx (imagem do bucket sob demanda, usada também na rede),
                        midiasDados.ts (galeria, mural e links do perfil; comprime a
                        imagem no navegador para webp até 1920 px; baixa do bucket privado como blob: e solta a URL;
