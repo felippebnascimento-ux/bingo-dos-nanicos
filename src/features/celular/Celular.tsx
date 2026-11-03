@@ -355,6 +355,10 @@ function Feed({ grupos, nav, abrirCriador }: { grupos: Grupo[]; nav: Nav; abrirC
   return (
     <>
       <header className="ig-topo">
+        {/* no celular de verdade não tem a moldura nem o fundo para tocar: o X fecha */}
+        <button type="button" className="ig-sem-botao ig-sair" aria-label="Fechar o celular" onClick={fecharCelular}>
+          <IcX />
+        </button>
         <Logo />
         <span className="ig-espaco" />
         <button type="button" className="ig-sem-botao" aria-label="Atividade" onClick={() => nav.ir("atividade")}>
@@ -1281,9 +1285,41 @@ function InstaNanico() {
   );
 }
 
+/* o "voltar" do celular (ou do navegador) fecha o celular, como num app: abrir põe um passo no histórico */
+let ignorarVolta = false;
+const temPasso = () => !!(history.state as { celular?: boolean } | null)?.celular;
+function useVoltarFecha(aberto: boolean) {
+  useEffect(() => {
+    if (!aberto) return;
+    let porVolta = false;
+    if (!temPasso()) history.pushState({ celular: true }, "");
+    const volta = () => {
+      if (ignorarVolta) {
+        ignorarVolta = false;
+        return;
+      }
+      porVolta = true;
+      fecharCelular();
+    };
+    addEventListener("popstate", volta);
+    return () => {
+      removeEventListener("popstate", volta);
+      /* fechou pelo X, pelo Esc ou pelo fundo: tira o passo que pusemos (sem fechar de novo). Espera um instante:
+         se o celular continuar aberto (o efeito só foi refeito), o passo fica */
+      if (porVolta) return;
+      setTimeout(() => {
+        if (useRede.getState().aberto || !temPasso()) return;
+        ignorarVolta = true;
+        history.back();
+      }, 0);
+    };
+  }, [aberto]);
+}
+
 /** O celular aberto, por cima de tudo: o iPhone com o InstaNanico. */
 export function Celular() {
   const aberto = useRede((s) => s.aberto);
+  useVoltarFecha(aberto);
   const [agora, setAgora] = useState(hora);
   useEffect(() => {
     if (!aberto) return;
