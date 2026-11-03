@@ -7,7 +7,7 @@
 import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { assistirLive, usePessoasNaSala } from "@/components/shell/People";
-import { useCarteira } from "@/lib/carteira";
+import { pedirBolsa, podePedirBolsa, useCarteira } from "@/lib/carteira";
 import { abrirCarteira, useMinhaPosicao } from "@/features/moedas/Ranking";
 import { ChamaNome } from "@/features/ficha/NoSitio";
 import { formatarMoedas, motivoGanho } from "@/lib/moedas";
@@ -140,6 +140,18 @@ export function CarteiraCanto() {
         <b>{formatarMoedas(c.saldo)}</b>
         <small>suas moedas{posicao && ` · ${posicao}`}</small>
       </span>
+    </button>
+  );
+}
+
+/** "Pedir a Bolsa Nanica": só aparece com menos de 100 moedas e se ainda não pegou hoje (quem decide é o banco). */
+export function BotaoBolsa() {
+  const pode = useCarteira((s) => podePedirBolsa(s));
+  const pedindo = useCarteira((s) => s.pedindoBolsa);
+  if (!pode) return null;
+  return (
+    <button type="button" className="btn sm hall-bolsa" disabled={pedindo} onClick={() => void pedirBolsa()}>
+      {pedindo ? "Pedindo…" : "Pedir a Bolsa Nanica (+5.000)"}
     </button>
   );
 }
