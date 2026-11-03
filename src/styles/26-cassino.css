@@ -641,3 +641,10 @@
 .rr[data-tema="neon"] .rr-svg{filter:drop-shadow(0 0 18px color-mix(in srgb,var(--roleta-ouro1) 45%,transparent)) drop-shadow(0 22px 20px rgba(0,0,0,.5))}
 /* luxo: laca preta com reflexo mais forte e o veio quase sumindo */
 .rr[data-tema="luxo"] .rr-com-veio{filter:none}
+/* Banca Nanica (seção 47): o selo com o saldo da casa */
+.banca-nanica{display:inline-flex;align-items:center;gap:10px;margin-top:6px;padding:6px 14px 6px 8px;border-radius:99px;background:var(--accent-ink);color:var(--stamp-ink);box-shadow:0 4px 14px var(--shadow)}
+.banca-nanica small{display:block;font:700 10px var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.banca-nanica b{display:block;font:800 17px/1.1 var(--display);font-variant-numeric:tabular-nums}
+.banca-cofre{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:color-mix(in srgb,var(--accent) 22%,transparent);color:var(--accent)}
+.banca-cofre svg{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round}
+.banca-nanica.compacta{margin:0;padding:4px 10px 4px 6px}.banca-nanica.compacta .banca-cofre{width:26px;height:26px}.banca-nanica.compacta b{font-size:14px}

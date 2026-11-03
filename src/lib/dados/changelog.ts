@@ -589,6 +589,10 @@ export const CHANGELOG: EntradaLog[] = [
       "Sem o quadrado escuro em volta do boneco ao passar o mouse (extensões de modo escuro não mexem mais no site)",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: ["Banca Nanica: tudo que se perde no cassino vai para a banca, e o saldo dela aparece no alto do Cassino"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
