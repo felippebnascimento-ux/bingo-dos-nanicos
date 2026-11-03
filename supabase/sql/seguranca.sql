@@ -817,7 +817,7 @@ grant execute on function public.cassino_feed() to authenticated;
 -- 11b) cassino, parte 2: limbo, maior ou menor (dado) e caça-níquel dos nanicos -----------------
 --      Mesmo motor (cassino_numero), mesmas regras: aposta de 5 a 100, creditar, limitar e cassino_apostas.
 alter table public.cassino_apostas drop constraint if exists cassino_apostas_jogo_check;
-alter table public.cassino_apostas add constraint cassino_apostas_jogo_check check (jogo in ('roleta', 'limbo', 'dado', 'slot'));
+alter table public.cassino_apostas add constraint cassino_apostas_jogo_check check (jogo in ('roleta', 'limbo', 'dado', 'slot', 'aviao', 'penalti')); -- a lista completa: rodar o arquivo de novo não pode recusar apostas que já existem
 
 -- limbo: resultado = max(1, floor(0,97 / (1 − u) × 100) / 100); ganha alvo × aposta se o resultado ≥ alvo (a casa leva 3%)
 create or replace function public.apostar_limbo(p_aposta int, p_alvo numeric) returns jsonb
@@ -2966,7 +2966,7 @@ grant execute on function public.apostar_roleta_mesa(jsonb) to authenticated;
 -- conferido pelo relógio do banco: multiplicador = floor(e^(0,07 × segundos) × 100) / 100 desde a decolagem.
 -- Saque automático em X×: vale se X ≤ ponto de queda (igual ao limbo). Cada um voa sozinho; a mesa só mostra os voos.
 alter table public.cassino_apostas drop constraint if exists cassino_apostas_jogo_check;
-alter table public.cassino_apostas add constraint cassino_apostas_jogo_check check (jogo in ('roleta', 'limbo', 'dado', 'slot', 'aviao'));
+alter table public.cassino_apostas add constraint cassino_apostas_jogo_check check (jogo in ('roleta', 'limbo', 'dado', 'slot', 'aviao', 'penalti')); -- a lista completa: rodar o arquivo de novo não pode recusar apostas que já existem
 
 create table if not exists public.aviao_voos (
   id      bigint generated always as identity primary key,
