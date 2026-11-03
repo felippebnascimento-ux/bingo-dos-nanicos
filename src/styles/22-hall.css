@@ -423,7 +423,6 @@
 .quadro-papel{fill:var(--stamp-ink)}
 .quadro-titulo{font:800 6px var(--display);fill:var(--accent-text);letter-spacing:.02em}
 .quadro-linha{font:600 7px var(--body);fill:var(--accent-ink)}
-.quadro-rotulo{fill:var(--live);font-weight:800}
 .boneco-chapeu{position:absolute;left:50%;top:-3%;width:42%;transform:translateX(-50%);pointer-events:none;filter:drop-shadow(0 1px 1px var(--shadow))}
 .boneco-chapeu.burro{top:-14%;width:36%}
 /* com enfeite, a placa do nome sobe para não ficar embaixo dele */

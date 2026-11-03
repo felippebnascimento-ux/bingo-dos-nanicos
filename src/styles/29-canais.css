@@ -33,18 +33,6 @@
 .canal-pessoa.falando .av,.membros li.falando .av,.membros li.falando .u{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--mint)}
 @media (prefers-reduced-motion:reduce){.canal-pessoa .av,.canal-cat-t svg{transition:none}}
 
-/* ---------- painel da voz (embaixo dos canais) ---------- */
-.voz-painel{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 8px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface-2)}
-.voz-info{display:grid;min-width:0}
-.voz-info b{font-size:13px;color:var(--muted)}
-.voz-painel.on .voz-info b{color:var(--accent-text)}
-.voz-info small{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.voz-botoes{display:flex;align-items:center;gap:2px}
-.voz-btn{display:inline-grid;place-items:center;width:34px;height:34px;border:0;border-radius:10px;background:none;color:var(--ink);cursor:pointer}
-.voz-btn:hover{background:var(--surface)}
-.voz-btn svg{width:19px;height:19px}
-.voz-btn.off,.voz-btn.sair{color:var(--live)}
-
 /* ---------- base do menu: voz, câmera, eu e moedas, fixos embaixo ---------- */
 .side-base{display:grid;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
 .side-base .side-foot{margin-top:2px}
@@ -148,10 +136,6 @@ body.sem-membros .membros{display:none}
   body.side-min .canal{position:relative}
   body.side-min .canal-n,body.side-min .canal-novas{position:absolute;top:0;right:4px;font-size:10px}
   body.side-min .canais{width:100%}
-  body.side-min .voz-painel{grid-template-columns:1fr;justify-items:center;padding:8px 4px}
-  body.side-min .voz-info{display:none}
-  body.side-min .voz-botoes{flex-direction:column}
-  body.side-min .voz-botoes .btn{padding:8px 6px;font-size:12px}
   body.side-min .side-base{justify-items:center}
   body.side-min .eu-painel{flex-direction:column}
   body.side-min .eu{flex:none;padding:0}

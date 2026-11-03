@@ -102,7 +102,6 @@
 /* ---------- textos e etiquetas em cima da mesa ---------- */
 .mesa-pote{padding:.5cqw 1.4cqw;border-radius:99px;background:rgb(0 0 0 / .5);font:800 1.5cqw var(--display);color:var(--mesa-ouro);box-shadow:inset 0 0 0 .1cqw rgb(210 174 106 / .35)}
 .mesa-aviso{padding:.4cqw 1.1cqw;border-radius:99px;background:rgb(0 0 0 / .45);font:600 1.15cqw var(--body);white-space:nowrap}
-.mesa-soma{padding:.2cqw .7cqw;border-radius:99px;background:rgb(0 0 0 / .65);font:800 1.2cqw var(--display);color:var(--mesa-branco)}
 .mesa-res{padding:.25cqw .8cqw;border-radius:.5cqw;font:800 1.05cqw var(--display);letter-spacing:.04em;white-space:nowrap}
 .mesa-res.ganhou{background:var(--ficha-verde);color:var(--mesa-branco)}
 .mesa-res.perdeu{background:var(--mesa-vermelho);color:var(--mesa-branco)}
@@ -121,19 +120,9 @@
 .mesa-bt.verm{background:var(--live);color:#fff}
 .mesa-tempo{display:grid;justify-items:center;padding:0 8px;font:700 11px var(--display);color:var(--accent-text)}
 .mesa-tempo b{font:800 20px/1 var(--display)}
-.mesa-valor{display:grid;gap:6px;min-width:220px;padding:0 6px}
-.mesa-valor-rapido{display:flex;gap:4px}
-.mesa-valor-rapido button{flex:1;padding:5px 0;border:1px solid var(--line);border-radius:8px;background:none;color:var(--ink);font:700 11.5px var(--body);cursor:pointer}
-.mesa-valor-rapido button:hover{background:var(--surface-2)}
-.mesa-valor input{width:100%;accent-color:var(--accent)}
-.mesa-valor-num{display:flex;justify-content:space-between;font:700 11px var(--display);color:var(--muted)}
 /* o topo do jogo: placar, valendo, blinds */
 .mesa-topo{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:4px}
 .mesa-topo-grupo{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.mesa-time{display:grid;justify-items:center;min-width:96px;padding:6px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
-.mesa-time b{font:800 26px/1.05 var(--display);font-variant-numeric:tabular-nums}
-.mesa-time span{font-size:11.5px;color:var(--muted);white-space:nowrap}
-.mesa-time.nos{border-color:var(--accent)}.mesa-time.nos b{color:var(--accent)}
 .mesa-selo{font:700 12px var(--display);padding:5px 10px;border-radius:99px;background:var(--surface-2);color:var(--ink)}
 .mesa-selo.verm{background:var(--live);color:#fff}.mesa-selo.ouro{background:var(--accent);color:var(--accent-ink)}
 /* blackjack: bandeja de fichas do dealer e o sapato das cartas */
@@ -146,7 +135,6 @@
 .mesa-cartas .tc{width:5.6cqw}
 .mesa-leque.pequeno .tc{width:2.8cqw;margin-left:0;border-radius:.35cqw}
 .mesa-leque.pequeno .tc + .tc{margin-left:-1.4cqw}
-.truco-grande .tc{width:8.4cqw}
 .cfr.vazia{opacity:.25}
 
 /* ---------- o truco na mesa oval ---------- */
@@ -158,12 +146,8 @@
 .mesa-cartas .tr-msg{display:grid;justify-items:center;gap:6px;padding:12px 18px;border-radius:16px;background:rgb(0 0 0 / .5);color:var(--mesa-texto);text-align:center}
 .mesa-cartas .tr-msg b{font:800 max(15px,1.8cqw) var(--display)}
 .mesa-cartas .tr-msg span{font-size:max(12px,1.2cqw);color:rgb(255 255 255 / .75)}
-.tr-pergunta{box-shadow:0 0 0 2px var(--live),0 14px 30px -10px var(--shadow)}
-.tr-pergunta-txt{padding:0 6px;font-size:14px}
-.tr-pergunta-txt b{font-family:var(--display)}
 .mesa-bt.sure{background:var(--live);color:#fff}
 .mesa-topo .tr-vazas{display:flex;gap:4px}
-.mesa-topo .tr-alvo{font-size:12px;color:var(--muted)}
 
 /* ---------- mesa pequena (celular, janela de assistir): nada fica minúsculo ---------- */
 .mesa-rosto{min-width:38px}
@@ -173,7 +157,7 @@
 .mesa-fala{font-size:max(12px,1.6cqw)}
 .mesa-aviso{font-size:max(11px,1.15cqw)}
 .mesa-pote{font-size:max(12px,1.5cqw)}
-.mesa-pilha b,.mesa-soma,.mesa-res{font-size:max(10px,1.15cqw)}
+.mesa-pilha b,.mesa-res{font-size:max(10px,1.15cqw)}
 .mesa-leque.pequeno .tc{min-width:20px}
 .cfr{min-width:30px}
 .cfr.grande{min-width:52px}
@@ -187,11 +171,6 @@
 }
 /* no celular, a minha placa sairia em cima da minha mão (o meu tempo já aparece na barra) */
 @media (max-width:640px){.tr-lugar-mesa.sul:has(.mesa-lugar.eu){display:none}}
-
-/* ---------- blackjack ---------- */
-.bj-arco{position:absolute;inset:0;z-index:1;width:100%;height:100%;pointer-events:none}
-.bj-arco-1{font:800 24px var(--display);letter-spacing:.2em;fill:rgb(210 174 106 / .7)}
-.bj-arco-2{font:600 14px var(--body);letter-spacing:.16em;fill:rgb(255 255 255 / .45)}
 .bj-dealer{display:flex;align-items:center;gap:.8cqw}
 .bj-lugar{gap:.4cqw}
 .bj-maos{display:flex;gap:1.2cqw;align-items:flex-end}
@@ -200,16 +179,6 @@
 .bj-mao > * + *{margin-left:-2.6cqw}
 .bj-mao .cfr{min-width:34px}
 .mesa-res.empate{background:rgb(255 255 255 / .85);color:var(--mesa-couro1)}
-.bj-livre{opacity:.6}
-.bj-fichas-mao{display:flex;gap:.4cqw;align-items:flex-end}
-.bj-fichas{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
-.bj-ficha{position:relative;display:grid;place-items:center;padding:0;border:0;border-radius:50%;background:none;cursor:pointer;transition:transform .12s}
-.bj-ficha b{position:absolute;font:800 11px var(--display);color:#fff;text-shadow:0 1px 2px rgb(0 0 0 / .7);pointer-events:none}
-.bj-ficha:hover{transform:translateY(-2px)}
-.bj-ficha.on{transform:translateY(-4px)}
-.bj-ficha.on .mesa-ficha{filter:drop-shadow(0 0 0 2px var(--accent)) drop-shadow(0 4px 6px rgb(0 0 0 / .5));outline:2px solid var(--accent);border-radius:50%}
-.bj-ficha .mesa-ficha{width:38px;height:38px}
-.bj-espera{padding:8px 4px}
 .bj-justo{margin:8px auto 0;max-width:640px;text-align:center;font-size:12px}
 .bj-justo .linkish{margin-left:6px}
 .bj-hash{font-family:ui-monospace,monospace}
@@ -301,7 +270,6 @@
 .pk-mesa-info small{font-size:12.5px;color:var(--muted)}
 .pk-vazio{text-align:center;padding:18px 0}
 .pk-blinds{margin:0;min-width:240px}
-.pk-espera{padding:8px 4px}
 .pk-livre{border-style:dashed;background:rgb(0 0 0 / .2);color:var(--mesa-ouro);font:800 max(11px,1.2cqw) var(--display);cursor:pointer;transition:background .12s}
 button.pk-livre:hover,.pk-livre.on{background:rgb(210 174 106 / .22)}
 .pk-livre.vazio{opacity:.4;cursor:default}

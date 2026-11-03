@@ -623,6 +623,13 @@ export const CHANGELOG: EntradaLog[] = [
       "Quem vence o duelo leva o dobro da aposta, sem taxa da casa",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Cassino mais rápido: as apostas não esperam mais na fila atrás das mesas abertas nos outros aparelhos (quem sai do Cassino para de perguntar ao banco)",
+      "Roleta ao vivo: a lista de quem está na rodada voltou ao tamanho certo",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

@@ -123,7 +123,7 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
           <div className="cassino-grid">
             {jogo === "aviao" && (
               <div className="rm-caixa">
-                <Aviaozinho />
+                <Aviaozinho ativa={!hidden} />
               </div>
             )}
             {jogo === "blackjack" && (

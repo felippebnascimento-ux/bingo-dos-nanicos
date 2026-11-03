@@ -3,15 +3,15 @@
  * relógio do banco para o do aparelho (para as contagens) e manda as apostas e as jogadas. Perguntar também faz a
  * mesa andar no banco (dar as cartas, passar a vez de quem demorou, o dealer jogar e pagar).
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import { useLaco } from "./laco";
 import { sb } from "@/lib/supabase";
 import { toast } from "@/lib/toast";
 import { lerEstado, type EstadoBj } from "./bjRegras";
 import { carregar, msgDe } from "./estado";
 
-/* mais rápido com a rodada em andamento; devagar com a mesa parada ou a aba escondida */
-function intervalo(e: EstadoBj | null, ativo: boolean) {
-  if (!ativo || document.hidden) return 4000;
+/* mais rápido com a rodada em andamento; devagar com a mesa parada (fora da tela, para: laco.ts) */
+function intervalo(e: EstadoBj | null) {
   if (!e?.rodada || e.rodada.fase === "fim") return 1500;
   return 600;
 }
@@ -49,20 +49,7 @@ export function useBlackjack(ativo = true) {
     return usar(data, antes);
   }, [usar]);
 
-  useEffect(() => {
-    let vivo = true;
-    let t: ReturnType<typeof setTimeout> | undefined;
-    const laco = async () => {
-      const e = await ler().catch(() => null);
-      if (!vivo) return;
-      t = setTimeout(laco, intervalo(e, ativo));
-    };
-    void laco();
-    return () => {
-      vivo = false;
-      clearTimeout(t);
-    };
-  }, [ler, ativo]);
+  useLaco(ler, intervalo, ativo);
 
   /** Chama uma função do blackjack e já mostra o estado que ela devolve. */
   const chamar = useCallback(

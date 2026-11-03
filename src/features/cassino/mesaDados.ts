@@ -3,14 +3,14 @@
  * guarda a diferença do relógio do banco para o do aparelho e deixa a tela chamar as apostas.
  * Perguntar também faz a mesa andar no banco (sortear e pagar), então não precisa de servidor.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import { useLaco } from "./laco";
 import { sb } from "@/lib/supabase";
 import { carregar } from "./estado";
 import { diferencaRelogio, lerEstado, type EstadoMesa, type JogoMesa } from "./mesa";
 
-/** Mais rápido quando o tempo importa (avião no ar, contagem acabando); devagar com a mesa parada ou a aba escondida. */
-function intervalo(e: EstadoMesa | null, ativo: boolean) {
-  if (!ativo || document.hidden) return 4000;
+/** Mais rápido quando o tempo importa (avião no ar, contagem acabando); devagar com a mesa parada. Fora da tela, para (laco.ts). */
+function intervalo(e: EstadoMesa | null) {
   if (!e || e.fase === "parada") return 1500;
   if (e.jogo === "aviao" && e.fase === "jogo") return 250;
   return 700;
@@ -46,20 +46,7 @@ export function useMesa(jogo: JogoMesa, ativo = true) {
     return e;
   }, [jogo]);
 
-  useEffect(() => {
-    let vivo = true;
-    let t: ReturnType<typeof setTimeout> | undefined;
-    const laco = async () => {
-      const e = await ler().catch(() => null);
-      if (!vivo) return;
-      t = setTimeout(laco, intervalo(e, ativo));
-    };
-    void laco();
-    return () => {
-      vivo = false;
-      clearTimeout(t);
-    };
-  }, [ler, ativo]);
+  useLaco(ler, intervalo, ativo);
 
   /** Relógio do banco agora (ms). */
   const agora = useCallback(() => Date.now() + dif.current, []);

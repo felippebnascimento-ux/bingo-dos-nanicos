@@ -12,6 +12,7 @@ import { MARCA } from "@/lib/dados/nanicos";
 import { formatarMoedas } from "@/lib/moedas";
 import { sb } from "@/lib/supabase";
 import { toast } from "@/lib/toast";
+import { getApp } from "@/lib/store";
 import { local, reduzMovimento } from "@/lib/util";
 import { carregar, msgDe, useCassino } from "./estado";
 import { comboSlot, FICHAS } from "./regras";
@@ -90,7 +91,8 @@ function JackpotPainel() {
     };
     lerJackpotAgora = () => void ler();
     void ler();
-    const t = setInterval(() => !document.hidden && void ler(), 4000);
+    /* só com o Cassino na tela (a aba fica montada escondida) */
+    const t = setInterval(() => !document.hidden && getApp().aba === "cassino" && void ler(), 4000);
     return () => {
       vivo = false;
       clearInterval(t);

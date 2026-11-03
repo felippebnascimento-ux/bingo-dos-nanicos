@@ -40,7 +40,7 @@ input[type=range],input[type=checkbox],input[type=radio],input[type=button],inpu
 .stage,.stage *,.minis,.minis *{-webkit-user-select:none;user-select:none}
 .stage ::selection,.stage::selection,.minis ::selection{background:transparent}
 .stage video,.mini video{-webkit-user-drag:none;pointer-events:none}
-button,label.lnk,.cell,.chip,.tile,.pick-btn{cursor:pointer}
+button,.cell,.chip,.tile,.pick-btn{cursor:pointer}
 .cell.free{cursor:default}
 :focus-visible{outline:2.5px solid var(--accent);outline-offset:2px}
 
@@ -78,8 +78,6 @@ button,label.lnk,.cell,.chip,.tile,.pick-btn{cursor:pointer}
 }
 #view-nanicos,#view-amigos{width:100%;max-width:1320px;margin:0 auto}
 #view-nanicos .hero,#view-amigos .hero{max-width:780px}
-#view-nanicos .nan-hero{max-width:none}
-.empty-art{width:min(420px,90%);height:auto;margin-bottom:6px;filter:drop-shadow(0 10px 16px var(--shadow))}
 
 .brand{display:grid;gap:6px;padding-inline:2px}
 .brand-txt{display:grid;gap:2px;min-width:0;padding-inline:4px}
@@ -87,13 +85,10 @@ button,label.lnk,.cell,.chip,.tile,.pick-btn{cursor:pointer}
 .crew{display:none;margin:0;position:relative;padding-top:6px}
 .crew img{width:100%;height:auto;display:block;position:relative;z-index:1;filter:drop-shadow(0 10px 16px var(--shadow))}
 .crew::after{content:"";position:absolute;left:8%;right:8%;bottom:-6px;height:22px;border-radius:50%;background:radial-gradient(closest-side,var(--shadow),transparent)}
-.nan-hero{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:24px}
-.nan-hero img{height:clamp(120px,16vw,220px);width:auto;filter:drop-shadow(0 10px 16px var(--shadow))}
-@media (max-width:700px){.nan-hero{grid-template-columns:1fr}.nan-hero img{width:100%;height:auto;max-width:460px;justify-self:center}}
+
 .gate-card{position:relative;overflow:visible}
-.gate-art{width:calc(100% + 24px);height:auto;margin:-120px -12px -4px;display:block;filter:drop-shadow(0 12px 18px var(--shadow))}
 .gate{overflow:auto}
-@media (max-height:640px){.gate-art{margin-top:-40px;width:80%;justify-self:center}}
+
 .app{position:relative;z-index:1}
 /* marca d'água: uma só, fixa no rodapé da área principal, em tom dourado */
 .wm{position:fixed;left:320px;right:0;top:0;bottom:0;z-index:0;pointer-events:none;display:flex;justify-content:center;align-items:center;overflow:hidden}

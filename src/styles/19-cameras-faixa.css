@@ -28,8 +28,4 @@
 .cam-pip .n:empty{display:none}
 /* ---------- limpeza geral ---------- */
 .hero-live{margin-bottom:4px}
-.howto-d{margin-top:10px;color:var(--muted);font-size:13px}
-.howto-d summary{cursor:pointer;font-weight:600}
-.howto-d summary:hover{color:var(--ink)}
-.howto-d .howto{margin-top:8px}
 
