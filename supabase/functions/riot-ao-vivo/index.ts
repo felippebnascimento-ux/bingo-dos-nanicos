@@ -106,7 +106,7 @@ type Conta = {
 };
 
 async function atualizar(admin: any): Promise<string | null> {
-  const { data: amigos } = await admin.from("friends").select("id,name,opgg,opgg_smurf").or("opgg.not.is.null,opgg_smurf.not.is.null");
+  const { data: amigos } = await admin.from("friends").select("id,name,opgg,opgg_smurf").neq("tipo", "inativo").or("opgg.not.is.null,opgg_smurf.not.is.null");
   const { data: contasArr } = await admin.from("riot_contas").select("friend_id,riot_id,puuid,atualizado,riot_id_smurf,puuid_smurf,atualizado_smurf");
   const contas = new Map<string, Conta>((contasArr ?? []).map((c: Conta) => [c.friend_id, c]));
   const alvos: { fid: string; puuid: string; plataforma: string }[] = [];
@@ -265,7 +265,7 @@ Deno.serve(async (req: Request) => {
     // só nanicos logados
     const { data: u, error: eu } = await admin.auth.getUser(token);
     if (eu || !u?.user) return json(req, { erro: "Faça login de novo." }, 401);
-    const { data: eu2 } = await admin.from("friends").select("id").eq("user_id", u.user.id).maybeSingle();
+    const { data: eu2 } = await admin.from("friends").select("id").eq("user_id", u.user.id).in("tipo", ["nanico", "amigo"]).maybeSingle();
     if (!eu2) return json(req, { erro: "Conta sem nanico." }, 403);
 
     if (!RIOT_KEY) return json(req, { erro: "Falta a chave da Riot (segredo RIOT_API_KEY) no Supabase.", jogos: [] });

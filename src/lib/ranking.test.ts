@@ -39,4 +39,10 @@ describe("ranking das moedas", () => {
     expect(posicaoDe(r, "ua")).toBeNull();
     expect(posicaoDe(r, null)).toBeNull();
   });
+
+  it("amigo entra no ranking e amigo inativo não", () => {
+    const friends = [F("a", "Ana"), { ...F("l", "Lightzin"), tipo: "amigo" }, { ...F("x", "Xis"), tipo: "inativo" }];
+    const r = ranking([{ userId: "ua", saldo: 5 }, { userId: "ul", saldo: 9 }, { userId: "ux", saldo: 99 }], friends);
+    expect(r.map((l) => l.nome)).toEqual(["Lightzin", "Ana"]);
+  });
 });

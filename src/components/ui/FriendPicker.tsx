@@ -2,6 +2,7 @@
 import { useEffect, useId, useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { create } from "zustand";
+import { soNanicos } from "@/lib/dados/nanicos";
 import { friendOf, useApp } from "@/lib/store";
 import { Avatar } from "./Avatar";
 
@@ -140,13 +141,13 @@ export function FriendPicker(props: Props) {
               <Avatar f={null} size="lg" />
               <span>{props.emptyLabel}</span>
             </button>
-            {friends.map((x) => (
+            {soNanicos(friends).map((x) => (
               <button key={x.id} type="button" className="tile" data-id={x.id} aria-pressed={on(x.id)} onClick={() => tocar(x.id)}>
                 <Avatar f={x} size="lg" />
                 <span>{x.name}</span>
               </button>
             ))}
-            {!friends.length && (
+            {!soNanicos(friends).length && (
               <span className="status" style={{ gridColumn: "1/-1", padding: 6 }}>
                 Nenhum nanico cadastrado ainda.
               </span>

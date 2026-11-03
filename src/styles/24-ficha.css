@@ -17,6 +17,7 @@
 .ficha-selo .hall-moeda{width:18px;height:18px;font-size:9px}
 button.ficha-selo{cursor:pointer}
 button.ficha-selo:hover{border-color:var(--accent)}
+.ficha-selo.amigo{padding:3px 10px;background:color-mix(in srgb,var(--mint) 22%,transparent);border-color:transparent;color:var(--ink);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em}
 .ficha-selo.eu{padding:3px 10px;background:color-mix(in srgb,var(--accent) 20%,transparent);border-color:transparent;color:var(--accent-text);text-transform:uppercase;letter-spacing:.06em;font-size:10.5px}
 .ficha-fechar{margin-left:auto;flex:none;display:grid;place-items:center;width:40px;height:40px;border:1px solid var(--line);border-radius:50%;background:none;color:var(--ink);cursor:pointer}
 .ficha-fechar:hover{border-color:var(--accent)}

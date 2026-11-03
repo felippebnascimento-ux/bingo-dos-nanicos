@@ -102,7 +102,8 @@ type Alvo = { fid: string; puuid: string; regiao: string };
 
 /** Nanicos com op.gg e a conta Riot (o PUUID fica guardado em riot_contas, como na riot-ao-vivo). */
 async function alvos(admin: any): Promise<Alvo[]> {
-  const { data: amigos } = await admin.from("friends").select("id,opgg").not("opgg", "is", null);
+  /* os troféus são só dos 14: amigo dos nanicos não entra (seção 39) */
+  const { data: amigos } = await admin.from("friends").select("id,opgg").eq("tipo", "nanico").not("opgg", "is", null);
   const { data: contas } = await admin.from("riot_contas").select("friend_id,riot_id,puuid");
   const porFid = new Map<string, any>((contas ?? []).map((c: any) => [c.friend_id, c]));
   const out: Alvo[] = [];
@@ -190,7 +191,7 @@ Deno.serve(async (req: Request) => {
     // só nanicos logados
     const { data: u, error: eu } = await admin.auth.getUser(token);
     if (eu || !u?.user) return json(req, { erro: "Faça login de novo." }, 401);
-    const { data: eu2 } = await admin.from("friends").select("id").eq("user_id", u.user.id).maybeSingle();
+    const { data: eu2 } = await admin.from("friends").select("id").eq("user_id", u.user.id).in("tipo", ["nanico", "amigo"]).maybeSingle();
     if (!eu2) return json(req, { erro: "Conta sem nanico." }, 403);
 
     const { semana, inicio, fim } = semanaAnterior(new Date());

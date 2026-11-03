@@ -14,13 +14,19 @@ const CORPO_W: Readonly<Record<number, number>> = {
 };
 
 /** Amigos dos nanicos (não são um dos 14): nome → arte em `public/arte/amigos/` e boneco em `public/arte/bonecos/`.
- *  Até a fase 30 separar o amigo no banco, o login dele entra como nanico; o site já mostra ele na aba Amigos. */
+ *  Quem é amigo de verdade diz o `friends.tipo` (seção 39); o nome só vale enquanto o SQL não rodou. */
 export const AMIGOS: Readonly<Record<string, { nome: string; arte: string; w: number; boneco: string }>> = {
   lightzin: { nome: "Lightzin", arte: "lightzin", w: 159, boneco: "lightzin.webp" },
 };
 
 /** É um amigo dos nanicos (e não um dos 14)? */
-export const ehAmigo = (f: Rosto | null | undefined) => !!f && !!AMIGOS[norm(f.name)];
+export const ehAmigo = (f: Rosto | null | undefined) => !!f && (f.tipo ? f.tipo === "amigo" : !!AMIGOS[norm(f.name)]);
+/** Um dos 14 (nem amigo, nem inativo). */
+export const ehNanico = (f: Rosto | null | undefined) => !!f && f.tipo !== "inativo" && !ehAmigo(f);
+/** Só os 14, para tudo que é deles: nanicadas, escalação, rodízio, atributos, troféus. */
+export const soNanicos = <T extends Rosto>(l: readonly T[]) => l.filter(ehNanico);
+/** Os amigos dos nanicos que estão valendo (sem os inativos). */
+export const soAmigos = <T extends Rosto>(l: readonly T[]) => l.filter(ehAmigo);
 
 export type Arte = { face: string; full: string; w: number; h: number };
 

@@ -462,6 +462,13 @@ export const CHANGELOG: EntradaLog[] = [
       "Aba Amigos: os amigos dos nanicos têm uma aba só deles. O primeiro é o Lightzin, que já tem arte e boneco no K-FOFO",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Amigos dos nanicos: o Lightzin chegou! Amigos têm login, boneco no K-FOFO, moedas e truco, e uma aba só deles",
+      "Na aba Amigos, quem está online e de quem cada um é amigo; nos membros, uma categoria Amigos; no ranking, a etiqueta amigo",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

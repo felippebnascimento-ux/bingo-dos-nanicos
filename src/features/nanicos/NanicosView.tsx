@@ -4,7 +4,7 @@ import { TituloNanico } from "@/features/loja/Itens";
 import { ChamaNome } from "@/features/ficha/NoSitio";
 import { Avatar } from "@/components/ui/Avatar";
 import { fecharSeletores } from "@/components/ui/FriendPicker";
-import { artOf, ehAmigo } from "@/lib/dados/nanicos";
+import { artOf, soNanicos } from "@/lib/dados/nanicos";
 import { setApp, useApp } from "@/lib/store";
 import { rolarAte } from "@/lib/util";
 
@@ -18,7 +18,7 @@ export function verNanicadas(fid: string) {
 
 export function NanicosView({ hidden }: { hidden: boolean }) {
   const todos = useApp((s) => s.friends);
-  const friends = todos.filter((f) => !ehAmigo(f));
+  const friends = soNanicos(todos);
   const phrases = useApp((s) => s.phrases);
   return (
     <section id="view-nanicos" className="inner" hidden={hidden}>

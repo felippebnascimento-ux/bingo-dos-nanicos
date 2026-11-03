@@ -7,6 +7,7 @@ import { useSure } from "@/components/ui/useSure";
 import { champsOf } from "@/lib/bingo";
 import { api, loadPhrases, type NovaNanicada } from "@/lib/dados";
 import { CHAMPS } from "@/lib/dados/campeoes";
+import { soNanicos } from "@/lib/dados/nanicos";
 import { friendName, friendOf, getApp, setApp, useApp } from "@/lib/store";
 import { errMsg } from "@/lib/supabase";
 import type { Friend, Modo, Phrase } from "@/lib/tipos";
@@ -224,7 +225,7 @@ export function NanicadasView({ hidden }: { hidden: boolean }) {
   const chips: [string, string, Friend | null][] = [
     ["todas", "Todas", null],
     ["gen", "Genéricas", null],
-    ...friends.map((f): [string, string, Friend] => [f.id, f.name, f]),
+    ...soNanicos(friends).map((f): [string, string, Friend] => [f.id, f.name, f]),
   ];
 
   return (

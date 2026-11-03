@@ -105,6 +105,10 @@ body.sem-membros .membros{display:none}
 .membros{min-width:0;display:grid;align-content:start;gap:6px;padding:28px 12px 22px;border-left:1px solid var(--line);background:color-mix(in srgb,var(--surface) 94%,transparent);position:relative;z-index:5}
 .membros h3{display:flex;align-items:center;gap:6px;margin:10px 0 2px;padding-inline:6px;font:700 11px var(--display);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .membros h3:first-of-type{margin-top:0}
+.membros-cat{display:flex;align-items:center;gap:6px;padding:0;border:0;background:none;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer}
+.membros-cat svg{transition:transform .15s}
+.membros-cat[aria-expanded="false"] svg{transform:rotate(-90deg)}
+@media (prefers-reduced-motion:reduce){.membros-cat svg{transition:none}}
 .membros .people{max-height:none;overflow:visible}
 .membros li[role="button"]{cursor:pointer}
 .membros li[role="button"]:hover{background:var(--surface-2)}

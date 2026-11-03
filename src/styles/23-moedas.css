@@ -58,3 +58,4 @@
 .ranking-subiu{margin-left:6px;font:600 11px var(--body);font-style:normal;color:var(--mint);animation:ranking-subiu 3s ease-out forwards}
 @keyframes ranking-subiu{0%,80%{opacity:1}100%{opacity:0}}
 @media (prefers-reduced-motion:reduce){.ranking-subiu{animation:none}}
+.ranking-amigo{margin-left:6px;padding:0 6px;border-radius:99px;background:color-mix(in srgb,var(--mint) 22%,transparent);font:700 9.5px var(--display);font-style:normal;text-transform:uppercase;letter-spacing:.05em;color:var(--ink)}
