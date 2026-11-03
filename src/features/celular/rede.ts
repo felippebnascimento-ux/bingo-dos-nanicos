@@ -215,12 +215,13 @@ export async function lerQuemViu(s: Story) {
 }
 
 /** Posta um story (foto ou texto sobre uma cor). Antes, apaga os meus vencidos (foto e linha). */
-export async function postarStory(arquivo: File | null, texto: string, fundo: Fundo): Promise<boolean> {
+/** Posta o story; devolve o id dele (ou null se não deu). */
+export async function postarStory(arquivo: File | null, texto: string, fundo: Fundo): Promise<number | null> {
   const uid = getApp().myUid;
-  if (!uid || useRede.getState().enviando) return false;
+  if (!uid || useRede.getState().enviando) return null;
   if (!arquivo && !texto.trim()) {
     toast("Escolha uma foto ou escreva o texto do story.");
-    return false;
+    return null;
   }
   useRede.setState({ enviando: true });
   avisarIlha("Postando o seu story…", uid, "envio", 0);
@@ -238,16 +239,16 @@ export async function postarStory(arquivo: File | null, texto: string, fundo: Fu
       const up = await sb().storage.from("midias").upload(midia, blob, { contentType: ext === "gif" ? "image/gif" : "image/webp", upsert: false });
       if (up.error) throw up.error;
     }
-    const { error } = await sb().from("rede_stories").insert({ midia, texto: texto.trim().slice(0, 120), fundo });
+    const { data, error } = await sb().from("rede_stories").insert({ midia, texto: texto.trim().slice(0, 120), fundo }).select("id").single();
     if (error) throw error;
     avisarIlha("Seu story foi publicado", uid, "story");
     void carregarStories();
-    return true;
+    return (data as { id: number } | null)?.id ?? 0;
   } catch (e) {
     if (midia) void sb().storage.from("midias").remove([midia]);
     fecharIlha();
     toast(e instanceof Error && !("code" in e) ? e.message : motivo(e, "Não deu para postar o story. Confira a internet."));
-    return false;
+    return null;
   } finally {
     useRede.setState({ enviando: false });
   }

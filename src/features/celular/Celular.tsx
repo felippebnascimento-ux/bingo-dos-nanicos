@@ -12,16 +12,17 @@ import { Avatar } from "@/components/ui/Avatar";
 import { useSure } from "@/components/ui/useSure";
 import { useMinhaMochila } from "@/features/loja/lojaDados";
 import { Imagem } from "@/features/midias/Imagem";
+import { EditorStory } from "./EditorStory";
 import { setApp, useApp } from "@/lib/store";
 import { toast } from "@/lib/toast";
 import { reduzMovimento } from "@/lib/util";
 import {
-  agrupar, andar, conversas, daConversa, formatoInicial, FUNDOS, inicioDoGrupo, PROPORCAO, recorte, resumo, STORY_MS, tempoCurto,
-  type Formato, type Fundo, type Grupo, type Mensagem, type Story,
+  agrupar, andar, conversas, daConversa, formatoInicial, inicioDoGrupo, PROPORCAO, recorte, resumo, STORY_MS, tempoCurto,
+  type Formato, type Grupo, type Mensagem, type Story,
 } from "./insta";
 import {
   abrirCelular, abrirConversa, apagarComentario, apagarPost, apagarStory, comentar, curtir, enviarMensagem, fecharCelular, iniciarRede,
-  lerQuemViu, marcarVisto, maisPostagens, postar, postarStory, tocarIlha, useRede, verPerfil, type Comentario, type Post,
+  lerQuemViu, marcarVisto, maisPostagens, postar, tocarIlha, useRede, verPerfil, type Comentario, type Post,
 } from "./rede";
 
 /** Tenho o celular na mochila? Também avisa a rede quando muda (comprou agora). */
@@ -520,9 +521,14 @@ function Perfil({ userId, nav }: { userId: string; nav: Nav }) {
           >
             Ver ficha
           </button>
-          {userId === eu && (
+          {userId === eu ? (
             <button type="button" className="ig-botao-cinza" onClick={() => nav.ir("novo")}>
               Nova publicação
+            </button>
+          ) : (
+            /* como no Instagram: do perfil de alguém, direto para a conversa */
+            <button type="button" className="ig-botao-cinza" onClick={() => nav.conversa(userId)}>
+              Mensagem
             </button>
           )}
         </div>
@@ -656,22 +662,22 @@ function Novo({ nav, modoInicial }: { nav: Nav; modoInicial: "post" | "story" })
   const [modo, setModo] = useState<"post" | "story">(modoInicial);
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [texto, setTexto] = useState("");
-  const [fundo, setFundo] = useState<Fundo>("roxo");
   const input = useRef<HTMLInputElement>(null);
   const corte = useRef<Corte | null>(null);
+  /* o story tem o editor dele, como no Instagram (texto, desenho, figurinhas) */
+  if (modo === "story") return <EditorStory fechar={() => nav.ir("inicio")} postou={() => nav.ir("inicio")} irParaPost={() => setModo("post")} />;
   const publicar = async () => {
     /* a foto sobe já cortada no formato escolhido */
     const foto = arquivo && corte.current ? await corte.current.cortar() : arquivo;
-    const ok = modo === "post" ? await postar(texto, foto) : await postarStory(foto, texto, fundo);
-    if (ok) nav.ir("inicio");
+    if (await postar(texto, foto)) nav.ir("inicio");
   };
   return (
-    <div className={"ig-novo " + modo}>
+    <div className="ig-novo post">
       <header className="ig-topo">
         <button type="button" className="ig-sem-botao" aria-label="Cancelar" onClick={() => nav.ir("inicio")}>
           <IcX />
         </button>
-        <b className="ig-titulo">{modo === "post" ? "Nova publicação" : "Novo story"}</b>
+        <b className="ig-titulo">Nova publicação</b>
         <span className="ig-espaco" />
         <button type="button" className="ig-sem-botao ig-azul" disabled={enviando || (!arquivo && !texto.trim())} onClick={() => void publicar()}>
           {enviando ? "Enviando…" : "Compartilhar"}
@@ -679,31 +685,21 @@ function Novo({ nav, modoInicial }: { nav: Nav; modoInicial: "post" | "story" })
       </header>
       <input ref={input} type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onChange={(e) => setArquivo(e.target.files?.[0] ?? null)} />
       {arquivo ? (
-        <Cortador key={arquivo.name + arquivo.size + modo} arquivo={arquivo} story={modo === "story"} corte={corte} />
+        <Cortador key={arquivo.name + arquivo.size} arquivo={arquivo} story={false} corte={corte} />
       ) : (
-        <div className={"ig-novo-previa" + (modo === "story" ? " story f-" + fundo : "")} onClick={() => input.current?.click()}>
-          {modo === "story" && texto.trim() ? null : (
-            <span className="ig-novo-vazio">
-              <IcFoto />
-              Toque para escolher uma foto
-            </span>
-          )}
-          {modo === "story" && texto.trim() && <p className="ig-story-legenda">{texto}</p>}
-        </div>
-      )}
-      {modo === "story" && !arquivo && (
-        <div className="ig-fundos" role="radiogroup" aria-label="Cor de fundo">
-          {FUNDOS.map((c) => (
-            <button key={c} type="button" role="radio" aria-checked={fundo === c} aria-label={c} className={"ig-fundo f-" + c + (fundo === c ? " on" : "")} onClick={() => setFundo(c)} />
-          ))}
+        <div className="ig-novo-previa" onClick={() => input.current?.click()}>
+          <span className="ig-novo-vazio">
+            <IcFoto />
+            Toque para escolher uma foto
+          </span>
         </div>
       )}
       <textarea
         className="ig-novo-texto"
-        aria-label={modo === "post" ? "Legenda" : "Texto do story"}
-        maxLength={modo === "post" ? 500 : 120}
+        aria-label="Legenda"
+        maxLength={500}
         rows={3}
-        placeholder={modo === "post" ? "Escreva uma legenda…" : "Escreva algo no story…"}
+        placeholder="Escreva uma legenda…"
         value={texto}
         onChange={(e) => setTexto(e.target.value)}
       />
@@ -738,6 +734,8 @@ function VerStories({ grupos, inicio, fechar }: { grupos: Grupo[]; inicio: { g: 
   /* respondendo: o story para de andar enquanto a pessoa digita */
   const [resposta, setResposta] = useState("");
   const [digitando, setDigitando] = useState(false);
+  /* reação que voou (o emoji grande subindo), como no Instagram */
+  const [voando, setVoando] = useState<{ id: number; emoji: string } | null>(null);
   const { sure, pedir } = useSure(3000);
   const grupo = grupos[pos.g];
   const story: Story | undefined = grupo?.stories[pos.s];
@@ -757,6 +755,24 @@ function VerStories({ grupos, inicio, fechar }: { grupos: Grupo[]; inicio: { g: 
     if (!n) return fechar();
     setPos(n);
   };
+  /* teclado: setas passam, Esc fecha, espaço pausa (fora do campo de resposta) */
+  useEffect(() => {
+    const tecla = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement).closest?.("input, textarea")) return;
+      if (e.key === "ArrowRight") ir(1);
+      else if (e.key === "ArrowLeft") ir(-1);
+      else if (e.key === "Escape") fechar();
+      else if (e.key === " ") {
+        e.preventDefault();
+        setPausa((p) => !p);
+      } else return;
+      /* o Esc fecha só o story, não o celular inteiro */
+      e.stopImmediatePropagation();
+    };
+    window.addEventListener("keydown", tecla, true);
+    return () => window.removeEventListener("keydown", tecla, true);
+  });
+
   useEffect(() => {
     if (pausa || lista || digitando || !story) return;
     const t = setTimeout(() => {
@@ -769,8 +785,13 @@ function VerStories({ grupos, inicio, fechar }: { grupos: Grupo[]; inicio: { g: 
 
   if (!grupo || !story) return null;
   const viu = quemViu[story.id] ?? [];
+  /* reação rápida: vai pelo Direct como resposta ao story */
+  const reagir = (emoji: string) => {
+    setVoando({ id: story.id * 100 + Math.floor(performance.now() % 100), emoji });
+    void enviarMensagem(grupo.userId, emoji, { storyId: story.id }).then((ok) => ok && toast(`Reação enviada para ${f?.name ?? "o nanico"}`));
+  };
   return (
-    <div className="ig-story-tela" role="dialog" aria-label={`Story de ${f?.name ?? "alguém"}`}>
+    <div className={"ig-story-tela" + (pausa ? " segurando" : "")} role="dialog" aria-label={`Story de ${f?.name ?? "alguém"}`}>
       <div className="ig-barras" aria-hidden="true">
         {grupo.stories.map((s, k) => (
           <span key={s.id} className={k < pos.s ? "cheia" : ""}>
@@ -795,6 +816,11 @@ function VerStories({ grupos, inicio, fechar }: { grupos: Grupo[]; inicio: { g: 
       >
         {story.midia ? <Imagem caminho={story.midia} alt={story.texto || `Story de ${f?.name ?? "alguém"}`} cheia /> : null}
         {story.texto && <p className={"ig-story-legenda" + (story.midia ? " sobre-foto" : "")}>{story.texto}</p>}
+        {voando && (
+          <span key={voando.id} className="ig-story-voa" aria-hidden="true" onAnimationEnd={() => setVoando(null)}>
+            {voando.emoji}
+          </span>
+        )}
         <button type="button" className="ig-story-lado esq" aria-label="Story anterior" onClick={() => ir(-1)} />
         <button type="button" className="ig-story-lado dir" aria-label="Próximo story" onClick={() => ir(1)} />
       </div>
@@ -837,7 +863,21 @@ function VerStories({ grupos, inicio, fechar }: { grupos: Grupo[]; inicio: { g: 
               Enviar
             </button>
           ) : (
-            <IcCoracao />
+            <>
+              <button type="button" className="ig-sem-botao" aria-label="Curtir o story" onClick={() => reagir("❤️")}>
+                <IcCoracao />
+              </button>
+            </>
+          )}
+          {/* reações rápidas, como no Instagram: aparecem ao tocar no campo */}
+          {digitando && !resposta.trim() && (
+            <div className="ig-story-reacoes" role="group" aria-label="Reações rápidas">
+              {["😂", "😮", "😍", "😢", "👏", "🔥", "🎉", "💯"].map((em) => (
+                <button key={em} type="button" aria-label={`Reagir com ${em}`} onPointerDown={(e) => e.preventDefault()} onClick={() => reagir(em)}>
+                  {em}
+                </button>
+              ))}
+            </div>
           )}
         </form>
       )}

@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { createPortal } from "react-dom";
 import {
   IcAjustes,
+  IcSemSom,
   IcCamera,
   IcDesligar,
   IcFone,
@@ -290,42 +291,70 @@ function MinhaTransmissao() {
   useLive((s) => s.v);
   const somPc = useLive((s) => s.somPc);
   const meu = useApp((s) => s.myLiveSid);
+  /* a prévia da minha tela começa aberta; esconder fica lembrado */
+  const [grande, setGrandeEstado] = useState(() => local.get("vz-previa") !== "0");
+  const setGrande = (f: (g: boolean) => boolean) =>
+    setGrandeEstado((g) => {
+      const n = f(g);
+      local.set("vz-previa", n ? "1" : "0");
+      return n;
+    });
   if (!meu || !LIVE.myStream) return null;
   const n = [...LIVE.viewers.values()].filter((v) => v.pc.connectionState === "connected").length;
   const st = LIVE.myStream.getVideoTracks()[0]?.getSettings();
-  const qual = [st?.height ? `${st.height}p` : "", st?.frameRate ? `${Math.round(st.frameRate)} fps` : "", LIVE.hasAudio ? "com som" : "sem som"].filter(Boolean).join(" · ");
+  const qual = [st?.height ? `${st.height}p` : "", st?.frameRate ? `${Math.round(st.frameRate)} fps` : ""].filter(Boolean).join(" · ");
+  const semSom = somPc && !LIVE.hasAudio;
+  /* como no Discord: uma linha com a miniatura, o que está indo e quem assiste; a prévia grande só se pedir */
   return (
     <div className="vz-live">
-      <div className="vz-previa">
-        <VideoMudo stream={LIVE.myStream} />
-        <span className="live-pill">AO VIVO</span>
-        <span className="vz-olhos" title={n === 1 ? "1 pessoa assistindo" : `${n} pessoas assistindo`}>
-          <IcOlho tam={13} />
-          {n}
-        </span>
-      </div>
-      <div className="vz-live-linha">
-        <span className="vz-live-txt">
-          <b>Transmitindo · {NOME_SUPERFICIE[LIVE.surface] ?? "Tela"}</b>
-          <small>{qual}</small>
-        </span>
+      <div className="vz-live-cab">
+        {/* tocar no texto mostra (ou esconde) a prévia da sua tela */}
+        <button
+          type="button"
+          className="vz-live-txt"
+          aria-expanded={grande}
+          aria-label={`Ao vivo, ${NOME_SUPERFICIE[LIVE.surface] ?? "tela"}, ${n} assistindo. ${grande ? "Esconder" : "Ver"} a prévia`}
+          title={grande ? "Esconder a prévia" : "Ver a prévia"}
+          onClick={() => setGrande((g) => !g)}
+        >
+          <b>
+            <span className="vz-ponto" aria-hidden="true" />
+            Ao vivo
+            <span className="vz-olhos-txt" title={n === 1 ? "1 pessoa assistindo" : `${n} pessoas assistindo`}>
+              <IcOlho tam={12} />
+              {n}
+            </span>
+          </b>
+          <small>
+            {NOME_SUPERFICIE[LIVE.surface] ?? "Tela"}
+            {qual && ` · ${qual}`}
+          </small>
+        </button>
         <button type="button" className="vz-ib" aria-label="Trocar a qualidade da transmissão" title="Trocar a qualidade" onClick={() => setLive({ janelaTela: true })}>
           <IcAjustes tam={18} />
         </button>
-        <button type="button" className="vz-parar" onClick={stopLive}>
-          Parar
+        <button type="button" className="vz-ib vz-parar-ic" aria-label="Parar a transmissão" title="Parar a transmissão" onClick={stopLive}>
+          <IcTelaParar />
         </button>
       </div>
-      {/* pediu o som do PC e ele não veio: diz o que fazer e deixa transmitir de novo */}
-      {somPc && !LIVE.hasAudio && (
+      {grande && (
+        <div className="vz-previa">
+          <VideoMudo stream={LIVE.myStream} />
+        </div>
+      )}
+      {/* pediu o som do PC e ele não veio: uma linha só, e o "por quê" abre ao tocar */}
+      {semSom && (
         <div className="vz-semsom">
           <details>
-            <summary>Sem o som do PC</summary>
+            <summary>
+              <IcSemSom tam={14} />
+              Sem o som do PC
+            </summary>
             <p>
               <SemSom />
             </p>
           </details>
-          <button type="button" className="btn soft sm" onClick={() => setLive({ janelaTela: true })}>
+          <button type="button" className="vz-link" onClick={() => setLive({ janelaTela: true })}>
             Tentar com som
           </button>
         </div>
@@ -333,6 +362,14 @@ function MinhaTransmissao() {
     </div>
   );
 }
+
+/* tela com um X: parar a transmissão */
+const IcTelaParar = () => (
+  <svg viewBox="0 0 24 24" width={19} height={19} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="2.5" y="4" width="19" height="13" rx="2" />
+    <path d="M8 21h8M12 17v4M9.5 8.5l5 5M14.5 8.5l-5 5" />
+  </svg>
+);
 
 /** Botão da tela: transmitindo, para; senão abre a janela de escolher a transmissão. */
 export function botaoTela() {
@@ -386,8 +423,8 @@ export function VozPainel() {
   const nCams = activeCams().length;
   return (
     <>
-      {live && <MinhaTransmissao />}
       <div className="vz on">
+        {live && <MinhaTransmissao />}
         <div className="vz-topo">
           <Sinal />
           <span className="vz-info">
