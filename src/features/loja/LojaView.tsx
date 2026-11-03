@@ -4,9 +4,9 @@
  * uma prévia desenhada de cada item, e a mochila (equipar, usar no Sítio). Comprar pede o segundo toque,
  * porque gasta moedas. Quem confere preço, saldo e repetição é o banco.
  */
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
-import { IcVoltar } from "@/components/ui/icones";
+import { IcFechar, IcVoltar } from "@/components/ui/icones";
 import { useSure } from "@/components/ui/useSure";
 import { QuartoPrevia, type EquipQuarto } from "@/features/ficha/Quarto";
 import { useCarteira } from "@/lib/carteira";
@@ -14,7 +14,7 @@ import { formatarMoedas } from "@/lib/moedas";
 import { friendOf, setApp, useApp } from "@/lib/store";
 import { DesenhoItem } from "./Itens";
 import { abrirCelular } from "@/features/celular/rede";
-import { acumula, doGrupo, equipavel, GRUPOS, NOME_ESPACO, podeComprar, progressoCompra, type ItemLoja } from "./loja";
+import { acumula, doGrupo, equipavel, GRUPOS, NOME_ESPACO, NOME_RARIDADE, podeComprar, progressoCompra, raridade, type ItemLoja } from "./loja";
 import { comprar, equipar, useLoja, useMinhaMochila, usar } from "./lojaDados";
 
 const FOCO: Partial<Record<ItemLoja["espaco"], "parede" | "chao" | "mesa" | "poster" | "cadeira" | "planta">> = {
@@ -46,18 +46,67 @@ export function Previa({ it }: { it: ItemLoja }) {
   );
 }
 
-function CartaoItem({ it, tenho, equipado, saldo }: { it: ItemLoja; tenho: number; equipado: boolean; saldo: number | null }) {
+type Estado = { tenho: number; equipado: boolean; saldo: number | null };
+
+/** Cartão da vitrine: tocar na prévia ou no nome abre o detalhe; a raridade (pelo preço) pinta a borda. */
+function CartaoItem({ it, tenho, equipado, saldo, abrir }: { it: ItemLoja; abrir: () => void } & Estado) {
+  const r = raridade(it.preco);
+  return (
+    <article className={`block loja-item rar-${r}` + (equipado ? " equipado" : "")}>
+      <button type="button" className="loja-previa" aria-label={`Ver ${it.nome}`} onClick={abrir}>
+        <Previa it={it} />
+        <span className="loja-rar">{NOME_RARIDADE[r]}</span>
+        {tenho > 0 && acumula(it.espaco) && <span className="loja-qtd">×{tenho}</span>}
+        {tenho > 0 && !acumula(it.espaco) && <span className="loja-qtd">{equipado ? "equipado" : "na mochila"}</span>}
+      </button>
+      <h3>{it.nome}</h3>
+      <p className="hint">{it.descricao}</p>
+      <AcoesItem it={it} tenho={tenho} equipado={equipado} saldo={saldo} />
+    </article>
+  );
+}
+
+/** Janela com o item grande, a descrição e as mesmas ações do cartão. */
+function ItemDetalhe({ it, fechar, ...estado }: { it: ItemLoja; fechar: () => void } & Estado) {
+  const r = raridade(it.preco);
+  const fecharRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    fecharRef.current?.focus();
+  }, []);
+  return (
+    <div
+      className="gate carteira-gate"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="itemTitulo"
+      onKeyDown={(e) => e.key === "Escape" && fechar()}
+      onClick={(e) => e.target === e.currentTarget && fechar()}
+    >
+      <div className={`carteira-painel loja-detalhe rar-${r}`}>
+        <div className="loja-previa grande">
+          <Previa it={it} />
+          <span className="loja-rar">{NOME_RARIDADE[r]}</span>
+          <button className="ficha-fechar" type="button" ref={fecharRef} aria-label="Fechar" onClick={fechar}>
+            <IcFechar />
+          </button>
+        </div>
+        <div className="loja-detalhe-tx">
+          <small>{NOME_ESPACO[it.espaco]}</small>
+          <h2 id="itemTitulo">{it.nome}</h2>
+          <p>{it.descricao}</p>
+        </div>
+        <AcoesItem it={it} {...estado} />
+      </div>
+    </div>
+  );
+}
+
+function AcoesItem({ it, tenho, equipado, saldo }: { it: ItemLoja } & Estado) {
   const { sure, pedir } = useSure();
   const ocupado = useLoja((s) => s.ocupado);
   const pode = podeComprar(it, tenho, saldo);
   return (
-    <article className={"block loja-item" + (equipado ? " equipado" : "")}>
-      <div className="loja-previa">
-        <Previa it={it} />
-        {tenho > 0 && acumula(it.espaco) && <span className="loja-qtd">×{tenho}</span>}
-      </div>
-      <h3>{it.nome}</h3>
-      <p className="hint">{it.descricao}</p>
+    <>
       {it.espaco === "celular" && tenho === 0 && saldo !== null && saldo < it.preco && (
         <div className="loja-meta">
           <span className="missao-barra" role="progressbar" aria-valuemin={0} aria-valuemax={it.preco} aria-valuenow={saldo} aria-label="Quanto já juntei">
@@ -95,7 +144,7 @@ function CartaoItem({ it, tenho, equipado, saldo }: { it: ItemLoja; tenho: numbe
           <span className="status">{pode.motivo}</span>
         )}
       </div>
-    </article>
+    </>
   );
 }
 
@@ -158,8 +207,12 @@ export function LojaView({ hidden }: { hidden: boolean }) {
   const saldo = useCarteira((s) => s.carteira?.saldo ?? null);
   const minhas = useMinhaMochila();
   const [aba, setAba] = useState<"vitrine" | "mochila">("vitrine");
+  const [filtro, setFiltro] = useState("tudo");
+  const [detalhe, setDetalhe] = useState<string | null>(null);
   const qtd = (id: string) => minhas.find((l) => l.itemId === id)?.qtd ?? 0;
   const eq = (id: string) => !!minhas.find((l) => l.itemId === id)?.equipado;
+  const aberto = detalhe ? itens?.find((i) => i.id === detalhe) : undefined;
+  const grupos = itens ? GRUPOS.filter((g) => doGrupo(itens, g.espacos).length) : [];
 
   return (
     <section id="view-loja" className="inner" hidden={hidden}>
@@ -189,21 +242,29 @@ export function LojaView({ hidden }: { hidden: boolean }) {
         </button>
       </div>
       {!itens && <p className="hint">Abrindo a loja…</p>}
+      {itens && aba === "vitrine" && (
+        <div className="loja-filtros" role="radiogroup" aria-label="Filtrar a vitrine">
+          {[{ id: "tudo", curto: "Tudo" }, ...grupos].map((g) => (
+            <button key={g.id} type="button" role="radio" aria-checked={filtro === g.id} className={filtro === g.id ? "on" : undefined} onClick={() => setFiltro(g.id)}>
+              {g.curto}
+            </button>
+          ))}
+        </div>
+      )}
       {itens && aba === "vitrine" &&
-        GRUPOS.map((g) => {
-          const lista = doGrupo(itens, g.espacos);
-          if (!lista.length) return null;
-          return (
+        grupos
+          .filter((g) => filtro === "tudo" || filtro === g.id)
+          .map((g) => (
             <section key={g.id} className="loja-grupo" aria-labelledby={"loja-" + g.id}>
               <h2 id={"loja-" + g.id}>{g.nome}</h2>
               <div className="loja-grade">
-                {lista.map((it) => (
-                  <CartaoItem key={it.id} it={it} tenho={qtd(it.id)} equipado={eq(it.id)} saldo={saldo} />
+                {doGrupo(itens, g.espacos).map((it) => (
+                  <CartaoItem key={it.id} it={it} tenho={qtd(it.id)} equipado={eq(it.id)} saldo={saldo} abrir={() => setDetalhe(it.id)} />
                 ))}
               </div>
             </section>
-          );
-        })}
+          ))}
+      {aberto && <ItemDetalhe it={aberto} tenho={qtd(aberto.id)} equipado={eq(aberto.id)} saldo={saldo} fechar={() => setDetalhe(null)} />}
       {itens && aba === "mochila" && (
         <section className="block">
           <MochilaLista />
