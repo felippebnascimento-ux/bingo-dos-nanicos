@@ -2,17 +2,20 @@
  * Loja e mochila (puro e testado): os espaços, a vitrine agrupada, o que cada um tem equipado e se dá
  * para comprar. Só serve para MOSTRAR: quem confere preço, saldo e repetição é o banco (comprar(), seção 15).
  */
-export type Espaco = "cadeira" | "mesa" | "tapete" | "poster" | "planta" | "parede" | "luz" | "titulo" | "moldura" | "escudo" | "consumivel" | "celular" | "cabeca";
+export type Espaco = "cadeira" | "mesa" | "tapete" | "poster" | "planta" | "parede" | "luz" | "titulo" | "moldura" | "escudo" | "consumivel" | "celular" | "cabeca" | "quarto" | "movel";
 export type Anim = "fumar" | "charuto" | "beber" | "tremer" | "tonto";
-export type ItemLoja = { id: string; nome: string; descricao: string; espaco: Espaco; preco: number; dados: { cor?: string; texto?: string; anim?: Anim }; ordem: number };
+export type ItemLoja = { id: string; nome: string; descricao: string; espaco: Espaco; preco: number; dados: { cor?: string; texto?: string; anim?: Anim; w?: number; d?: number; desenho?: string; tamanho?: number }; ordem: number };
 export type LinhaMochila = { userId: string; itemId: string; qtd: number; equipado: boolean };
 
 /** Os grupos da vitrine, na ordem em que aparecem (`curto` é o filtro no topo). */
 export const GRUPOS: readonly { id: string; nome: string; curto: string; espacos: readonly Espaco[] }[] = [
+  /* fase 34: o quarto próprio no topo, e os móveis logo depois das coisas do quarto fixo */
+  { id: "quarto-proprio", nome: "Quarto próprio", curto: "Quarto próprio", espacos: ["quarto"] },
   { id: "celular", nome: "A meta grande", curto: "Celular", espacos: ["celular"] },
   { id: "consumivel", nome: "Para usar no K-FOFO", curto: "Consumíveis", espacos: ["consumivel"] },
   { id: "boneco", nome: "Para o boneco", curto: "Boneco", espacos: ["cabeca"] },
   { id: "quarto", nome: "Para o quarto", curto: "Quarto", espacos: ["cadeira", "mesa", "tapete", "poster", "planta", "parede", "luz"] },
+  { id: "moveis", nome: "Móveis do quarto", curto: "Móveis", espacos: ["movel"] },
   { id: "visual", nome: "Títulos e molduras", curto: "Visual", espacos: ["titulo", "moldura"] },
   { id: "escudo", nome: "Proteção", curto: "Proteção", espacos: ["escudo"] },
 ];
@@ -36,11 +39,16 @@ export const NOME_ESPACO: Readonly<Record<Espaco, string>> = {
   consumivel: "Consumível",
   celular: "Celular",
   cabeca: "Cabeça",
+  quarto: "Quarto",
+  movel: "Móvel",
 };
 
 /** Escudo e consumíveis acumulam; o resto só se compra uma vez e se equipa (menos o celular, que se abre). */
 export const acumula = (e: Espaco) => e === "escudo" || e === "consumivel";
-export const equipavel = (e: Espaco) => !acumula(e) && e !== "celular";
+export const equipavel = (e: Espaco) => !acumula(e) && e !== "celular" && e !== "quarto" && e !== "movel";
+/** Vai no chão do quarto próprio (os móveis e os itens de piso antigos, que têm w e d); até 4 de cada. */
+export const posicionavel = (it: Pick<ItemLoja, "espaco" | "dados">) => it.espaco === "movel" || typeof it.dados.w === "number";
+export const MAX_MOVEL = 4;
 
 /** Quanto já juntei para um item caro (0 a 1) e quanto falta, para a barra da loja. */
 export function progressoCompra(preco: number, saldo: number | null) {
@@ -68,6 +76,10 @@ export function lerItem(r: Record<string, unknown>): ItemLoja | null {
       cor: typeof d.cor === "string" ? d.cor.slice(0, 20) : undefined,
       texto: typeof d.texto === "string" ? d.texto.slice(0, 40) : undefined,
       anim: typeof d.anim === "string" && ANIMS.has(d.anim) ? (d.anim as Anim) : undefined,
+      w: d.w === 1 || d.w === 2 ? d.w : undefined,
+      d: d.d === 1 || d.d === 2 ? d.d : undefined,
+      desenho: typeof d.desenho === "string" ? d.desenho.slice(0, 20) : undefined,
+      tamanho: d.tamanho === 6 || d.tamanho === 9 || d.tamanho === 12 ? d.tamanho : undefined,
     },
     ordem: typeof r.ordem === "number" ? r.ordem : 0,
   };
@@ -90,7 +102,9 @@ export function equipados(linhas: readonly LinhaMochila[], itens: readonly ItemL
 
 /** Dá para comprar? Devolve o motivo para o botão (o banco confere de novo). */
 export function podeComprar(it: ItemLoja, tenho: number, saldo: number | null): { ok: boolean; motivo?: string } {
-  if (!acumula(it.espaco) && tenho > 0) return { ok: false, motivo: "Na mochila" };
+  if (posicionavel(it)) {
+    if (tenho >= MAX_MOVEL) return { ok: false, motivo: `Máximo de ${MAX_MOVEL}` };
+  } else if (!acumula(it.espaco) && tenho > 0) return { ok: false, motivo: "Na mochila" };
   if (it.espaco === "escudo" && tenho >= MAX_ESCUDOS) return { ok: false, motivo: `Máximo de ${MAX_ESCUDOS}` };
   if (it.espaco === "consumivel" && tenho >= MAX_CONSUMIVEL) return { ok: false, motivo: `Máximo de ${MAX_CONSUMIVEL}` };
   if (saldo !== null && saldo < it.preco) return { ok: false, motivo: `Faltam ${it.preco - saldo}` };

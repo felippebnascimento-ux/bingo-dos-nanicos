@@ -13,6 +13,7 @@ import { ConfigJanela } from "@/features/config/ConfigView";
 import { FichaNanico } from "@/features/ficha/Ficha";
 import { PainelCarteira } from "@/features/moedas/Ranking";
 import { PainelMochila } from "@/features/loja/MochilaPainel";
+import { ArrumarQuarto } from "@/features/quarto/ArrumarQuarto";
 import { SalasJanela } from "@/features/salas/Salas";
 import { HallView } from "@/features/hall/HallView";
 import { LojaView } from "@/features/loja/LojaView";
@@ -78,6 +79,7 @@ export default function App() {
       <PortaTrocarSenha />
       <PainelCarteira />
       <PainelMochila />
+      <ArrumarQuarto />
       <FichaNanico />
       <SalasJanela />
       <ConfigJanela />

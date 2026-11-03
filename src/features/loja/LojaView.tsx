@@ -14,7 +14,11 @@ import { formatarMoedas } from "@/lib/moedas";
 import { friendOf, setApp, useApp } from "@/lib/store";
 import { DesenhoItem } from "./Itens";
 import { abrirCelular } from "@/features/celular/rede";
-import { acumula, doGrupo, equipavel, GRUPOS, NOME_ESPACO, NOME_RARIDADE, podeComprar, progressoCompra, raridade, type ItemLoja } from "./loja";
+import { acumula, doGrupo, equipavel, GRUPOS, MAX_MOVEL, NOME_ESPACO, NOME_RARIDADE, podeComprar, posicionavel, progressoCompra, raridade, type ItemLoja } from "./loja";
+import { MovelPrevia, QuartoCena, type MovelCena } from "@/features/quarto/QuartoCena";
+import { desenhoDo } from "@/features/quarto/Moveis";
+import { abrirArrumar, iniciarQuartos, useQuartos } from "@/features/quarto/quartoDados";
+import { diferenca, podeComprarQuarto } from "@/features/quarto/quarto";
 import { comprar, equipar, useLoja, useMinhaMochila, usar } from "./lojaDados";
 
 const FOCO: Partial<Record<ItemLoja["espaco"], "parede" | "chao" | "mesa" | "poster" | "cadeira" | "planta">> = {
@@ -27,9 +31,16 @@ const FOCO: Partial<Record<ItemLoja["espaco"], "parede" | "chao" | "mesa" | "pos
   planta: "planta",
 };
 
+const SEM_EQUIP = {};
+const SEM_MOVEIS: MovelCena[] = [];
+
 /** Prévia do item: o quarto com ele, o título, o rosto com a moldura ou o desenho do consumível. */
 export function Previa({ it }: { it: ItemLoja }) {
   const eu = useApp((s) => friendOf(s.myFid, s.friends));
+  /* fase 34: móveis com desenho e os quartos próprios (vazios, no tamanho) */
+  if (it.espaco === "quarto" && it.dados.tamanho) return <QuartoCena tamanho={it.dados.tamanho} equip={SEM_EQUIP} moveis={SEM_MOVEIS} />;
+  if (posicionavel(it) && it.dados.w && it.dados.d && (it.espaco === "movel" || !FOCO[it.espaco]))
+    return <MovelPrevia desenho={desenhoDo(it)} w={it.dados.w} d={it.dados.d} />;
   const foco = FOCO[it.espaco];
   if (foco) return <QuartoPrevia equip={{ [it.espaco]: it.dados.cor } as EquipQuarto} foco={foco} />;
   if (it.espaco === "titulo") return <span className="loja-titulo-previa">{it.dados.texto}</span>;
@@ -122,7 +133,9 @@ function AcoesItem({ it, tenho, equipado, saldo }: { it: ItemLoja } & Estado) {
           </span>
           {formatarMoedas(it.preco)}
         </span>
-        {tenho > 0 && it.espaco === "celular" ? (
+        {it.espaco === "quarto" ? (
+          <BotaoQuarto it={it} saldo={saldo} />
+        ) : tenho > 0 && it.espaco === "celular" ? (
           <button type="button" className="btn sm" onClick={abrirCelular}>
             Abrir
           </button>
@@ -138,13 +151,41 @@ function AcoesItem({ it, tenho, equipado, saldo }: { it: ItemLoja } & Estado) {
             aria-label={sure ? `Confirmar a compra de ${it.nome} por ${it.preco} moedas` : `Comprar ${it.nome} por ${it.preco} moedas`}
             onClick={() => pedir() && void comprar(it)}
           >
-            {sure ? "Confirmar" : "Comprar"}
+            {sure ? "Confirmar" : posicionavel(it) && tenho > 0 ? `Comprar (${tenho + 1} de ${MAX_MOVEL})` : "Comprar"}
           </button>
         ) : (
           <span className="status">{pode.motivo}</span>
         )}
       </div>
     </>
+  );
+}
+
+/** Comprar um quarto próprio: quem já tem um menor paga só a diferença; o banco confere de novo. */
+function BotaoQuarto({ it, saldo }: { it: ItemLoja; saldo: number | null }) {
+  const { sure, pedir } = useSure();
+  const ocupado = useLoja((s) => s.ocupado);
+  const itens = useLoja((s) => s.itens);
+  const meu = useQuartos((s) => (s.quartos[useApp.getState().myUid ?? ""] ?? null));
+  useEffect(() => {
+    void iniciarQuartos();
+  }, []);
+  const tam = it.dados.tamanho ?? 0;
+  const pode = podeComprarQuarto(tam, meu);
+  if (!pode.ok) return meu === tam ? (
+    <button type="button" className="btn sm soft" onClick={abrirArrumar}>
+      Arrumar
+    </button>
+  ) : (
+    <span className="status">{pode.motivo}</span>
+  );
+  const atual = meu ? (itens ?? []).find((x) => x.espaco === "quarto" && x.dados.tamanho === meu) : undefined;
+  const custo = diferenca(it.preco, tam, atual && meu ? { tamanho: meu, preco: atual.preco } : null) ?? it.preco;
+  if (saldo !== null && saldo < custo) return <span className="status">Faltam {formatarMoedas(custo - saldo)}</span>;
+  return (
+    <button type="button" className={"btn sm" + (sure ? " sure" : "")} disabled={!!ocupado} onClick={() => pedir() && void comprar(it)}>
+      {sure ? "Confirmar" : meu ? `Comprar por ${formatarMoedas(custo)} (diferença)` : "Comprar"}
+    </button>
   );
 }
 
@@ -191,6 +232,11 @@ export function MochilaLista() {
             </button>
           ) : it.espaco === "escudo" ? (
             <span className="status">Gasto sozinho</span>
+          ) : it.espaco === "quarto" || it.espaco === "movel" ? (
+            /* o quarto próprio e os móveis se mexem na tela de arrumar (os de piso antigos ainda se equipam no quarto fixo) */
+            <button type="button" className="btn sm" onClick={abrirArrumar}>
+              Arrumar
+            </button>
           ) : (
             <button type="button" className={"btn sm" + (l.equipado ? " soft" : "")} disabled={!!ocupado} onClick={() => void equipar(it, !l.equipado)}>
               {l.equipado ? "Tirar" : "Equipar"}

@@ -1463,7 +1463,7 @@ create table if not exists public.loja_itens (
   id        text primary key check (id ~ '^[a-z0-9-]{2,30}$'),
   nome      text not null check (char_length(nome) between 2 and 40),
   descricao text not null default '' check (char_length(descricao) <= 140),
-  espaco    text not null check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca')),
+  espaco    text not null check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca', 'quarto', 'movel')),
   preco     int not null check (preco between 10 and 5000),
   dados     jsonb not null default '{}'::jsonb check (octet_length(dados::text) <= 500),
   ativo     boolean not null default true,
@@ -2407,7 +2407,7 @@ end $$;
 -- Imagem da postagem vai para o bucket "midias", na pasta rede/<uid>/. Postar e curtir não dão moedas.
 alter table public.loja_itens drop constraint if exists loja_itens_espaco_check;
 alter table public.loja_itens add constraint loja_itens_espaco_check
-  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca'));
+  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca', 'quarto', 'movel'));
 insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem) values
   ('celular', 'Celular', 'Abre a rede social nanica: poste, curta e comente com o grupo.', 'celular', 3000, '{}', 0)
 on conflict (id) do update set nome = excluded.nome, descricao = excluded.descricao, espaco = excluded.espaco,
@@ -3913,7 +3913,7 @@ grant execute on function public.emblemas_de(uuid) to authenticated;
 --     sobre o que vai no alto da cabeça (só os óculos ficam junto).
 alter table public.loja_itens drop constraint if exists loja_itens_espaco_check;
 alter table public.loja_itens add constraint loja_itens_espaco_check
-  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca'));
+  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca', 'quarto', 'movel'));
 
 insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem) values
   ('bone',     'Boné de aba reta',   'O boné de quem joga de top.',               'cabeca', 300,  '{"cor":"bone"}', 120),
@@ -4430,7 +4430,257 @@ end $$;
 revoke all on function public.emblemas_de(uuid) from public, anon;
 grant execute on function public.emblemas_de(uuid) to authenticated;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo
+-- 42) quarto próprio, parte 1 (fase 34, 03/11/2026): comprar o quarto e os móveis, e arrumar ------------------------------
+--     Três tamanhos de quarto na loja (6×6, 9×9 e 12×12); comprar um maior cobra só a diferença e o mesmo quarto cresce.
+--     Móveis (espaço 'movel', e os 7 itens de piso antigos) guardam o piso em dados {w, d} e podem ser comprados até 4
+--     vezes. A posição fica em quarto_moveis e só muda pelas RPCs; "cabe" é uma regra só (quarto_cabe), espelhada em
+--     src/features/quarto/quarto.ts e conferida pelos dois lados com quarto-cabe.fixture.json.
+alter table public.loja_itens drop constraint if exists loja_itens_preco_check;
+alter table public.loja_itens add constraint loja_itens_preco_check check (preco between 10 and 10000);
+alter table public.loja_itens drop constraint if exists loja_itens_espaco_check;
+alter table public.loja_itens add constraint loja_itens_espaco_check
+  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca', 'quarto', 'movel'));
+
+insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem) values
+  ('quarto-pequeno',     'Quarto pequeno',      'Um quarto só seu, 6×6. Arrume do seu jeito.',          'quarto', 1000, '{"tamanho":6}', 190),
+  ('quarto-medio',       'Quarto médio',        'Um quarto de 9×9. Quem já tem um menor paga a diferença.', 'quarto', 3000, '{"tamanho":9}', 191),
+  ('quarto-grande',      'Quarto grande',       'Um quarto de 12×12. Quem já tem um menor paga a diferença.', 'quarto', 8000, '{"tamanho":12}', 192),
+  ('movel-cama',         'Cama de solteiro',    'Para o cochilo entre uma ranked e outra.',              'movel', 600,  '{"w":1,"d":2,"desenho":"cama"}', 200),
+  ('movel-cama-casal',   'Cama de casal',       'Espaçosa, com dois travesseiros.',                       'movel', 1400, '{"w":2,"d":2,"desenho":"cama-casal"}', 201),
+  ('movel-sofa',         'Sofá',                'Dois lugares, para assistir a live de alguém.',          'movel', 900,  '{"w":2,"d":1,"desenho":"sofa"}', 202),
+  ('movel-poltrona',     'Poltrona',            'Uma poltrona fofa.',                                     'movel', 450,  '{"w":1,"d":1,"desenho":"poltrona"}', 203),
+  ('movel-pc',           'Setup gamer',         'Mesa, PC e dois monitores.',                             'movel', 2500, '{"w":2,"d":1,"desenho":"pc"}', 204),
+  ('movel-tv',           'TV com rack',         'Uma TV grande em cima do rack.',                         'movel', 1200, '{"w":2,"d":1,"desenho":"tv"}', 205),
+  ('movel-estante',      'Estante com troféus', 'Para guardar os troféus da semana.',                     'movel', 500,  '{"w":1,"d":1,"desenho":"estante"}', 206),
+  ('movel-frigobar',     'Frigobar',            'A latinha sempre gelada.',                               'movel', 700,  '{"w":1,"d":1,"desenho":"frigobar"}', 207),
+  ('movel-mesinha',      'Mesa de centro',      'Para apoiar a pipoca.',                                  'movel', 250,  '{"w":1,"d":1,"desenho":"mesinha"}', 208),
+  ('movel-puff',         'Puff',                'Redondo e macio.',                                       'movel', 150,  '{"w":1,"d":1,"desenho":"puff"}', 209),
+  ('movel-luminaria',    'Luminária de chão',   'Luz amarelinha para o canto.',                           'movel', 200,  '{"w":1,"d":1,"desenho":"luminaria"}', 210),
+  ('movel-guarda-roupa', 'Guarda-roupa',        'Duas portas e muito espaço.',                            'movel', 800,  '{"w":2,"d":1,"desenho":"guarda-roupa"}', 211)
+on conflict (id) do update set nome = excluded.nome, descricao = excluded.descricao, espaco = excluded.espaco,
+  preco = excluded.preco, dados = excluded.dados, ordem = excluded.ordem;
+
+-- os itens de piso de antes viram móveis (continuam no espaço antigo, para o quarto fixo da ficha)
+update public.loja_itens set dados = dados || '{"w":1,"d":1}'::jsonb where id in ('cadeira-gamer', 'cadeira-trono', 'planta-samambaia', 'planta-cacto') and not dados ? 'w';
+update public.loja_itens set dados = dados || '{"w":2,"d":1}'::jsonb where id = 'mesa-rgb' and not dados ? 'w';
+update public.loja_itens set dados = dados || '{"w":2,"d":2}'::jsonb where id in ('tapete-rift', 'tapete-pelucia') and not dados ? 'w';
+
+create table if not exists public.quartos (
+  user_id       uuid primary key references auth.users(id) on delete cascade,
+  tamanho       int not null check (tamanho in (6, 9, 12)),
+  criado_em     timestamptz not null default now(),
+  atualizado_em timestamptz not null default now()
+);
+alter table public.quartos enable row level security;
+revoke all on public.quartos from public, anon, authenticated;
+grant select on public.quartos to authenticated;
+drop policy if exists quartos_ler on public.quartos;
+create policy quartos_ler on public.quartos for select to authenticated using (public.eh_membro());
+
+create table if not exists public.quarto_moveis (
+  id      bigserial primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  item_id text not null references public.loja_itens(id) on delete cascade,
+  i       int not null check (i between 0 and 11),
+  j       int not null check (j between 0 and 11),
+  giro    boolean not null default false,
+  em      timestamptz not null default now()
+);
+create index if not exists quarto_moveis_dono on public.quarto_moveis (user_id);
+alter table public.quarto_moveis enable row level security;
+revoke all on public.quarto_moveis from public, anon, authenticated;
+grant select on public.quarto_moveis to authenticated;
+drop policy if exists quarto_moveis_ler on public.quarto_moveis;
+create policy quarto_moveis_ler on public.quarto_moveis for select to authenticated using (public.eh_membro());
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.quartos; exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.quarto_moveis; exception when duplicate_object then null; end;
+end $$;
+
+-- vai no chão do quarto? (os móveis e os itens de piso antigos, que têm w e d)
+create or replace function public.eh_posicionavel(p_item text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select coalesce((select espaco = 'movel' or dados ? 'w' from public.loja_itens where id = p_item), false);
+$$;
+
+-- a regra de "cabe": dentro do quarto, fora da porta (piso 0,0) e sem encostar em cima de outro móvel
+create or replace function public.quarto_cabe(p_tam int, p_ocupados jsonb, p_i int, p_j int, p_w int, p_d int)
+returns boolean language sql immutable as $$
+  select p_i >= 0 and p_j >= 0 and p_w >= 1 and p_d >= 1 and p_i + p_w <= p_tam and p_j + p_d <= p_tam
+     and not (p_i = 0 and p_j = 0)
+     and not exists (select 1 from jsonb_array_elements(coalesce(p_ocupados, '[]'::jsonb)) o
+                      where p_i < (o->>'i')::int + (o->>'w')::int and (o->>'i')::int < p_i + p_w
+                        and p_j < (o->>'j')::int + (o->>'d')::int and (o->>'j')::int < p_j + p_d);
+$$;
+
+-- os móveis já colocados de alguém, como retângulos (com o giro), menos um (o que está sendo movido)
+create or replace function public.quarto_ocupados(p_user uuid, p_ignorar bigint) returns jsonb
+language sql stable security definer set search_path = public as $$
+  select coalesce(jsonb_agg(jsonb_build_object('i', q.i, 'j', q.j,
+           'w', case when q.giro then (l.dados->>'d')::int else (l.dados->>'w')::int end,
+           'd', case when q.giro then (l.dados->>'w')::int else (l.dados->>'d')::int end)), '[]'::jsonb)
+    from public.quarto_moveis q join public.loja_itens l on l.id = q.item_id
+   where q.user_id = p_user and q.id is distinct from p_ignorar;
+$$;
+
+-- confere a regra com os mesmos exemplos do site (quarto-cabe.fixture.json); falha se divergir
+do $$
+declare
+  c record;
+begin
+  for c in select * from jsonb_array_elements(
+    -- fixture quarto-cabe (início)
+    '[{"tam":6,"ocupados":[],"i":1,"j":1,"w":2,"d":1,"cabe":true},{"tam":6,"ocupados":[],"i":0,"j":0,"w":1,"d":1,"cabe":false},{"tam":6,"ocupados":[],"i":0,"j":1,"w":1,"d":2,"cabe":true},{"tam":6,"ocupados":[],"i":5,"j":5,"w":2,"d":1,"cabe":false},{"tam":6,"ocupados":[],"i":-1,"j":2,"w":1,"d":1,"cabe":false},{"tam":6,"ocupados":[{"i":2,"j":2,"w":2,"d":2}],"i":3,"j":3,"w":1,"d":1,"cabe":false},{"tam":6,"ocupados":[{"i":2,"j":2,"w":2,"d":2}],"i":4,"j":2,"w":1,"d":2,"cabe":true},{"tam":9,"ocupados":[{"i":0,"j":1,"w":1,"d":2}],"i":0,"j":3,"w":1,"d":1,"cabe":true},{"tam":12,"ocupados":[],"i":10,"j":11,"w":2,"d":1,"cabe":true},{"tam":12,"ocupados":[],"i":11,"j":11,"w":2,"d":1,"cabe":false}]'::jsonb
+    -- fixture quarto-cabe (fim)
+  ) x(v) loop
+    if public.quarto_cabe((c.v->>'tam')::int, c.v->'ocupados', (c.v->>'i')::int, (c.v->>'j')::int, (c.v->>'w')::int, (c.v->>'d')::int)
+       <> (c.v->>'cabe')::boolean then
+      raise exception 'quarto_cabe diverge do exemplo %', c.v;
+    end if;
+  end loop;
+end $$;
+
+-- comprar: o quarto cobra só a diferença e cresce; móveis acumulam até 4; o resto como na seção 15
+create or replace function public.comprar(p_item text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid   uuid := auth.uid();
+  v_it    public.loja_itens;
+  v_qtd   int;
+  v_saldo int;
+  v_atual int;
+  v_novo  int;
+  v_pago  int;
+begin
+  if not public.eh_membro() then raise exception 'Só nanicos compram na loja.' using errcode = 'P0001'; end if;
+  perform public.limitar('loja', 20, interval '1 minute', 'Calma: muitas compras seguidas.');
+  select * into v_it from public.loja_itens where id = p_item and ativo;
+  if not found then raise exception 'Esse item não está à venda.' using errcode = 'P0001'; end if;
+  if v_it.espaco = 'quarto' then
+    v_novo := (v_it.dados->>'tamanho')::int;
+    select tamanho into v_atual from public.quartos where user_id = v_uid for update;
+    if v_atual is not null and v_atual >= v_novo then
+      raise exception 'Você já tem um quarto %.', case when v_atual = v_novo then 'desse tamanho' else 'maior' end using errcode = 'P0001';
+    end if;
+    select preco into v_pago from public.loja_itens where espaco = 'quarto' and (dados->>'tamanho')::int = v_atual;
+    v_saldo := public.creditar(v_uid, -(v_it.preco - coalesce(v_pago, 0)), 'loja', p_item);
+    insert into public.quartos (user_id, tamanho) values (v_uid, v_novo)
+      on conflict (user_id) do update set tamanho = excluded.tamanho, atualizado_em = now();
+    insert into public.mochila (user_id, item_id, qtd) values (v_uid, p_item, 1) on conflict (user_id, item_id) do nothing;
+    return jsonb_build_object('saldo', v_saldo, 'item', p_item, 'tamanho', v_novo);
+  end if;
+  select qtd into v_qtd from public.mochila where user_id = v_uid and item_id = p_item for update;
+  if public.eh_posicionavel(p_item) then
+    if coalesce(v_qtd, 0) >= 4 then raise exception 'Dá para ter no máximo 4 desse móvel.' using errcode = 'P0001'; end if;
+  elsif v_it.espaco not in ('escudo', 'consumivel') and coalesce(v_qtd, 0) > 0 then
+    raise exception 'Você já tem esse item. Ele está na sua mochila.' using errcode = 'P0001';
+  end if;
+  if v_it.espaco = 'escudo' and coalesce(v_qtd, 0) >= 3 then
+    raise exception 'Dá para guardar no máximo 3 escudos.' using errcode = 'P0001';
+  end if;
+  if v_it.espaco = 'consumivel' and coalesce(v_qtd, 0) >= 20 then
+    raise exception 'A mochila já tem 20 desse. Use antes de comprar mais.' using errcode = 'P0001';
+  end if;
+  v_saldo := public.creditar(v_uid, -v_it.preco, 'loja', p_item);   -- falha sem saldo e desfaz tudo
+  insert into public.mochila (user_id, item_id, qtd) values (v_uid, p_item, 1)
+    on conflict (user_id, item_id) do update set qtd = public.mochila.qtd + 1, comprado_em = now();
+  return jsonb_build_object('saldo', v_saldo, 'item', p_item);
+end $$;
+
+-- pôr, mover e guardar um móvel (só o dono, com quarto e com o móvel na mochila)
+create or replace function public.quarto_por(p_item text, p_i int, p_j int, p_giro boolean)
+returns bigint language plpgsql security definer set search_path = public as $$
+declare
+  v_uid  uuid := auth.uid();
+  v_tam  int;
+  v_qtd  int;
+  v_dad  jsonb;
+  v_w    int;
+  v_d    int;
+  v_id   bigint;
+begin
+  if not public.eh_membro() then raise exception 'Só nanicos arrumam quarto.' using errcode = 'P0001'; end if;
+  perform public.limitar('quarto', 60, interval '1 minute', 'Calma: muitas mudanças seguidas no quarto.');
+  select tamanho into v_tam from public.quartos where user_id = v_uid for update;
+  if v_tam is null then raise exception 'Compre um quarto na Loja primeiro.' using errcode = 'P0001'; end if;
+  if not public.eh_posicionavel(p_item) then raise exception 'Esse item não vai no chão do quarto.' using errcode = 'P0001'; end if;
+  select m.qtd, l.dados into v_qtd, v_dad from public.mochila m join public.loja_itens l on l.id = m.item_id
+   where m.user_id = v_uid and m.item_id = p_item and m.qtd > 0;
+  if v_qtd is null then raise exception 'Esse móvel não está na sua mochila.' using errcode = 'P0001'; end if;
+  if (select count(*) from public.quarto_moveis where user_id = v_uid and item_id = p_item) >= v_qtd then
+    raise exception 'Todos os seus desse móvel já estão no quarto.' using errcode = 'P0001';
+  end if;
+  v_w := case when p_giro then (v_dad->>'d')::int else (v_dad->>'w')::int end;
+  v_d := case when p_giro then (v_dad->>'w')::int else (v_dad->>'d')::int end;
+  if not public.quarto_cabe(v_tam, public.quarto_ocupados(v_uid, null), p_i, p_j, v_w, v_d) then
+    raise exception 'Não cabe aí.' using errcode = 'P0001';
+  end if;
+  insert into public.quarto_moveis (user_id, item_id, i, j, giro) values (v_uid, p_item, p_i, p_j, coalesce(p_giro, false)) returning id into v_id;
+  return v_id;
+end $$;
+
+create or replace function public.quarto_mover(p_id bigint, p_i int, p_j int, p_giro boolean)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+  v_tam int;
+  v_dad jsonb;
+  v_w   int;
+  v_d   int;
+begin
+  if not public.eh_membro() then raise exception 'Só nanicos arrumam quarto.' using errcode = 'P0001'; end if;
+  perform public.limitar('quarto', 60, interval '1 minute', 'Calma: muitas mudanças seguidas no quarto.');
+  select tamanho into v_tam from public.quartos where user_id = v_uid for update;
+  select l.dados into v_dad from public.quarto_moveis q join public.loja_itens l on l.id = q.item_id
+   where q.id = p_id and q.user_id = v_uid;
+  if v_tam is null or v_dad is null then raise exception 'Esse móvel não está no seu quarto.' using errcode = 'P0001'; end if;
+  v_w := case when p_giro then (v_dad->>'d')::int else (v_dad->>'w')::int end;
+  v_d := case when p_giro then (v_dad->>'w')::int else (v_dad->>'d')::int end;
+  if not public.quarto_cabe(v_tam, public.quarto_ocupados(v_uid, p_id), p_i, p_j, v_w, v_d) then
+    raise exception 'Não cabe aí.' using errcode = 'P0001';
+  end if;
+  update public.quarto_moveis set i = p_i, j = p_j, giro = coalesce(p_giro, false), em = now() where id = p_id and user_id = v_uid;
+end $$;
+
+create or replace function public.quarto_guardar(p_id bigint)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not public.eh_membro() then raise exception 'Só nanicos arrumam quarto.' using errcode = 'P0001'; end if;
+  perform public.limitar('quarto', 60, interval '1 minute', 'Calma: muitas mudanças seguidas no quarto.');
+  delete from public.quarto_moveis where id = p_id and user_id = auth.uid();
+  if not found then raise exception 'Esse móvel não está no seu quarto.' using errcode = 'P0001'; end if;
+end $$;
+
+-- quarto_de devolve os equipados, o tamanho e os móveis colocados (o site também lê as tabelas pelo tempo real)
+drop function if exists public.quarto_de(uuid);
+create or replace function public.quarto_de(p_friend uuid) returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object(
+    'equipados', coalesce((select jsonb_agg(jsonb_build_object('item', m.item_id, 'espaco', i.espaco) order by i.ordem)
+                             from public.mochila m join public.loja_itens i on i.id = m.item_id
+                            where m.user_id = f.user_id and m.equipado), '[]'::jsonb),
+    'tamanho', (select tamanho from public.quartos where user_id = f.user_id),
+    'moveis', coalesce((select jsonb_agg(jsonb_build_object('id', q.id, 'item', q.item_id, 'i', q.i, 'j', q.j, 'giro', q.giro) order by q.id)
+                          from public.quarto_moveis q where q.user_id = f.user_id), '[]'::jsonb))
+    from public.friends f
+   where f.id = p_friend and public.eh_membro();
+$$;
+
+revoke all on function public.eh_posicionavel(text) from public, anon;
+grant execute on function public.eh_posicionavel(text) to authenticated;
+revoke all on function public.quarto_ocupados(uuid, bigint) from public, anon, authenticated;
+revoke all on function public.quarto_por(text, int, int, boolean) from public, anon;
+revoke all on function public.quarto_mover(bigint, int, int, boolean) from public, anon;
+revoke all on function public.quarto_guardar(bigint) from public, anon;
+revoke all on function public.quarto_de(uuid) from public, anon;
+grant execute on function public.quarto_por(text, int, int, boolean) to authenticated;
+grant execute on function public.quarto_mover(bigint, int, int, boolean) to authenticated;
+grant execute on function public.quarto_guardar(bigint) to authenticated;
+grant execute on function public.quarto_de(uuid) to authenticated;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo e as 2 tabelas e 3 funções do quarto próprio
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -4513,4 +4763,10 @@ select tablename::text, 'truco valendo' from pg_tables
 union all
 select proname::text, 'truco valendo' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('truco_cobrar', 'truco_devolver', 'truco_mercado_abrir', 'truco_mercado_fechar', 'truco_mercado_liquidar', 'apostar_truco')
+union all
+select tablename::text, 'quarto' from pg_tables
+ where schemaname = 'public' and tablename in ('quartos', 'quarto_moveis')
+union all
+select proname::text, 'quarto' from pg_proc
+ where pronamespace = 'public'::regnamespace and proname in ('quarto_por', 'quarto_mover', 'quarto_guardar')
 order by 2, 1;

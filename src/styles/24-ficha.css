@@ -40,7 +40,7 @@ button.ficha-selo:hover{border-color:var(--accent)}
 .dica-steam p{margin:6px 0 0;font-size:13px;color:var(--muted)}
 
 /* ---------- quarto ---------- */
-.ficha-quarto,.loja-previa,.mochila-previa{
+.ficha-quarto,.loja-previa,.mochila-previa,.quarto-vars{
   --quarto-parede1:#D9D5CA; --quarto-parede2:#E3DFD5; --quarto-topo1:#A9A497; --quarto-topo2:#B5B0A3;
   --quarto-rodape1:#C3BEB1; --quarto-rodape2:#CCC7BA; --quarto-piso0:#C9C5B8; --quarto-piso1:#D4D0C4;
   --quarto-janela:#2B3540; --quarto-ceu:#7C93B5; --quarto-poster:#FAF9F6; --quarto-cartela0:#E0DED5; --quarto-cartela1:#3E4C59;
@@ -56,18 +56,23 @@ button.ficha-selo:hover{border-color:var(--accent)}
   --quarto-cacto0:#5E8F4A; --quarto-cacto1:#4B7A3A;
   /* luz e sombra: o sol da janela no chão, o céu clareando no alto e o canto mais escuro */
   --quarto-sol:rgb(255 236 190 / .32); --quarto-ceu-claro:#A9BCD6; --quarto-sombra-leve:rgb(20 20 20 / .07);
+  /* móveis do quarto próprio (fase 34): lençol e o cinza do frigobar */
+  --quarto-lencol0:#F4F1EA; --quarto-lencol1:#DCD7CC; --quarto-cinza0:#C9CDD2; --quarto-cinza1:#AEB3B9; --quarto-cinza2:#9AA0A6;
+  --quarto-verde:rgb(111 191 115 / .55); --quarto-vermelho:rgb(224 112 90 / .55);
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .ficha-quarto,:root:not([data-theme="light"]) .loja-previa,:root:not([data-theme="light"]) .mochila-previa{
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .ficha-quarto,:root:not([data-theme="light"]) .loja-previa,:root:not([data-theme="light"]) .mochila-previa,:root:not([data-theme="light"]) .quarto-vars{
   --quarto-parede1:#454843; --quarto-parede2:#50544C; --quarto-topo1:#2B2B2A; --quarto-topo2:#333331;
   --quarto-rodape1:#3A3C37; --quarto-rodape2:#42453F; --quarto-piso0:#6F7366; --quarto-piso1:#7C8073; --quarto-ceu:#566B7D;
   --quarto-oliva1:#3A3D35; --quarto-oliva2:#44473E; --quarto-ardosia1:#313C46; --quarto-ardosia2:#3A4753;
   --quarto-sol:rgb(255 226 160 / .2); --quarto-ceu-claro:#6F8497; --quarto-sombra-leve:rgb(0 0 0 / .12);
+  --quarto-lencol0:#C9C6BF; --quarto-lencol1:#B2AEA5; --quarto-cinza0:#9A9EA3; --quarto-cinza1:#82868B; --quarto-cinza2:#6F7378;
 }}
-:root[data-theme="dark"] .ficha-quarto,:root[data-theme="dark"] .loja-previa,:root[data-theme="dark"] .mochila-previa{
+:root[data-theme="dark"] .ficha-quarto,:root[data-theme="dark"] .loja-previa,:root[data-theme="dark"] .mochila-previa,:root[data-theme="dark"] .quarto-vars{
   --quarto-parede1:#454843; --quarto-parede2:#50544C; --quarto-topo1:#2B2B2A; --quarto-topo2:#333331;
   --quarto-rodape1:#3A3C37; --quarto-rodape2:#42453F; --quarto-piso0:#6F7366; --quarto-piso1:#7C8073; --quarto-ceu:#566B7D;
   --quarto-oliva1:#3A3D35; --quarto-oliva2:#44473E; --quarto-ardosia1:#313C46; --quarto-ardosia2:#3A4753;
   --quarto-sol:rgb(255 226 160 / .2); --quarto-ceu-claro:#6F8497; --quarto-sombra-leve:rgb(0 0 0 / .12);
+  --quarto-lencol0:#C9C6BF; --quarto-lencol1:#B2AEA5; --quarto-cinza0:#9A9EA3; --quarto-cinza1:#82868B; --quarto-cinza2:#6F7378;
 }
 .quarto .q-linha{stroke:var(--quarto-linha);stroke-width:1;stroke-linejoin:round}
 .quarto .q-parede1{fill:var(--quarto-parede1)} .quarto .q-parede2{fill:var(--quarto-parede2)}
@@ -83,6 +88,9 @@ button.ficha-selo:hover{border-color:var(--accent)}
 .quarto .q-cadeira0{fill:var(--quarto-cadeira0)} .quarto .q-cadeira1{fill:var(--quarto-cadeira1)} .quarto .q-cadeira2{fill:var(--quarto-cadeira2)}
 .quarto .q-planta0{fill:var(--quarto-planta0)} .quarto .q-planta1{fill:var(--quarto-planta1)} .quarto .q-planta2{fill:var(--quarto-planta2)}
 .quarto .q-sombra{fill:var(--shadow)}
+.quarto .q-lencol0{fill:var(--quarto-lencol0)} .quarto .q-lencol1{fill:var(--quarto-lencol1)}
+.quarto .q-cinza0{fill:var(--quarto-cinza0)} .quarto .q-cinza1{fill:var(--quarto-cinza1)} .quarto .q-cinza2{fill:var(--quarto-cinza2)}
+.quarto .q-cabe{fill:var(--quarto-verde)} .quarto .q-naocabe{fill:var(--quarto-vermelho)} .quarto .q-porta{fill:var(--quarto-madeira1)}
 .quarto .q-sol{fill:var(--quarto-sol)} .quarto .q-ceu-claro{fill:var(--quarto-ceu-claro)} .quarto .q-sombra-leve{fill:var(--quarto-sombra-leve)}
 .quarto .q-oliva1{fill:var(--quarto-oliva1)} .quarto .q-oliva2{fill:var(--quarto-oliva2)}
 .quarto .q-ardosia1{fill:var(--quarto-ardosia1)} .quarto .q-ardosia2{fill:var(--quarto-ardosia2)}
