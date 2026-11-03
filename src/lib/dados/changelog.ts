@@ -184,7 +184,7 @@ export const CHANGELOG: EntradaLog[] = [
   },
   {
     data: "02/11/2026",
-    itens: ["Tempo no site sem limite de moedas por dia: 1 a cada 6 minutos (no happy hour, 1 a cada 3)"],
+    itens: [{ t: "Tempo no site sem limite de moedas por dia: 1 a cada 6 minutos (no happy hour, 1 a cada 3)", off: "trocado por 5 a cada 6 minutos na v1.117" }],
   },
   {
     data: "02/11/2026",
@@ -410,7 +410,7 @@ export const CHANGELOG: EntradaLog[] = [
   {
     data: "03/11/2026",
     itens: [
-      "Bolsa Cassino: quem ficar com menos de 100 moedas ganha 5.000, uma vez por dia, e volta para o jogo",
+      { t: "Bolsa Cassino: quem ficar com menos de 100 moedas ganha 5.000, uma vez por dia, e volta para o jogo", off: "trocado pelo botão da Bolsa Nanica no K-FOFO na v1.118" },
     ],
   },
   {
@@ -534,6 +534,36 @@ export const CHANGELOG: EntradaLog[] = [
       "No fim, a mão de quem ganhou acende na mesa; a casa leva 3% do pote, só se a mão chegou ao flop",
       "O seletor de jogos do Cassino ficou numa linha só (no celular, 3 por linha)",
       "Celular: desmutar o microfone na voz volta a mandar o som (antes, às vezes ficava mudo)",
+    ],
+  },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Acentos consertados nos itens da loja, nas missões e nos avisos de erro",
+      "Missões do dia pagam bem mais (de 100 a 200 cada) e fazer as 3 dá +250",
+      "Tempo no site rende 5 moedas a cada 6 minutos (no happy hour, 5 a cada 3)",
+    ],
+  },
+  {
+    data: "03/11/2026",
+    itens: ["Bolsa Nanica: com menos de 100 moedas, aparece no K-FOFO o botão para pedir 5.000 moedas, uma vez por dia"],
+  },
+  {
+    data: "03/11/2026",
+    itens: ["Voz: toca um som quando alguém entra ou sai do canal em que você está (e quando você entra ou sai)"],
+  },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Chat do K-FOFO como no Habbo: escreva na barra branca embaixo do cômodo e a mensagem sobe num balão em cima do seu boneco",
+      "Os balões aparecem para quem está no mesmo lugar (no K-FOFO ou no mesmo quarto) e a mensagem também fica no #geral",
+    ],
+  },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Emblemas novos, em relevo: aro de metal com luz e sombra, e o símbolo gravado",
+      "O número do nível da GC voltou a ser lido no cartão do perfil, e o cartão não deixa mais aparecer o que está atrás",
     ],
   },
   {

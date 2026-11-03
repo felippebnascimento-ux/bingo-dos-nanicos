@@ -5,7 +5,8 @@
 export const SALDO_INICIAL = 200;
 export const BONUS_BASE = 30;
 export const MULT_MAX = 2;
-/** 1 moeda a cada 6 minutos com o site aberto, sem teto por dia (desde 02/11/2026) */
+/** 5 moedas (seção 45; antes 1) a cada 6 minutos com o site aberto, sem teto por dia (desde 02/11/2026) */
+export const MOEDAS_POR_VEZ = 5;
 export const MIN_POR_MOEDA = 6;
 
 /** Multiplicador do bônus no dia `seq` da sequência: +0,1 por dia, até ×2 (dia 11). */
@@ -65,10 +66,10 @@ export const MOTIVOS: Readonly<Record<string, string>> = {
   trofeu: "Troféu da semana",
   churrasco: "Espetinho do churrasco",
   missao: "Missão do dia",
-  bolsa: "Bolsa Cassino",
+  bolsa: "Bolsa Nanica",
 };
 
-/** Bolsa Cassino (seção 36 do SQL): abaixo disto, o banco dá 5.000 uma vez por dia. Só para saber quando pedir. */
+/** Bolsa Nanica (seção 36 do SQL; antes Bolsa Cassino): abaixo disto, o botão do K-FOFO pede e o banco dá 5.000 uma vez por dia. */
 export const BOLSA_ABAIXO_DE = 100;
 
 /* ---------- ranking ---------- */

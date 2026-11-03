@@ -1,6 +1,6 @@
-/* Cartão do perfil no Sítio (PerfilCartao.tsx) e os emblemas (Emblema.tsx).
+﻿/* Cartão do perfil no Sítio (PerfilCartao.tsx) e os emblemas (Emblema.tsx).
    Os emblemas são ilustrações com cores próprias --emblema-* (bronze, prata e ouro), como o hall. */
-.perfil-cartao{right:16px;bottom:16px;z-index:960;width:300px;max-width:calc(100% - 32px);display:grid;gap:10px;padding:12px}
+.perfil-cartao{background:var(--accent-ink);right:16px;bottom:16px;z-index:960;width:300px;max-width:calc(100% - 32px);display:grid;gap:10px;padding:12px}
 .perfil-cartao header{display:flex;align-items:center;gap:10px}
 .perfil-nome{flex:1;min-width:0;display:grid}
 .perfil-nome b{font:800 17px var(--display);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -18,8 +18,14 @@
 @media (max-width:760px){.perfil-cartao{width:auto;max-width:none}}
 
 .emblema,.em-dica{
-  --emblema-bronze:#B9773A; --emblema-prata:#AEB6BD; --emblema-ouro:#E0B23C; --emblema-fundo:#2E3238; --emblema-simbolo:#F4EBDD}
-.emblema{display:inline-grid;place-items:center;border-radius:50%;filter:drop-shadow(0 2px 3px var(--shadow));cursor:help}
+  --emblema-bronze:#B9773A; --emblema-prata:#AEB6BD; --emblema-ouro:#E0B23C; --emblema-fundo:#2E3238; --emblema-simbolo:#F4EBDD;
+  /* relevo: luz e sombra de cada metal, e a face escura */
+  --emblema-bronze-claro:#F0B47A; --emblema-bronze-escuro:#6E3E14; --emblema-prata-claro:#F4F7FA; --emblema-prata-escuro:#5E6870;
+  --emblema-ouro-claro:#FFEA9A; --emblema-ouro-escuro:#8E620E; --emblema-fundo-claro:#4C535E; --emblema-fundo-escuro:#16191E;
+  --emblema-gravado:#08090B; --emblema-luz:#FFFFFF}
+.emblema{display:inline-grid;place-items:center;border-radius:50%;filter:drop-shadow(0 3px 3px var(--shadow));cursor:help;transition:transform .18s ease-out}
+.emblema:hover,.emblema:focus-visible{transform:translateY(-2px) scale(1.08)}
+@media (prefers-reduced-motion:reduce){.emblema{transition:none}.emblema:hover,.emblema:focus-visible{transform:none}}
 .emblema:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 /* dica do emblema (vai para o body, com posição calculada em Emblema.tsx) */
 .em-dica{position:fixed;z-index:1000;width:230px;display:grid;grid-template-columns:1fr auto;gap:4px 8px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);box-shadow:0 12px 30px -8px var(--shadow);pointer-events:none;font-size:12.5px}
@@ -32,12 +38,23 @@
 .em-dica-tx,.em-dica .missao-barra,.em-dica small{grid-column:1 / -1}
 .em-dica small{color:var(--muted);font-size:11px}
 .emblema svg{display:block}
-.emblema .em-fundo{fill:var(--emblema-fundo)}
-.emblema .em-simbolo{fill:none;stroke:var(--emblema-simbolo);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
-.emblema.em-bronze .em-aro{fill:var(--emblema-bronze)}
-.emblema.em-prata .em-aro{fill:var(--emblema-prata)}
-.emblema.em-ouro .em-aro{fill:var(--emblema-ouro)}
-.emblema.em-ouro .em-simbolo{stroke:var(--emblema-ouro)}
+.emblema .em-chao{fill:var(--emblema-gravado);opacity:.35}
+.emblema .em-f-claro{stop-color:var(--emblema-fundo-claro)}
+.emblema .em-f-escuro{stop-color:var(--emblema-fundo-escuro)}
+.emblema .em-simbolo,.emblema .em-gravado{fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.emblema .em-simbolo{stroke:var(--emblema-simbolo)}
+.emblema .em-gravado{stroke:var(--emblema-gravado);opacity:.7}
+.emblema .em-brilho{fill:none;stroke:var(--emblema-luz);stroke-width:2.2;stroke-linecap:round;opacity:.45}
+.emblema.em-bronze .em-c-claro{stop-color:var(--emblema-bronze-claro)}
+.emblema.em-bronze .em-c-meio{stop-color:var(--emblema-bronze)}
+.emblema.em-bronze .em-c-escuro{stop-color:var(--emblema-bronze-escuro)}
+.emblema.em-prata .em-c-claro{stop-color:var(--emblema-prata-claro)}
+.emblema.em-prata .em-c-meio{stop-color:var(--emblema-prata)}
+.emblema.em-prata .em-c-escuro{stop-color:var(--emblema-prata-escuro)}
+.emblema.em-ouro .em-c-claro{stop-color:var(--emblema-ouro-claro)}
+.emblema.em-ouro .em-c-meio{stop-color:var(--emblema-ouro)}
+.emblema.em-ouro .em-c-escuro{stop-color:var(--emblema-ouro-escuro)}
+.emblema.em-ouro .em-simbolo{stroke:var(--emblema-ouro-claro)}
 /* emblemas na ficha */
 .ficha-emblemas .perfil-emblemas{gap:8px}
 
@@ -55,7 +72,9 @@
 .gc-nivel .gc-aro{stroke:var(--gc-borda)}
 .gc-nivel .gc-vinte{fill:none;stroke:var(--gc-brilho);opacity:.7}
 .gc-nivel .gc-luz{fill:var(--gc-texto);opacity:.18}
-.gc-nivel text{fill:var(--gc-texto);stroke:var(--gc-borda);stroke-width:1;font:800 24px var(--display)}
-.gc-nivel text.dois{font-size:20px}
+/* o contorno do número fica por fora (paint-order): em tamanho pequeno ele não engole o algarismo */
+.gc-nivel text{fill:var(--gc-texto);stroke:var(--gc-borda);stroke-width:4;paint-order:stroke;stroke-linejoin:round;font:800 26px var(--display)}
+.gc-nivel text.dois{font-size:22px;letter-spacing:-1px}
+.gc-nivel .gc-sulco{fill:none;stroke:var(--gc-texto);stroke-width:2;opacity:.22}
 /* brasão oficial do elo (imagem do Community Dragon, 1280×720 com o brasão no meio): recorte por CSS */
 .brasao-elo{display:inline-block;flex:none;background:center 46% / 380% auto no-repeat}

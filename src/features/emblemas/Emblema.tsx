@@ -1,8 +1,9 @@
 "use client";
-/* Desenho de um emblema (SVG próprio): o aro da cor do nível (bronze, prata, ouro) e o símbolo do emblema.
+/* Desenho de um emblema (SVG próprio), em relevo: o aro da cor do nível (bronze, prata, ouro) com luz de cima à
+   esquerda, um sulco por dentro, a face com brilho e o símbolo gravado (sombra embaixo, luz em cima).
    As cores são as variáveis --emblema-* de 34-perfil.css. Passar o mouse (ou focar, ou tocar no celular) mostra
    uma dica com o nome, o nível e quanto falta para o próximo; ela vai para o body para não sair cortada. */
-import { useState } from "react";
+import { useId, useState } from "react";
 import { createPortal } from "react-dom";
 import { TIERS } from "@/features/ficha/numeros";
 import { BrasaoElo, NivelGc } from "./brasao";
@@ -51,6 +52,7 @@ export function Emblema({ e, tam = 36, detalhe }: { e: TEmblema; tam?: number; d
     setDica({ x, y: acima ? r.top - 8 : r.bottom + 8, acima });
   };
   const esconder = () => setDica(null);
+  const id = useId();
   return (
     <span
       className={"emblema " + (imagem ? "em-imagem" : "em-" + NIVEL[e.nivel])}
@@ -67,10 +69,32 @@ export function Emblema({ e, tam = 36, detalhe }: { e: TEmblema; tam?: number; d
       ) : e.id === "gc" ? (
         <NivelGc n={e.valor} tam={tam} />
       ) : (
-        <svg viewBox="0 0 24 24" width={tam} height={tam} aria-hidden="true">
-          <circle cx="12" cy="12" r="11" className="em-aro" />
-          <circle cx="12" cy="12" r="8.6" className="em-fundo" />
-          <g className="em-simbolo">{SIMBOLO[e.id]}</g>
+        <svg viewBox="0 0 48 48" width={tam} height={tam} aria-hidden="true">
+          <defs>
+            {/* aro: claro em cima à esquerda, escuro embaixo à direita; o sulco é o contrário (parece afundado) */}
+            <linearGradient id={id + "a"} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" className="em-c-claro" />
+              <stop offset=".45" className="em-c-meio" />
+              <stop offset="1" className="em-c-escuro" />
+            </linearGradient>
+            <linearGradient id={id + "s"} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" className="em-c-escuro" />
+              <stop offset="1" className="em-c-claro" />
+            </linearGradient>
+            <radialGradient id={id + "f"} cx=".38" cy=".32" r=".75">
+              <stop offset="0" className="em-f-claro" />
+              <stop offset="1" className="em-f-escuro" />
+            </radialGradient>
+          </defs>
+          <circle cx="24" cy="24.8" r="22.6" className="em-chao" />
+          <circle cx="24" cy="24" r="22.6" fill={`url(#${id}a)`} />
+          <circle cx="24" cy="24" r="18.8" fill={`url(#${id}s)`} />
+          <circle cx="24" cy="24" r="17.2" fill={`url(#${id}f)`} />
+          <g transform="scale(2)">
+            <g className="em-gravado" transform="translate(.35 .5)">{SIMBOLO[e.id]}</g>
+            <g className="em-simbolo">{SIMBOLO[e.id]}</g>
+          </g>
+          <path d="M9.5 18.5a15.5 15.5 0 0 1 22-11.2" className="em-brilho" />
         </svg>
       )}
       {dica && createPortal(<DicaEmblema e={e} detalhe={detalhe} {...dica} />, document.body)}

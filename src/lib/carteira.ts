@@ -3,6 +3,7 @@
  * aqui só pedimos e mostramos. Se o SQL das moedas ainda não rodou, tudo fica escondido.
  */
 import { create } from "zustand";
+import { horaBr } from "./eventos";
 import { BOLSA_ABAIXO_DE, ranking, textoBonus } from "./moedas";
 import { aoMudarTabela } from "./sala";
 import { getApp } from "./store";
@@ -23,12 +24,17 @@ export const useCarteira = create<{
   subiram: Record<string, number>;
   /** painel da carteira (ranking e extrato) aberto */
   painel: "ranking" | "extrato" | null;
+  /** dia de Brasília em que o banco disse que a bolsa já foi pega (o botão some até o outro dia) */
+  bolsaPega: string | null;
+  pedindoBolsa: boolean;
 }>()(() => ({
   carteira: null,
   extrato: [],
   todas: null,
   subiram: {},
   painel: null,
+  bolsaPega: null,
+  pedindoBolsa: false,
 }));
 
 /** Pulso a cada minuto, mesmo com a aba escondida (decisão do grupo: o tempo conta assim mesmo). */
@@ -65,7 +71,6 @@ export async function iniciarCarteira() {
     if (r.escudo_usado === true) toast("Escudo usado: sua sequência continua");
     if (ganhou) setTimeout(() => toast(textoBonus(ganhou, num(r.bonus_extra), num(r.seq))), r.escudo_usado === true ? 3500 : 0);
     carregarExtrato();
-    pedirBolsa();
   } catch (e) {
     const err = e as { code?: string; message?: string };
     if (semSql(err)) {
@@ -86,22 +91,36 @@ async function pulsar() {
     const c = lerCarteira(data as Record<string, unknown>);
     useCarteira.setState({ carteira: c });
     if (c && c.saldo !== antes) carregarExtrato();
-    pedirBolsa();
   } catch {
     /* sem internet ou pulsos demais (várias abas): o próximo minuto tenta de novo */
   }
 }
 
-/** Bolsa Cassino: com menos de 100 moedas, pede ao banco (que confere o saldo e paga uma vez por dia). */
-async function pedirBolsa() {
-  const c = useCarteira.getState().carteira;
-  if (!c || c.saldo >= BOLSA_ABAIXO_DE) return;
+/** A Bolsa Nanica pode ser pedida agora: menos de 100 moedas e ainda não pega hoje (pelo extrato e pelo que o banco disse). */
+export function podePedirBolsa(s: ReturnType<typeof useCarteira.getState>, agora = new Date()) {
+  const c = s.carteira;
+  if (!c || c.saldo >= BOLSA_ABAIXO_DE) return false;
+  const hoje = horaBr(agora).dia;
+  return s.bolsaPega !== hoje && !s.extrato.some((l) => l.motivo === "bolsa" && l.ref === hoje);
+}
+
+/** Bolsa Nanica (antes Bolsa Cassino, que vinha sozinha): o botão do K-FOFO pede; o banco confere o saldo e paga uma vez por dia. */
+export async function pedirBolsa() {
+  const s = useCarteira.getState();
+  if (s.pedindoBolsa || !s.carteira) return;
+  useCarteira.setState({ pedindoBolsa: true });
   const { data, error } = await sb().rpc("pedir_bolsa");
-  if (error || !data || typeof data !== "object") return;
+  useCarteira.setState({ pedindoBolsa: false });
+  if (error || !data || typeof data !== "object") return toast("Não deu para pedir a bolsa agora. Tente de novo em instantes.");
   const r = data as Record<string, unknown>;
-  if (!num(r.ganhou)) return;
-  useCarteira.setState({ carteira: { ...c, saldo: num(r.saldo) } });
-  toast(`Bolsa Cassino: +${num(r.ganhou).toLocaleString("pt-BR")} moedas para voltar ao jogo`);
+  const c = useCarteira.getState().carteira;
+  if (c) useCarteira.setState({ carteira: { ...c, saldo: num(r.saldo) } });
+  if (!num(r.ganhou)) {
+    if (num(r.saldo) < BOLSA_ABAIXO_DE) useCarteira.setState({ bolsaPega: horaBr(new Date()).dia });
+    return toast(num(r.saldo) < BOLSA_ABAIXO_DE ? "Você já pegou a Bolsa Nanica hoje. Amanhã tem de novo." : "A Bolsa Nanica é só para quem está com menos de 100 moedas.");
+  }
+  useCarteira.setState({ bolsaPega: horaBr(new Date()).dia });
+  toast(`Bolsa Nanica: +${num(r.ganhou).toLocaleString("pt-BR")} moedas para voltar ao jogo`);
   carregarExtrato();
 }
 

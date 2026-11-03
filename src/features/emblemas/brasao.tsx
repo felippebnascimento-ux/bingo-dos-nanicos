@@ -42,8 +42,9 @@ export function NivelGc({ n, tam = 22 }: { n: number; tam?: number }) {
         </defs>
         {k === 20 && <circle cx="32" cy="32" r="30" strokeWidth="3" className="gc-vinte" />}
         <circle cx="32" cy="32" r="26" fill={`url(#${id})`} strokeWidth="3" className="gc-aro" />
+        <circle cx="32" cy="32" r="21.5" className="gc-sulco" />
         <ellipse cx="25" cy="21" rx="10" ry="5" className="gc-luz" />
-        <text x="32" y="40" textAnchor="middle" className={k > 9 ? "dois" : undefined}>
+        <text x="32" y="41" textAnchor="middle" className={k > 9 ? "dois" : undefined}>
           {k}
         </text>
       </svg>

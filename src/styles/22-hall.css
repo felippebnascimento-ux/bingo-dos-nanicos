@@ -86,6 +86,7 @@
 /* carteira e mochila lado a lado no canto de baixo */
 .hall-bolso{position:absolute;z-index:120;left:16px;bottom:16px;display:flex;align-items:center;gap:8px}
 .hall-bolso .hall-canto{position:static}
+.hall-bolsa{width:auto;border-radius:99px;box-shadow:0 2px 10px rgb(0 0 0 / .18)}
 .hall-carteira{display:flex;align-items:center;gap:10px;padding:8px 16px 8px 10px;border-radius:99px;font:inherit;cursor:pointer;text-align:left}
 .hall-carteira b{display:block;font:800 16px/1.1 var(--display)}
 .hall-carteira small{display:block;font-size:11px;color:color-mix(in srgb,var(--stamp-ink) 70%,transparent)}
@@ -488,3 +489,23 @@
 @media (max-width:760px){.assistindo-gate{padding:0}.assistindo{min-height:100%;border-radius:0;border:0}}
 .hall-placa:has(.hall-placa-placar){flex-wrap:wrap;justify-content:center;border-radius:14px}
 .hall-placa:has(.hall-placa-placar) .hall-placa-placar{flex-basis:100%}
+
+/* ---------- chat estilo Habbo: a barra branca embaixo do cômodo e os balões em cima dos bonecos ---------- */
+.habbo-barra{display:flex;align-items:center;gap:6px;max-width:560px;margin:10px auto 0;padding:5px 5px 5px 18px;border-radius:99px;background:var(--stamp-ink);border:1px solid color-mix(in srgb,var(--accent-ink) 12%,transparent);box-shadow:0 6px 22px var(--shadow)}
+.habbo-barra:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.habbo-barra input{flex:1;min-width:0;padding:8px 0;border:0;background:transparent;color:var(--accent-ink);font:500 14px var(--body);outline:none}
+.habbo-barra input::placeholder{color:color-mix(in srgb,var(--accent-ink) 50%,transparent)}
+.habbo-enviar{flex:none;padding:9px 18px;border:0;border-radius:99px;background:var(--accent);color:var(--accent-ink);font:800 12px var(--display);cursor:pointer}
+.habbo-enviar:disabled{opacity:.45;cursor:default}
+.habbo-pilha{position:absolute;z-index:115;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;gap:4px;width:max-content;max-width:250px;padding-bottom:4px;pointer-events:none}
+.habbo-pilha.no-svg{position:static;transform:none;width:auto;max-width:none;height:100%;justify-content:flex-end;padding-bottom:0}
+.habbo-balao{position:relative;max-width:240px;padding:5px 11px;border-radius:12px;background:var(--stamp-ink);color:var(--accent-ink);border:1px solid color-mix(in srgb,var(--accent-ink) 16%,transparent);box-shadow:0 3px 10px var(--shadow);font:500 12px/1.3 var(--body);overflow-wrap:anywhere;animation:habbo-vida var(--vida,9s) ease-out forwards}
+.habbo-balao b{font-weight:800}
+.habbo-balao:last-child::after{content:"";position:absolute;left:50%;top:100%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--stamp-ink)}
+@keyframes habbo-vida{0%{opacity:0;transform:translateY(8px) scale(.92)}4%{opacity:1;transform:none}85%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-10px)}}
+@keyframes habbo-some{0%,85%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.habbo-balao{animation-name:habbo-some}}
+@media (max-width:760px){.habbo-barra{margin:8px 0 0}.habbo-pilha{max-width:170px}.habbo-balao{font-size:11px}}
+/* a dica do canto de baixo cede lugar quando a fileira de botões cresce (Bolsa Nanica) ou a tela é estreita */
+.hall-area:has(.hall-bolsa) .hall-dica{display:none}
+@media (min-width:761px) and (max-width:1300px){.hall-dica{display:none}}
