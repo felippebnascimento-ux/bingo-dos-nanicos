@@ -1,0 +1,188 @@
+/* ============================================================
+   Mesas de cartas: o padrão do truco, do pôquer e do blackjack (features/mesa/Pecas.tsx e CartaFrancesa.tsx)
+   Ilustração com cores próprias (exceção como a roleta e o hall): couro, madeira, feltro, ouro e as fichas
+   são variáveis --mesa-*, e o papel das cartas --carta-* (claro também no tema escuro).
+   ============================================================ */
+.mesa-cartas{
+  --mesa-couro0:#3B2A1E; --mesa-couro1:#1A110B; --mesa-costura:rgb(255 236 200 / .16);
+  --mesa-madeira0:#8A5A30; --mesa-madeira1:#4C2E17;
+  --mesa-feltro0:#2F7350; --mesa-feltro1:#174230; --mesa-feltro2:#0F2E21;
+  --mesa-ouro:#D2AE6A; --mesa-ouro-fio:rgb(210 174 106 / .45);
+  --mesa-placa:rgb(14 12 10 / .78); --mesa-branco:#FFFFFF; --mesa-texto:#F7F2E7; --mesa-vermelho:#E0503C;
+  --ficha-vermelha:#C8342F; --ficha-azul:#2F6FB5; --ficha-verde:#2E8B4E; --ficha-preta:#1E1E1E; --ficha-roxa:#6F3FA8; --ficha-ouro:#C9A04E;
+  position:relative;width:100%;aspect-ratio:2 / 1;container-type:inline-size;color:var(--mesa-texto)}
+.mesa-cartas.meia-lua{aspect-ratio:2 / 1.18}
+/* borda de couro acolchoada, com a costura */
+.mesa-couro{position:absolute;inset:7% 4% 11%;border-radius:50% / 50%;padding:2.2cqw;
+  background:radial-gradient(120% 140% at 50% 20%,var(--mesa-couro0),var(--mesa-couro1) 70%);
+  box-shadow:0 3cqw 6cqw -1cqw rgb(0 0 0 / .7),inset 0 .25cqw 0 rgb(255 255 255 / .08),inset 0 -.6cqw 1.2cqw rgb(0 0 0 / .55)}
+.mesa-couro::before{content:"";position:absolute;inset:1cqw;border-radius:inherit;border:.18cqw dashed var(--mesa-costura);pointer-events:none}
+/* aro de madeira */
+.mesa-madeira{position:relative;height:100%;border-radius:50% / 50%;padding:.7cqw;
+  background:linear-gradient(160deg,var(--mesa-madeira0),var(--mesa-madeira1) 55%,var(--mesa-madeira0));box-shadow:inset 0 0 0 .15cqw rgb(0 0 0 / .4)}
+/* feltro com textura e a luz do lustre */
+.mesa-feltro{position:relative;height:100%;border-radius:50% / 50%;overflow:hidden;
+  background:
+    radial-gradient(55% 60% at 50% 38%,rgb(255 255 255 / .12),transparent 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='r'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23r)'/%3E%3C/svg%3E"),
+    radial-gradient(90% 100% at 50% 45%,var(--mesa-feltro0),var(--mesa-feltro1) 65%,var(--mesa-feltro2));
+  box-shadow:inset 0 1.2cqw 3cqw rgb(0 0 0 / .45),inset 0 0 0 .2cqw rgb(0 0 0 / .35)}
+.mesa-feltro::after{content:"";position:absolute;inset:2.2cqw;border-radius:inherit;border:.16cqw solid var(--mesa-ouro-fio);pointer-events:none}
+.mesa-marca{position:absolute;left:50%;top:76%;transform:translate(-50%,-50%);font:800 2.2cqw/1 var(--display);letter-spacing:.4em;text-transform:uppercase;white-space:nowrap;
+  color:rgb(0 0 0 / .22);text-shadow:0 .12cqw 0 rgb(255 255 255 / .07);pointer-events:none}
+.mesa-cartas.meia-lua .mesa-couro{inset:3% 4% 6%;border-radius:0 0 50% 50% / 0 0 72% 72%}
+.mesa-cartas.meia-lua .mesa-madeira,.mesa-cartas.meia-lua .mesa-feltro{border-radius:0 0 50% 50% / 0 0 72% 72%}
+
+/* coisas em cima da mesa, centradas no ponto */
+.na-mesa{position:absolute;z-index:2;transform:translate(-50%,-50%);display:grid;justify-items:center;gap:.6cqw}
+
+/* ---------- lugar ---------- */
+.mesa-lugar{position:relative;display:grid;justify-items:center;gap:.5cqw;width:13cqw}
+.mesa-rosto{position:relative;display:grid;place-items:center;width:6.4cqw;aspect-ratio:1;border-radius:50%}
+.mesa-rosto .av{width:100% !important;height:100% !important;border-radius:50%;box-shadow:0 0 0 .35cqw var(--mesa-couro1),0 .8cqw 1.6cqw rgb(0 0 0 / .55);font-size:2.4cqw}
+/* anel do tempo: some de acordo com o --falta (1 = tempo cheio) */
+.mesa-lugar.vez .mesa-rosto::before{content:"";position:absolute;inset:-.75cqw;border-radius:50%;
+  background:conic-gradient(var(--mesa-ouro) calc(var(--falta,1) * 360deg),rgb(255 255 255 / .12) 0);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - .55cqw),#000 calc(100% - .5cqw));mask:radial-gradient(farthest-side,transparent calc(100% - .55cqw),#000 calc(100% - .5cqw))}
+.mesa-lugar.vez .mesa-rosto .av{box-shadow:0 0 0 .35cqw var(--mesa-couro1),0 0 2.4cqw rgb(210 174 106 / .55)}
+.mesa-placa{display:grid;justify-items:center;min-width:10cqw;padding:.45cqw 1.1cqw;border-radius:.9cqw;background:var(--mesa-placa);box-shadow:inset 0 0 0 .1cqw rgb(255 255 255 / .08);backdrop-filter:blur(4px)}
+.mesa-placa b{font:700 1.3cqw/1.25 var(--body);white-space:nowrap}
+.mesa-placa small{font:700 1.15cqw/1.25 var(--display);color:var(--mesa-ouro);white-space:nowrap}
+.mesa-lugar.eu .mesa-placa{box-shadow:inset 0 0 0 .15cqw var(--mesa-ouro)}
+.mesa-lugar.fora{opacity:.45;filter:grayscale(.6)}
+.mesa-etiqueta{position:absolute;right:-1.2cqw;top:-.6cqw;padding:.25cqw .6cqw;border-radius:.5cqw;background:var(--mesa-vermelho);color:var(--mesa-branco);font:800 .95cqw var(--display);letter-spacing:.04em;white-space:nowrap}
+.mesa-fala{position:absolute;bottom:calc(100% + .6cqw);left:50%;transform:translateX(-50%);padding:.55cqw 1.2cqw;border-radius:1.1cqw;background:var(--mesa-branco);color:var(--mesa-couro1);font:900 1.6cqw var(--display);white-space:nowrap;box-shadow:0 .8cqw 1.6cqw rgb(0 0 0 / .5);animation:mesa-grita .35s cubic-bezier(.2,1.6,.4,1) both}
+.mesa-fala::after{content:"";position:absolute;left:50%;top:100%;margin-left:-.7cqw;border:.7cqw solid transparent;border-bottom:0;border-top-color:var(--mesa-branco)}
+@keyframes mesa-grita{from{transform:translateX(-50%) scale(.4);opacity:0}}
+
+/* ---------- fichas ---------- */
+.mesa-ficha{display:block;filter:drop-shadow(0 .15cqw .2cqw rgb(0 0 0 / .6))}
+.mesa-ficha .fi-base{fill:var(--fi)}
+.mesa-ficha .fi-listra{fill:var(--mesa-branco);opacity:.92}
+.mesa-ficha .fi-miolo{fill:var(--fi)}
+.mesa-ficha .fi-fio{fill:none;stroke:var(--mesa-branco);stroke-width:1.2;stroke-dasharray:3 2.4;opacity:.75}
+.mesa-ficha.f-vermelha{--fi:var(--ficha-vermelha)}.mesa-ficha.f-azul{--fi:var(--ficha-azul)}.mesa-ficha.f-verde{--fi:var(--ficha-verde)}
+.mesa-ficha.f-preta{--fi:var(--ficha-preta)}.mesa-ficha.f-roxa{--fi:var(--ficha-roxa)}.mesa-ficha.f-ouro{--fi:var(--ficha-ouro)}
+.mesa-pilha{display:flex;align-items:flex-end;gap:.5cqw}
+.mesa-pilha-fichas{display:flex;flex-direction:column-reverse}
+.mesa-pilha-fichas .mesa-ficha{width:2.4cqw;height:2.4cqw}
+.mesa-pilha-fichas .mesa-ficha + .mesa-ficha{margin-bottom:-1.95cqw}
+.mesa-pilha b{padding:.15cqw .55cqw;border-radius:99px;background:rgb(0 0 0 / .55);font:700 1.15cqw var(--display);white-space:nowrap}
+.mesa-dealer{display:grid;place-items:center;width:2.6cqw;aspect-ratio:1;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,var(--mesa-branco),#D9D4C7);color:var(--mesa-couro1);font:900 1.2cqw var(--display);
+  box-shadow:0 .25cqw 0 #A9A294,0 .5cqw .9cqw rgb(0 0 0 / .55)}
+
+/* ---------- baralho francês ---------- */
+.cfr{--carta-papel:#FCFAF4; --carta-tinta:#1C1C1E; --carta-vermelha:#C62F2B; --carta-ouro:#C9A04E; --carta-verso0:#8E1F2A; --carta-verso1:#5E1219;
+  position:relative;display:block;width:5.2cqw;aspect-ratio:60 / 84;border-radius:.5cqw;box-shadow:0 .5cqw 1.1cqw rgb(0 0 0 / .45);color:var(--carta-tinta)}
+.cfr.vermelha{color:var(--carta-vermelha)}
+.cfr svg{display:block;width:100%;height:100%}
+.cfr-papel{fill:var(--carta-papel);stroke:rgb(0 0 0 / .15)}
+.cfr-valor{font:800 11px/1 var(--body);fill:currentColor;text-anchor:middle}
+.cfr-naipe{fill:currentColor}
+.cfr-moldura{fill:none;stroke:var(--carta-ouro);stroke-width:1.4}
+.cfr-retrato{fill:color-mix(in srgb,currentColor 7%,var(--carta-papel))}
+.cfr-figura{font:800 22px/1 var(--display);fill:currentColor;text-anchor:middle}
+.cfr-verso{fill:var(--carta-verso0);stroke:rgb(0 0 0 / .2)}
+.cfr-verso-fio{fill:none;stroke:var(--carta-ouro);stroke-width:1;opacity:.8}
+.cfr-verso-trama{fill:var(--carta-verso1);opacity:.7}
+.cfr-verso-selo{fill:var(--carta-verso0);stroke:var(--carta-ouro);stroke-width:1.2}
+.cfr-verso-n{font:900 16px/1 var(--display);fill:var(--carta-ouro);text-anchor:middle}
+.cfr.ganha{box-shadow:0 0 0 .3cqw var(--mesa-ouro),0 .5cqw 1.6cqw rgb(210 174 106 / .6)}
+.cfr.grande{width:8cqw}
+.cfr.peq{width:2.8cqw;border-radius:.3cqw}
+.mesa-leque{display:flex}
+.mesa-leque > * + *{margin-left:-1.6cqw}
+.mesa-leque.abre > :first-child{transform:rotate(-7deg) translateY(.4cqw)}
+.mesa-leque.abre > :last-child{transform:rotate(7deg) translateY(.4cqw)}
+.mesa-leque.pequeno > * + *{margin-left:-1.4cqw}
+.mesa-leque.pequeno{align-items:flex-start}
+
+/* ---------- textos e etiquetas em cima da mesa ---------- */
+.mesa-pote{padding:.5cqw 1.4cqw;border-radius:99px;background:rgb(0 0 0 / .5);font:800 1.5cqw var(--display);color:var(--mesa-ouro);box-shadow:inset 0 0 0 .1cqw rgb(210 174 106 / .35)}
+.mesa-aviso{padding:.4cqw 1.1cqw;border-radius:99px;background:rgb(0 0 0 / .45);font:600 1.15cqw var(--body);white-space:nowrap}
+.mesa-soma{padding:.2cqw .7cqw;border-radius:99px;background:rgb(0 0 0 / .65);font:800 1.2cqw var(--display);color:var(--mesa-branco)}
+.mesa-res{padding:.25cqw .8cqw;border-radius:.5cqw;font:800 1.05cqw var(--display);letter-spacing:.04em;white-space:nowrap}
+.mesa-res.ganhou{background:var(--ficha-verde);color:var(--mesa-branco)}
+.mesa-res.perdeu{background:var(--mesa-vermelho);color:var(--mesa-branco)}
+.mesa-res.bj{background:var(--mesa-ouro);color:var(--mesa-couro1)}
+.mesa-circulo{display:grid;place-items:center;width:6cqw;aspect-ratio:1;border-radius:50%;border:.2cqw solid var(--mesa-ouro-fio)}
+@media (prefers-reduced-motion:reduce){.mesa-fala{animation:none}}
+
+/* ---------- barra de ações (embaixo da mesa) ---------- */
+.mesa-acoes{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;margin:14px auto 0;padding:10px;width:fit-content;max-width:100%;border-radius:18px;
+  background:var(--surface);border:1px solid var(--line);box-shadow:0 14px 30px -10px var(--shadow);position:relative;z-index:3}
+.mesa-bt{display:grid;justify-items:center;gap:1px;min-width:92px;padding:11px 16px;border:0;border-radius:12px;background:var(--surface-2);color:var(--ink);font:800 14px var(--body);cursor:pointer;transition:filter .12s,transform .12s}
+.mesa-bt small{font:600 11px var(--body);color:var(--muted)}
+.mesa-bt:hover{filter:brightness(1.08)}
+.mesa-bt:active{transform:scale(.97)}
+.mesa-bt.ouro{background:var(--accent);color:var(--accent-ink)}.mesa-bt.ouro small{color:color-mix(in srgb,var(--accent-ink) 70%,transparent)}
+.mesa-bt.verm{background:var(--live);color:#fff}
+.mesa-tempo{display:grid;justify-items:center;padding:0 8px;font:700 11px var(--display);color:var(--accent-text)}
+.mesa-tempo b{font:800 20px/1 var(--display)}
+.mesa-valor{display:grid;gap:6px;min-width:220px;padding:0 6px}
+.mesa-valor-rapido{display:flex;gap:4px}
+.mesa-valor-rapido button{flex:1;padding:5px 0;border:1px solid var(--line);border-radius:8px;background:none;color:var(--ink);font:700 11.5px var(--body);cursor:pointer}
+.mesa-valor-rapido button:hover{background:var(--surface-2)}
+.mesa-valor input{width:100%;accent-color:var(--accent)}
+.mesa-valor-num{display:flex;justify-content:space-between;font:700 11px var(--display);color:var(--muted)}
+/* o topo do jogo: placar, valendo, blinds */
+.mesa-topo{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.mesa-topo-grupo{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mesa-time{display:grid;justify-items:center;min-width:96px;padding:6px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
+.mesa-time b{font:800 26px/1.05 var(--display);font-variant-numeric:tabular-nums}
+.mesa-time span{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.mesa-time.nos{border-color:var(--accent)}.mesa-time.nos b{color:var(--accent)}
+.mesa-selo{font:700 12px var(--display);padding:5px 10px;border-radius:99px;background:var(--surface-2);color:var(--ink)}
+.mesa-selo.verm{background:var(--live);color:#fff}.mesa-selo.ouro{background:var(--accent);color:var(--accent-ink)}
+/* blackjack: bandeja de fichas do dealer e o sapato das cartas */
+.bj-bandeja{display:flex;gap:.3cqw;padding:.5cqw .8cqw;border-radius:.6cqw;background:linear-gradient(var(--mesa-couro0),var(--mesa-couro1));box-shadow:inset 0 .2cqw .5cqw rgb(0 0 0 / .6)}
+.bj-bandeja span{display:flex;flex-direction:column}.bj-bandeja span .mesa-ficha + .mesa-ficha{margin-top:-1.6cqw}
+.bj-bandeja .mesa-ficha{width:2cqw;height:2cqw}
+.bj-sapato{display:block;width:7cqw;height:4.4cqw;border-radius:.6cqw;background:linear-gradient(160deg,#4A3324,#1B120C);box-shadow:0 .6cqw 1.2cqw rgb(0 0 0 / .5),inset 0 .2cqw 0 rgb(255 255 255 / .08)}
+.bj-sapato::after{content:"";display:block;margin:.6cqw auto 0;width:4.4cqw;height:2.6cqw;border-radius:.3cqw;background:var(--carta-verso0,#8E1F2A);box-shadow:inset 0 0 0 .2cqw #C9A04E}
+/* o baralho espanhol do truco no tamanho da mesa */
+.mesa-cartas .tc{width:5.6cqw}
+.mesa-leque.pequeno .tc{width:2.8cqw;margin-left:0;border-radius:.35cqw}
+.mesa-leque.pequeno .tc + .tc{margin-left:-1.4cqw}
+.truco-grande .tc{width:8.4cqw}
+.cfr.vazia{opacity:.25}
+
+/* ---------- o truco na mesa oval ---------- */
+.mesa-cartas .tr-mao{display:flex;align-items:flex-end;min-height:0;gap:0}
+.mesa-cartas .tr-mao .tc{width:max(62px,8.4cqw);border-radius:max(8px,.9cqw)}
+.mesa-cartas .tr-mao .tc + .tc{margin-left:-1.4cqw}
+.mesa-cartas .tr-mao.pode .tc:hover,.mesa-cartas .tr-mao.pode .tc:focus-visible{transform:translateY(-1.4cqw) rotate(0deg)}
+.mesa-cartas .tr-jogada .tc{width:max(40px,5.6cqw)}
+.mesa-cartas .tr-msg{display:grid;justify-items:center;gap:6px;padding:12px 18px;border-radius:16px;background:rgb(0 0 0 / .5);color:var(--mesa-texto);text-align:center}
+.mesa-cartas .tr-msg b{font:800 max(15px,1.8cqw) var(--display)}
+.mesa-cartas .tr-msg span{font-size:max(12px,1.2cqw);color:rgb(255 255 255 / .75)}
+.tr-pergunta{box-shadow:0 0 0 2px var(--live),0 14px 30px -10px var(--shadow)}
+.tr-pergunta-txt{padding:0 6px;font-size:14px}
+.tr-pergunta-txt b{font-family:var(--display)}
+.mesa-bt.sure{background:var(--live);color:#fff}
+.mesa-topo .tr-vazas{display:flex;gap:4px}
+.mesa-topo .tr-alvo{font-size:12px;color:var(--muted)}
+
+/* ---------- mesa pequena (celular, janela de assistir): nada fica minúsculo ---------- */
+.mesa-rosto{min-width:38px}
+.mesa-placa{min-width:72px}
+.mesa-placa b{font-size:max(11px,1.3cqw)}
+.mesa-placa small{font-size:max(10px,1.15cqw)}
+.mesa-fala{font-size:max(12px,1.6cqw)}
+.mesa-aviso{font-size:max(11px,1.15cqw)}
+.mesa-pote{font-size:max(12px,1.5cqw)}
+.mesa-pilha b,.mesa-soma,.mesa-res{font-size:max(10px,1.15cqw)}
+.mesa-leque.pequeno .tc{min-width:20px}
+.cfr{min-width:30px}
+.cfr.grande{min-width:52px}
+.mesa-etiqueta{font-size:max(9px,.95cqw)}
+@media (max-width:640px){
+  .mesa-cartas{aspect-ratio:1 / 1.05}
+  .mesa-cartas.meia-lua{aspect-ratio:1 / 1.15}
+  .mesa-marca{display:none}
+  .mesa-acoes{gap:6px;padding:8px}
+  .mesa-bt{min-width:0;padding:10px 12px;font-size:13px}
+}
+/* no celular, a minha placa sairia em cima da minha mão (o meu tempo já aparece na barra) */
+@media (max-width:640px){.tr-lugar-mesa.sul:has(.mesa-lugar.eu){display:none}}

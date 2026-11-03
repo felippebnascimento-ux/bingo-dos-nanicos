@@ -35,6 +35,7 @@ import "@/styles/32-midias.css";
 import "@/styles/33-celular.css";
 import "@/styles/34-perfil.css";
 import "@/styles/35-voz.css";
+import "@/styles/36-mesas.css";
 import "@/styles/36-quarto.css";
 
 /* fontes servidas pelo próprio site (a CSP não precisa liberar o Google Fonts) */

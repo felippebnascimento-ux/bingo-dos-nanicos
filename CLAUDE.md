@@ -201,6 +201,10 @@ src/
     salas/             salas tipo lan house: trocar.ts (entrarSala: encerra tela e voz, mantém a câmera, troca o canal,
                        carrega escalação e chat; encerra a voz) e Salas.tsx (janela das salas com cartões e chat geral,
                        aberta pela porta do Sítio)
+    mesa/              o padrão das mesas de cartas (truco, pôquer, blackjack): Pecas.tsx (Mesa oval ou meia-lua com couro,
+                       madeira e feltro; NaMesa para pôr algo em x%, y%; Lugar com rosto, placa, fala e o anel do tempo; Ficha,
+                       Pilha e BotaoDealer) e CartaFrancesa.tsx (baralho francês em SVG próprio, com verso dos Nanicos); estilos
+                       em 36-mesas.css
     truco/             engine.ts (regras, puro e testado; a função truco-mesa usa uma cópia; relógio de 20 s por
                        jogada: `desde`, trQuemDeve, trRestante, trTempoEsgotado), valida.ts (confere a mesa pública),
                        mesa.ts (pede cada ação à função truco-mesa e recebe a mesa e a minha mão pelo tempo real;
@@ -323,6 +327,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 - **Exceção: o quarto da ficha** (`24-ficha.css`) segue a mesma regra do hall, com as variáveis `--quarto-*` e as classes `q-<nome>` (valem também no quarto próprio, em `.quarto-vars`) (valem também nas prévias da loja, `.loja-previa` e `.mochila-previa`).
 - **Exceção: a roleta animada do Cassino** (`26-cassino.css`): madeira, ouro, prata e feltro usam as variáveis `--roleta-*` (em `.rr`, com tema escuro), e a mesa usa `--rm-*` e as fichas `--ficha-*` (em `.rm`); o caça-níquel usa `--cn-*` (em `.cn`: vinho, lâmpadas, rolos, LED, alavanca, moedas); a roda tem estilos (`tema` do RodaRoleta, `data-tema` em `.rr`: classica, luxo, monaco, neon; a mesa usa `luxo`, laca preta e ouro, escolhido pelo grupo em 03/11/2026); vermelho, preto e verde das casas, na roda e na mesa, são os de cassino, `--roleta-vermelho`, `--roleta-preto` e `--roleta-verde` (iguais nos dois temas; o `--live` ficava salmão). O céu e o avião do Aviãozinho usam `--av-*` (em `.aviao`) e o estádio, o goleiro e a bola do Pênalti, `--pn-*` (em `.penalti`).
 - **Exceção: o nível da Gamers Club** (`34-perfil.css`): o círculo de cada nível usa as cores próprias da GC, `--gc-<n>-a` e `--gc-<n>-b` (de cima e de baixo de cada nível, de 1 a 20; mais `--gc-borda`, `--gc-brilho` e `--gc-texto`), definidas em `.gc-nivel` e iguais nos dois temas.
+- **Exceção: as mesas de cartas** (`36-mesas.css`): couro, madeira, feltro, ouro e placas usam `--mesa-*` (em `.mesa-cartas`), as fichas `--ficha-*` e o baralho francês `--carta-*` (em `.cfr`); o papel fica claro também no tema escuro.
 - **Exceção: as cartas do truco** (`20-truco.css`): o baralho desenhado usa as variáveis `--carta-*` (definidas em `.tc`; o papel fica claro também no tema escuro, só mais apagado) e as classes `cf-<nome>`.
 - **Exceção: o iPhone e o InstaNanico** (`33-celular.css`): a moldura usa `--iph-*` e o app as cores do modo escuro do Instagram, `--ig-*` (preto, cinzas, azul dos botões, o degradê do anel dos stories e os fundos dos stories de texto), definidas em `.iphone`.
 - **Exceção: os desenhos dos itens da loja** (`30-loja.css`): cigarro, latas, cuia, copo e fumaça usam as variáveis `--loja-*` (com tema escuro) e as classes `l-<nome>`.
