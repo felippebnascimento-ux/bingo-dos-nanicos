@@ -346,6 +346,18 @@ export const CHANGELOG: EntradaLog[] = [
       "O celular ficou maior na tela do computador",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Voz no estilo do Discord: o painel embaixo do menu mostra o sinal da conexão, liga a supressão de ruído e tem os botões de câmera, transmitir a tela, reações e câmeras em janela",
+      "Microfone e fone com a setinha: escolha o aparelho, teste o microfone na barrinha, ligue o ruído e o eco e ajuste o volume da voz",
+      "Transmitir a tela abre uma janela para escolher tela inteira, janela ou aba, 720p, 1080p ou 1440p, 30 ou 60 fps e se vai o som do PC; enquanto transmite, aparece a miniatura com quantos estão assistindo",
+      "O Ao vivo mostra todo mundo da voz em quadrados, com a câmera ou o rosto e a borda dourada em quem fala, e uma tela para cada transmissão: dá para assistir várias ao mesmo tempo",
+      "Clique numa tela para ver em destaque, com o resto do canal embaixo; clique direito num quadrado para tela cheia, janela flutuante, volume da pessoa e silenciar",
+      "Ligar a câmera mostra uma prévia antes, com a escolha da câmera e a opção de espelhar",
+      { t: "A aba Telas do painel do Ao vivo", off: "trocada pela grade do canal e pelo painel de voz na v1.91" },
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

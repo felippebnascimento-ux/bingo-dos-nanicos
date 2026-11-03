@@ -4,6 +4,7 @@ import { ChamaNome } from "@/features/ficha/NoSitio";
 import { Avatar } from "@/components/ui/Avatar";
 import { IcVoltar } from "@/components/ui/icones";
 import { CamNaSala } from "@/features/live/CamNaSala";
+import { setLive } from "@/features/live/estado";
 import { assistir } from "@/features/live/live";
 import { nomeDaSala } from "@/features/salas/trocar";
 import { bingoLines } from "@/lib/bingo";
@@ -42,11 +43,12 @@ export function assistirLive(key: string, sala: string | null) {
 /** Clicar em quem está ao vivo na lista da sala: abre a aba Ao vivo já na tela da pessoa. */
 export function goWatch(key: string) {
   setApp({ aba: "live" });
-  if (key !== MY_KEY) assistir(key, true);
-  else {
-    setApp({ railTab: "telas" });
-    local.set("rail-tab", "telas");
+  if (key !== MY_KEY) {
+    assistir(key, true);
+    /* abre já grande, como clicar no AO VIVO de alguém no Discord */
+    setLive({ modo: "foco" });
   }
+  /* a minha própria tela aparece no meu quadrado da grade */
   if (ehCelular()) setTimeout(() => rolarAte(document.getElementById("stage")), 0);
 }
 

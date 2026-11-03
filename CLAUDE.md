@@ -125,11 +125,20 @@ src/
                        cleanLink, cleanVideo, cleanMural, dominio; puro e testado) e CampoLinks.tsx ("Meus links")
     live/              live.ts (liga tudo à sala), rtc.ts (WebRTC comum), tela.ts (transmissão), camera.ts,
                        voz.ts (voz da sala: um par WebRTC só de áudio com cada um na voz, microfone, fone, quem
-                       está falando), ruido.ts (abrirMic: microfone passado pela RNNoise; sem ela, a supressão
+                       está falando; volume e "silenciar" de cada nanico só no meu aparelho, `useAjustesVoz`, e o
+                       sinal da conexão, `sinalDaVoz`), ruido.ts (abrirMic: microfone passado pela RNNoise; sem ela, a supressão
                        do navegador), vozRegras.ts (quem oferece, volume, anel de fala; puro e testado),
                        reacoes.ts, desenho.ts, estado.ts (store + preferências), pip.ts;
-                       telas: LiveView, Palco, Painel, Cameras, Video, Voos, Rosto, CamNaSala, CamBotoes e
-                       CamadaReacoesMinha (reações que chegam na minha transmissão, fora das abas)
+                       telas: LiveView, Palco, Painel (Chat e Cartela; a aba Telas saiu na v1.91), Cameras, Video,
+                       Voos, Rosto, CamNaSala, CamBotoes e CamadaReacoesMinha (reações que chegam na minha transmissão,
+                       fora das abas); no estilo do Discord (v1.91): PainelVoz.tsx (o painel "Voz conectada" embaixo
+                       do menu com sinal, ruído, desligar e os botões câmera, tela, reações e câmeras; a miniatura da
+                       minha transmissão; microfone e fone com a setinha na linha "eu"; as janelas de transmitir, com o
+                       que mostrar, 720p/1080p/1440p, 30/60 fps e o som do PC, e a prévia da câmera, `JanelasVoz`) e
+                       Grade.tsx (o canal no Ao vivo: todo mundo da voz em quadrados e uma tela para cada transmissão,
+                       "Assistir transmissão" para abrir, modo foco com o Palco grande e o resto numa faixa, `modo` no
+                       estado; menu do quadrado no clique direito; o Palco fica montado também na grade, escondido,
+                       para a tela principal seguir com som)
     config/            janela de Configurações (engrenagem embaixo do menu; `configAberto` no store): midia.ts
                        (microfone, saída, câmera, eco e ruído escolhidos, lista de aparelhos; voz.ts e camera.ts
                        leem daqui e trocam o aparelho na hora com `replaceTrack`) e ConfigView.tsx (ConfigJanela:
@@ -443,7 +452,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 - **Mudanças no banco:** chegam por `postgres_changes` em `friends`, `phrases`, `game`, `chat_messages`, `carteiras`, `rodizio`, `mochila` (equipados), `consumos` (o boneco fumando ou bebendo), `truco_mesas`, `truco_maos`, `bingo_partidas`, `bingo_cartelas`, `bingo_cantos`, `midias`, `mural_links`, `perfil_links`, `rede_posts`, `rede_curtidas`, `rede_comentarios`, `rede_stories`, `rede_mensagens`, `apostas_mercados`, `apostas`, `atributos_aviso` e `respeitos` (no DELETE, `aoMudarTabela` entrega a chave da linha apagada). A chinelada e a torta vêm do tempo real de `zoeiras` (pagas, gravadas por `zoar()`), e o sorteio da roleta do rodízio vem do tempo real de `rodizio` (todo mundo anima até o mesmo `girado_em`), **nunca de broadcast**. Os ganhos de moedas de todo mundo no Sítio vêm do tempo real de `carteiras` (gravado por `creditar()`), **nunca de broadcast**.
 
 ### Navegador (`localStorage`, só conveniência de cada pessoa)
-- **Chaves:** `rift-lineup`, `rift-card` (cartela do bingo local; numa sala de LoL com o SQL, a cartela vem do banco), `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `log-visto`, `fome-fechado`, `hall-pos` (último piso no hall), `hall-sala-min` (lista "Na sala agora" do Sítio recolhida), `sala-atual` (última sala; o site sempre abre no lobby), `menu-min` (grupos do menu recolhidos), `canais-voz-min` e `canais-texto-min` (categorias de canais recolhidas; no celular começam recolhidas) `membros-min` (lista de membros só com os rostos; abaixo de 1200 px fica assim sempre) e `midia` (microfone, saída de som, câmera, eco e ruído escolhidos nas Configurações) e `evento-visto` (o aviso que explica o happy hour e o churrasco já apareceu) `missoes-min` (cartão das missões recolhido no Sítio) e `rede-visto` (última postagem da rede nanica vista, para a bolinha de não lidas) e `roleta-som` (`0` = roleta do Cassino no mudo) e `insta-vistos` (ids dos stories que eu já vi no InstaNanico; o banco também guarda em `rede_stories_vistos`).
+- **Chaves:** `rift-lineup`, `rift-card` (cartela do bingo local; numa sala de LoL com o SQL, a cartela vem do banco), `side-min`, `rail-min`, `rail-tab`, `live-fps`, `live-res`, `live-vol`, `desenho`, `reacoes-ver`, `riot-auto`, `riot-visto`, `truco-opt`, `log-visto`, `fome-fechado`, `hall-pos` (último piso no hall), `hall-sala-min` (lista "Na sala agora" do Sítio recolhida), `sala-atual` (última sala; o site sempre abre no lobby), `menu-min` (grupos do menu recolhidos), `canais-voz-min` e `canais-texto-min` (categorias de canais recolhidas; no celular começam recolhidas) `membros-min` (lista de membros só com os rostos; abaixo de 1200 px fica assim sempre) e `midia` (microfone, saída de som, câmera, eco e ruído escolhidos nas Configurações) e `evento-visto` (o aviso que explica o happy hour e o churrasco já apareceu) `missoes-min` (cartão das missões recolhido no Sítio) e `rede-visto` (última postagem da rede nanica vista, para a bolinha de não lidas) e `roleta-som` (`0` = roleta do Cassino no mudo) e `insta-vistos` (ids dos stories que eu já vi no InstaNanico; o banco também guarda em `rede_stories_vistos`) e, da voz e da transmissão, `voz-ajustes` (volume geral, volume e silenciados por nanico), `live-som` (`0` = transmitir sem o som do PC), `live-mostrar` (tela inteira, janela ou aba), `cam-espelho` e `cam-na-grade`.
 - **As do site antigo continuam iguais**, então ninguém perde a cartela na troca.
 - **`sessionStorage`:** `log-auto` (o Log de novidades já abriu sozinho nesta sessão do navegador).
 - Nada importante pode morar só aqui.

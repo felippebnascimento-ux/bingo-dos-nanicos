@@ -34,6 +34,7 @@ import "@/styles/31-missoes.css";
 import "@/styles/32-midias.css";
 import "@/styles/33-celular.css";
 import "@/styles/34-perfil.css";
+import "@/styles/35-voz.css";
 
 /* fontes servidas pelo próprio site (a CSP não precisa liberar o Google Fonts) */
 const unbounded = Unbounded({ subsets: ["latin"], weight: ["500", "700", "800"], variable: "--font-unbounded", display: "swap" });

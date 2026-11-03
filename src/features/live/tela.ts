@@ -35,13 +35,13 @@ export const LIVE = {
 };
 
 /* qualidade: resolução (1080p ou 1440p) x fluidez (30 ou 60 fps; o WebRTC dos navegadores não passa de 60) */
-export const RES = { 1080: { w: 1920, h: 1080, nome: "1080p · Full HD" }, 1440: { w: 2560, h: 1440, nome: "1440p · 2K" } };
+export const RES = { 720: { w: 1280, h: 720, nome: "720p" }, 1080: { w: 1920, h: 1080, nome: "1080p · Full HD" }, 1440: { w: 2560, h: 1440, nome: "1440p · 2K" } };
 /* teto por pessoa que assiste e o upload total que dá para dividir entre todos */
 const liveCap = () => {
   const { res, fps } = getLive();
-  return { 1080: { 60: 12e6, 30: 8e6 }, 1440: { 60: 20e6, 30: 13e6 } }[res][fps];
+  return { 720: { 60: 6e6, 30: 4e6 }, 1080: { 60: 12e6, 30: 8e6 }, 1440: { 60: 20e6, 30: 13e6 } }[res][fps];
 };
-const liveBudget = () => ({ 1080: 30e6, 1440: 40e6 })[getLive().res];
+const liveBudget = () => ({ 720: 18e6, 1080: 30e6, 1440: 40e6 })[getLive().res];
 
 /** Quem está transmitindo agora (menos eu), em ordem de nome. */
 export const liveStreams = (online: Presence[] = getApp().onlineSala) =>
@@ -52,21 +52,25 @@ export const liveStreams = (online: Presence[] = getApp().onlineSala) =>
 /* ---------- quem transmite ---------- */
 export async function startLive() {
   if (!canShare) return toast("Transmitir só funciona no navegador do computador.");
-  const { res, fps } = getLive();
+  const { res, fps, somPc, mostrar } = getLive();
   /* cada navegador aceita opções diferentes: tenta da mais completa para a mais simples */
   const R = RES[res],
     vid = { frameRate: { ideal: fps, max: fps }, width: { ideal: R.w, max: R.w }, height: { ideal: R.h, max: R.h } };
   const aud = { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
   /* restrictOwnAudio: o som que o próprio site toca (a voz da sala) não entra no som do sistema capturado,
      senão quem fala se ouviria de volta na transmissão */
-  const extra = { systemAudio: "include", selfBrowserSurface: "exclude", surfaceSwitching: "include", restrictOwnAudio: true };
-  const tentativas: Record<string, unknown>[] = [
-    { video: vid, audio: aud, ...extra, windowAudio: "window" },
-    { video: vid, audio: aud, ...extra },
-    { video: vid, audio: true, systemAudio: "include" },
-    { video: { frameRate: fps }, audio: true },
-    { video: true, audio: true },
-  ];
+  const extra = { systemAudio: somPc ? "include" : "exclude", selfBrowserSurface: "exclude", surfaceSwitching: "include", restrictOwnAudio: true };
+  /* displaySurface só deixa já selecionado na janela do navegador (tela inteira, janela ou aba) */
+  const vidPref = { ...vid, displaySurface: mostrar };
+  const tentativas: Record<string, unknown>[] = somPc
+    ? [
+        { video: vidPref, audio: aud, ...extra, windowAudio: "window" },
+        { video: vidPref, audio: aud, ...extra },
+        { video: vid, audio: true, systemAudio: "include" },
+        { video: { frameRate: fps }, audio: true },
+        { video: true, audio: true },
+      ]
+    : [{ video: vidPref, audio: false, ...extra }, { video: vid, audio: false }, { video: true, audio: false }];
   let stream: MediaStream | null = null,
     erro: unknown = null;
   for (let i = 0; i < tentativas.length; i++) {
@@ -110,7 +114,7 @@ export async function startLive() {
   }
   setApp({ myLiveSid: LIVE.mySid });
   avisar();
-  toast(LIVE.hasAudio ? "Você está ao vivo" : "Você está ao vivo, mas sem som");
+  toast(LIVE.hasAudio || !somPc ? "Você está ao vivo" : "Você está ao vivo, mas sem som");
 }
 
 export function stopLive() {

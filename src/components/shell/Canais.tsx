@@ -6,14 +6,14 @@
  *   com o mouse em cima) entra na sala dele só para assistir, sem voz, e já abre a tela da pessoa.
  *   O chat de cada sala é o chat do canal de voz: fica no painel do Ao vivo, e o canal mostra as mensagens novas dele.
  * - "Canais de texto": só o #geral (o único chat de todo mundo), com as não lidas e quem está olhando agora.
- * Cada categoria recolhe (fica só o canal onde eu estou). E o painel da voz conectada (microfone, fone, desligar).
+ * Cada categoria recolhe (fica só o canal onde eu estou). O painel da voz conectada fica em features/live/PainelVoz.tsx.
  */
 import { useState, type ReactNode } from "react";
 import { Avatar } from "@/components/ui/Avatar";
-import { IcDesligar, IcFone, IcFoneDesligado, IcHash, IcMic, IcMicDesligado, IcSeta, IcVolume } from "@/components/ui/icones";
+import { IcFoneDesligado, IcHash, IcMicDesligado, IcSeta, IcVolume } from "@/components/ui/icones";
 import { abrirCanalTexto, useChat } from "@/features/chat/chat";
-import { alternarMudo, alternarSurdo, entrarVoz, useVoz } from "@/features/live/voz";
-import { entrarSala, nomeDaSala } from "@/features/salas/trocar";
+import { entrarVoz, useVoz } from "@/features/live/voz";
+import { entrarSala } from "@/features/salas/trocar";
 import type { PresencaNanico } from "@/lib/presenca";
 import { friendDaPresenca, getApp, MY_KEY, setApp, useApp } from "@/lib/store";
 import { ehCelular, local } from "@/lib/util";
@@ -175,46 +175,5 @@ export function Canais() {
         )}
       </Categoria>
     </section>
-  );
-}
-
-/**
- * Painel de quem está numa sala: voz conectada (microfone e fone) ou o convite para entrar na voz.
- * Desligar é sair da sala (encerra a voz, a tela e a câmera e volta para o lobby), como no Discord.
- */
-export function VozPainel() {
-  const minhaSala = useApp((s) => s.minhaSala);
-  const salas = useApp((s) => s.salas);
-  const voz = useApp((s) => s.myVozSid);
-  const mudo = useApp((s) => s.vozMudo);
-  const surdo = useApp((s) => s.vozSurdo);
-  const nome = nomeDaSala(minhaSala, salas);
-  if (!minhaSala || !nome) return null;
-  return (
-    <div className={"voz-painel" + (voz ? " on" : "")}>
-      <div className="voz-info">
-        <b>{voz ? "Voz conectada" : "Na sala, fora da voz"}</b>
-        <small>{nome}</small>
-      </div>
-      <div className="voz-botoes">
-        {voz ? (
-          <>
-            <button type="button" className={"voz-btn" + (mudo ? " off" : "")} aria-pressed={mudo} aria-label={mudo ? "Ligar o microfone" : "Desligar o microfone"} title={mudo ? "Ligar o microfone" : "Desligar o microfone"} onClick={alternarMudo}>
-              {mudo ? <IcMicDesligado /> : <IcMic />}
-            </button>
-            <button type="button" className={"voz-btn" + (surdo ? " off" : "")} aria-pressed={surdo} aria-label={surdo ? "Voltar a ouvir" : "Parar de ouvir"} title={surdo ? "Voltar a ouvir" : "Parar de ouvir"} onClick={alternarSurdo}>
-              {surdo ? <IcFoneDesligado /> : <IcFone />}
-            </button>
-          </>
-        ) : (
-          <button type="button" className="btn sm" onClick={entrarVoz}>
-            Entrar na voz
-          </button>
-        )}
-        <button type="button" className="voz-btn sair" aria-label={`Desligar e sair da ${nome}`} title="Desligar e sair da sala" onClick={() => entrarSala(null)}>
-          <IcDesligar />
-        </button>
-      </div>
-    </div>
   );
 }

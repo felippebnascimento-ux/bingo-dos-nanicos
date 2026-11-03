@@ -1,6 +1,6 @@
 /* ---------- ao vivo: topo, painel, chat, cartela ---------- */
 .hero-row{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.rail-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surface-2);padding:4px;border-radius:var(--r-md)}
+.rail-tabs{display:grid;grid-template-columns:repeat(2,1fr);gap:4px;background:var(--surface-2);padding:4px;border-radius:var(--r-md)}
 .rail-tabs button{border:0;background:none;padding:9px 6px;border-radius:var(--r-sm);font-weight:600;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
 .rail-tabs button[aria-selected="true"]{background:var(--olive);color:#FAF9F6}
 .rail-tabs .count{font-size:11px;background:var(--accent);color:var(--accent-ink);border-radius:99px;padding:0 6px;font-weight:700}

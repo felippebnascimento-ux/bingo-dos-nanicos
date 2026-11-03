@@ -286,3 +286,42 @@ export const IcEstrela = () => (
     <path fill="currentColor" d="M12 2.5l2.6 6.3 6.8.5-5.2 4.4 1.6 6.6L12 16.8l-5.8 3.5 1.6-6.6-5.2-4.4 6.8-.5z" />
   </svg>
 );
+
+/** Voz no estilo Discord: transmitir a tela, sinal da conexão, supressão de ruído, grade, olho (quem assiste) e chat. */
+export const IcTela = (p: P) => (
+  <Base {...p}>
+    <rect x="2.5" y="4" width="19" height="13" rx="2" />
+    <path d="M8 21h8M12 17v4M12 13.5V8m-2.8 2.8L12 8l2.8 2.8" />
+  </Base>
+);
+export const IcSinal = (p: P) => (
+  <Base strokeWidth={0} fill="currentColor" {...p}>
+    <rect x="3" y="15" width="4" height="6" rx="1" />
+    <rect x="10" y="10" width="4" height="11" rx="1" />
+    <rect x="17" y="4" width="4" height="17" rx="1" />
+  </Base>
+);
+export const IcOndas = (p: P) => (
+  <Base strokeWidth={2.2} {...p}>
+    <path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4" />
+  </Base>
+);
+export const IcGrade = (p: P) => (
+  <Base {...p}>
+    <rect x="3" y="3" width="7.5" height="7.5" rx="1.5" />
+    <rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5" />
+    <rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5" />
+    <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5" />
+  </Base>
+);
+export const IcOlho = (p: P) => (
+  <Base {...p}>
+    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+    <circle cx="12" cy="12" r="3" />
+  </Base>
+);
+export const IcMais3 = (p: P) => (
+  <Base strokeWidth={3} {...p}>
+    <path d="M5 12h.01M12 12h.01M19 12h.01" />
+  </Base>
+);
