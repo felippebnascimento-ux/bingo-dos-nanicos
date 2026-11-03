@@ -574,6 +574,13 @@ export const CHANGELOG: EntradaLog[] = [
       "Quem mais perdeu leva o chapéu de burro e o melhor KDA a coroa dourada",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Móveis do K-FOFO e do quarto com sombra no chão, com a luz vindo de cima à esquerda",
+      "Os bonecos andam mais macio: aceleram ao sair e freiam ao chegar",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

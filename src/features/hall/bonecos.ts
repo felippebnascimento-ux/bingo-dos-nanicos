@@ -8,7 +8,7 @@ import { aoMudarPresenca, aoReceber, enviar, estaNaSala, limitePorPessoa } from 
 import { getApp, MY_KEY, setApp, useApp } from "@/lib/store";
 import { umPorNanico, type PresencaNanico } from "@/lib/presenca";
 import { local, reduzMovimento } from "@/lib/util";
-import { assentoDe, caminho, entradaDe, entradaSorteada, livre, posHall, posValida, sentido, type Piso, type Sentido } from "./hall";
+import { assentoDe, caminho, entradaDe, entradaSorteada, livre, posHall, posValida, sentido, suavizar, type Piso, type Sentido } from "./hall";
 import { assentoDoQuarto, pisoLivreMaisPerto, posQuarto, type Grade } from "@/features/quarto/grade";
 import { PORTA } from "@/features/quarto/quarto";
 import { iniciarQuartos, useQuartos } from "@/features/quarto/quartoDados";
@@ -38,7 +38,10 @@ type Interno = Boneco & {
   desde: number;
   /** assento onde vai sentar quando chegar */
   vaiSentar: string | null;
+  /** está no primeiro passo depois de parado (acelera nele) */
+  arrancou: boolean;
 };
+
 
 /** brilho do teletransporte (alguém sumiu ou apareceu na cena indo para um quarto ou voltando ao K-FOFO) */
 export type Brilho = { id: string; i: number; j: number };
@@ -96,7 +99,7 @@ function novo(key: string, name: string, fid: string | null, p: Piso & { s?: str
   const a = assentoCena(p.s);
   return {
     key, name, fid, i: p.i, j: p.j, sentido: a?.olha ?? "frente-direita", quadro: 0, senta: a?.id ?? null,
-    de: { i: p.i, j: p.j }, alvo: { i: p.i, j: p.j }, fila: [], progresso: 0, desde: 0, vaiSentar: null,
+    de: { i: p.i, j: p.j }, alvo: { i: p.i, j: p.j }, fila: [], progresso: 0, desde: 0, vaiSentar: null, arrancou: false,
   };
 }
 
@@ -127,6 +130,7 @@ const andando = (b: Interno) => b.de.i !== b.alvo.i || b.de.j !== b.alvo.j;
 function proximoPasso(b: Interno) {
   const prox = b.fila.shift();
   if (!prox) return parar(b);
+  b.arrancou = !andando(b);
   b.de = { ...b.alvo };
   b.alvo = prox;
   b.sentido = sentido(b.de, b.alvo, b.sentido);
@@ -191,8 +195,10 @@ function passo(agora: number) {
     }
     if (andando(b)) {
       alguem = true;
-      b.i = b.de.i + (b.alvo.i - b.de.i) * b.progresso;
-      b.j = b.de.j + (b.alvo.j - b.de.j) * b.progresso;
+      /* calmo (menos movimento): reto, sem acelerar nem frear */
+      const t = calmo ? b.progresso : suavizar(b.progresso, b.arrancou, b.fila.length === 0);
+      b.i = b.de.i + (b.alvo.i - b.de.i) * t;
+      b.j = b.de.j + (b.alvo.j - b.de.j) * t;
       b.quadro = calmo ? 0 : 1 + (Math.floor((agora - b.desde) / QUADRO_MS) % 4);
     }
   }
