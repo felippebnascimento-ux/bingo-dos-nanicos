@@ -39,3 +39,7 @@
 .trofeus-fama tbody th{display:flex;align-items:center;gap:8px;text-align:left;font-weight:600}
 .trofeus-fama td{color:var(--muted)}
 .trofeus-fama td.tem{color:var(--ink);font-weight:700}
+/* hall da fama: um bloco por jogo (LoL e CS2) */
+.trofeus-jogo{margin:0 0 18px}
+.trofeus-jogo-titulo{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:6px 0 10px;font:800 18px var(--display)}
+.trofeus-jogo-titulo small{font:500 12px var(--body);color:var(--muted)}

@@ -1,4 +1,4 @@
-// Bingo dos Nanicos: troféus da semana (Feeder, Turista, Carregou o piano, Viciado e Sumido)
+// Bingo dos Nanicos: hall da fama da semana, no LoL e no CS2 (quem mais venceu, quem mais perdeu e o melhor KDA)
 // ------------------------------------------------------------------
 // O site chama esta função às segundas (ou quando a semana anterior ainda não está pronta). Ela:
 //   1. confere se quem chamou é um nanico logado;
@@ -7,12 +7,15 @@
 //      com op.gg (match-v5), em partes: no máximo MAX_CHAMADAS por chamada, com pausa entre elas,
 //      porque a chave da Riot aceita 100 chamadas a cada 2 min. O que já foi lido fica no banco e a
 //      próxima chamada continua dali;
-//   4. com tudo lido, calcula os troféus (calculo.ts), grava o pódio e paga (trofeus_pagar, uma vez só).
+//   4. lê o CS2 pelo Leetify (API pública, sem chave): as partidas da semana de cada nanico com o link da Steam
+//      com número (/profiles/<17 dígitos>) e, de cada partida, os abates, mortes e assistências (v2/matches);
+//      também em partes (MAX_LEETIFY por chamada), guardadas com o id "cs:<partida>";
+//   5. com tudo lido, calcula os troféus (calculo.ts), grava o pódio e paga (trofeus_pagar, uma vez só).
 // Das partidas só guardamos os números dos nanicos, nunca os de terceiros.
 // A chave da Riot fica só aqui, no segredo RIOT_API_KEY do Supabase. Nunca no site.
 
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
-import { calcularTrofeus, semanaAnterior, type NanicoNaPartida, type PartidaSemana } from "./calculo.ts";
+import { calcularTrofeus, nanicoDoLeetify, semanaAnterior, type NanicoNaPartida, type PartidaSemana } from "./calculo.ts";
 
 const RIOT_KEY = Deno.env.get("RIOT_API_KEY") ?? "";
 const SB_URL = Deno.env.get("SUPABASE_URL") ?? "";
@@ -97,7 +100,26 @@ async function riot(url: string): Promise<{ status: number; body: any }> {
   return { status: r.status, body };
 }
 
-type Progresso = { ids?: Record<string, string[]> };
+/* ---------- Leetify, uma chamada por vez (a API pública não tem chave; vamos com calma) ---------- */
+const LEETIFY = "https://api-public.cs-prod.leetify.com";
+const MAX_LEETIFY = 60;
+const PAUSA_LEETIFY_MS = 350;
+let chamadasLeetify = 0;
+let ultimaLeetify = 0;
+async function leetify(caminho: string): Promise<{ status: number; body: any }> {
+  if (chamadasLeetify >= MAX_LEETIFY) throw new LimiteRiot();
+  const espera = ultimaLeetify + PAUSA_LEETIFY_MS - Date.now();
+  if (espera > 0) await new Promise((r) => setTimeout(r, espera));
+  chamadasLeetify++;
+  ultimaLeetify = Date.now();
+  const r = await fetch(LEETIFY + caminho);
+  if (r.status === 429) throw new LimiteRiot();
+  let body: any = null;
+  try { body = await r.json(); } catch { /* sem corpo */ }
+  return { status: r.status, body };
+}
+
+type Progresso = { ids?: Record<string, string[]>; cs?: Record<string, string[]> };
 type Alvo = { fid: string; puuid: string; regiao: string };
 
 /** Nanicos com op.gg e a conta Riot (o PUUID fica guardado em riot_contas, como na riot-ao-vivo). */
@@ -156,9 +178,48 @@ async function ler(admin: any, semana: string, inicio: number, fim: number, prog
             d: Number(p.deaths) || 0,
             a: Number(p.assists) || 0,
             visao: Number(p.visionScore) || 0,
+            v: p.win === true,
           }))
       : [];
-    await admin.from("riot_semana_partidas").upsert({ semana, match_id: m, dados: { duracao: conta ? Number(info.gameDuration) || 0 : 0, nanicos } });
+    await admin.from("riot_semana_partidas").upsert({ semana, match_id: m, dados: { jogo: "lol", duracao: conta ? Number(info.gameDuration) || 0 : 0, nanicos } });
+  }
+  return true;
+}
+
+/** CS2 pelo Leetify: as partidas da semana de cada nanico e os números de cada uma. Devolve true quando leu tudo. */
+async function lerCs(admin: any, semana: string, inicio: number, fim: number, progresso: Progresso): Promise<boolean> {
+  /* só o link da Steam com o número (o Leetify precisa dele; /id/<nome> precisaria da chave da Steam) */
+  const { data: amigos } = await admin.from("friends").select("id,steam").eq("tipo", "nanico").not("steam", "is", null);
+  const alvosCs = (amigos ?? []).flatMap((f: any) => {
+    const m = /^https:\/\/steamcommunity\.com\/profiles\/(\d{17})\/?$/.exec(String(f.steam));
+    return m ? [{ fid: f.id as string, steam: m[1] }] : [];
+  });
+  const porSteam = new Map<string, string>(alvosCs.map((a: any) => [a.steam, a.fid]));
+  const ids = (progresso.cs ??= {});
+  /* 1) as partidas de cada um na semana (o perfil traz as 100 últimas) */
+  for (const a of alvosCs) {
+    if (ids[a.fid]) continue;
+    const r = await leetify(`/v3/profile?steam64_id=${a.steam}`);
+    const lista = r.status === 200 && Array.isArray(r.body?.recent_matches) ? r.body.recent_matches : [];
+    ids[a.fid] = lista
+      .filter((x: any) => {
+        const t = Date.parse(x?.finished_at) / 1000;
+        return typeof x?.id === "string" && x.id.length < 60 && t >= inicio && t < fim;
+      })
+      .map((x: any) => x.id as string);
+  }
+  /* 2) cada partida uma vez só: os números de cada nanico que estava nela */
+  const todas = new Set<string>(Object.values(ids).flat());
+  const { data: lidas } = await admin.from("riot_semana_partidas").select("match_id").eq("semana", semana).like("match_id", "cs:%");
+  const jaLi = new Set((lidas ?? []).map((l: any) => l.match_id));
+  for (const m of todas) {
+    if (jaLi.has("cs:" + m)) continue;
+    const r = await leetify(`/v2/matches/${encodeURIComponent(m)}`);
+    const stats = r.status === 200 && Array.isArray(r.body?.stats) ? r.body.stats : [];
+    const nanicos: NanicoNaPartida[] = stats
+      .filter((s: any) => porSteam.has(String(s?.steam64_id)))
+      .map((s: any) => nanicoDoLeetify(porSteam.get(String(s.steam64_id))!, s));
+    await admin.from("riot_semana_partidas").upsert({ semana, match_id: "cs:" + m, dados: { jogo: "cs", duracao: 0, nanicos } });
   }
   return true;
 }
@@ -168,7 +229,7 @@ async function fechar(admin: any, semana: string) {
   const { data: linhas } = await admin.from("riot_semana_partidas").select("match_id,dados").eq("semana", semana);
   const partidas: PartidaSemana[] = (linhas ?? [])
     .filter((l: any) => Array.isArray(l.dados?.nanicos) && l.dados.nanicos.length)
-    .map((l: any) => ({ id: l.match_id, duracao: Number(l.dados.duracao) || 0, nanicos: l.dados.nanicos }));
+    .map((l: any) => ({ id: l.match_id, jogo: l.dados.jogo === "cs" ? "cs" : "lol", duracao: Number(l.dados.duracao) || 0, nanicos: l.dados.nanicos }));
   const trofeus = calcularTrofeus(partidas);
   await admin.from("trofeus_semana").delete().eq("semana", semana);
   if (trofeus.length)
@@ -206,8 +267,10 @@ Deno.serve(async (req: Request) => {
     const { data: atual } = await admin.from("riot_semana_meta").select("progresso").eq("semana", semana).maybeSingle();
     const progresso: Progresso = atual?.progresso && typeof atual.progresso === "object" ? atual.progresso : {};
     chamadas = 0;
+    chamadasLeetify = 0;
     try {
       await ler(admin, semana, inicio, fim, progresso);
+      await lerCs(admin, semana, inicio, fim, progresso);
     } catch (e) {
       // acabou a vez (limite de chamadas ou a Riot pediu para esperar): guarda o progresso e libera para a próxima
       const erro = e instanceof LimiteRiot ? null : String((e as Error)?.message ?? e).slice(0, 160);
@@ -218,6 +281,6 @@ Deno.serve(async (req: Request) => {
     return json(req, { estado: "pronta", semana });
   } catch (e) {
     console.error(e);
-    return json(req, { erro: "Falha ao calcular os troféus." }, 500);
+    return json(req, { erro: "Falha ao calcular o hall da fama." }, 500);
   }
 });

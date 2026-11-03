@@ -5569,6 +5569,67 @@ begin
   end loop;
 end $$;
 
+-- 46) hall da fama do LoL e do CS2 (03/11/2026, pedido do João): no lugar de Feeder, Turista, Carregou o piano, Viciado
+--     e Sumido, a função riot-semana calcula, em cada jogo, quem mais venceu, quem mais perdeu e o melhor KDA (pelo menos
+--     3 partidas). O LoL vem da Riot (op.gg) e o CS2 do Leetify. Os troféus antigos ficam na tabela como histórico.
+--     1º em vitórias ou em KDA ganha +100; quem mais perdeu leva o chapéu de burro e o melhor KDA a coroa (pulso).
+alter table public.trofeus_semana drop constraint if exists trofeus_semana_trofeu_check;
+alter table public.trofeus_semana add constraint trofeus_semana_trofeu_check
+  check (trofeu in ('feeder', 'turista', 'piano', 'viciado', 'sumido',
+                    'lol_vitorias', 'lol_derrotas', 'lol_kda', 'cs_vitorias', 'cs_derrotas', 'cs_kda'));
+
+-- paga os troféus da semana uma vez só (o ref com a semana evita repetir): os novos +100; os antigos como antes
+create or replace function public.trofeus_pagar(p_semana date) returns int
+language plpgsql security definer set search_path = public as $$
+declare
+  r record;
+  v_ref text;
+  v_n int := 0;
+begin
+  for r in select t.trofeu, f.user_id from public.trofeus_semana t join public.friends f on f.id = t.friend_id
+            where t.semana = p_semana and t.posicao = 1 and f.user_id is not null
+              and t.trofeu in ('piano', 'viciado', 'lol_vitorias', 'lol_kda', 'cs_vitorias', 'cs_kda') loop
+    v_ref := p_semana::text || ':' || r.trofeu;
+    if not exists (select 1 from public.extrato where user_id = r.user_id and motivo = 'trofeu' and ref = v_ref) then
+      perform public.creditar(r.user_id, case r.trofeu when 'piano' then 50 when 'viciado' then 20 else 100 end, 'trofeu', v_ref);
+      v_n := v_n + 1;
+    end if;
+  end loop;
+  return v_n;
+end $$;
+revoke all on function public.trofeus_pagar(date) from public, anon, authenticated;
+do $$ begin
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    grant execute on function public.trofeus_pagar(date) to service_role;
+  end if;
+end $$;
+
+-- chapéu e coroa (minutos do emblema, no pulso) e o emblema dos 1º lugares (quem mais perdeu não conta)
+do $$
+declare
+  v_def  text;
+  v_novo text;
+begin
+  for v_def in select pg_get_functiondef(oid) from pg_proc
+                where pronamespace = 'public'::regnamespace and proname in ('pulso', 'emblemas_de') loop
+    v_novo := replace(v_def, 't.trofeu in (''feeder'', ''piano'')',
+                             't.trofeu in (''feeder'', ''piano'', ''lol_derrotas'', ''lol_kda'', ''cs_derrotas'', ''cs_kda'')');
+    v_novo := replace(v_novo, 'trofeu <> ''feeder''', 'trofeu not in (''feeder'', ''lol_derrotas'', ''cs_derrotas'')');
+    if v_novo <> v_def then execute v_novo; end if;
+  end loop;
+end $$;
+
+-- a última semana pronta é calculada de novo com os troféus novos (só enquanto ainda não existe nenhum troféu novo)
+do $$
+declare
+  v_sem date := (select max(semana) from public.riot_semana_meta);
+begin
+  if v_sem is not null and not exists (select 1 from public.trofeus_semana where trofeu like 'lol\_%' or trofeu like 'cs\_%') then
+    delete from public.riot_semana_partidas where semana = v_sem;
+    update public.riot_semana_meta set estado = 'parcial', progresso = '{}'::jsonb, erro = null where semana = v_sem;
+  end if;
+end $$;
+
 -- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo e as 2 tabelas e 3 funções do quarto próprio e as 2 tabelas e 3 funções do blackjack e as 4 tabelas e 6 funções do pôquer
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')

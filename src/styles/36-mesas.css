@@ -223,6 +223,12 @@
 /* blackjack no celular, como nos cassinos online: o dealer em cima, os outros numa fileira e a minha mão grande no meio */
 @media (max-width:640px){
   .mesa-cartas.meia-lua{aspect-ratio:1 / 1.35}
+}
+/* celular maior: a mesa fica mais baixa (com a mesma altura, sobraria buraco no meio) */
+@media (min-width:441px) and (max-width:640px){
+  .mesa-cartas.meia-lua{aspect-ratio:1 / 1.12}
+}
+@media (max-width:640px){
   .mesa-cartas.meia-lua .mesa-couro,.mesa-cartas.meia-lua .mesa-madeira,.mesa-cartas.meia-lua .mesa-feltro{border-radius:0 0 50% 50% / 0 0 34% 34%}
   .na-mesa.bj-topo{top:17% !important}
   .na-mesa.bj-regras-pos{display:none}
@@ -263,16 +269,21 @@
   .na-mesa.bj-eu .mesa-lugar{display:flex;align-items:center;gap:4px;width:auto}
   .na-mesa.bj-eu .mesa-rosto{width:30px;min-width:30px}
   .na-mesa.bj-eu .mesa-placa{min-width:0;padding:2px 8px}
-  /* o aviso grande: entre a fileira e a minha mão; durante as jogadas, a barra de cima já diz de quem é a vez */
-  .na-mesa.bj-faixa-pos{top:62% !important;z-index:4}
-  .bj-sem-mim .na-mesa.bj-faixa-pos{top:72% !important}
-  .na-mesa.bj-faixa-pos.no-jogo,.na-mesa.bj-faixa-pos.no-fim{display:none}
+  /* o aviso grande: no espaço do meio, entre a fileira dos outros e a minha mão */
+  /* numa linha só, fininho; na minha vez não aparece (o painel de baixo já acende) */
+  .na-mesa.bj-faixa-pos{top:56.5% !important;z-index:4}
+  .bj-sem-mim .na-mesa.bj-faixa-pos{top:66% !important}
+  .na-mesa.bj-faixa-pos.no-jogo{display:none}
+  .na-mesa.bj-faixa-pos .mesa-faixa{padding:4px 12px;border-radius:10px}
+  .na-mesa.bj-faixa-pos .mesa-faixa b,.na-mesa.bj-faixa-pos .mesa-faixa.ganhou b{font-size:13px}
+  .na-mesa.bj-faixa-pos .mesa-faixa small,.na-mesa.bj-faixa-pos .mesa-faixa .mesa-prazo{display:none}
+  .bj-sem-mim .na-mesa.bj-faixa-pos .mesa-faixa small{display:block}
   /* o pagamento dos outros não cabe na fileira: fica só o selo GANHOU */
   .na-mesa[class*="bj-o"] .bj-aposta > .mesa-voa{display:none}
 }
 /* no celular, o resultado vai no painel de baixo (no feltro cobriria as cartas) */
 .bj-resultado-cel{display:none}
-@media (max-width:640px){.bj-resultado-cel{display:grid;justify-items:center;gap:2px}}
+
 .bj-resultado-cel b{font:900 18px var(--display);color:var(--accent-text)}
 .bj-resultado-cel.perdeu b{color:var(--ink)}
 .bj-resultado-cel small{font-size:12px;color:var(--muted)}

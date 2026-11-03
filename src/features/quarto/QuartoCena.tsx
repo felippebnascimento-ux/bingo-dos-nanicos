@@ -4,7 +4,7 @@
  * pôster equipados (como no quarto fixo da ficha), a porta no piso (0, 0) e os móveis na ordem certa (camadasQuarto).
  * Serve para a ficha, para a tela de arrumar e, na fase 35, para as visitas. Com `aoTocarPiso`, cada piso vira um alvo.
  */
-import { memo, useMemo } from "react";
+import { memo, useId, useMemo } from "react";
 import { ANCORA, caixaDoBoneco, CEL_H, CEL_W, ordemZ, quadroSprite, type Caixa, type Sentido } from "@/features/hall/hall";
 import { BaloesSvg } from "@/features/hall/ChatHabbo";
 import { desenharMovel, Poligonos, type Poly, type Pt } from "./Moveis";
@@ -128,9 +128,29 @@ export const QuartoCena = memo(function QuartoCena({
   }, [ordem, moveis, bonecos]);
   const escala = 1.6;
   const [px, py] = p(0.5, 0.5);
+  /* um filtro por cena: o mesmo id em duas cenas (uma escondida) faria a sombra sumir */
+  const sombraId = useId() + "sombra";
   return (
     <svg className="quarto quarto-cena" viewBox={`0 0 ${largura} ${altura}`} role="img" aria-label={nome ? `Quarto de ${nome}` : "Quarto"}>
       <Poligonos lista={fundo} />
+      {/* sombra de cada móvel no chão (luz de cima à esquerda: cai para +i), menos dos tapetes */}
+      <defs>
+        <filter id={sombraId} x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="4" />
+        </filter>
+      </defs>
+      <g className="quarto-sombras" filter={`url(#${sombraId})`} pointerEvents="none">
+        {moveis
+          .filter((m) => !m.desenho.startsWith("tapete"))
+          .map((m) => (
+            <polygon
+              key={m.id}
+              points={[p(m.ret.i + 0.2, m.ret.j + 0.1), p(m.ret.i + m.ret.w + 0.28, m.ret.j + 0.1), p(m.ret.i + m.ret.w + 0.28, m.ret.j + m.ret.d + 0.14), p(m.ret.i + 0.2, m.ret.j + m.ret.d + 0.14)]
+                .map((v) => v.join(","))
+                .join(" ")}
+            />
+          ))}
+      </g>
       {aoTocarPiso &&
         Array.from({ length: n * n }, (_, k) => {
           const i = k % n, j = Math.floor(k / n);

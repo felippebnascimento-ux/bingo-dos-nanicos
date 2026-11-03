@@ -509,3 +509,5 @@
 /* a dica do canto de baixo cede lugar quando a fileira de botões cresce (Bolsa Nanica) ou a tela é estreita */
 .hall-area:has(.hall-bolsa) .hall-dica{display:none}
 @media (min-width:761px) and (max-width:1300px){.hall-dica{display:none}}
+/* sombra dos móveis no chão (luz de cima à esquerda) */
+.hall-sombras polygon{fill:var(--accent-ink);opacity:.3}

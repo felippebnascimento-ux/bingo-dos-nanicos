@@ -338,6 +338,9 @@ export const Fundo = memo(function Fundo({ aoVivo, vb }: { aoVivo: boolean; vb: 
         <clipPath id="hall-clip-janela">
           <polygon points={pts(VAO_JANELA)} />
         </clipPath>
+        <filter id="hall-sombra-borra" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="5" />
+        </filter>
       </defs>
       <g className="parede-esq">
         <Formas lista={TIJ_ESQ} />
@@ -348,8 +351,21 @@ export const Fundo = memo(function Fundo({ aoVivo, vb }: { aoVivo: boolean; vb: 
         <Formas lista={PAISAGEM} />
       </g>
       <Formas lista={ENFEITES} />
+      <SombrasMoveis />
       <Tv aoVivo={aoVivo} />
     </svg>
+  );
+});
+
+/** Sombra de cada móvel no chão: a luz vem de cima à esquerda, então a sombra cai para a frente e à direita
+    (o piso de cada móvel deslocado no sentido +i, borrado). Fica no fundo, por baixo de todos os móveis. */
+const SombrasMoveis = memo(function SombrasMoveis() {
+  return (
+    <g className="hall-sombras" filter="url(#hall-sombra-borra)">
+      {MOVEIS.map((m) => (
+        <polygon key={m.id} points={pts([p(m.i + 0.22, m.j + 0.1), p(m.i + m.w + 0.3, m.j + 0.1), p(m.i + m.w + 0.3, m.j + m.d + 0.16), p(m.i + 0.22, m.j + m.d + 0.16)])} />
+      ))}
+    </g>
   );
 });
 

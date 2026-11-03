@@ -25,9 +25,9 @@ const [ex, ey] = tela(0, B, Z1);
 const PAREDE = `matrix(${TW / L} ${-TH / L} 0 1 ${ex} ${ey})`;
 
 const LINHAS = [
-  { id: "feeder", rotulo: "Feeder" },
-  { id: "piano", rotulo: "Piano" },
-  { id: "viciado", rotulo: "Viciado" },
+  { id: "lol_vitorias", rotulo: "LoL" },
+  { id: "cs_vitorias", rotulo: "CS2" },
+  { id: "lol_kda", rotulo: "KDA" },
 ] as const;
 
 export const QuadroTrofeus = memo(function QuadroTrofeus({ vb }: { vb: Caixa2D }) {
@@ -41,7 +41,7 @@ export const QuadroTrofeus = memo(function QuadroTrofeus({ vb }: { vb: Caixa2D }
         <rect x={0} y={0} width={LARG} height={ALT} rx={2} className="f-madeira s-madeiral" strokeWidth={1.5} />
         <rect x={4} y={4} width={LARG - 8} height={ALT - 8} className="quadro-papel" />
         <text x={LARG / 2} y={15} textAnchor="middle" className="quadro-titulo">
-          TROFÉUS DA SEMANA
+          HALL DA FAMA
         </text>
         {LINHAS.map((l, k) => {
           const quem = podio(linhas, l.id, semana)[0];

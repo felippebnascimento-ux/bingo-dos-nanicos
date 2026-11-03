@@ -370,3 +370,15 @@ export function camadasHall(bonecos: readonly { i: number; j: number; senta: str
   }
   return { z, encosto };
 }
+
+/**
+ * Posição dentro de um passo (puro): no primeiro passo depois de parado o boneco acelera, no último freia e, num
+ * passo só, faz os dois; no meio do caminho a velocidade é constante. As curvas emendam com velocidade 1 no meio
+ * (f(t) = t²(2 − t) e g(t) = 1 − (1 − t)²(1 + t)), então não dá tranco entre um piso e outro.
+ */
+export function suavizar(t: number, primeiro: boolean, ultimo: boolean): number {
+  if (primeiro && ultimo) return t * t * (3 - 2 * t);
+  if (primeiro) return t * t * (2 - t);
+  if (ultimo) return 1 - (1 - t) * (1 - t) * (1 + t);
+  return t;
+}
