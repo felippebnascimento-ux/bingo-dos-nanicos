@@ -6,18 +6,18 @@
  * O banco sorteia uma vez e paga todas as fichas (apostar_roleta_mesa); a roda só anima até a casa que ele mandou.
  * No celular a mesa fica em pé (3 colunas de números), com as mesmas posições calculadas.
  */
-import { useMemo, useRef, useState, type CSSProperties } from "react";
-import { ajustarSaldo, useCarteira } from "@/lib/carteira";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useCarteira } from "@/lib/carteira";
 import { formatarMoedas } from "@/lib/moedas";
-import { sb } from "@/lib/supabase";
 import { toast } from "@/lib/toast";
-import { carregar, msgDe, useCassino } from "./estado";
+import { msgDe } from "./estado";
+import { conferirRodada, faltam, JANELA_MS, passouDaJanela, type Fase, type JogoMesa, type Pessoa, type Rodada } from "./mesa";
+import { chamarMesa, useMesa } from "./mesaDados";
 import {
-  APOSTA_MAX, cobre, corDa, detalhesDaCasa, dobrarMesa, FICHAS, mesaValida, nomeLugar, porFicha, totalMesa, type Cor, type Ficha, type TipoAposta,
+  APOSTA_MAX, casaDaRoleta, cobre, corDa, detalhesDaCasa, dobrarMesa, FICHAS, mesaValida, nomeLugar, porFicha, totalMesa, type Cor, type Ficha, type TipoAposta,
 } from "./regras";
 import { RodaRoleta, type Giro } from "./RodaRoleta";
 
-type Resposta = { casa: number; cor: Cor; pagou: number; saldo: number; fichas: (Ficha & { pagou: number })[] };
 const NOME_COR: Record<Cor, string> = { vermelho: "VERMELHO", preto: "PRETO", verde: "VERDE" };
 
 /** Uma ficha de cassino desenhada em CSS (cor pelo valor). */
@@ -59,25 +59,47 @@ function lugares(): Lugar[] {
 /* os 49 lugares da mesa, calculados uma vez */
 const LUGARES = lugares();
 
-export function RoletaMesa() {
+export function RoletaMesa({ ativa = true }: { ativa?: boolean }) {
   const saldo = useCarteira((s) => s.carteira?.saldo);
-  const historico = useCassino((s) => s.historico);
+  const { estado, ligada, agora, recarregar } = useMesa("roleta", ativa);
+  /* fichas que eu ainda não mandei (as já mandadas vêm do banco, em estado.meu) */
   const [mesa, setMesa] = useState<Ficha[]>([]);
   const [passos, setPassos] = useState<Ficha[][]>([]);
   const [ultima, setUltima] = useState<Ficha[]>([]);
   const [ficha, setFicha] = useState<number>(25);
-  const [giro, setGiro] = useState<Giro | null>(null);
-  const [girando, setGirando] = useState(false);
-  const [resultado, setResultado] = useState<(Resposta & { total: number }) | null>(null);
-  const resposta = useRef<(Resposta & { total: number }) | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  /* a rodada em que a roda já parou na tela */
+  const [parouEm, setParouEm] = useState<number | null>(null);
+  const [conferida, setConferida] = useState<Record<number, string>>({});
+  const relogio = useRelogio(ativa);
 
+  const r = estado?.rodada ?? null;
+  const fase = estado?.fase ?? "parada";
+  const res = r?.resultado && typeof r.resultado.casa === "number" ? (r.resultado.casa as number) : null;
 
-  /* as minhas últimas rodadas da roleta (mais nova primeiro), para os últimos números e as cores */
-  const casas = useMemo(() => historico.filter((a) => a.jogo === "roleta").map((a) => Number(a.resultado.casa)).filter((n) => n >= 0 && n <= 36), [historico]);
-  const ultimas50 = casas.slice(0, 50);
-  const pct = (c: Cor) => (ultimas50.length ? Math.round((ultimas50.filter((n) => corDa(n) === c).length / ultimas50.length) * 100) : 0);
+  /* o banco sorteou: a roda gira para todo mundo até a casa que ele mandou (o mesmo giro enquanto a rodada durar) */
+  const rid = r?.id ?? null;
+  const parada = fase === "parada";
+  const giro: Giro | null = useMemo(() => (rid !== null && res !== null && !parada ? { id: rid, casa: res } : null), [rid, res, parada]);
+  const girando = giro !== null && parouEm !== giro.id;
+  const fimDoGiro = () => {
+    if (giro) setParouEm(giro.id);
+    void recarregar();
+  };
 
-  /* toda mudança guarda a mesa de antes (para o Desfazer); a conta parte sempre da mesa mais nova */
+  /* as minhas fichas nesta rodada (já cobradas) */
+  const meu = estado?.meu ?? null;
+  /* com a mesa parada (rodada acabou), as fichas dela saem da mesa; o resultado continua no painel */
+  const minhas: Ficha[] = useMemo(() => {
+    const e = meu?.escolha as { fichas?: unknown } | undefined;
+    return fase !== "parada" && Array.isArray(e?.fichas) ? (e.fichas as Ficha[]) : [];
+  }, [meu, fase]);
+  const resultadoNaTela = r && parouEm === r.id && res !== null ? res : null;
+
+  /* números das últimas rodadas da mesa (de todo mundo, mais nova primeiro) */
+  const casas = useMemo(() => (estado?.ultimos ?? []).map((x) => Number(x.casa)).filter((n) => n >= 0 && n <= 36), [estado]);
+  const pct = (c: Cor) => (casas.length ? Math.round((casas.filter((n) => corDa(n) === c).length / casas.length) * 100) : 0);
+
   const mudar = (fazer: (m: Ficha[]) => Ficha[]) =>
     setMesa((m) => {
       setPassos((p) => [...p.slice(-40), m]);
@@ -86,64 +108,75 @@ export function RoletaMesa() {
   const total = totalMesa(mesa);
   const problema = mesaValida(mesa);
   const semSaldo = saldo !== undefined && total > saldo;
+  const fechada = fase === "jogo" || girando;
+  const segundos = r && fase === "apostas" ? faltam(r.fechaEm, agora()) : 0;
 
-  const girar = async () => {
-    if (girando || problema || semSaldo) return;
-    setGirando(true);
-    setResultado(null);
+  const apostar = async () => {
+    if (enviando || fechada || problema || semSaldo || !mesa.length) return;
+    setEnviando(true);
     try {
-      const { data, error } = await sb().rpc("apostar_roleta_mesa", { p_fichas: mesa });
-      if (error) throw error;
-      resposta.current = { ...(data as Resposta), total };
+      await chamarMesa("mesa_apostar_roleta", { p_fichas: mesa });
       setUltima(mesa);
-      setGiro((g) => ({ id: (g?.id ?? 0) + 1, casa: (data as Resposta).casa }));
+      setMesa([]);
+      setPassos([]);
+      await recarregar();
     } catch (e) {
-      toast(msgDe(e, "Não deu para girar. Confira a internet."));
-      setGirando(false);
+      toast(msgDe(e, "Não deu para apostar. Confira a internet."));
+    } finally {
+      setEnviando(false);
     }
   };
-  const fimDoGiro = (casa: number) => {
-    const r = resposta.current;
-    resposta.current = null;
-    setGirando(false);
-    if (!r || r.casa !== casa) return;
-    setResultado(r);
-    ajustarSaldo(r.saldo);
-    void carregar();
+
+  const conferirEsta = async () => {
+    if (!r) return;
+    const c = await conferirRodada("roleta", r);
+    if (!c) return;
+    const casa = casaDaRoleta(c.u);
+    setConferida((x) => ({ ...x, [r.id]: `${c.hashOk ? "O segredo bate com o hash" : "O segredo NÃO bate com o hash"} · a conta dá ${casa}${casa === res ? ", igual ao que saiu" : ", DIFERENTE do que saiu"}` }));
   };
 
-  const naMesa = (t: TipoAposta, v: number) => mesa.find((f) => f.tipo === t && f.valor === v)?.aposta ?? 0;
-  const ganhou = (t: TipoAposta, v: number) => resultado !== null && cobre(t, v, resultado.casa);
-  const lucro = resultado ? resultado.pagou - resultado.total : 0;
-  const vencedoras = resultado?.fichas.filter((f) => f.pagou > 0) ?? [];
-  const corRes = resultado ? corDa(resultado.casa) : null;
+  const naMesa = (t: TipoAposta, v: number) =>
+    (mesa.find((f) => f.tipo === t && f.valor === v)?.aposta ?? 0) + minhas.filter((f) => f.tipo === t && f.valor === v).reduce((s, f) => s + f.aposta, 0);
+  const ganhou = (t: TipoAposta, v: number) => resultadoNaTela !== null && cobre(t, v, resultadoNaTela);
+  const totalMeu = Number(meu?.aposta) || 0;
+  const pagouMeu = Number(meu?.pagou) || 0;
+  const pago = meu && meu.estado !== "aberta";
+  const lucro = pagouMeu - totalMeu;
+  const vencedoras = resultadoNaTela !== null ? minhas.filter((f) => cobre(f.tipo, f.valor, resultadoNaTela)) : [];
+  const corRes = resultadoNaTela !== null ? corDa(resultadoNaTela) : null;
+  void relogio;
+
+  if (ligada === false) return <p className="block hint">A roleta ao vivo ainda não foi ligada no banco (seção 32 do seguranca.sql).</p>;
 
   return (
     <div className="roleta rm">
       <div className="rm-topo">
         <RodaRoleta giro={giro} onFim={fimDoGiro} />
         <div className="rm-lado" aria-live="polite">
-          <p className="rm-rotulo">Resultado</p>
-          {resultado && corRes ? (
+          <MesaStatus jogo="roleta" fase={fase} rodada={r} agora={agora()} gente={estado?.gente.length ?? 0} />
+          {resultadoNaTela !== null && corRes ? (
             <div className="rm-res">
-              <span className={"rm-bola rm-" + corRes}>{resultado.casa}</span>
+              <span className={"rm-bola rm-" + corRes}>{resultadoNaTela}</span>
               <span>
                 <b>{NOME_COR[corRes]}</b>
-                <small>{detalhesDaCasa(resultado.casa)}</small>
+                <small>{detalhesDaCasa(resultadoNaTela)}</small>
               </span>
             </div>
           ) : (
-            <p className="rm-espera">{girando ? "Girando…" : "Espalhe as fichas na mesa e gire."}</p>
+            <p className="rm-espera">
+              {fechada ? "Girando…" : fase === "apostas" ? (minhas.length ? "Você está na rodada. Pode pôr mais fichas." : "Ponha fichas e aposte para entrar.") : "Espalhe as fichas e aposte: a rodada abre para todo mundo."}
+            </p>
           )}
-          {resultado && (
-            <div className={"rm-ganho" + (lucro > 0 ? " bom" : lucro < 0 ? " ruim" : "")}>
-              <b>{lucro > 0 ? `+ Você ganhou ${formatarMoedas(lucro)} moedas` : resultado.pagou > 0 ? `Voltaram ${formatarMoedas(resultado.pagou)} de ${formatarMoedas(resultado.total)}` : `Não foi dessa vez: −${formatarMoedas(resultado.total)}`}</b>
-              {vencedoras.length > 0 && <small>{vencedoras.map((f) => `${nomeLugar(f.tipo, f.valor)} (+${formatarMoedas(f.pagou - f.aposta)})`).join(" · ")}</small>}
+          {resultadoNaTela !== null && totalMeu > 0 && (
+            <div className={"rm-ganho" + (!pago ? "" : lucro > 0 ? " bom" : lucro < 0 ? " ruim" : "")}>
+              <b>{!pago ? "Pagando…" : lucro > 0 ? `+ Você ganhou ${formatarMoedas(lucro)} moedas` : pagouMeu > 0 ? `Voltaram ${formatarMoedas(pagouMeu)} de ${formatarMoedas(totalMeu)}` : `Não foi dessa vez: −${formatarMoedas(totalMeu)}`}</b>
+              {vencedoras.length > 0 && <small>{vencedoras.map((f) => nomeLugar(f.tipo, f.valor)).join(" · ")}</small>}
             </div>
           )}
+          <NaMesa gente={estado?.gente ?? []} mostrarResultado={resultadoNaTela !== null} />
           {casas.length > 0 && (
             <>
-              <p className="rm-rotulo">Últimos números</p>
+              <p className="rm-rotulo">Últimos números da mesa</p>
               <ol className="rm-ultimos">
                 {casas.slice(0, 12).map((n, k) => (
                   <li key={k} className={"rm-" + corDa(n) + (k === 0 ? " primeiro" : "")}>
@@ -151,7 +184,6 @@ export function RoletaMesa() {
                   </li>
                 ))}
               </ol>
-              <p className="rm-rotulo">Últimas {ultimas50.length} rodadas</p>
               <div className="rm-barra" aria-label={`Vermelho ${pct("vermelho")}%, preto ${pct("preto")}%, zero ${pct("verde")}%`}>
                 <span className="rm-vermelho" style={{ width: `${pct("vermelho")}%` }} />
                 <span className="rm-preto" style={{ width: `${pct("preto")}%` }} />
@@ -163,6 +195,17 @@ export function RoletaMesa() {
                 <span className="z">Zero {pct("verde")}%</span>
               </p>
             </>
+          )}
+          {r && (
+            <p className="rm-justo">
+              Rodada #{r.id} · hash <span className="hash">{r.hash.slice(0, 12)}…</span>
+              {r.segredo && (
+                <button type="button" className="linkish" onClick={() => void conferirEsta()}>
+                  Conferir
+                </button>
+              )}
+              {conferida[r.id] && <small>{conferida[r.id]}</small>}
+            </p>
           )}
         </div>
       </div>
@@ -178,7 +221,7 @@ export function RoletaMesa() {
               type="button"
               className={"rm-lugar " + l.cls + (ganhou(l.tipo, l.valor) ? " ganhou" : "")}
               style={estilo}
-              disabled={girando}
+              disabled={fechada}
               aria-label={`${l.aria}${v ? `, ${v} moedas` : ""}`}
               onClick={() => mudar((m) => porFicha(m, l.tipo, l.valor, ficha))}
             >
@@ -198,28 +241,106 @@ export function RoletaMesa() {
           ))}
         </div>
         <div className="rm-botoes">
-          <button type="button" className="btn soft sm" disabled={girando || !passos.length} onClick={() => { setMesa(passos[passos.length - 1]); setPassos((p) => p.slice(0, -1)); }}>
+          <button type="button" className="btn soft sm" disabled={fechada || !passos.length} onClick={() => { setMesa(passos[passos.length - 1]); setPassos((p) => p.slice(0, -1)); }}>
             ↶ Desfazer
           </button>
-          <button type="button" className="btn soft sm" disabled={girando || !mesa.length} onClick={() => mudar(() => [])}>
+          <button type="button" className="btn soft sm" disabled={fechada || !mesa.length} onClick={() => mudar(() => [])}>
             Limpar
           </button>
-          <button type="button" className="btn soft sm" disabled={girando || !mesa.length || mesa.every((f) => f.aposta >= APOSTA_MAX)} onClick={() => mudar(dobrarMesa)}>
+          <button type="button" className="btn soft sm" disabled={fechada || !mesa.length || mesa.every((f) => f.aposta >= APOSTA_MAX)} onClick={() => mudar(dobrarMesa)}>
             ×2 Dobrar
           </button>
-          <button type="button" className="btn soft sm" disabled={girando || !ultima.length} onClick={() => mudar(() => ultima)}>
+          <button type="button" className="btn soft sm" disabled={fechada || !ultima.length} onClick={() => mudar(() => ultima)}>
             ↻ Repetir
           </button>
         </div>
         <p className="rm-total">
-          <small>Aposta total</small>
+          <small>{minhas.length ? `Na rodada: ${formatarMoedas(totalMeu)} · nova aposta` : "Aposta"}</small>
           <b>{formatarMoedas(total)} moedas</b>
         </p>
       </div>
-      <button type="button" className="btn rm-girar" disabled={girando || !!problema || semSaldo} onClick={() => void girar()}>
-        {girando ? "Girando…" : semSaldo ? "Sem moedas para essa aposta" : mesa.length ? `GIRAR · ${formatarMoedas(total)} MOEDAS` : "Ponha fichas na mesa"}
+      <button type="button" className="btn rm-girar" disabled={enviando || fechada || !!problema || semSaldo || !mesa.length} onClick={() => void apostar()}>
+        {fechada
+          ? "Girando… aposte na próxima rodada"
+          : semSaldo
+            ? "Sem moedas para essa aposta"
+            : !mesa.length
+              ? fase === "apostas"
+                ? `Gira em ${segundos} s · ponha fichas para entrar`
+                : "Ponha fichas na mesa"
+              : fase === "apostas"
+                ? `APOSTAR · ${formatarMoedas(total)} MOEDAS · gira em ${segundos} s`
+                : `APOSTAR · ${formatarMoedas(total)} MOEDAS`}
       </button>
-      <p className="hint rm-pe">Número paga 35× · Dúzia e coluna pagam 2× · Cor, par/ímpar e metade pagam 1× · O 0 perde nas apostas de fora · Cada lugar até 100, até 1.000 por rodada</p>
+      <p className="hint rm-pe">
+        Mesa ao vivo: a primeira aposta abre a rodada e todo mundo tem {JANELA_MS.roleta / 1000} s para entrar · Número paga 35× · Dúzia e coluna pagam 2× · Cor, par/ímpar e metade pagam 1× · O 0 perde nas apostas de fora · Até 1.000 por rodada
+      </p>
     </div>
+  );
+}
+
+/** Um tique a cada 250 ms (para as contagens na tela). */
+export function useRelogio(ativo = true) {
+  const [t, setT] = useState(0);
+  useEffect(() => {
+    if (!ativo) return;
+    const i = setInterval(() => setT((x) => x + 1), 250);
+    return () => clearInterval(i);
+  }, [ativo]);
+  return t;
+}
+
+const TEXTO_FASE: Record<JogoMesa, Record<Fase, string>> = {
+  roleta: { parada: "Mesa esperando a primeira aposta", apostas: "Apostas abertas", jogo: "Girando", resultado: "Resultado" },
+  aviao: { parada: "Esperando o primeiro passageiro", apostas: "Embarque aberto", jogo: "No ar", resultado: "Pousou" },
+};
+
+/** Faixa de cima de toda mesa ao vivo: o que está acontecendo, a contagem e quantos estão na rodada. */
+export function MesaStatus({ jogo, fase, rodada, agora, gente }: { jogo: JogoMesa; fase: Fase; rodada: Rodada | null; agora: number; gente: number }) {
+  const abertas = fase === "apostas" && rodada;
+  return (
+    <div className={"mesa-status " + fase}>
+      <span className="mesa-ao-vivo">
+        <i aria-hidden="true" /> AO VIVO
+      </span>
+      <b>{TEXTO_FASE[jogo][fase]}</b>
+      {abertas && <span className="mesa-conta">{faltam(rodada.fechaEm, agora)} s</span>}
+      {gente > 0 && fase !== "parada" && <small>{gente === 1 ? "1 na rodada" : `${gente} na rodada`}</small>}
+      {abertas && (
+        <span className="mesa-barra" aria-hidden="true">
+          <span style={{ width: `${(1 - passouDaJanela(rodada, agora)) * 100}%` }} />
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** Quem está na rodada da roleta (ou do avião): nome, quanto e, no fim, quanto levou. */
+export function NaMesa({ gente, mostrarResultado, titulo = "Na rodada" }: { gente: Pessoa[]; mostrarResultado: boolean; titulo?: string }) {
+  if (!gente.length) return null;
+  return (
+    <>
+      <p className="rm-rotulo">{titulo}</p>
+      <ul className="mesa-gente">
+        {gente.map((p, k) => (
+          <li key={k} className={p.eu ? "eu" : undefined}>
+            <span className="av-av" aria-hidden="true">
+              {p.nome[0]}
+            </span>
+            <span className="mesa-nome">
+              {p.nome}
+              {p.eu && <small> (você)</small>}
+            </span>
+            <span className="mesa-valor">
+              {p.aposta}
+              {p.fichas ? <small> · {p.fichas === 1 ? "1 ficha" : `${p.fichas} fichas`}</small> : null}
+            </span>
+            {mostrarResultado && p.estado !== "aberta" && (
+              <b className={p.pagou > 0 ? "ok" : "ruim"}>{p.pagou > 0 ? `+${formatarMoedas(p.pagou - p.aposta)}` : `−${p.aposta}`}</b>
+            )}
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }

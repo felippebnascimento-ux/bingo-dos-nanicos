@@ -170,6 +170,8 @@ export async function refazer(
   /* o aviãozinho usa a mesma conta do limbo: o ponto em que o avião vai embora */
   if (jogo === "limbo" || jogo === "aviao") return valorLimbo(u).toFixed(2);
   if (jogo === "dado") return String(numeroDado(u));
+  /* pênalti: a coluna em que o goleiro pulou no último chute */
+  if (jogo === "penalti") return String(Math.floor(u * 3));
   if (jogo === "slot") {
     const s = [u, await conferir(sementeHex, cliente, nonce + 1), await conferir(sementeHex, cliente, nonce + 2)];
     return s.map((x) => simboloSlot(x, rolos)).join(",");
@@ -182,6 +184,7 @@ export function resultadoGuardado(jogo: string, r: Record<string, unknown>): str
   if (jogo === "roleta") return String(r.casa);
   if (jogo === "limbo" || jogo === "aviao") return Number(r.valor).toFixed(2);
   if (jogo === "dado") return String(r.numero);
+  if (jogo === "penalti") return r.coluna == null ? "" : String(r.coluna);
   if (jogo === "slot") return Array.isArray(r.simbolos) ? r.simbolos.join(",") : "";
   return "";
 }

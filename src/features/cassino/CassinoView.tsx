@@ -1,7 +1,7 @@
 "use client";
 /*
- * Aba Cassino: moedas fictícias (sem compra e sem saque): roleta europeia, limbo, maior ou menor
- * e caça-níquel. O banco sorteia; aqui só escolhemos a aposta, animamos até o resultado que
+ * Aba Cassino: moedas fictícias (sem compra e sem saque): roleta e aviãozinho ao vivo (rodadas para todo
+ * mundo junto), o pênalti e o caça-níquel (individuais, este com jackpot do grupo). O banco sorteia; aqui só escolhemos a aposta, animamos até o resultado que
  * o banco mandou e mostramos como conferir que nada foi trocado.
  */
 import { useEffect, useState } from "react";
@@ -12,7 +12,7 @@ import { toast } from "@/lib/toast";
 import { carregar, msgDe, useCassino, type Aposta, type Jogo, type Revelada } from "./estado";
 import { Aviaozinho } from "./Aviaozinho";
 import { CacaNiquel } from "./CacaNiquel";
-import { MaiorMenor } from "./MaiorMenor";
+import { Penalti } from "./Penalti";
 import { RoletaMesa } from "./RoletaMesa";
 import { corDa, hashDaSemente, nomeLugar, refazer, resultadoGuardado, rtpSlot, vantagemDaCasa, type TipoAposta } from "./regras";
 
@@ -24,10 +24,10 @@ function apostaDaRoleta(total: number, e: Record<string, unknown>) {
 const JOGOS: { id: Jogo; nome: string }[] = [
   { id: "roleta", nome: "Roleta" },
   { id: "aviao", nome: "Aviãozinho" },
-  { id: "dado", nome: "Maior ou menor" },
+  { id: "penalti", nome: "Pênalti" },
   { id: "slot", nome: "Caça-níquel" },
 ];
-const NOME_JOGO: Record<Jogo, string> = { roleta: "Roleta", aviao: "Aviãozinho", limbo: "Limbo", dado: "Maior ou menor", slot: "Caça-níquel" };
+const NOME_JOGO: Record<Jogo, string> = { roleta: "Roleta", aviao: "Aviãozinho", limbo: "Limbo", dado: "Maior ou menor", slot: "Caça-níquel", penalti: "Pênalti" };
 
 /** Uma linha do histórico: o que apostou e o que saiu, em poucas palavras. */
 function descreve(a: Aposta): { aposta: string; saiu: string; cor?: string } {
@@ -37,6 +37,10 @@ function descreve(a: Aposta): { aposta: string; saiu: string; cor?: string } {
     return { aposta: `${a.aposta}${e.auto ? ` · auto ${String(e.auto).replace(".", ",")}×` : ""}`, saiu: e.sacou ? `sacou ${Number(e.sacou).toFixed(2).replace(".", ",")}×` : `voou ${Number(r.valor).toFixed(2).replace(".", ",")}×` };
   if (a.jogo === "limbo") return { aposta: `${a.aposta} no ${String(e.alvo).replace(".", ",")}×`, saiu: `${Number(r.valor).toFixed(2).replace(".", ",")}×` };
   if (a.jogo === "dado") return { aposta: `${a.aposta} ${e.lado === "abaixo" ? "abaixo" : "acima"} de ${e.n}`, saiu: String(r.numero) };
+  if (a.jogo === "penalti") {
+    const g = Number(e.gols) || 0;
+    return { aposta: `${a.aposta} · ${g} ${g === 1 ? "gol" : "gols"}`, saiu: a.pagou ? `${Number(r.valor).toFixed(2).replace(".", ",")}×` : "defendeu" };
+  }
   return { aposta: `${a.aposta} no caça-níquel`, saiu: Array.isArray(r.simbolos) ? `${r.simbolos.length} rolos` : "" };
 }
 
@@ -109,9 +113,9 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
                 <Aviaozinho />
               </div>
             )}
-            {jogo === "dado" && (
+            {jogo === "penalti" && (
               <div className="rm-caixa">
-                <MaiorMenor />
+                <Penalti />
               </div>
             )}
             {jogo === "slot" && (
@@ -121,7 +125,7 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
             )}
             {/* a roleta fica sempre montada (a roda não pode sumir no meio do giro) */}
             <div className="rm-caixa" hidden={jogo !== "roleta"}>
-              <RoletaMesa />
+              <RoletaMesa ativa={!hidden && jogo === "roleta"} />
             </div>
             <div className="cassino-lado">
               <details className="block cassino-justo">
