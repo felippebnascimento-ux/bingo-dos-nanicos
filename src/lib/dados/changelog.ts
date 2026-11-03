@@ -588,6 +588,14 @@ export const CHANGELOG: EntradaLog[] = [
   {
     data: "03/11/2026",
     itens: [
+      "A barra do chat fica dentro do K-FOFO, ao lado do Ir para o meu quarto",
+      "Toca uma campainha quando um nanico entra no site",
+      "Sem o quadrado escuro em volta do boneco ao passar o mouse (extensões de modo escuro não mexem mais no site)",
+    ],
+  },
+  {
+    data: "03/11/2026",
+    itens: [
       "Blackjack, pôquer e truco no jeito dos cassinos online: barra de cima com o que está acontecendo, o tempo, a carteira e quanto você tem na mesa, e o botão ? com as regras",
       "Blackjack: últimas somas do dealer, círculos de aposta numerados, fichas para montar a aposta (desfazer, repetir, dobrar), botões redondos Pedir, Parar, Dobrar e Dividir e, no celular, a sua mão grande no meio",
       "Pôquer: a jogada de cada um embaixo do lugar (pagou, aumentou, passou), as últimas mãos da mesa, a força da sua mão com a chance de vencer, atalhos de aposta e as jogadas marcadas antes da sua vez",

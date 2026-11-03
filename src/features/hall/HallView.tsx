@@ -290,6 +290,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
           <MochilaCanto />
           <BotaoMeuQuarto />
           <BotaoBolsa />
+          <ChatBarra />
         </div>
         <Missoes canto />
         <BotaoCelular className="hall-canto hall-celular" />
@@ -302,7 +303,6 @@ export function HallView({ hidden }: { hidden: boolean }) {
           return b ? <PerfilCartao key={b.key} b={b} /> : null;
         })()}
       </div>
-      <ChatBarra />
       <p className="hall-aviso" aria-live="polite">
         {aviso}
       </p>

@@ -19,3 +19,6 @@ Thumbs.db
 next-env.d.ts
 .vercel
 npm-debug.log*
+
+# cópias de trabalho de outras sessões (git worktree)
+.claude/worktrees/
