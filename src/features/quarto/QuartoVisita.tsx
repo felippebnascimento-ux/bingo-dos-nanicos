@@ -18,6 +18,8 @@ import { moveisDe, usarMovel, useQuartos } from "./quartoDados";
 import { CORES_LUZ, ehInterativo, NOME_COR, soDono, type CorLuz } from "./interativo";
 import type { MovelCena } from "./QuartoCena";
 import { CurtirQuarto } from "./NavegadorQuartos";
+import { useArena } from "./arena";
+import { ArenaPainel } from "./ArenaPainel";
 import { irParaQuarto, paraCena } from "./visita";
 import { CORES_PIXO, ehCenaEspecial, gradeEspecial, GOL_RUA, moveisDaCena, NOME_CENA, portasDoCorredor, TAM_CENA, type CorPixo } from "./cenas";
 import { iniciarPixacoes, pixar, usePixacoes } from "./pixacoes";
@@ -47,6 +49,7 @@ export function QuartoVisita({ dono }: { dono: string }) {
   }, [especial]);
   const portas = useMemo(() => (especial === "corredor" ? portasDoCorredor(soNanicos(friends), (uid) => !!quartos[uid]) : undefined), [especial, friends, quartos]);
   const bonecos = useHall((s) => s.bonecos);
+  const pisosArena = useArena((s) => s.pisos);
   const acoes = useAcoes((s) => s.por);
   const brilhos = useHall((s) => s.brilhos);
   const cena = useMemo(() => (especial ? [...moveisDaCena(especial)] : paraCena(moveisDe(todos, f?.user_id), itens)), [especial, todos, f?.user_id, itens]);
@@ -128,13 +131,15 @@ export function QuartoVisita({ dono }: { dono: string }) {
         aoTocarMovel={tocarMovel}
         bonecos={vistos}
         brilhos={brilhos}
-        tipo={especial ?? "quarto"}
+        tipo={especial === "arena" ? "quarto" : (especial ?? "quarto")}
         portas={portas}
         aoTocarPorta={(fid) => (portas?.find((p) => p.fid === fid)?.aberta ? irParaQuarto(fid) : toast("Esse nanico ainda não comprou o quarto: a porta está fechada."))}
         aoTocarSaida={especial ? () => irParaQuarto(null) : undefined}
         pixos={especial === "banheiro" ? pixos : undefined}
+        pisosCor={especial === "arena" ? pisosArena : undefined}
       />
       {especial === "banheiro" && <PixarForm />}
+      {especial === "arena" && <ArenaPainel />}
       {painel && <PainelMovel key={painel.id} m={painel} fechar={() => setPainel(null)} />}
     </div>
   );

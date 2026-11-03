@@ -186,6 +186,7 @@ export const QuartoCena = memo(function QuartoCena({
   aoTocarPorta,
   aoTocarSaida,
   pixos,
+  pisosCor,
 }: {
   tamanho: number;
   equip: Equip;
@@ -202,6 +203,8 @@ export const QuartoCena = memo(function QuartoCena({
   tipo?: "quarto" | "rua" | "corredor" | "banheiro";
   /** as pixações do banheiro */
   pixos?: readonly Pixo[];
+  /** a arena (seção 58): "i,j" → cor do time que pintou */
+  pisosCor?: Readonly<Record<string, "azul" | "vermelho">>;
   portas?: readonly PortaCorredor[];
   aoTocarPorta?: (fid: string) => void;
   /** a porta do piso (0, 0): na rua e no corredor, volta ao K-FOFO */
@@ -245,6 +248,11 @@ export const QuartoCena = memo(function QuartoCena({
         </polygon>
       )}
       {pixos && <Pixos lista={pixos} p={p} />}
+      {pisosCor &&
+        Object.entries(pisosCor).map(([k, cor]) => {
+          const [i, j] = k.split(",").map(Number);
+          return <polygon key={"pinta" + k} className={"arena-piso " + cor} pointerEvents="none" points={[p(i, j), p(i + 1, j), p(i + 1, j + 1), p(i, j + 1)].map((v) => v.join(",")).join(" ")} />;
+        })}
       {portas?.map((d) => (
         <PortaNaParede key={d.fid} d={d} p={p} aoTocar={aoTocarPorta} />
       ))}

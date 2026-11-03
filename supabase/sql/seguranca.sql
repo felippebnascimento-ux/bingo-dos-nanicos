@@ -6781,6 +6781,95 @@ end $$;
 revoke all on function public.curtir_quarto(uuid, boolean) from public, anon;
 grant execute on function public.curtir_quarto(uuid, boolean) to authenticated;
 
+-- 58) arena de pintar o chão (03/11/2026, pedido do João; um jogo nosso, no estilo das salas de jogo do Habbo) ------------
+--   Dois times (azul e vermelho) entram na cena "arena"; quando alguém começa, a partida dura 90 s depois de 5 s de
+--   contagem, e cada boneco pinta da cor do time o piso por onde passa. O banco guarda só a partida (times e horários),
+--   para todo mundo ver a mesma; a pintura sai do andar dos bonecos, que já é igual em todas as telas. Não vale moedas.
+create table if not exists public.arena_partidas (
+  id        bigint generated always as identity primary key,
+  estado    text not null default 'esperando' check (estado in ('esperando', 'jogando', 'fim')),
+  times     jsonb not null default '{}'::jsonb check (octet_length(times::text) <= 2000),
+  comeca_em timestamptz,
+  acaba_em  timestamptz,
+  criada_em timestamptz not null default now()
+);
+create index if not exists arena_partidas_estado on public.arena_partidas (estado, id desc);
+alter table public.arena_partidas enable row level security;
+revoke all on public.arena_partidas from public, anon, authenticated;
+grant select on public.arena_partidas to authenticated;
+drop policy if exists arena_partidas_ler on public.arena_partidas;
+create policy arena_partidas_ler on public.arena_partidas for select to authenticated using (public.eh_membro());
+do $$
+begin
+  begin alter publication supabase_realtime add table public.arena_partidas; exception when duplicate_object then null; end;
+end $$;
+
+-- fecha o que já acabou (jogo que passou da hora, espera parada há 30 min) e devolve a partida da vez, travada
+create or replace function public.arena_atual() returns public.arena_partidas
+language plpgsql security definer set search_path = public as $$
+declare
+  p public.arena_partidas;
+begin
+  update public.arena_partidas set estado = 'fim'
+   where (estado = 'jogando' and acaba_em < now()) or (estado = 'esperando' and criada_em < now() - interval '30 minutes');
+  select * into p from public.arena_partidas where estado in ('esperando', 'jogando') order by id desc limit 1 for update;
+  return p;
+end $$;
+revoke all on function public.arena_atual() from public, anon, authenticated;
+
+-- arena_entrar(): entra na partida que está esperando (cria uma se não houver), no time com menos gente; até 8
+create or replace function public.arena_entrar() returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+  p     public.arena_partidas;
+  v_az  int;
+  v_vm  int;
+begin
+  if v_uid is null or not public.eh_membro() then raise exception 'Só os membros jogam.' using errcode = 'P0001'; end if;
+  perform public.limitar('arena', 20, interval '1 minute', 'Calma: muitos toques seguidos.');
+  p := public.arena_atual();
+  if p.id is not null and p.estado = 'jogando' then raise exception 'Tem uma partida rolando. Espere ela acabar.' using errcode = 'P0001'; end if;
+  if p.id is null then insert into public.arena_partidas default values returning * into p; end if;
+  if p.times ? v_uid::text then return; end if;
+  select count(*) filter (where value = '"azul"'), count(*) filter (where value = '"vermelho"') into v_az, v_vm from jsonb_each(p.times);
+  if v_az + v_vm >= 8 then raise exception 'A arena está cheia (8 jogadores).' using errcode = 'P0001'; end if;
+  update public.arena_partidas set times = times || jsonb_build_object(v_uid::text, case when v_az <= v_vm then 'azul' else 'vermelho' end) where id = p.id;
+end $$;
+revoke all on function public.arena_entrar() from public, anon;
+grant execute on function public.arena_entrar() to authenticated;
+
+-- arena_sair(): sai da partida que está esperando
+create or replace function public.arena_sair() returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  p public.arena_partidas;
+begin
+  p := public.arena_atual();
+  if p.id is null or p.estado <> 'esperando' then return; end if;
+  update public.arena_partidas set times = times - auth.uid()::text where id = p.id;
+end $$;
+revoke all on function public.arena_sair() from public, anon;
+grant execute on function public.arena_sair() to authenticated;
+
+-- arena_comecar(): quem está na partida começa, com gente nos dois times: 5 s de contagem e 90 s de jogo
+create or replace function public.arena_comecar() returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  p public.arena_partidas;
+begin
+  p := public.arena_atual();
+  if p.id is null or p.estado <> 'esperando' or not (p.times ? auth.uid()::text) then
+    raise exception 'Entre na partida antes.' using errcode = 'P0001';
+  end if;
+  if not exists (select 1 from jsonb_each(p.times) where value = '"azul"') or not exists (select 1 from jsonb_each(p.times) where value = '"vermelho"') then
+    raise exception 'Precisa de gente nos dois times.' using errcode = 'P0001';
+  end if;
+  update public.arena_partidas set estado = 'jogando', comeca_em = now() + interval '5 seconds', acaba_em = now() + interval '95 seconds' where id = p.id;
+end $$;
+revoke all on function public.arena_comecar() from public, anon;
+grant execute on function public.arena_comecar() to authenticated;
+
 -- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo e as 2 tabelas e 3 funções do quarto próprio e as 2 tabelas e 3 funções do blackjack e as 4 tabelas e 6 funções do pôquer
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')

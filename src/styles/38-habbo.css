@@ -57,3 +57,18 @@
 .navegador-nome{flex:1;min-width:0;display:grid;gap:2px}
 .navegador-nome b{font:700 14px var(--body)}
 .navegador-nome small{font:500 12px var(--body);color:var(--muted)}
+
+/* arena de pintar o chão (seção 58): cores dos times (--arena-*) */
+.quarto-vars{--arena-azul:#3B82F6; --arena-vermelho:#E5484D}
+.arena-piso{opacity:.55}
+.arena-piso.azul{fill:var(--arena-azul)}.arena-piso.vermelho{fill:var(--arena-vermelho)}
+.arena-painel{position:absolute;left:50%;top:10px;z-index:6;translate:-50% 0;width:min(440px,calc(100% - 20px));display:grid;gap:6px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--surface) 92%,transparent);color:var(--ink);box-shadow:0 8px 24px var(--shadow)}
+.arena-placar{display:flex;align-items:center;justify-content:space-between;gap:8px;font:600 13px var(--body)}
+.arena-placar b{font:800 20px var(--display)}
+.arena-time.azul b{color:var(--arena-azul)}.arena-time.vermelho b{color:var(--arena-vermelho)}
+.arena-relogio{font:800 14px var(--display);text-align:center}
+.arena-times,.arena-regra{margin:0}
+.arena-times .azul{color:var(--arena-azul)}.arena-times .vermelho{color:var(--arena-vermelho)}
+.arena-botoes{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.arena-meu{margin:0;text-align:center;font:700 13px var(--body)}
+.arena-meu.azul{color:var(--arena-azul)}.arena-meu.vermelho{color:var(--arena-vermelho)}

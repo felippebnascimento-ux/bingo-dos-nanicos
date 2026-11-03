@@ -708,6 +708,12 @@ export const CHANGELOG: EntradaLog[] = [
       "Curta o quarto dos outros pelo ♡ no topo do quarto; o navegador tem o ranking dos mais curtidos",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Arena de pintar o chão: pela porta do K-FOFO, entre num time (azul ou vermelho) e comece. Em 90 segundos, o chão por onde você anda fica da cor do seu time, e ganha quem pintar mais",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

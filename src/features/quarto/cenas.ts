@@ -7,12 +7,13 @@
 import type { Friend } from "@/lib/tipos";
 import { gradeDoQuarto, type Grade, type MovelGrade } from "./grade";
 
-export const CENAS = ["rua", "corredor", "banheiro"] as const;
+export const CENAS = ["rua", "corredor", "banheiro", "arena"] as const;
 export type CenaEspecial = (typeof CENAS)[number];
 export const ehCenaEspecial = (x: unknown): x is CenaEspecial => CENAS.includes(x as CenaEspecial);
 
-export const TAM_CENA: Record<CenaEspecial, number> = { rua: 12, corredor: 9, banheiro: 5 };
-export const NOME_CENA: Record<CenaEspecial, string> = { rua: "A rua", corredor: "Corredor dos quartos", banheiro: "Banheiro do K-FOFO" };
+/* a arena (seção 58): chão vazio de 10×10 para o jogo de pintar o chão */
+export const TAM_CENA: Record<CenaEspecial, number> = { rua: 12, corredor: 9, banheiro: 5, arena: 10 };
+export const NOME_CENA: Record<CenaEspecial, string> = { rua: "A rua", corredor: "Corredor dos quartos", banheiro: "Banheiro do K-FOFO", arena: "Arena de pintar o chão" };
 
 /** O banheiro (a porta do canto do K-FOFO): o vaso (dá para sentar) e a pia; as paredes são das pixações (seção 51). */
 export const MOVEIS_BANHEIRO: readonly MovelGrade[] = [
