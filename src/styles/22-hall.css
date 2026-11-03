@@ -491,7 +491,7 @@
 .hall-placa:has(.hall-placa-placar) .hall-placa-placar{flex-basis:100%}
 
 /* ---------- chat estilo Habbo: a barra branca embaixo do cômodo e os balões em cima dos bonecos ---------- */
-.habbo-barra{display:flex;align-items:center;gap:6px;max-width:560px;margin:10px auto 0;padding:5px 5px 5px 18px;border-radius:99px;background:var(--stamp-ink);border:1px solid color-mix(in srgb,var(--accent-ink) 12%,transparent);box-shadow:0 6px 22px var(--shadow)}
+.habbo-barra{display:flex;align-items:center;gap:6px;flex:1 1 280px;max-width:460px;margin:0 auto;padding:5px 5px 5px 18px;border-radius:99px;background:var(--stamp-ink);border:1px solid color-mix(in srgb,var(--accent-ink) 12%,transparent);box-shadow:0 6px 22px var(--shadow)}
 .habbo-barra:focus-within{outline:2px solid var(--accent);outline-offset:2px}
 .habbo-barra input{flex:1;min-width:0;padding:8px 0;border:0;background:transparent;color:var(--accent-ink);font:500 14px var(--body);outline:none}
 .habbo-barra input::placeholder{color:color-mix(in srgb,var(--accent-ink) 50%,transparent)}
@@ -505,9 +505,14 @@
 @keyframes habbo-vida{0%{opacity:0;transform:translateY(8px) scale(.92)}4%{opacity:1;transform:none}85%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-10px)}}
 @keyframes habbo-some{0%,85%{opacity:1}100%{opacity:0}}
 @media (prefers-reduced-motion:reduce){.habbo-balao{animation-name:habbo-some}}
-@media (max-width:760px){.habbo-barra{margin:8px 0 0}.habbo-pilha{max-width:170px}.habbo-balao{font-size:11px}}
+/* a barra fica na fileira de baixo do cômodo (carteira, mochila, quarto), centralizada no espaço que sobra */
+.hall-area:has(.habbo-barra) .hall-bolso{right:16px}
+.hall-area:has(.habbo-barra) .hall-dica{display:none}
+@media (max-width:760px){.habbo-barra{flex-basis:100%;max-width:none}.habbo-pilha{max-width:170px}.habbo-balao{font-size:11px}}
 /* a dica do canto de baixo cede lugar quando a fileira de botões cresce (Bolsa Nanica) ou a tela é estreita */
 .hall-area:has(.hall-bolsa) .hall-dica{display:none}
 @media (min-width:761px) and (max-width:1300px){.hall-dica{display:none}}
 /* sombra dos móveis no chão (luz de cima à esquerda) */
 .hall-sombras polygon{fill:var(--accent-ink);opacity:.3}
+.hall-area:has(.habbo-barra) .hall-bolso{pointer-events:none}
+.hall-area:has(.habbo-barra) .hall-bolso > *{pointer-events:auto}

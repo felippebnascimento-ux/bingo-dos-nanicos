@@ -45,12 +45,17 @@ const onest = Onest({ subsets: ["latin"], weight: ["400", "500", "600", "700"], 
 export const metadata: Metadata = {
   title: "Bingo dos Nanicos",
   robots: { index: false, follow: false },
+  /* o site já tem tema escuro: extensões de modo escuro (Dark Reader) não repintam nada (pintavam um quadrado escuro
+     em volta do boneco ao passar o mouse) */
+  other: { "darkreader-lock": "" },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  /* avisa ao navegador que os dois temas são nossos (o "modo escuro automático" do Chrome e do Edge não escurece a página) */
+  colorScheme: "light dark",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

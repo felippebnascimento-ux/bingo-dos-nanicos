@@ -581,6 +581,14 @@ export const CHANGELOG: EntradaLog[] = [
       "Os bonecos andam mais macio: aceleram ao sair e freiam ao chegar",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "A barra do chat fica dentro do K-FOFO, ao lado do Ir para o meu quarto",
+      "Toca uma campainha quando um nanico entra no site",
+      "Sem o quadrado escuro em volta do boneco ao passar o mouse (extensões de modo escuro não mexem mais no site)",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
