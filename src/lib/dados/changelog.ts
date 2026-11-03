@@ -505,6 +505,10 @@ export const CHANGELOG: EntradaLog[] = [
       "No quarto dá para andar e sentar na cama, no sofá, na poltrona e no puff; a lista \"Na sala agora\" e os membros mostram quem está em qual quarto",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: ["No celular de verdade, o InstaNanico volta a rolar (feed, explorar, perfil) e respeita o recorte da tela e a barrinha de baixo"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
