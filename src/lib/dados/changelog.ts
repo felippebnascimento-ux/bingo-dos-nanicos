@@ -714,6 +714,12 @@ export const CHANGELOG: EntradaLog[] = [
       "Arena de pintar o chão: pela porta do K-FOFO, entre num time (azul ou vermelho) e comece. Em 90 segundos, o chão por onde você anda fica da cor do seu time, e ganha quem pintar mais",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Gatilhos no quarto: no seu quarto, o botão ⚙ Gatilhos monta regras como \"quando alguém entra, aparece um aviso\" ou \"quando alguém pisa no piso 2,3, vai para a porta\". Também dá para tocar a campainha",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

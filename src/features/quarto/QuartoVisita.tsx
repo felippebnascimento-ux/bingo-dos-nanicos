@@ -20,6 +20,7 @@ import type { MovelCena } from "./QuartoCena";
 import { CurtirQuarto } from "./NavegadorQuartos";
 import { useArena } from "./arena";
 import { ArenaPainel } from "./ArenaPainel";
+import { GatilhosPainel } from "./GatilhosPainel";
 import { irParaQuarto, paraCena } from "./visita";
 import { CORES_PIXO, ehCenaEspecial, gradeEspecial, GOL_RUA, moveisDaCena, NOME_CENA, portasDoCorredor, TAM_CENA, type CorPixo } from "./cenas";
 import { iniciarPixacoes, pixar, usePixacoes } from "./pixacoes";
@@ -140,6 +141,7 @@ export function QuartoVisita({ dono }: { dono: string }) {
       />
       {especial === "banheiro" && <PixarForm />}
       {especial === "arena" && <ArenaPainel />}
+      {!especial && f?.user_id && f.user_id === myUid && <GatilhosPainel uid={f.user_id} tam={tamanho} />}
       {painel && <PainelMovel key={painel.id} m={painel} fechar={() => setPainel(null)} />}
     </div>
   );

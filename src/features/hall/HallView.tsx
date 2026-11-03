@@ -42,6 +42,7 @@ import { useRef } from "react";
 import { Lupa, ZoomCaixa } from "./Lupa";
 import { irParaQuarto } from "@/features/quarto/visita";
 import { BotaoNavegador } from "@/features/quarto/NavegadorQuartos";
+import { iniciarGatilhos } from "@/features/quarto/gatilhos";
 
 /** Setas → um piso: direita/esquerda seguem a parede da direita, cima/baixo a da esquerda. */
 const SETAS: Record<string, [number, number]> = {
@@ -101,6 +102,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
 
   useEffect(() => {
     iniciarHall();
+    iniciarGatilhos();
     iniciarGanhos();
     iniciarZoeira();
     iniciarEventos();
