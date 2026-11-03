@@ -469,6 +469,10 @@ export const CHANGELOG: EntradaLog[] = [
       "Na aba Amigos, quem está online e de quem cada um é amigo; nos membros, uma categoria Amigos; no ranking, a etiqueta amigo",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: ["No K-FOFO, quando alguém entra no site aparece \"Fulano entrou!\" no canto de cima, embaixo do Na sala agora"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
