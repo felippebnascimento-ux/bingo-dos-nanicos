@@ -1,10 +1,10 @@
 "use client";
-/* Aba Nanicos: os 14 com a arte de corpo inteiro. Tocar num nanico abre a ficha dele (features/ficha). */
+/* Aba Nanicos: os 14 com a arte de corpo inteiro (os amigos dos nanicos ficam na aba Amigos). Tocar num nanico abre a ficha dele (features/ficha). */
 import { TituloNanico } from "@/features/loja/Itens";
 import { ChamaNome } from "@/features/ficha/NoSitio";
 import { Avatar } from "@/components/ui/Avatar";
 import { fecharSeletores } from "@/components/ui/FriendPicker";
-import { artOf } from "@/lib/dados/nanicos";
+import { artOf, ehAmigo } from "@/lib/dados/nanicos";
 import { setApp, useApp } from "@/lib/store";
 import { rolarAte } from "@/lib/util";
 
@@ -17,7 +17,8 @@ export function verNanicadas(fid: string) {
 }
 
 export function NanicosView({ hidden }: { hidden: boolean }) {
-  const friends = useApp((s) => s.friends);
+  const todos = useApp((s) => s.friends);
+  const friends = todos.filter((f) => !ehAmigo(f));
   const phrases = useApp((s) => s.phrases);
   return (
     <section id="view-nanicos" className="inner" hidden={hidden}>

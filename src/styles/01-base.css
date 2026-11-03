@@ -76,8 +76,8 @@ button,label.lnk,.cell,.chip,.tile,.pick-btn{cursor:pointer}
   #cardArea>.card-wrap,#cardArea>.empty{max-width:max(560px,calc(100vh - 220px));margin-inline:auto}
   #cardArea>.empty{min-height:420px;align-content:center}
 }
-#view-nanicos{width:100%;max-width:1320px;margin:0 auto}
-#view-nanicos .hero{max-width:780px}
+#view-nanicos,#view-amigos{width:100%;max-width:1320px;margin:0 auto}
+#view-nanicos .hero,#view-amigos .hero{max-width:780px}
 #view-nanicos .nan-hero{max-width:none}
 .empty-art{width:min(420px,90%);height:auto;margin-bottom:6px;filter:drop-shadow(0 10px 16px var(--shadow))}
 

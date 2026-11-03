@@ -456,6 +456,12 @@ export const CHANGELOG: EntradaLog[] = [
       "Acessórios para o boneco na loja: boné de aba reta, óculos escuros, headset gamer e cartola do magnata. Equipado, aparece no seu boneco no K-FOFO e no quarto da ficha",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Aba Amigos: os amigos dos nanicos têm uma aba só deles. O primeiro é o Lightzin, que já tem arte e boneco no K-FOFO",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

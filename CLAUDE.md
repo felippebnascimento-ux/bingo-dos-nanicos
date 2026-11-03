@@ -113,7 +113,10 @@ src/
                        `tocarCasa` canta ou confirma, `sortearCartela`, `usarMontada`, `fecharPartida`; sem o SQL ou
                        fora de uma sala de LoL, cai na cartela local de antes)
     nanicadas/         NanicadasView: cadastro, edição, filtros e lista
-    nanicos/           NanicosView: os 14 nanicos com a arte de corpo inteiro (tocar abre a ficha);
+    amigos/            AmigosView (aba `amigos`, no grupo Turma, só no computador): os amigos dos nanicos de `AMIGOS`
+                       (`src/lib/dados/nanicos.ts`), com a arte de corpo inteiro; quem ainda não tem login aparece "chega logo".
+                       Até a fase 30, o login de um amigo entra no banco como nanico; o site só tira ele da aba Nanicos
+    nanicos/           NanicosView: os 14 nanicos (sem os amigos, `ehAmigo`) com a arte de corpo inteiro (tocar abre a ficha);
                        atributos.ts (os 6 atributos votados, conferir notas, médias; puro e testado)
     ficha/             ficha do nanico: Ficha.tsx (janela), Quarto.tsx (quarto isométrico com o boneco),
                        AtributosFicha.tsx ("Segundo os nanicos": barras e votar, em ordem alfabética), estado.ts
@@ -466,6 +469,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 ### Arte (`public/arte/`)
 - **`nanicos/{n}-rosto.webp` e `{n}-corpo.webp`:** o número vem de `NAN_MAP` (nome do nanico → número). Os nomes são Abreutz, Alemão, DD, Gamer, Grito, Guiperino, Le Bubu, Henry, Pitoco, John, Veião, Max, Gordão e Pin.
 - **Tamanhos:** o rosto tem 160×160 e o corpo, 440 px de altura. Use `artOf(friend)`.
+- **`amigos/{slug}-rosto.webp` e `{slug}-corpo.webp`:** a arte dos amigos dos nanicos (o primeiro é o Lightzin), pelo mapa `AMIGOS` de `nanicos.ts`; o boneco fica em `bonecos/{slug}.webp`, no mesmo formato. `artOf` e `bonecoOf` já caem nele.
 - **`bonecos/*.webp`:** uma spritesheet por nanico para o hall (células de 84×134 nas medidas do código; desde a v1.68 a folha está em 3x, 252×402 px por célula, para ficar nítida ampliada; linhas `frente`/`costas`, colunas `parado` + 4 de andar; os lados esquerdos são o espelho). O formato está em `bonecos/bonecos.json`. Use `bonecoOf(friend)`; quem não tem boneco aparece com o rosto num pino.
 - **`turma.webp`:** foto da turma. **`marca.png`:** bola de bingo. **`reacoes/`:** os Picarétezzi.
 

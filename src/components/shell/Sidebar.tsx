@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, type ComponentType } from "react";
-import { IcAjustes, IcAoVivo, IcCassino, IcJogar, IcLoja, IcMidias, IcSeta, IcSitio, IcNanicadas, IcNanicos, IcPerfil, IcTaca, IcTruco, IcVoltar } from "@/components/ui/icones";
+import { IcAjustes, IcAoVivo, IcCassino, IcJogar, IcLoja, IcMidias, IcSeta, IcSitio, IcNanicadas, IcNanicos, IcAmigos, IcPerfil, IcTaca, IcTruco, IcVoltar } from "@/components/ui/icones";
 import { fecharSeletores } from "@/components/ui/FriendPicker";
 import { Avatar } from "@/components/ui/Avatar";
 import { CamBotoes } from "@/features/live/CamBotoes";
@@ -8,7 +8,7 @@ import { CarteiraChip } from "@/features/moedas/Moedas";
 import { useCarteira } from "@/lib/carteira";
 import { VERSION } from "@/lib/dados/changelog";
 import { temNovidade } from "@/lib/dados/novidades";
-import { CREW, MARCA } from "@/lib/dados/nanicos";
+import { CREW, MARCA, ehAmigo } from "@/lib/dados/nanicos";
 import { friendOf, MY_KEY, setApp, useApp } from "@/lib/store";
 import type { Aba } from "@/lib/tipos";
 import { local } from "@/lib/util";
@@ -46,6 +46,7 @@ const GRUPOS: { id: string; titulo: string; itens: ItemMenu[] }[] = [
     titulo: "Turma",
     itens: [
       { aba: "nanicos", t: "Nanicos", Ic: IcNanicos },
+      { aba: "amigos", t: "Amigos", Ic: IcAmigos, soComputador: true },
       { aba: "midias", t: "Mídias", Ic: IcMidias },
       { aba: "trofeus", t: "Troféus", Ic: IcTaca, soComputador: true },
       { aba: "perfil", t: "Perfil", Ic: IcPerfil },
@@ -61,7 +62,8 @@ export function setSideMin(on: boolean) {
 function Nav() {
   const aba = useApp((s) => s.aba);
   const nFrases = useApp((s) => s.phrases.length);
-  const nAmigos = useApp((s) => s.friends.length);
+  /* só os 14: os amigos dos nanicos têm a aba Amigos */
+  const nAmigos = useApp((s) => s.friends.filter((f) => !ehAmigo(f)).length);
   const nLive = useApp((s) => s.onlineSala.filter((p) => p.live && p.key !== MY_KEY).length + (s.myLiveSid ? 1 : 0));
   const nTruco = useApp((s) => s.trucoAbertas);
   const unread = useApp((s) => s.chatUnread > 0);
