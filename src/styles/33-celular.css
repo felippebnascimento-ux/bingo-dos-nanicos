@@ -374,8 +374,13 @@ input.ig-responder::placeholder{color:rgb(255 255 255 / .75)}
 
 /* celular de verdade: o app ocupa a tela inteira, sem a moldura */
 @media (max-width:520px){
-  .celular-fundo{padding:0}
-  .iphone{height:100%;width:100%;aspect-ratio:auto;border-radius:0;padding:0;background:var(--iph-tela);box-shadow:none}
+  .celular-fundo{display:block;padding:0}
+  /* preso na tela (antes a altura em % não valia dentro da grade, o app crescia até o tamanho do feed e nada rolava) */
+  .iphone{position:absolute;inset:0;height:auto;width:auto;max-width:none;aspect-ratio:auto;border-radius:0;padding:0;background:var(--iph-tela);box-shadow:none}
+  /* o recorte do iPhone em cima e a barrinha de início embaixo */
+  .ig{padding-top:env(safe-area-inset-top,0px)}
+  .ig-barra{padding-bottom:max(18px,calc(env(safe-area-inset-bottom,0px) + 12px))}
+  .iph-inicio{bottom:max(7px,calc(env(safe-area-inset-bottom,0px) + 2px))}
   .iph-botao{display:none}
   .iph-tela{border-radius:0;border:0}
   .iph-status{display:none}
