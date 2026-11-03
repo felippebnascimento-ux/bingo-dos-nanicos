@@ -11,7 +11,7 @@
   --mesa-placa:rgb(14 12 10 / .78); --mesa-branco:#FFFFFF; --mesa-texto:#F7F2E7; --mesa-vermelho:#E0503C;
   position:relative;width:100%;aspect-ratio:2 / 1;container-type:inline-size;color:var(--mesa-texto)}
 /* as fichas valem também fora da mesa (a barra de apostar) */
-.mesa-cartas,.mesa-acoes,.bj-jogo{--ficha-vermelha:#C8342F; --ficha-azul:#2F6FB5; --ficha-verde:#2E8B4E; --ficha-preta:#1E1E1E; --ficha-roxa:#6F3FA8; --ficha-ouro:#C9A04E; --mesa-branco:#FFFFFF}
+.mesa-cartas,.mesa-acoes,.bj-jogo,.pk-jogo{--ficha-vermelha:#C8342F; --ficha-azul:#2F6FB5; --ficha-verde:#2E8B4E; --ficha-preta:#1E1E1E; --ficha-roxa:#6F3FA8; --ficha-ouro:#C9A04E; --mesa-branco:#FFFFFF}
 .mesa-cartas.meia-lua{aspect-ratio:2 / 1.18}
 /* borda de couro acolchoada, com a costura */
 .mesa-couro{position:absolute;inset:7% 4% 11%;border-radius:50% / 50%;padding:2.2cqw;
@@ -236,4 +236,59 @@
   .na-mesa.bj-l2{left:25% !important;top:62% !important}
   .na-mesa.bj-l4{left:75% !important;top:62% !important}
   .na-mesa.bj-l3{left:50% !important;top:83% !important}
+}
+
+/* ---------- pôquer (Poquer.tsx) ---------- */
+.pk-salao,.pk-jogo{display:grid;gap:4px}
+.pk-mesas{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr))}
+.pk-mesa-cartao{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink);text-align:left;cursor:pointer;transition:border-color .12s}
+.pk-mesa-cartao:hover{border-color:var(--accent)}
+.pk-mesa-feltro{display:flex;align-items:center;justify-content:center;width:84px;height:48px;border-radius:50%;
+  background:radial-gradient(90% 100% at 50% 45%,var(--mesa-feltro0,#2F7350),var(--mesa-feltro2,#0F2E21));box-shadow:0 0 0 4px #4C2E17,0 0 0 6px #1A110B}
+.pk-mesa-feltro .av{margin-left:-8px;box-shadow:0 0 0 2px #1A110B}
+.pk-mesa-feltro .av:first-child{margin-left:0}
+.pk-mesa-info{display:grid;gap:2px}
+.pk-mesa-info b{font:800 15px var(--display);white-space:nowrap}
+.pk-mesa-info small{font-size:12.5px;color:var(--muted)}
+.pk-vazio{text-align:center;padding:18px 0}
+.pk-blinds{margin:0;min-width:240px}
+.pk-espera{padding:8px 4px}
+.pk-livre{border-style:dashed;background:rgb(0 0 0 / .2);color:var(--mesa-ouro);font:800 max(11px,1.2cqw) var(--display);cursor:pointer;transition:background .12s}
+button.pk-livre:hover,.pk-livre.on{background:rgb(210 174 106 / .22)}
+.pk-livre.vazio{opacity:.4;cursor:default}
+.pk-lugar{gap:.3cqw}
+.pk-cartas{margin-bottom:-1.2cqw;z-index:0}
+.pk-cartas .cfr{min-width:22px}
+.pk-meio{gap:.9cqw}
+.pk-board{display:flex;gap:.8cqw}
+.pk-minhas{gap:.5cqw}
+.pk-minhas .mesa-aviso{order:-1}
+.pk-larguei{opacity:.4;filter:grayscale(.7)}
+@media (max-width:640px){
+  /* mesa em pé no celular: 6 lugares em volta, as minhas cartas no meio embaixo */
+  .na-mesa.pk-v0{left:18% !important;top:89% !important}
+  .na-mesa.pk-v1{left:11% !important;top:54% !important}
+  .na-mesa.pk-v2{left:17% !important;top:22% !important}
+  .na-mesa.pk-v3{left:83% !important;top:22% !important}
+  .na-mesa.pk-v4{left:89% !important;top:54% !important}
+  .na-mesa.pk-v5{left:82% !important;top:89% !important}
+  .na-mesa.pk-a0{left:30% !important;top:73% !important}
+  .na-mesa.pk-a1{left:28% !important;top:64% !important}
+  .na-mesa.pk-a2{left:40% !important;top:27% !important}
+  .na-mesa.pk-a3{left:60% !important;top:27% !important}
+  .na-mesa.pk-a4{left:72% !important;top:64% !important}
+  .na-mesa.pk-a5{left:70% !important;top:73% !important}
+  .na-mesa.pk-d0{left:35% !important;top:80% !important}
+  .na-mesa.pk-d1{left:25% !important;top:47% !important}
+  .na-mesa.pk-d2{left:33% !important;top:22% !important}
+  .na-mesa.pk-d3{left:67% !important;top:22% !important}
+  .na-mesa.pk-d4{left:76% !important;top:69% !important}
+  .na-mesa.pk-d5{left:65% !important;top:80% !important}
+  .na-mesa.pk-meio{top:50% !important}
+  .na-mesa.pk-minhas{left:50% !important;top:85% !important;gap:4px}
+  .pk-board .cfr{min-width:34px}
+  .pk-lugar .mesa-placa{min-width:0;padding:2px 6px}
+  .pk-lugar .mesa-lugar{width:auto}
+  .pk-mesa-cartao{grid-template-columns:auto minmax(0,1fr)}
+  .pk-mesa-cartao .btn{display:none}
 }

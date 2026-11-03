@@ -213,7 +213,24 @@ export function alternarMudo() {
   if (!mudo && s.vozSurdo) return alternarSurdo();
   VOZ.stream?.getAudioTracks().forEach((t) => (t.enabled = !mudo));
   setApp({ vozMudo: mudo });
+  if (!mudo) acordarMic();
 }
+
+/**
+ * Voltou a falar: no celular o sistema pausa o áudio (tela apagada, ligação, outro app tocando) e o microfone
+ * desmutado continuava mandando silêncio. Acorda o filtro e o medidor (o toque no botão deixa) e, se o próprio
+ * aparelho cortou o microfone, abre ele de novo sem sair da voz.
+ */
+function acordarMic() {
+  VOZ.mic?.retomar();
+  if (ctx && ctx.state !== "running" && ctx.state !== "closed") ctx.resume().catch(() => {});
+  const fonte = VOZ.mic?.fonte;
+  if (fonte && (fonte.readyState === "ended" || fonte.muted)) void trocarMicrofone();
+}
+if (typeof document !== "undefined")
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && VOZ.sid && !getApp().vozMudo) acordarMic();
+  });
 
 /** "Surdo": para de ouvir todo mundo e desliga o microfone junto (como no Discord). */
 export function alternarSurdo() {
@@ -225,6 +242,7 @@ export function alternarSurdo() {
   VOZ.stream?.getAudioTracks().forEach((t) => (t.enabled = !mudo));
   setApp({ vozSurdo: surdo, vozMudo: mudo });
   for (const p of VOZ.pares.values()) aplicarVolume(p);
+  if (!mudo) acordarMic();
 }
 
 /* ---------- conexões ---------- */

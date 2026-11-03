@@ -525,6 +525,17 @@ export const CHANGELOG: EntradaLog[] = [
       "Dá para conferir cada rodada: o sapato é embaralhado por um segredo que aparece no fim",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Pôquer no Cassino: Texas Hold'em entre os nanicos, em mesas como as do truco, com até 6 lugares",
+      "Abra uma mesa com blinds de 5/10, 10/20 ou 25/50 e sente com as suas moedas; ao levantar, o que sobrou volta para a carteira",
+      "Na sua vez: desistir, passar, pagar ou aumentar (½ pote, ¾ pote, pote ou all-in), com 20 s para decidir; all-in divide o pote certinho",
+      "No fim, a mão de quem ganhou acende na mesa; a casa leva 3% do pote, só se a mão chegou ao flop",
+      "O seletor de jogos do Cassino ficou numa linha só (no celular, 3 por linha)",
+      "Celular: desmutar o microfone na voz volta a mandar o som (antes, às vezes ficava mudo)",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
