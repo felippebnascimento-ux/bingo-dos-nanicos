@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emblemas de jogo</title>
+<!-- Demo da fase 33: nível da GC (desenho nosso, cores tiradas do print do João) e elos do LoL (imagem oficial do Community Dragon). -->
+<style>
+  :root { --bg: #FAF9F6; --ink: #353535; --apagado: #6b6b6b; --cartao: #ffffff; --borda: #e4e1da; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1f2021; --ink: #ecebe7; --apagado: #a3a29d; --cartao: #2a2b2c; --borda: #3a3b3c; } }
+  body { margin: 0; padding: 24px 16px; background: var(--bg); color: var(--ink); font: 15px/1.4 system-ui, sans-serif; }
+  h1 { font-size: 20px; margin: 0 0 4px; } h2 { font-size: 15px; margin: 28px 0 10px; }
+  p { color: var(--apagado); margin: 0 0 12px; max-width: 640px; }
+  .grade { display: grid; grid-template-columns: repeat(5, minmax(0, 64px)); gap: 12px; }
+  .gc svg { width: 56px; height: 56px; display: block; }
+  .elos { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 12px; max-width: 640px; }
+  .elo { background: var(--cartao); border: 1px solid var(--borda); border-radius: 10px; padding: 8px; text-align: center; font-size: 13px; }
+  /* o PNG oficial tem 1280×720 com o brasão no meio: recorta pelo fundo ampliado */
+  .brasao { display: block; width: 100%; aspect-ratio: 1; background: center 46% / 380% auto no-repeat; }
+  .linha .brasao { width: 28px; height: 28px; }
+  .ficha { background: #3b3a35; color: #f3f1ea; border-radius: 10px; padding: 14px 16px; max-width: 380px; margin-top: 8px; }
+  .ficha h3 { margin: 0 0 8px; font-size: 13px; letter-spacing: .08em; color: #c9c5b8; }
+  .linha { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+  .linha b { color: #d7a85f; } .linha svg { width: 28px; height: 28px; }
+</style>
+</head>
+<body>
+<h1>Emblemas de jogo (fase 33)</h1>
+<p>Nível da GC: círculo com degradê, número em branco e borda escura; o 20 tem um brilho vermelho. Elos do LoL: brasão oficial, carregado de raw.communitydragon.org (já liberado na CSP).</p>
+
+<h2>Como fica no "No jogo" da ficha</h2>
+<div class="ficha">
+  <h3>NO JOGO</h3>
+  <div class="linha"><span class="brasao" style="background-image:url(https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-platinum.png)"></span><b>LoL</b> Platina IV · 42 PDL · Flex</div>
+  <div class="linha" id="linha-cs"><b>CS2</b> GC nível 10</div>
+</div>
+
+<h2>Nível da GC, 1 a 20</h2>
+<div class="grade gc" id="gc"></div>
+
+<h2>Elos do LoL</h2>
+<div class="elos" id="elos"></div>
+
+<script>
+// cores de cima e de baixo de cada nível, tiradas do print (o 20 é vermelho com brilho)
+const GC = ["#9e1dc8","#7b16b5","#6b1bc8","#5314b6","#5618af","#3e1088","#43118b","#300b66","#300d67","#23084a",
+  "#0a2a6b","#091d53","#0d40a1","#0d327f","#0d52c1","#0c3aa8","#3375d5","#2b5bc6","#3b78e5","#245dd6",
+  "#3a9ac8","#2f6ea1","#4eb89a","#338b66","#36ab4b","#278436","#35bb28","#298c22","#2ade19","#1acb0d",
+  "#d1ca1d","#c5b923","#deb332","#dd9f1c","#de8a14","#f46e17","#e86d1a","#f55516","#e8261b","#a30107"];
+function gc(n) {
+  const a = GC[(n - 1) * 2], b = GC[(n - 1) * 2 + 1], id = "g" + n;
+  const brilho = n === 20 ? `<circle cx="32" cy="32" r="30" fill="none" stroke="#ff3b2f" stroke-width="3" opacity=".7"/>` : "";
+  return `<svg viewBox="0 0 64 64" role="img" aria-label="GC nível ${n}">
+    <defs><radialGradient id="${id}" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></radialGradient></defs>
+    ${brilho}<circle cx="32" cy="32" r="26" fill="url(#${id})" stroke="#0b0f1a" stroke-width="3"/>
+    <ellipse cx="25" cy="21" rx="10" ry="5" fill="#fff" opacity=".18"/>
+    <text x="32" y="40" text-anchor="middle" font-family="system-ui" font-weight="800" font-size="${n > 9 ? 21 : 24}" fill="#fff" stroke="#0b0f1a" stroke-width="1">${n}</text></svg>`;
+}
+document.getElementById("gc").innerHTML = Array.from({ length: 20 }, (_, i) => gc(i + 1)).join("");
+document.getElementById("linha-cs").insertAdjacentHTML("afterbegin", gc(10));
+const ELOS = [["iron","Ferro"],["bronze","Bronze"],["silver","Prata"],["gold","Ouro"],["platinum","Platina"],
+  ["emerald","Esmeralda"],["diamond","Diamante"],["master","Mestre"],["grandmaster","Grão-Mestre"],["challenger","Desafiante"]];
+const BASE = "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-";
+document.getElementById("elos").innerHTML = ELOS.map(([id, nome]) => `<div class="elo"><span class="brasao" style="background-image:url(${BASE}${id}.png)"></span>${nome}</div>`).join("");
+</script>
+</body>
+</html>

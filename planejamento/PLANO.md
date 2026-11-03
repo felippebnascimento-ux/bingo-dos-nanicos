@@ -75,6 +75,7 @@ Decisões combinadas com o João em 01/11/2026. Vale para qualquer pessoa ou IA 
   - **andar pronto para os 14:** 4 quadros de frente e 4 de costas por nanico, em `andar/andar-q-<n>-<frente|costas>-<0..3>.png`, alinhados pela cabeça; os lados esquerdos são o espelho (`montar-andar.py`, `andar-todos.png`, `todos-andando.gif`);
   - **falta:** sentar/acenar (se quiserem) e transformar os quadros em spritesheets leves para o site (`public/arte/bonecos/`);
   - **não reaproveite** as tentativas desenhadas por código; foram recusadas.
+  - **Lightzin (03/11/2026, pronto, esperando a atualização):** arte de corpo (`15-corpo.png`, versão A escolhida pelo João), rosto 160×160 e a folha `lightzin.webp` no formato do `bonecos.json`, tudo em `planejamento/assets/lightzin/` (`montar.mjs` faz em Node o que o `recortar.py` faz, porque o notebook não tem Python). Ele não é um dos 14: para entrar no site precisa de login, linha em `friends`, `lightzin: 15` no `NAN_MAP`, largura em `CORPO_W`, `15: "lightzin.webp"` em `BONECO_ARQ` e no `bonecos.json`, e revisar os textos que dizem "14 nanicos".
 
 ### Hall (lobby) = Sítio do Mitz
 - **O que é:** o lobby da fase 5 é um cômodo isométrico inspirado no sítio do grupo, desenhado por código em SVG, sem fotos. Modelo: `planejamento/demo/hall.html` e `.png`.
@@ -182,6 +183,18 @@ A ideia é dar três motivos para abrir o site: zoar os amigos, não perder o qu
 - **Quando aparece:** sozinho, no primeiro login depois de uma versão nova, mostrando só o que mudou desde a última vez da pessoa. Depois disso não abre mais sozinho.
 - **Onde guarda o "já vi":** na conta da pessoa (`user_metadata.log_visto`), então vale para todos os aparelhos.
 
+### Amigos dos nanicos e truco no K-FOFO (decidido pelo João em 03/11/2026, fases 30 a 32)
+- **Amigo** (o primeiro é o Lightzin): tem login, boneco, moedas, cassino, loja, truco, voz, chat, ficha e Perfil. Fica fora das nanicadas, do bingo, da escalação e do rodízio, dos atributos e dos troféus. Tem uma aba "Amigos" e uma categoria própria nos membros.
+- **Modelo:** o amigo é uma linha em `friends` com `tipo = 'amigo'`. O `eh_nanico()` passa a exigir `tipo = 'nanico'` (tudo continua fechado para o amigo), e o `eh_membro()` abre, uma por uma, o que ele pode.
+- **Truco valendo:** quem abre escolhe 0, 10, 25, 50 ou 100 por jogador. Todos pagam ao começar, e quem ganha leva o bolo, sem taxa. A mesa de 0 mantém o +15. Mesa fechada ou abandonada devolve.
+- **Apostas no truco:** todo mundo aposta, mas quem está jogando só no próprio time. Fecham no fim da 1ª mão; 5% da casa; tabelas próprias, separadas das do LoL.
+- **Mesa verde:** ganha 4 cadeiras. Quem está jogando aparece sentado nelas com cartas na mão (sai do tempo real de `truco_mesas`, sem broadcast). Tocar na mesa leva o boneco para a plateia, em pé ao lado, e abre a janela para assistir e apostar.
+
+### Elo na ficha e quarto próprio (decidido pelo João em 03/11/2026, fases 33 a 35)
+- **Elo:** volta para o "No jogo" da ficha só o elo do LoL (o mais alto entre solo/duo e flex, dizendo qual fila). KDA, main e vitórias continuam fora. O emblema de elo vira o brasão oficial (Community Dragon, já liberado na CSP) e entra o emblema do nível da GC (1 a 20, desenho nosso com as cores do print).
+- **Quarto próprio:** comprado na Loja. Pequeno 6×6 por 1.000, médio 9×9 por 3.000, grande 12×12 por 8.000; comprar um maior paga só a diferença e o mesmo quarto cresce, com os móveis no lugar. Os móveis são comprados (até 4 de cada) e postos onde o dono quiser; parede, neon e pôster continuam equipados.
+- **Ir e visitar:** teletransporte pelo K-FOFO ("Ir para o meu quarto") e pela ficha ("Visitar o quarto"). Todos sempre podem entrar em qualquer quarto. Não muda a sala de voz.
+
 ### Ainda sem decisão
 - **"Poder mudar a senha de novo":** o botão "Trocar senha" já existe. Falta saber se o problema é o botão não funcionar ou se é recuperar uma senha esquecida (hoje só o admin reseta).
 
@@ -211,7 +224,7 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | 10 | `10-apostas-ao-vivo.md` | `apostas-ao-vivo` | 6 | feito (02/11/2026); SQL da seção 14 aplicado; `riot-ao-vivo` publicada de novo (abre o mercado e paga pela match-v5, até 3 resultados por ciclo, devolve após 6 h sem resultado); painel "Apostar" no EM PARTIDA; missão "aposta" ligada; Arena (fila 1700) fica sem aposta |
 | 11 | `11-loja-quarto.md` | `loja-quarto` | 2, 3 | feito (02/11/2026, antes da fila a pedido do João); SQL da seção 15 aplicado; acrescentei os consumíveis (cigarrinho, latinha, chimarrão, energético, caipirinha, charuto) com animação no Sítio |
 | 12 | `12-midias-links.md` | `midias-links` | 5 | feito (02/11/2026); SQL da seção 16 e bucket privado `midias` aplicados; aba Mídias no menu (galeria + mural), links no Perfil e na ficha; CSP sem mudança |
-| 13 | `13-login-convidado.md` | `login-convidado` | 5 | a fazer |
+| 13 | `13-login-convidado.md` | `login-convidado` | 5 | **substituída pela 30** (03/11/2026: o amigo passou a ter quase tudo, inclusive moedas) |
 | 14 | `14-hall-v2.md` | `hall-v2` | 00, 2, 3 | **feita**, PR aberto (em cima da `atributos-votados`); SQL da seção 7b aplicado em 02/11/2026 |
 | 15 | `15-celular-rede-nanica.md` | `celular-rede-nanica` | 11, 12 | feito (02/11/2026); SQL da seção 18 aplicado; Celular a 3.000 na loja com barra de "faltam"; rede nanica (feed, postar com imagem, curtir, comentar, perfil); o aviso no Sítio só chega a quem tem o Celular (RLS) |
 | 16 | `16-rua-do-sitio.md` | `rua-do-sitio` | 14 | a fazer. **Atenção (02/11/2026):** o hall seguiu a planta do grupo e não tem mais o portão K-FOFO na parede; a saída para a rua passa a ser o vão da entrada na frente (pisos `ENTRADA` de `hall.ts`, j = 9–10). |
@@ -227,3 +240,9 @@ Quando uma delas for a próxima, a sessão de planejamento escreve o prompt.
 | 27 | `27-hall-um-por-nanico.md` | `hall-um-por-nanico` | 00 | **feita** e no oficial em 02/11/2026 (um por nanico + reconexão automática) |
 | 28 | `28-tela-inicio.md` | `tela-inicio` | 27 | feito (02/11/2026) |
 | 29 | `29-ranking-moedas.md` | `ranking-moedas` | 14, 28 | feito (02/11/2026) |
+| 30 | `30-amigos-dos-nanicos.md` | `amigos-dos-nanicos` | 2, 5, 9, 14 | a fazer (substitui a 13); arte do Lightzin pronta em `planejamento/assets/lightzin/` |
+| 31 | `31-truco-valendo-moedas.md` | `truco-valendo` | 9, 10, 30 | a fazer |
+| 32 | `32-truco-na-mesa-verde.md` | `truco-mesa-verde` | 14, 27, 31 | a fazer |
+| 33 | `33-elo-e-emblemas-de-jogo.md` | `elo-emblemas-jogo` | 3, 27 | a fazer; demo em `planejamento/demo/emblemas-jogo.html` |
+| 34 | `34-quarto-comprar-e-arrumar.md` | `quarto-proprio` | 11, 14 | a fazer |
+| 35 | `35-quarto-teleporte-e-visitas.md` | `quarto-visitas` | 27, 34 | a fazer |

@@ -1,5 +1,7 @@
 # Fase 13: Login para amigo dos nanicos (convidado)
 
+> **Substituída pela fase 30 (`30-amigos-dos-nanicos.md`) em 03/11/2026.** Não implemente esta fase.
+
 **Branch:** `login-convidado` · **Depende de:** fase 5 (salas) · **Banco:** sim
 
 ## Objetivo (para quem usa)
