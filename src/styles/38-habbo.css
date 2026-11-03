@@ -47,3 +47,13 @@
 .mercado-campos select,.mercado-campos input{padding:7px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:500 14px var(--body)}
 .mercado-campos input{width:110px;margin-left:6px}
 .mercado-campos label{font:600 13px var(--body)}
+
+/* navegador de quartos (seção 57) */
+.navegador-gate{z-index:58}
+.navegador{width:min(480px,calc(100vw - 24px));max-height:calc(100dvh - 32px);overflow:auto;display:grid;gap:12px;padding:16px;border-radius:var(--r-lg,18px);background:var(--surface);color:var(--ink);box-shadow:0 16px 48px var(--shadow)}
+.navegador-lista{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.navegador-lista li{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:var(--surface-2)}
+.navegador-pos{min-width:26px;font:800 14px var(--display);color:var(--accent)}
+.navegador-nome{flex:1;min-width:0;display:grid;gap:2px}
+.navegador-nome b{font:700 14px var(--body)}
+.navegador-nome small{font:500 12px var(--body);color:var(--muted)}

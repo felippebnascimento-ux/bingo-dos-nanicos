@@ -17,6 +17,7 @@ import { QuartoCena, type BonecoCena } from "./QuartoCena";
 import { moveisDe, usarMovel, useQuartos } from "./quartoDados";
 import { CORES_LUZ, ehInterativo, NOME_COR, soDono, type CorLuz } from "./interativo";
 import type { MovelCena } from "./QuartoCena";
+import { CurtirQuarto } from "./NavegadorQuartos";
 import { irParaQuarto, paraCena } from "./visita";
 import { CORES_PIXO, ehCenaEspecial, gradeEspecial, GOL_RUA, moveisDaCena, NOME_CENA, portasDoCorredor, TAM_CENA, type CorPixo } from "./cenas";
 import { iniciarPixacoes, pixar, usePixacoes } from "./pixacoes";
@@ -160,6 +161,7 @@ export function TopoQuarto({ dono }: { dono: string }) {
   return (
     <header className="hero quarto-topo">
       <h1>{ehCenaEspecial(dono) ? NOME_CENA[dono] : eu ? "Meu quarto" : `Quarto do ${nome}`}</h1>
+      {!ehCenaEspecial(dono) && <CurtirQuarto dono={dono} />}
       {!ehCenaEspecial(dono) && (
         <button type="button" className="btn soft sm" onClick={() => irParaQuarto("corredor")}>
           Corredor dos quartos

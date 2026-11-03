@@ -12,6 +12,7 @@ import { ChatView } from "@/features/chat/ChatView";
 import { ConfigJanela } from "@/features/config/ConfigView";
 import { FichaNanico } from "@/features/ficha/Ficha";
 import { TrocaJanela } from "@/features/troca/Troca";
+import { NavegadorJanela } from "@/features/quarto/NavegadorQuartos";
 import { PainelCarteira } from "@/features/moedas/Ranking";
 import { PainelMochila } from "@/features/loja/MochilaPainel";
 import { ArrumarQuarto } from "@/features/quarto/ArrumarQuarto";
@@ -83,6 +84,7 @@ export default function App() {
       <ArrumarQuarto />
       <FichaNanico />
       <TrocaJanela />
+      <NavegadorJanela />
       <SalasJanela />
       <ConfigJanela />
 

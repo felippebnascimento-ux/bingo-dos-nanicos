@@ -701,6 +701,13 @@ export const CHANGELOG: EntradaLog[] = [
       "O item fica guardado no anúncio até alguém comprar ou você retirar; quem vende recebe o preço menos 5%, que vão para a Banca Nanica. Raro vai com o número",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Navegador de quartos: o botão no K-FOFO lista o quarto de todo mundo, com quem está lá agora e as curtidas, e leva você até ele",
+      "Curta o quarto dos outros pelo ♡ no topo do quarto; o navegador tem o ranking dos mais curtidos",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

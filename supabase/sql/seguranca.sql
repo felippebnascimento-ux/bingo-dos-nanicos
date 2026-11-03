@@ -6738,6 +6738,49 @@ end $$;
 revoke all on function public.mercado_retirar(bigint) from public, anon;
 grant execute on function public.mercado_retirar(bigint) to authenticated;
 
+-- 57) curtir quarto, para o navegador de quartos (03/11/2026, pedido do João) --------------------------------------------
+--   Cada membro curte (ou descurte) o quarto de outro, uma vez. Todos leem as curtidas (o navegador mostra o ranking
+--   dos quartos mais curtidos); só curtir_quarto() grava. 60 toques por hora.
+create table if not exists public.quarto_curtidas (
+  dono uuid not null references auth.users(id) on delete cascade,
+  quem uuid not null references auth.users(id) on delete cascade,
+  em   timestamptz not null default now(),
+  primary key (dono, quem),
+  check (dono <> quem)
+);
+alter table public.quarto_curtidas enable row level security;
+revoke all on public.quarto_curtidas from public, anon, authenticated;
+grant select on public.quarto_curtidas to authenticated;
+drop policy if exists quarto_curtidas_ler on public.quarto_curtidas;
+create policy quarto_curtidas_ler on public.quarto_curtidas for select to authenticated using (public.eh_membro());
+do $$
+begin
+  begin alter publication supabase_realtime add table public.quarto_curtidas; exception when duplicate_object then null; end;
+end $$;
+
+-- curtir_quarto(nanico, ligar): o dono tem que ter quarto e não pode ser eu
+create or replace function public.curtir_quarto(p_dono uuid, p_ligar boolean) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid  uuid := auth.uid();
+  v_dono uuid;
+begin
+  if v_uid is null or not public.eh_membro() then raise exception 'Só os membros curtem.' using errcode = 'P0001'; end if;
+  select user_id into v_dono from public.friends where id = p_dono;
+  if v_dono is null or not exists (select 1 from public.quartos where user_id = v_dono) then
+    raise exception 'Esse nanico ainda não tem quarto.' using errcode = 'P0001';
+  end if;
+  if v_dono = v_uid then raise exception 'Curtir o próprio quarto não vale.' using errcode = 'P0001'; end if;
+  perform public.limitar('curtir_quarto', 60, interval '1 hour', 'Calma: muitas curtidas seguidas.');
+  if p_ligar then
+    insert into public.quarto_curtidas (dono, quem) values (v_dono, v_uid) on conflict do nothing;
+  else
+    delete from public.quarto_curtidas where dono = v_dono and quem = v_uid;
+  end if;
+end $$;
+revoke all on function public.curtir_quarto(uuid, boolean) from public, anon;
+grant execute on function public.curtir_quarto(uuid, boolean) to authenticated;
+
 -- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo e as 2 tabelas e 3 funções do quarto próprio e as 2 tabelas e 3 funções do blackjack e as 4 tabelas e 6 funções do pôquer
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
