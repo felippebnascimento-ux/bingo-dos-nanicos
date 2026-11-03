@@ -1,7 +1,7 @@
 "use client";
 /*
  * Aba Cassino: moedas fictícias (sem compra e sem saque): roleta e aviãozinho ao vivo (rodadas para todo
- * mundo junto), o blackjack ao vivo (todos contra o mesmo dealer), o pôquer entre nanicos (mesas como as do truco), o pênalti e o caça-níquel (individuais, este com jackpot do grupo). O banco sorteia; aqui só escolhemos a aposta, animamos até o resultado que
+ * mundo junto), o blackjack ao vivo (todos contra o mesmo dealer), o pôquer entre nanicos (mesas como as do truco), o pênalti e o caça-níquel (individuais, este com jackpot do grupo), e o Pênalti x1 (duelo entre dois, sem taxa). O banco sorteia; aqui só escolhemos a aposta, animamos até o resultado que
  * o banco mandou e mostramos como conferir que nada foi trocado.
  */
 import { useEffect, useState } from "react";
@@ -10,7 +10,8 @@ import { formatarMoedas } from "@/lib/moedas";
 import { sb } from "@/lib/supabase";
 import { toast } from "@/lib/toast";
 import { BancaNanica } from "./BancaNanica";
-import { carregar, msgDe, useCassino, type Aposta, type Jogo, type Revelada } from "./estado";
+import { carregar, msgDe, useCassino, useJogoCassino, type Aposta, type Jogo, type Revelada } from "./estado";
+import { Duelo } from "./Duelo";
 import { Aviaozinho } from "./Aviaozinho";
 import { Blackjack } from "./Blackjack";
 import { Poquer } from "./Poquer";
@@ -30,9 +31,10 @@ const JOGOS: { id: Jogo; nome: string }[] = [
   { id: "blackjack", nome: "Blackjack" },
   { id: "poker", nome: "Pôquer" },
   { id: "penalti", nome: "Pênalti" },
+  { id: "duelo", nome: "Pênalti x1" },
   { id: "slot", nome: "Caça-níquel" },
 ];
-const NOME_JOGO: Record<Jogo, string> = { roleta: "Roleta", aviao: "Aviãozinho", limbo: "Limbo", dado: "Maior ou menor", slot: "Caça-níquel", penalti: "Pênalti", blackjack: "Blackjack", poker: "Pôquer" };
+const NOME_JOGO: Record<Jogo, string> = { roleta: "Roleta", aviao: "Aviãozinho", limbo: "Limbo", dado: "Maior ou menor", slot: "Caça-níquel", penalti: "Pênalti", blackjack: "Blackjack", poker: "Pôquer", duelo: "Pênalti x1" };
 
 /** Uma linha do histórico: o que apostou e o que saiu, em poucas palavras. */
 function descreve(a: Aposta): { aposta: string; saiu: string; cor?: string } {
@@ -56,7 +58,8 @@ function descreve(a: Aposta): { aposta: string; saiu: string; cor?: string } {
 export function CassinoView({ hidden }: { hidden: boolean }) {
   const saldo = useCarteira((s) => s.carteira?.saldo);
   const { ligado, estado, historico, reveladas, feed, rolos, pagamentos } = useCassino();
-  const [jogo, setJogo] = useState<Jogo>("roleta");
+  const jogo = useJogoCassino((s) => s.jogo);
+  const setJogo = (j: Jogo) => useJogoCassino.setState({ jogo: j });
   /* null = ainda não mexeu: mostra a semente do cliente atual */
   const [clienteEditado, setCliente] = useState<string | null>(null);
   const cliente = clienteEditado ?? estado?.cliente ?? "";
@@ -92,7 +95,7 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
 
   /* quanto a casa leva no jogo escolhido */
   const casaLeva =
-    jogo === "roleta" ? vantagemDaCasa() : jogo === "blackjack" ? 0.5 : jogo === "poker" ? 3 : jogo === "slot" ? (rolos.length ? Math.round((1 - rtpSlot(rolos, pagamentos)) * 1000) / 10 : 8) : 3;
+    jogo === "duelo" ? 0 : jogo === "roleta" ? vantagemDaCasa() : jogo === "blackjack" ? 0.5 : jogo === "poker" ? 3 : jogo === "slot" ? (rolos.length ? Math.round((1 - rtpSlot(rolos, pagamentos)) * 1000) / 10 : 8) : 3;
 
   return (
     <section id="view-cassino" className="inner" hidden={hidden}>
@@ -108,7 +111,7 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
             <span className="cassino-saldo">
               <b>{saldo !== undefined ? formatarMoedas(saldo) : "…"}</b> moedas
             </span>
-            <span className="hint">Moedas de mentira: não dá para comprar nem sacar. Neste jogo, a casa leva {String(casaLeva).replace(".", ",")}%.</span>
+            <span className="hint">Moedas de mentira: não dá para comprar nem sacar. {jogo === "duelo" ? "Neste jogo não há taxa: é um contra o outro." : `Neste jogo, a casa leva ${String(casaLeva).replace(".", ",")}%.`}</span>
           </div>
           <div className="seg cassino-jogos" role="radiogroup" aria-label="Escolha o jogo">
             {JOGOS.map((j) => (
@@ -136,6 +139,11 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
             {jogo === "penalti" && (
               <div className="rm-caixa">
                 <Penalti />
+              </div>
+            )}
+            {jogo === "duelo" && (
+              <div className="rm-caixa">
+                <Duelo ativa={!hidden} />
               </div>
             )}
             {jogo === "slot" && (

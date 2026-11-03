@@ -648,3 +648,61 @@
 .banca-cofre{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:color-mix(in srgb,var(--accent) 22%,transparent);color:var(--accent)}
 .banca-cofre svg{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round}
 .banca-nanica.compacta{margin:0;padding:4px 10px 4px 6px}.banca-nanica.compacta .banca-cofre{width:26px;height:26px}.banca-nanica.compacta b{font-size:14px}
+
+/* pênalti x1 (Duelo.tsx, seção 48): o saguão dos duelos e a partida no mesmo estádio do pênalti (--pn-*) */
+.duelo .dl-saguao,.duelo .dl-partida{display:grid;gap:12px;min-width:0}
+.dl-lista{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.dl-lista li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:rgb(0 0 0 / .25);border:1px solid color-mix(in srgb,var(--rm-creme) 15%,transparent)}
+.dl-info{display:grid;min-width:0}.dl-info b{font:700 15px var(--body);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dl-info small{font:600 12px var(--body);opacity:.75}
+.dl-rostos{display:flex}.dl-rostos .av + .av{margin-left:-8px}
+.dl-vazio{margin:0;color:color-mix(in srgb,var(--rm-creme) 75%,transparent)}
+.dl-novo{gap:10px}
+.dl-valor{display:flex;gap:8px;min-width:0}
+.dl-valor input{flex:1;min-width:0;padding:12px 14px;border-radius:12px;background:rgb(0 0 0 / .35);border:1px solid color-mix(in srgb,var(--rm-creme) 25%,transparent);color:var(--stamp-ink);font:800 20px var(--display);font-variant-numeric:tabular-nums}
+.dl-valor input:focus-visible,.dl-allin:focus-visible,.dl-chip:focus-visible{outline:3px solid var(--rm-ouro);outline-offset:2px}
+.dl-allin{padding:0 16px;border:0;border-radius:12px;font:800 15px var(--display);letter-spacing:.04em;color:var(--stamp-ink);cursor:pointer;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--pn-defendeu) 80%,var(--stamp-ink)),color-mix(in srgb,var(--pn-defendeu) 70%,var(--ink)))}
+.dl-allin:disabled{opacity:.5;cursor:default}
+.dl-chips{display:flex;flex-wrap:wrap;gap:6px}
+.dl-chip{padding:7px 12px;border-radius:99px;border:1px solid color-mix(in srgb,var(--rm-creme) 30%,transparent);background:rgb(0 0 0 / .25);color:var(--rm-creme);font:700 13px var(--display);cursor:pointer}
+.dl-chip.on{border-color:var(--rm-ouro);color:var(--rm-ouro);background:color-mix(in srgb,var(--rm-ouro) 14%,transparent)}
+.rm .rm-girar:disabled{filter:grayscale(.6);opacity:.65;cursor:default}
+
+/* placar: os dois lados, os gols e uma bolinha por cobrança (✓ gol, ✗ perdeu) */
+.dl-placar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px}
+.dl-lado{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:4px 8px;padding:8px 10px;border-radius:14px;background:rgb(0 0 0 / .25);border:1px solid color-mix(in srgb,var(--rm-creme) 14%,transparent);min-width:0}
+.dl-lado.bate{border-color:var(--rm-ouro);box-shadow:0 0 14px color-mix(in srgb,var(--rm-ouro) 35%,transparent)}
+.dl-nome{font:700 13px var(--body);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.dl-nome small{opacity:.7;font-weight:600}
+.dl-gols{font:800 26px/1 var(--display);color:var(--rm-ouro);font-variant-numeric:tabular-nums}
+.dl-bolinhas{grid-column:1 / -1;list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px}
+.dl-bolinhas li{width:20px;height:20px;display:grid;place-items:center;border-radius:50%;font:800 11px var(--body);background:rgb(0 0 0 / .3);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--rm-creme) 25%,transparent)}
+.dl-bolinhas li.gol{color:var(--pn-gol);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--pn-gol) 70%,transparent)}
+.dl-bolinhas li.perdeu{color:var(--pn-defendeu);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--pn-defendeu) 70%,transparent)}
+.dl-x{font:800 20px var(--display);opacity:.6}
+
+/* os 5 cantos: em cima à esquerda e à direita, embaixo à esquerda e à direita, e o meio nas duas linhas */
+.dl-zonas{position:absolute;inset:4% 3% 0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:4px;z-index:3}
+.dl-zona.sup_esq{grid-area:1 / 1}.dl-zona.sup_dir{grid-area:1 / 3}.dl-zona.esq{grid-area:2 / 1}.dl-zona.dir{grid-area:2 / 3}.dl-zona.meio{grid-area:1 / 2 / 3 / 3}
+.dl-zona:not(:disabled){border-color:color-mix(in srgb,var(--pn-mira) 35%,transparent)}
+.dl-zona-txt{font:800 clamp(9px,1.6vw,13px) var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--pn-mira);text-shadow:0 1px 3px rgb(0 0 0 / .8)}
+/* a bola até cada canto (o mesmo voo do pênalti) */
+.duelo .pn-bola.dz{transition:left .55s cubic-bezier(.3,.6,.4,1),top .55s cubic-bezier(.3,.6,.4,1),width .55s ease-out}
+.duelo .pn-bola.dz .pn-bola-svg{animation:pn-gira .55s linear}
+.duelo .pn-bola.dz-sup_esq{left:29%;top:20%;width:3.6%}.duelo .pn-bola.dz-sup_dir{left:71%;top:20%;width:3.6%}
+.duelo .pn-bola.dz-esq{left:29%;top:34%;width:3.6%}.duelo .pn-bola.dz-dir{left:71%;top:34%;width:3.6%}.duelo .pn-bola.dz-meio{left:50%;top:27%;width:3.6%}
+/* o anel do tempo, no canto do campo */
+.dl-relogio{position:absolute;z-index:5;top:8px;right:8px;width:52px;height:52px;display:grid;place-items:center}
+.dl-relogio svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.dl-relogio-fundo{fill:rgb(0 0 0 / .45);stroke:color-mix(in srgb,var(--rm-creme) 20%,transparent);stroke-width:4}
+.dl-relogio-anel{fill:none;stroke:var(--pn-gol);stroke-width:4;stroke-linecap:round;transition:stroke-dashoffset .25s linear}
+.dl-relogio.pouco .dl-relogio-anel{stroke:var(--pn-defendeu)}
+.dl-relogio b{position:relative;font:800 18px var(--display);font-variant-numeric:tabular-nums}
+.dl-vez{margin:0;font:600 14px var(--body);text-align:center}
+.dl-ultimo{margin:0;text-align:center;color:color-mix(in srgb,var(--rm-creme) 75%,transparent)}
+.dl-fim{text-align:center;font-size:18px}
+.dl-espera{justify-items:start}
+.dl-voltar{justify-self:center}
+@media (max-width:520px){.dl-lado{grid-template-columns:auto minmax(0,1fr);padding:6px 8px}.dl-gols{grid-column:2;font-size:22px}.dl-bolinhas li{width:16px;height:16px;font-size:9px}.dl-relogio{width:42px;height:42px}.dl-relogio b{font-size:15px}}
+@media (prefers-reduced-motion:reduce){.duelo .pn-bola.dz,.dl-relogio-anel{transition:none}.duelo .pn-bola.dz .pn-bola-svg{animation:none}}

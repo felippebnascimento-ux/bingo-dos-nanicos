@@ -608,6 +608,21 @@ export const CHANGELOG: EntradaLog[] = [
       "A mesa do blackjack no celular ficou menos comprida",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "K-FOFO remodelado: o janelão foi para a parede da esquerda, a TV para a da direita e a mesa comprida para perto do Mural",
+      "Mural no lugar do antigo janelão: avisos do grupo (hall da fama, banca, eventos) e recados que qualquer nanico prega",
+      "A porta de vidro leva à rua (gramado, árvore com bancos, carros e o gol do pênalti x1) e ao corredor dos quartos",
+      "Corredor dos quartos: uma porta para cada nanico, aberta para quem já comprou o quarto e fechada para quem não",
+      "Lupa no canto do K-FOFO para aumentar e diminuir a cena (arraste para andar pela cena aumentada)",
+      "Sentado no quarto e na rua, o boneco afunda no banco como no K-FOFO",
+      "Emblemas novos: cada conquista ganhou um desenho próprio, e prata e ouro vêm com louros, fita e brilho",
+      "Cassino: Pênalti x1! Abra um duelo valendo quanto quiser (até all-in) e espere alguém aceitar o desafio",
+      "No Pênalti x1, quem bate e quem defende escolhem o canto ao mesmo tempo, com 15 segundos por cobrança; empatou, vai para a morte súbita",
+      "Quem vence o duelo leva o dobro da aposta, sem taxa da casa",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

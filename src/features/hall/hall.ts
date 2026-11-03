@@ -40,14 +40,15 @@ export function pisoNaTela(x: number, y: number): Piso | null {
 export type Movel = { id: string; i: number; j: number; w: number; d: number };
 
 /* Disposição da planta do grupo (02/11/2026), vista de cima: a parede de cima é a da direita (j = 0), com o
-   banheiro, o janelão e a churrasqueira no canto; a da esquerda (i = 0) tem o sofá; a cozinha fica encostada
-   do lado direito (i = 14) e a entrada é o vão na parede da frente (j = 11). */
+   banheiro, a TV, o Mural e a churrasqueira no canto; a da esquerda (i = 0) tem o janelão em cima do sofá (remodelação
+   de 03/11/2026, desenho do João); a cozinha fica encostada do lado direito (i = 14) e a entrada é o vão na parede
+   da frente (j = 11). A mesa comprida foi para perto do Mural. */
 export const MOVEIS: readonly Movel[] = [
   { id: "churrasqueira", i: 10.8, j: 0, w: 2.2, d: 1.1 },
   /* cozinha: balcão com pia e fogão, e a geladeira (que é a Loja) na ponta */
   { id: "cozinha", i: 13.05, j: 1.3, w: 0.95, d: 1.75 },
   { id: "geladeira", i: 13.05, j: 3.05, w: 0.95, d: 0.95 },
-  { id: "mesa-comprida", i: 3.6, j: 2.8, w: 6.9, d: 1.1 },
+  { id: "mesa-comprida", i: 4.5, j: 1.4, w: 5.5, d: 1.1 },
   { id: "mesa-jogos", i: 2.5, j: 6.3, w: 2.0, d: 2.0 },
   { id: "mesa-lado", i: 9.1, j: 6.1, w: 1.5, d: 2.8 },
   { id: "sofa-parede", i: 0, j: 6.3, w: 1.05, d: 3.3 },
@@ -63,13 +64,14 @@ export const MOVEIS: readonly Movel[] = [
 ];
 
 /** Móveis que abrem alguma coisa, e o ponto (i, j, z) onde fica a placa com o nome. */
-export type Clicavel = { id: "tv" | "truco" | "loja" | "salas" | "trofeus"; rotulo: { i: number; j: number; z: number } };
+export type Clicavel = { id: "tv" | "truco" | "loja" | "salas" | "mural"; rotulo: { i: number; j: number; z: number } };
 export const CLICAVEIS: readonly Clicavel[] = [
-  /* a porta de vidro leva às salas tipo lan house (fase 05) */
+  /* a porta de vidro: a rua, o corredor dos quartos e as salas tipo lan house (fase 05) */
   { id: "salas", rotulo: { i: 0, j: 5.6, z: 150 } },
-  { id: "tv", rotulo: { i: 0, j: 2.05, z: 160 } },
-  /* o quadro dos troféus da semana (fase 21), entre a TV e a porta de vidro */
-  { id: "trofeus", rotulo: { i: 0, j: 3.85, z: 160 } },
+  /* a TV, na parede da direita, entre o banheiro e o Mural */
+  { id: "tv", rotulo: { i: 3.7, j: 0, z: 160 } },
+  /* o Mural (no lugar do antigo janelão): avisos e recados; dali se abre o Hall da Fama */
+  { id: "mural", rotulo: { i: 6.9, j: 0, z: 162 } },
   /* a mesa de jogos redonda abre o Truco */
   { id: "truco", rotulo: { i: 3.5, j: 7.3, z: 62 } },
   { id: "loja", rotulo: { i: 13.5, j: 4.0, z: 118 } },

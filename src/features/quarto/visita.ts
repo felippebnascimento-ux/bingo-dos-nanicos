@@ -8,6 +8,7 @@ import { useLoja } from "@/features/loja/lojaDados";
 import type { ItemLoja } from "@/features/loja/loja";
 import { getApp, setApp } from "@/lib/store";
 import { toast } from "@/lib/toast";
+import { ehCenaEspecial, gradeEspecial } from "./cenas";
 import { gradeDoQuarto, type Grade, type MovelGrade } from "./grade";
 import { desenhoDo } from "./Moveis";
 import { pisoDo, PORTA, type MovelNoQuarto } from "./quarto";
@@ -35,6 +36,7 @@ export function donoDoQuarto(fid: string | null | undefined): string | null {
 const cache = new Map<string, { tam: number; moveis: unknown; itens: unknown; g: Grade }>();
 /** A grade do quarto de um nanico (friend id), ou null se ele não tem quarto. */
 export function gradeDe(fid: string | null | undefined): Grade | null {
+  if (ehCenaEspecial(fid)) return gradeEspecial(fid);
   const uid = donoDoQuarto(fid);
   if (!uid || !fid) return null;
   const { quartos, moveis } = useQuartos.getState();
@@ -47,13 +49,14 @@ export function gradeDe(fid: string | null | undefined): Grade | null {
 }
 
 /**
- * Vai para o quarto de alguém (friend id) ou volta ao K-FOFO (null). O boneco aparece na porta do quarto (0, 0) ou
- * numa das entradas do K-FOFO; a presença leva o `quarto` e o piso novos.
+ * Vai para o quarto de alguém (friend id), para a rua ou o corredor dos quartos ("rua", "corredor"), ou volta ao
+ * K-FOFO (null). O boneco aparece na porta (piso 0, 0) ou numa das entradas do K-FOFO; a presença leva o `quarto` e o
+ * piso novos.
  */
 export function irParaQuarto(dono: string | null) {
   void iniciarQuartos();
   const s = getApp();
   if (dono === s.meuQuarto) return setApp({ aba: "hall", fichaAberta: null });
-  if (dono && !donoDoQuarto(dono)) return toast("Esse nanico ainda não tem quarto.");
+  if (dono && !ehCenaEspecial(dono) && !donoDoQuarto(dono)) return toast("Esse nanico ainda não tem quarto.");
   setApp({ aba: "hall", fichaAberta: null, meuQuarto: dono, hallPos: dono ? { ...PORTA } : entradaSorteada() });
 }

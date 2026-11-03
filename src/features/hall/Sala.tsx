@@ -59,9 +59,13 @@ function tijolos(lado: "dir" | "esq", n: number): Forma[] {
 const TIJ_ESQ = tijolos("esq", NJ);
 const TIJ_DIR = tijolos("dir", NI);
 
-/* janelão no meio da parede do fundo (a da direita) */
-const JA = 4.45, JB = 8.95, JZ0 = 52, JZ1 = 178;
-const VAO_JANELA = naParedeP("dir", JA, JB, JZ0, JZ1);
+/* janelão na parede da esquerda, em cima do sofá (remodelação de 03/11/2026; antes ficava na da direita, onde
+   hoje está o Mural) */
+const JL = "esq" as const;
+const JA = 6.55, JB = 10.25, JZ0 = 70, JZ1 = 182;
+const VAO_JANELA = naParedeP(JL, JA, JB, JZ0, JZ1);
+/* a TV, na parede da direita, entre a porta do banheiro e o Mural */
+const TA = 2.75, TB = 4.65, TZ0 = 84, TZ1 = 142;
 
 function paredes(): Forma[] {
   const L: Forma[] = [];
@@ -69,7 +73,7 @@ function paredes(): Forma[] {
     const n = lado === "dir" ? NI : NJ;
     /* faixa cinza (viga pintada), pilares e rodapé */
     naParede(L, lado, 0, n, 150, 162, lado === "dir" ? "viga" : "viga2", "vigal");
-    for (const a of lado === "dir" ? [2.45, 9.5] : [4.6, 8.7]) naParede(L, lado, a, a + 0.32, 0, WH, lado === "dir" ? "viga" : "viga2", "vigal");
+    for (const a of lado === "dir" ? [2.45, 9.5] : [4.6, 10.45]) naParede(L, lado, a, a + 0.32, 0, WH, lado === "dir" ? "viga" : "viga2", "vigal");
     naParede(L, lado, 0, n, 0, 6, lado === "dir" ? "rodape" : "rodape2");
     /* beiral de madeira (forro inclinado) com a viga de tronco em cima */
     naParede(L, lado, 0, n, WH, WH + 34, lado === "dir" ? "beiral" : "beiral2", "beiralb");
@@ -79,7 +83,7 @@ function paredes(): Forma[] {
   const [qx, qy] = p(0, 0);
   poly(L, [p(0, 0, 0), p(0, 0, WH + 38), [qx + 3, p(0, 0, WH + 38)[1]], [qx + 3, qy]], "quina");
   /* moldura do janelão (a paisagem vem por cima, recortada) */
-  naParede(L, "dir", JA - 0.12, JB + 0.12, JZ0 - 10, JZ1 + 10, "janela", "beiralb", 2);
+  naParede(L, JL, JA - 0.12, JB + 0.12, JZ0 - 10, JZ1 + 10, "janela", "beiralb", 2);
   return L;
 }
 
@@ -87,15 +91,15 @@ function paredes(): Forma[] {
 function enfeites(): Forma[] {
   const L: Forma[] = [];
   /* caixilho, peitoril e cortinas do janelão */
-  for (const a of [JA + (JB - JA) / 3, JA + (2 * (JB - JA)) / 3]) naParede(L, "dir", a - 0.04, a + 0.04, JZ0, JZ1, "janela");
-  naParede(L, "dir", JA, JB, (JZ0 + JZ1) / 2 - 2, (JZ0 + JZ1) / 2 + 2, "janela");
-  naParede(L, "dir", JA - 0.2, JB + 0.2, JZ0 - 14, JZ0 - 8, "peitoril", "beiralb");
-  naParede(L, "dir", JA - 0.42, JA - 0.14, JZ0 - 6, JZ1 + 16, "cortina", "cortinal");
-  naParede(L, "dir", JB + 0.14, JB + 0.42, JZ0 - 6, JZ1 + 16, "cortina", "cortinal");
+  for (const a of [JA + (JB - JA) / 3, JA + (2 * (JB - JA)) / 3]) naParede(L, JL, a - 0.04, a + 0.04, JZ0, JZ1, "janela");
+  naParede(L, JL, JA, JB, (JZ0 + JZ1) / 2 - 2, (JZ0 + JZ1) / 2 + 2, "janela");
+  naParede(L, JL, JA - 0.2, JB + 0.2, JZ0 - 14, JZ0 - 8, "peitoril", "beiralb");
+  naParede(L, JL, JA - 0.42, JA - 0.14, JZ0 - 6, JZ1 + 16, "cortina", "cortinal");
+  naParede(L, JL, JB + 0.14, JB + 0.42, JZ0 - 6, JZ1 + 16, "cortina", "cortinal");
 
-  /* parede da esquerda: suporte da TV, porta de vidro e janelas velhas (entre a TV e a porta fica o
-     quadro dos troféus, numa camada própria: QuadroTrofeus.tsx) */
-  naParede(L, "esq", 2.0, 2.12, 58, 90, "suporte");
+  /* parede da direita: o suporte da TV (o Mural, entre a TV e a churrasqueira, fica numa camada própria: Mural.tsx) */
+  naParede(L, "dir", (TA + TB) / 2 - 0.06, (TA + TB) / 2 + 0.06, 60, TZ0, "suporte");
+  /* parede da esquerda: porta de vidro e janelas velhas */
   naParede(L, "esq", 4.95, 6.25, 0, 140, "madeira", "madeiral", 3);
   naParede(L, "esq", 5.05, 6.15, 4, 136, "vidro");
   naParede(L, "esq", 5.05, 6.15, 4, 60, "grama");
@@ -129,7 +133,8 @@ function enfeites(): Forma[] {
   /* piso de lajota, a luz do janelão no chão e o tapete listrado perto da porta de vidro */
   for (let i = 0; i < NI; i++)
     for (let j = 0; j < NJ; j++) poly(L, [p(i, j), p(i + 1, j), p(i + 1, j + 1), p(i, j + 1)], (i + j) % 2 ? "piso0" : "piso1", "pisol");
-  poly(L, [p(JA + 0.6, 0), p(JB + 0.9, 0), p(JB + 2.2, 3.2), p(JA + 1.6, 3.2)], "solchao");
+  /* a luz do janelão (parede da esquerda) entra deitada no chão, na frente do sofá */
+  poly(L, [p(1.1, JA + 0.6), p(1.1, Math.min(NJ, JB + 0.5)), p(3.6, Math.min(NJ, JB + 1.6)), p(3.6, JA + 1.7)], "solchao");
   /* tapete listrado embaixo da mesa de jogos */
   poly(L, [p(1.9, 5.8), p(5.1, 5.8), p(5.1, 8.9), p(1.9, 8.9)], "tapete", "tapetel");
   for (let k = 0; k < 6; k++) poly(L, [p(1.9, 6.0 + k * 0.5), p(5.1, 6.0 + k * 0.5), p(5.1, 6.2 + k * 0.5), p(1.9, 6.2 + k * 0.5)], "tapete2");
@@ -139,8 +144,9 @@ function enfeites(): Forma[] {
 /** Paisagem do janelão: céu, sol, morro e árvores (recortada pela moldura). */
 function paisagem(): Forma[] {
   const L: Forma[] = [];
-  const [x0, y0] = p(JA, 0, JZ1 + 10);
-  const [x1, y1] = p(JB, 0, JZ0 - 10);
+  /* o retângulo do vão na tela (vale para qualquer parede) */
+  const xs = VAO_JANELA.map((v) => v[0]), ys = VAO_JANELA.map((v) => v[1]);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys) - 40;
   L.push({ t: "r", x: x0 - 10, y: y0 - 10, w: x1 - x0 + 20, h: y1 - y0 + 60, f: "url-ceu" });
   L.push({ t: "c", cx: x0 + 40, cy: y0 + 40, r: 16, f: "sol" });
   L.push({ t: "e", cx: (x0 + x1) / 2, cy: y1 + 30, rx: (x1 - x0) * 0.8, ry: 85, f: "morro" });
@@ -313,15 +319,15 @@ function Formas({ lista }: { lista: Forma[] }) {
   });
 }
 
-/** TV na parede da esquerda: apagada, ou com a imagem colorida quando alguém está ao vivo. */
+/** TV na parede da direita: apagada, ou com a imagem colorida quando alguém está ao vivo. */
 function Tv({ aoVivo }: { aoVivo: boolean }) {
   const L: Forma[] = [];
-  naParede(L, "esq", 1.1, 3.0, 90, 150, "tv", "tvl", 2);
+  naParede(L, "dir", TA, TB, TZ0, TZ1, "tv", "tvl", 2);
   if (aoVivo) {
-    naParede(L, "esq", 1.18, 2.92, 94, 146, "tela0");
-    naParede(L, "esq", 1.18, 2.92, 94, 112, "tela1");
-    naParede(L, "esq", 1.75, 2.35, 110, 128, "tela2");
-  } else naParede(L, "esq", 1.18, 2.92, 94, 146, "telaoff");
+    naParede(L, "dir", TA + 0.08, TB - 0.08, TZ0 + 4, TZ1 - 4, "tela0");
+    naParede(L, "dir", TA + 0.08, TB - 0.08, TZ1 - 22, TZ1 - 4, "tela1");
+    naParede(L, "dir", (TA + TB) / 2 - 0.3, (TA + TB) / 2 + 0.3, TZ0 + 18, TZ0 + 36, "tela2");
+  } else naParede(L, "dir", TA + 0.08, TB - 0.08, TZ0 + 4, TZ1 - 4, "telaoff");
   return <Formas lista={L} />;
 }
 
@@ -393,8 +399,8 @@ export const MovelCamada = memo(function MovelCamada({ id, z, vb, encosto = fals
 
 /** Retângulo da TV em % do hall, para o botão invisível em cima dela. */
 export function tvCaixa(vb: Caixa2D) {
-  const [xa, ya] = p(0, 1.1, 150); /* canto de cima, à direita */
-  const [xb, yb] = p(0, 3.0, 90); /* canto de baixo, à esquerda */
+  const [xb, ya] = p(TA, 0, TZ1); /* canto de cima, à esquerda */
+  const [xa, yb] = p(TB, 0, TZ0); /* canto de baixo, à direita */
   return {
     left: ((xb - vb.x) / vb.w) * 100,
     top: ((ya - vb.y) / vb.h) * 100,

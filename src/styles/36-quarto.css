@@ -51,3 +51,38 @@
 @media (max-width:760px){.hall-sala-quarto{display:none}}
 /* sombra dos móveis no chão (luz de cima à esquerda) */
 .quarto-sombras polygon{fill:var(--accent-ink);opacity:.28}
+
+/* ---------- cenas especiais (cenas.ts): a rua de dia e o corredor dos quartos ---------- */
+/* cores próprias da ilustração (como o hall): iguais nos dois temas, porque a rua é sempre de dia */
+.quarto-vars{
+  --rua-ceu1:#BFE3F7;--rua-ceu2:#EAF6FC;--rua-grama0:#7DBE5A;--rua-grama1:#73B452;--rua-terra:#C9A879;--rua-cal:#FFFFFF;
+  --rua-fachada:#C9825B;--rua-fachada-linha:#B06F4A;--rua-placa:#2F2F2F;--rua-placa-texto:#F6D27A;
+  --rua-tronco0:#8B5E3C;--rua-tronco1:#6F4A2F;--rua-tronco2:#5A3B25;--rua-folha0:#4E9A3F;--rua-folha1:#3F8233;--rua-folha2:#336B2A;--rua-folha3:#68B552;
+  --rua-ferro0:#4A4A4A;--rua-ferro1:#2E2E2E;--rua-vidro:#9CC7E0;--rua-pneu:#1E1E1E;--rua-gol:#FAFAFA;--rua-rede:rgb(255 255 255 / .45);
+  --rua-vermelho0:#E05A4A;--rua-vermelho1:#C4463A;--rua-vermelho2:#A7392F;--rua-azul0:#4C7FD6;--rua-azul1:#3D68B5;--rua-azul2:#31559A;
+  --rua-branco0:#F4F4F2;--rua-branco1:#D9D9D5;--rua-branco2:#BDBDB8;--rua-preto0:#3B3B3D;--rua-preto1:#2A2A2C;--rua-preto2:#1E1E20;
+  --rua-amarelo0:#F2C94C;--rua-amarelo1:#D9AE33;--rua-amarelo2:#BC9528;
+  --corredor-carpete0:#7A2E2E;--corredor-carpete1:#933A3A;--corredor-batente:#5C3B22;--corredor-dentro:#1C1A18;--corredor-placa:#F3E9D2;--corredor-placa-texto:#3A2A1A}
+.quarto-visita.cena-rua{background:linear-gradient(180deg,var(--rua-ceu1),var(--rua-ceu2))}
+.quarto .q-grama0{fill:var(--rua-grama0)} .quarto .q-grama1{fill:var(--rua-grama1)} .quarto .q-terra{fill:var(--rua-terra)}
+.quarto .q-cal{fill:var(--rua-cal)} .quarto .q-cal-area{fill:none;stroke:var(--rua-cal);stroke-width:2}
+.quarto .q-fachada{fill:var(--rua-fachada)} .quarto .q-fachada-linha{fill:var(--rua-fachada-linha)}
+.quarto .q-placa-kfofo{fill:var(--rua-placa)}
+.quarto-placa-texto{font:800 15px var(--display);fill:var(--rua-placa-texto);pointer-events:none}
+.quarto .q-tronco0{fill:var(--rua-tronco0)} .quarto .q-tronco1{fill:var(--rua-tronco1)} .quarto .q-tronco2{fill:var(--rua-tronco2)}
+.quarto .q-folha0{fill:var(--rua-folha0)} .quarto .q-folha1{fill:var(--rua-folha1)} .quarto .q-folha2{fill:var(--rua-folha2)} .quarto .q-folha3{fill:var(--rua-folha3)}
+.quarto .q-ferro0{fill:var(--rua-ferro0)} .quarto .q-ferro1{fill:var(--rua-ferro1)}
+.quarto .q-vidro{fill:var(--rua-vidro)} .quarto .q-pneu{fill:var(--rua-pneu)} .quarto .q-gol{fill:var(--rua-gol)} .quarto .q-rede{fill:var(--rua-rede)}
+.quarto .q-carro-vermelho0{fill:var(--rua-vermelho0)} .quarto .q-carro-vermelho1{fill:var(--rua-vermelho1)} .quarto .q-carro-vermelho2{fill:var(--rua-vermelho2)}
+.quarto .q-carro-azul0{fill:var(--rua-azul0)} .quarto .q-carro-azul1{fill:var(--rua-azul1)} .quarto .q-carro-azul2{fill:var(--rua-azul2)}
+.quarto .q-carro-branco0{fill:var(--rua-branco0)} .quarto .q-carro-branco1{fill:var(--rua-branco1)} .quarto .q-carro-branco2{fill:var(--rua-branco2)}
+.quarto .q-carro-preto0{fill:var(--rua-preto0)} .quarto .q-carro-preto1{fill:var(--rua-preto1)} .quarto .q-carro-preto2{fill:var(--rua-preto2)}
+.quarto .q-carro-amarelo0{fill:var(--rua-amarelo0)} .quarto .q-carro-amarelo1{fill:var(--rua-amarelo1)} .quarto .q-carro-amarelo2{fill:var(--rua-amarelo2)}
+.quarto .q-carpete0{fill:var(--corredor-carpete0)} .quarto .q-carpete1{fill:var(--corredor-carpete1)}
+.quarto .q-batente{fill:var(--corredor-batente)} .quarto .q-porta-dentro{fill:var(--corredor-dentro)} .quarto .q-placa-nome{fill:var(--corredor-placa)}
+.quarto-placa-nome{font:700 9px var(--display);fill:var(--corredor-placa-texto);pointer-events:none}
+.quarto-porta-nanico{cursor:pointer}
+.quarto-porta-nanico:hover .q-porta,.quarto-porta-nanico:focus-visible .q-porta{filter:brightness(1.15)}
+.quarto-porta-nanico.aberta:hover .q-porta-dentro{filter:brightness(1.6)}
+.quarto-alvo-porta{fill:transparent;cursor:pointer}
+.quarto-alvo-porta:hover{fill:color-mix(in srgb,var(--accent) 22%,transparent)}
