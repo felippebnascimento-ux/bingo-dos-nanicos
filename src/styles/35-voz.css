@@ -26,17 +26,22 @@
 .vz-acao:disabled{opacity:.45;cursor:default}
 .vz :focus-visible,.vz-balao :focus-visible,.vz-janela :focus-visible,.qd :focus-visible,.cv-barra :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
-/* a minha transmissão */
-.vz-live{display:grid;gap:8px;padding:8px;border:1px solid color-mix(in srgb,var(--live) 55%,transparent);border-radius:var(--r-md);background:var(--surface-2)}
+/* a minha transmissão: dentro do cartão da voz, numa linha (como no Discord) */
+.vz-live{display:grid;gap:8px;padding-bottom:9px;border-bottom:1px solid var(--line)}
+.vz-live-cab{display:flex;align-items:center;gap:8px;min-width:0}
+.vz-ponto{display:inline-block;flex:none;width:8px;height:8px;border-radius:50%;background:var(--live);box-shadow:0 0 0 2px color-mix(in srgb,var(--live) 35%,transparent);animation:vz-pisca 1.6s ease-in-out infinite}
+@keyframes vz-pisca{50%{opacity:.45}}
+.vz-live-txt{flex:1;display:grid;gap:1px;min-width:0;padding:2px 4px;border:0;border-radius:8px;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.vz-live-txt:hover{background:var(--surface)}
+.vz-live-txt b{display:flex;align-items:center;gap:6px;font-size:13px;line-height:1.2;color:var(--live)}
+.vz-live-txt small{display:flex;align-items:center;gap:3px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
+.vz-olhos-txt{display:inline-flex;align-items:center;gap:3px;margin-left:auto;font:600 11.5px var(--body);color:var(--muted)}
+.vz-parar-ic{color:var(--live)}
+.vz-parar-ic:hover{background:color-mix(in srgb,var(--live) 18%,transparent);color:var(--live)}
 .vz-previa{position:relative;aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:var(--olive)}
 .vz-previa video{width:100%;height:100%;object-fit:contain;display:block}
-.vz-previa .live-pill{position:absolute;left:7px;top:7px;border-radius:4px}
 .vz-olhos,.qd-olhos{position:absolute;right:7px;top:7px;display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:99px;background:color-mix(in srgb,var(--accent-ink) 70%,transparent);color:var(--stamp-ink);font:600 11.5px var(--body)}
-.vz-live-linha{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
-.vz-live-txt{flex:1 1 100%;display:grid;min-width:0}
-.vz-live-txt b{font-size:13px;line-height:1.2;overflow-wrap:anywhere}
-.vz-live-txt small{font-size:11.5px;color:var(--muted)}
-.vz-parar{flex:1;border:0;border-radius:9px;padding:8px 12px;background:var(--live);color:var(--stamp-ink);font:700 12.5px var(--body);cursor:pointer}
+.vz-link{border:0;padding:0;background:none;color:var(--accent-text);font:600 12px var(--body);text-decoration:underline;text-underline-offset:2px;cursor:pointer;justify-self:start}
 
 /* microfone e fone na linha "eu" */
 .vz-eu{flex:none;display:flex;align-items:center}
@@ -107,8 +112,6 @@
   body.side-min .vz-topo{flex-direction:column}
   body.side-min .vz-acoes{grid-auto-flow:row}
   body.side-min .vz-live{padding:6px 4px}
-  body.side-min .vz-live-linha{flex-direction:column}
-  body.side-min .vz-parar{padding:6px 8px;font-size:11px}
   body.side-min .vz-eu{flex-direction:column}
 }
 
@@ -197,11 +200,6 @@
 .cb .fs-out{display:none}
 :fullscreen .cb .fs-in{display:none}
 :fullscreen .cb .fs-out{display:inline}
-.vz-semsom{display:grid;gap:6px}
-.vz-semsom details{min-width:0;font-size:12px;color:var(--live)}
-.vz-semsom summary{cursor:pointer;font-weight:600}
-.vz-semsom p{margin:6px 0 0;line-height:1.45;color:var(--muted)}
-.vz-semsom .btn{width:100%;padding:7px 10px;font-size:12px}
 .vz-ajuda{font-size:12.5px;color:var(--muted)}
 .vz-ajuda summary{cursor:pointer;font-weight:600;color:var(--ink)}
 .vz-ajuda ol{margin:8px 0 0;padding-left:18px;display:grid;gap:6px;line-height:1.45}
@@ -245,3 +243,26 @@
 .vz-dupla .vz-ib{width:24px}
 .vz-seta{width:13px}
 .cv-faixa .qd{flex:1 0 150px;max-width:260px}
+.vz-semsom{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.vz-semsom details{min-width:0;font-size:12px;color:var(--live)}
+.vz-semsom summary{display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-weight:600;list-style:none}
+.vz-semsom summary::-webkit-details-marker{display:none}
+.vz-semsom p{margin:6px 0 0;line-height:1.45;color:var(--muted)}
+.vz-semsom details[open]{flex-basis:100%}
+@media (prefers-reduced-motion:reduce){.vz-ponto{animation:none}}
+@media (min-width:861px){
+  body.side-min .vz-live-cab{flex-direction:column}
+  body.side-min .vz-semsom{display:none}
+}
+
+/* controles em cima da tela (como no Discord): aparecem com o mouse em cima */
+.qd-ctrl{position:absolute;z-index:2;right:6px;top:6px;display:flex;align-items:center;gap:2px;padding:3px;border-radius:10px;background:color-mix(in srgb,var(--accent-ink) 75%,transparent);opacity:0;transition:opacity .15s}
+.qd:hover .qd-ctrl,.qd-ctrl:focus-within{opacity:1}
+@media (hover:none){.qd-ctrl{opacity:1}}
+.qd-ctrl-b{display:grid;place-items:center;width:28px;height:28px;padding:0;border:0;border-radius:7px;background:none;color:var(--stamp-ink);cursor:pointer}
+.qd-ctrl-b:hover{background:color-mix(in srgb,var(--stamp-ink) 16%,transparent)}
+.qd-ctrl-b .fs-out{display:none}
+.qd-vol{width:84px;accent-color:var(--accent)}
+.qd.grande .qd-ctrl{right:12px;top:12px}
+.qd.grande .qd-vol{width:120px}
+@container (max-width:220px){.qd-vol{display:none}}

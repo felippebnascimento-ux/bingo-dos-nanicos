@@ -386,6 +386,13 @@ export const CHANGELOG: EntradaLog[] = [
       "O iPhone do InstaNanico tem as medidas do 17 Pro Max de verdade, com a borda fina",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Com o mouse em cima da tela de alguém, aparecem o volume, o botão de tirar o som e a tela cheia, como no Discord; nas outras telas abertas, um toque passa o som para elas",
+      "A sua transmissão no menu ficou compacta, dentro do painel da voz: Ao vivo, quantos assistem, a qualidade e os botões de qualidade e parar; tocar no Ao vivo mostra ou esconde a prévia",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

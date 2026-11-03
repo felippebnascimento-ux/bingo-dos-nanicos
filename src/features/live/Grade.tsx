@@ -21,6 +21,7 @@ import {
   IcSemSom,
   IcTela,
   IcTelaCheia,
+  IcVolume,
 } from "@/components/ui/icones";
 import { useNanicosOnline } from "@/components/shell/People";
 import { entrarSala } from "@/features/salas/trocar";
@@ -230,6 +231,51 @@ function MenuQuadro({
   );
 }
 
+/* ---------- volume da tela (só a principal toca som) ---------- */
+let volAntesDoMudo = 1;
+function mudarVolume(v: number) {
+  setLive({ vol: v });
+  local.set("live-vol", String(v));
+  if (LIVE.mainVideo) LIVE.mainVideo.volume = v;
+}
+
+/** Em cima da tela, como no Discord: alto-falante (tira e põe o som), a barrinha do volume e a tela cheia. */
+function ControlesTela({ q, principal, el }: { q: Quadro; principal: boolean; el: React.RefObject<HTMLDivElement | null> }) {
+  const vol = useLive((s) => s.vol);
+  if (q.tipo !== "tela") return null;
+  return (
+    <div className="qd-ctrl" onClick={(e) => e.stopPropagation()}>
+      {principal ? (
+        <>
+          <button
+            type="button"
+            className="qd-ctrl-b"
+            aria-label={vol ? "Tirar o som da transmissão" : "Pôr o som da transmissão"}
+            title={vol ? "Tirar o som" : "Pôr o som"}
+            onClick={() => {
+              if (vol) {
+                volAntesDoMudo = vol;
+                mudarVolume(0);
+              } else mudarVolume(volAntesDoMudo || 1);
+            }}
+          >
+            {vol ? <IcVolume tam={18} /> : <IcSemSom tam={18} />}
+          </button>
+          <input className="qd-vol" type="range" min={0} max={100} value={Math.round(vol * 100)} aria-label={`Volume da tela de ${q.nome}`} onChange={(e) => mudarVolume(Number(e.target.value) / 100)} />
+        </>
+      ) : (
+        /* só a tela em destaque toca som: tocar aqui passa o som para esta */
+        <button type="button" className="qd-ctrl-b" aria-label={`Ouvir a tela de ${q.nome}`} title="Ouvir esta tela" onClick={() => watch(q.key, true)}>
+          <IcSemSom tam={18} />
+        </button>
+      )}
+      <button type="button" className="qd-ctrl-b" aria-label="Tela cheia" title="Tela cheia" onClick={() => telaCheiaDe(el.current)}>
+        <IcTelaCheia tam={18} />
+      </button>
+    </div>
+  );
+}
+
 /* ---------- um quadrado ---------- */
 function ativarSom() {
   const v = LIVE.mainVideo;
@@ -339,6 +385,7 @@ function QuadroCanal({ q, pequeno, grande }: { q: Quadro; pequeno?: boolean; gra
             </small>
           )}
         </span>
+        {w && w.state === "live" && <ControlesTela q={q} principal={principal} el={el} />}
         {botaoMenu}
         {menuAberto}
       </div>
