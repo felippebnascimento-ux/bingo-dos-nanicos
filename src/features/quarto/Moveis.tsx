@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Desenhos dos móveis do quarto próprio (fase 34): uma tabela id → formas, como a DESENHO do hall (Sala.tsx), em
  * caixas isométricas. Cada desenho recebe o retângulo que o móvel ocupa (já com o giro: largura e fundo trocados)
  * e para onde ele "olha" (a frente fica do lado +j sem giro e do lado +i com giro). As cores são as classes q-<nome>
@@ -107,7 +107,67 @@ const DESENHO_QUARTO: Record<string, Desenho> = {
     k.box(r.i + 0.3, r.j + 0.3, 0.4, 0.4, 20, "madeira0", "madeira1", "madeira2");
     k.box(r.i + 0.4, r.j + 0.4, 0.2, 0.2, 56, "cacto0", "cacto1", "cacto1", 20);
   },
+  /* ---------- a rua (cenas.ts): árvore, banco de praça, carros e o gol do pênalti x1 ---------- */
+  arvore: (k, r) => {
+    const ci = r.i + r.w / 2, cj = r.j + r.d / 2;
+    k.box(ci - 0.18, cj - 0.18, 0.36, 0.36, 70, "tronco0", "tronco1", "tronco2");
+    /* a copa em camadas, mais larga embaixo, com um tom mais claro em cima (luz de cima à esquerda) */
+    k.box(ci - 0.95, cj - 0.95, 1.9, 1.9, 40, "folha0", "folha1", "folha2", 62);
+    k.box(ci - 0.75, cj - 0.75, 1.5, 1.5, 34, "folha3", "folha1", "folha2", 100);
+    k.box(ci - 0.45, cj - 0.45, 0.9, 0.9, 26, "folha3", "folha0", "folha1", 132);
+  },
+  "banco-praca": (k, r, giro) => {
+    const pe = (i: number, j: number) => k.box(i, j, 0.1, 0.1, 14, "ferro0", "ferro1", "ferro1");
+    if (giro) {
+      pe(r.i + 0.2, r.j + 0.15);
+      pe(r.i + 0.2, r.j + r.d - 0.25);
+      pe(r.i + 0.7, r.j + 0.15);
+      pe(r.i + 0.7, r.j + r.d - 0.25);
+    } else {
+      pe(r.i + 0.15, r.j + 0.2);
+      pe(r.i + r.w - 0.25, r.j + 0.2);
+      pe(r.i + 0.15, r.j + 0.7);
+      pe(r.i + r.w - 0.25, r.j + 0.7);
+    }
+    k.box(r.i + M, r.j + M, r.w - 2 * M, r.d - 2 * M, 4, "madeira0", "madeira1", "madeira2", 14);
+    const c = atras(r, giro, 0.12);
+    k.box(c.i + M, c.j + M, c.w - (giro ? 0 : 2 * M), c.d - (giro ? 2 * M : 0), 22, "madeira0", "madeira1", "madeira2", 18);
+  },
+  "carro-vermelho": (k, r, giro) => carro(k, r, giro, "vermelho"),
+  "carro-azul": (k, r, giro) => carro(k, r, giro, "azul"),
+  "carro-branco": (k, r, giro) => carro(k, r, giro, "branco"),
+  "carro-preto": (k, r, giro) => carro(k, r, giro, "preto"),
+  "carro-amarelo": (k, r, giro) => carro(k, r, giro, "amarelo"),
+  gol: (k, r) => {
+    /* as traves na linha de fundo (i = fim do retângulo) e a rede caindo para trás */
+    const i = r.i + r.w - 0.15;
+    const [a, b] = [r.j + 0.1, r.j + r.d - 0.1];
+    k.box(i - 0.4, a, 0.4, b - a, 46, "rede", "rede", "rede", 0);
+    k.box(i - 0.06, a, 0.08, 0.08, 52, "gol", "gol", "gol");
+    k.box(i - 0.06, b - 0.08, 0.08, 0.08, 52, "gol", "gol", "gol");
+    k.box(i - 0.06, a, 0.08, b - a, 6, "gol", "gol", "gol", 48);
+  },
 };
+
+/** Um carro estacionado: lataria, cabine com vidros e as rodas; comprido no sentido de i (sem giro) ou de j. */
+function carro(k: Lapis, r: Retangulo, giro: boolean, cor: string) {
+  const [i, j, w, d] = [r.i + 0.12, r.j + 0.12, r.w - 0.24, r.d - 0.24];
+  const roda = (a: number, b: number) => k.box(a, b, 0.24, 0.24, 12, "pneu", "pneu", "pneu");
+  if (giro) {
+    roda(i, j + 0.2);
+    roda(i + w - 0.24, j + 0.2);
+    roda(i, j + d - 0.44);
+    roda(i + w - 0.24, j + d - 0.44);
+  } else {
+    roda(i + 0.2, j);
+    roda(i + w - 0.44, j);
+    roda(i + 0.2, j + d - 0.24);
+    roda(i + w - 0.44, j + d - 0.24);
+  }
+  k.box(i, j, w, d, 16, `carro-${cor}0`, `carro-${cor}1`, `carro-${cor}2`, 6);
+  const [ci, cj, cw, cd] = giro ? [i + 0.06, j + d * 0.28, w - 0.12, d * 0.46] : [i + w * 0.28, j + 0.06, w * 0.46, d - 0.12];
+  k.box(ci, cj, cw, cd, 14, `carro-${cor}0`, "vidro", "vidro", 22);
+}
 
 function cadeira(k: Lapis, r: Retangulo, giro: boolean, c: [string, string, string], encosto: number) {
   k.box(r.i + 0.2, r.j + 0.2, r.w - 0.4, r.d - 0.4, 24, c[0], c[1], c[2]);

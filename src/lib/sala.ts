@@ -16,6 +16,7 @@ import type { Presence } from "./tipos";
 import { bingoLines } from "./bingo";
 import { posHall } from "@/features/hall/hall";
 import { useQuartos } from "@/features/quarto/quartoDados";
+import { ehCenaEspecial, TAM_CENA } from "@/features/quarto/cenas";
 
 /** Eventos de broadcast. Evento novo: acrescente aqui e escreva o handler com as conferências. */
 export const EVENTOS = ["rtc", "reacao", "risco", "hall"] as const;
@@ -60,7 +61,7 @@ export const aoMudarTabela = (
     | "bingo_partidas" | "bingo_cartelas" | "bingo_cantos"
     | "midias" | "mural_links" | "perfil_links"
     | "rede_posts" | "rede_curtidas" | "rede_comentarios" | "rede_stories" | "rede_mensagens"
-    | "apostas_mercados" | "apostas" | "atributos_aviso" | "respeitos" | "truco_mercados" | "truco_apostas" | "quartos" | "quarto_moveis" | "banca",
+    | "apostas_mercados" | "apostas" | "atributos_aviso" | "respeitos" | "truco_mercados" | "truco_apostas" | "quartos" | "quarto_moveis" | "banca" | "mural_recados",
   fn: (row: Record<string, unknown> | null, ev: string) => void,
 ) => add(tabelaFns, tabela, fn);
 
@@ -161,6 +162,8 @@ export function cleanPresence(key: unknown, d: unknown): Presence | null {
  * carregarem, basta o nanico existir). Os móveis e os assentos o boneco confere depois, com a grade do quarto.
  */
 function quartoValido(v: unknown): string | null {
+  /* a rua e o corredor dos quartos (cenas.ts) valem sempre */
+  if (ehCenaEspecial(v)) return v;
   if (typeof v !== "string" || v.length > 64) return null;
   const uid = getApp().friends.find((f) => f.id === v)?.user_id;
   if (!uid) return null;
@@ -173,7 +176,7 @@ function posNoQuarto(v: unknown, dono: string): { i: number; j: number; s?: stri
   if (!v || typeof v !== "object") return null;
   const { i, j, s } = v as Record<string, unknown>;
   const uid = getApp().friends.find((f) => f.id === dono)?.user_id;
-  const tam = (uid && useQuartos.getState().quartos[uid]) || 12;
+  const tam = ehCenaEspecial(dono) ? TAM_CENA[dono] : (uid && useQuartos.getState().quartos[uid]) || 12;
   if (!Number.isInteger(i) || !Number.isInteger(j) || (i as number) < 0 || (j as number) < 0 || (i as number) >= tam || (j as number) >= tam) return null;
   return typeof s === "string" && s.length <= 24 ? { i: i as number, j: j as number, s } : { i: i as number, j: j as number };
 }
@@ -343,7 +346,7 @@ function conectar() {
   /* bingo: a partida da sala, a minha cartela (o RLS só manda a minha) e os cantos; gravados só pelas funções bingo_* */
   /* mídias, mural e links do perfil: a galeria e a ficha se atualizam sozinhas */
   /* apostas: o bolo de cada partida e as minhas apostas (o RLS só manda as minhas), gravados só pelas funções do banco */
-  for (const tabela of ["truco_mesas", "truco_maos", "bingo_partidas", "bingo_cartelas", "bingo_cantos", "midias", "mural_links", "perfil_links", "rede_posts", "rede_curtidas", "rede_comentarios", "rede_stories", "rede_mensagens", "apostas_mercados", "apostas", "atributos_aviso", "respeitos", "truco_mercados", "truco_apostas", "quartos", "quarto_moveis", "banca"] as const) {
+  for (const tabela of ["truco_mesas", "truco_maos", "bingo_partidas", "bingo_cartelas", "bingo_cantos", "midias", "mural_links", "perfil_links", "rede_posts", "rede_curtidas", "rede_comentarios", "rede_stories", "rede_mensagens", "apostas_mercados", "apostas", "atributos_aviso", "respeitos", "truco_mercados", "truco_apostas", "quartos", "quarto_moveis", "banca", "mural_recados"] as const) {
     ch = ch.on("postgres_changes", { event: "*", schema: "public", table: tabela }, (pl) => {
       const row = (pl?.eventType === "DELETE" ? pl.old : pl?.new) as Record<string, unknown> | undefined;
       tabelaFns.get(tabela)?.forEach((fn) => fn(row || null, pl?.eventType || ""));

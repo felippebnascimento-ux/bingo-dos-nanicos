@@ -516,3 +516,33 @@
 .hall-sombras polygon{fill:var(--accent-ink);opacity:.3}
 .hall-area:has(.habbo-barra) .hall-bolso{pointer-events:none}
 .hall-area:has(.habbo-barra) .hall-bolso > *{pointer-events:auto}
+
+/* ---------- Mural do K-FOFO (seção 49): cortiça e notas coloridas (cores próprias da ilustração, como o resto do hall) ---------- */
+.hall,.mural-painel{--hall-cortica:#C39B6E;--hall-cortica2:#A97F52;--hall-nota-amarelo:#F7E37E;--hall-nota-rosa:#F5AFC4;--hall-nota-azul:#A3CDEF;--hall-nota-verde:#AEDFA6;--hall-nota-tinta:#2B2B2B;--hall-tachinha:#B4442F}
+.mural-cortica{fill:var(--hall-cortica);stroke:var(--hall-cortica2);stroke-width:1}
+.mural-nota{stroke:rgb(0 0 0 / .15);stroke-width:.6}
+.mural-nota.n-amarelo,.mural-recado.n-amarelo,.mural-cor.n-amarelo{fill:var(--hall-nota-amarelo);--nota:var(--hall-nota-amarelo)}
+.mural-nota.n-rosa,.mural-recado.n-rosa,.mural-cor.n-rosa{fill:var(--hall-nota-rosa);--nota:var(--hall-nota-rosa)}
+.mural-nota.n-azul,.mural-recado.n-azul,.mural-cor.n-azul{fill:var(--hall-nota-azul);--nota:var(--hall-nota-azul)}
+.mural-nota.n-verde,.mural-recado.n-verde,.mural-cor.n-verde{fill:var(--hall-nota-verde);--nota:var(--hall-nota-verde)}
+.mural-tachinha{fill:var(--hall-tachinha)}
+.mural-nota-nome{font:800 6px var(--display);fill:var(--hall-nota-tinta)}
+.mural-nota-texto{font:500 6.5px var(--body);fill:var(--hall-nota-tinta)}
+.mural-painel{max-width:560px}
+.mural-avisos{display:grid;gap:6px}
+.mural-aviso{margin:0;padding:8px 12px;border-radius:var(--r-sm);background:var(--surface-2);font-size:13px;border-left:3px solid var(--accent)}
+.mural-aviso.a-evento{border-left-color:var(--live)}
+.mural-acoes{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+.mural-form{display:grid;gap:6px;margin-top:4px}
+.mural-form textarea{width:100%;resize:vertical;min-height:54px;padding:8px 10px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--surface);color:var(--ink);font:500 14px var(--body)}
+.mural-form-pe{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mural-form-pe .seg{display:flex;gap:6px;padding:0;background:none}
+.mural-cor{width:26px;height:26px;padding:0;border-radius:50%;border:2px solid transparent;background:var(--nota);cursor:pointer}
+.mural-cor.on{border-color:var(--ink)}
+.mural-form-pe .btn{margin-left:auto}
+.mural-lista{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px;max-height:min(46vh,420px);overflow:auto}
+.mural-recado{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-radius:var(--r-sm);background:var(--nota);color:var(--hall-nota-tinta)}
+.mural-recado div{flex:1;min-width:0}
+.mural-recado p{margin:2px 0 0;font-size:13.5px;overflow-wrap:anywhere;white-space:pre-wrap}
+.mural-recado small{opacity:.7;font-size:11px}
+.mural-recado .linkish{color:var(--hall-nota-tinta)}

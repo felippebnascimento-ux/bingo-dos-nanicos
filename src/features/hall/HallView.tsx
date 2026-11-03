@@ -23,7 +23,6 @@ import { cambalear } from "./zoeira";
 import { iniciarZoeira, useZoeira } from "./zoeiraSala";
 import { MenuBoneco, Revidar, ZoeiraCamada } from "./ZoeiraTela";
 import { PerfilCartao } from "./PerfilCartao";
-import { BotaoQuadro, QuadroTrofeus } from "./QuadroTrofeus";
 import { iniciarEventos } from "./eventosSala";
 import { ConsumoCamada, EfeitoCanto } from "@/features/loja/Itens";
 import { balanco } from "@/features/loja/loja";
@@ -36,6 +35,8 @@ import { assentoNaTela, CADEIRAS_TRUCO, camadasHall, CLICAVEIS, livre, MOVEIS, n
 import { Destaque, emPorcento, FeltroTruco, Fundo, MovelCamada, tvCaixa } from "./Sala";
 import { BotaoMeuQuarto, QuartoVisita, TopoQuarto } from "@/features/quarto/QuartoVisita";
 import { BaloesHall, ChatBarra } from "./ChatHabbo";
+import { BotaoMural, MuralJanela, QuadroMural } from "./Mural";
+import { abrirMural } from "./muralDados";
 
 /** Setas → um piso: direita/esquerda seguem a parede da direita, cima/baixo a da esquerda. */
 const SETAS: Record<string, [number, number]> = {
@@ -78,7 +79,6 @@ export function HallView({ hidden }: { hidden: boolean }) {
   const naMesa = useTruco((s) => s.mesas.reduce((n, m) => n + m.lugares.filter(Boolean).length, 0));
   const vb = useVB();
   const temSalas = useApp((s) => s.salas.length > 0);
-  const temTrofeus = useTrofeus((s) => !!s.linhas?.length);
   const [destaque, setDestaque] = useState<Piso | null>(null);
   const [pisca, setPisca] = useState(0);
 
@@ -166,7 +166,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
         setAssistindo(m.id);
       } else setApp({ aba: "truco" });
     }
-    else if (c === "trofeus") setApp({ aba: "trofeus" });
+    else if (c === "mural") abrirMural();
     else setApp({ aba: "loja" });
   };
   const tv = tvCaixa(vb);
@@ -198,7 +198,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
           onPointerDown={tocou}
         >
           <Fundo aoVivo={aoVivo} vb={vb} />
-          <QuadroTrofeus vb={vb} />
+          <QuadroMural vb={vb} />
           <Destaque piso={destaque} vb={vb} pisca={pisca} />
           {MOVEIS.map((m, k) => (
             <MovelCamada key={m.id} id={m.id} z={z[k]} vb={vb} />
@@ -249,11 +249,11 @@ export function HallView({ hidden }: { hidden: boolean }) {
               abrir("tv");
             }}
           />
-          <BotaoQuadro vb={vb} />
+          <BotaoMural vb={vb} />
           <PlacaChurrasco vb={vb} />
-          {CLICAVEIS.filter((c) => (c.id !== "salas" || temSalas) && (c.id !== "trofeus" || temTrofeus)).map((c) => {
+          {CLICAVEIS.filter((c) => c.id !== "salas" || temSalas).map((c) => {
             const pos = emPorcento(vb, c.rotulo.i, c.rotulo.j, c.rotulo.z);
-            const rotulo = c.id === "tv" ? "Ao vivo" : c.id === "truco" ? (mv.mesa ? "Truco · ao vivo" : "Truco") : c.id === "salas" ? "Salas" : c.id === "trofeus" ? "Troféus" : "Loja";
+            const rotulo = c.id === "tv" ? "Ao vivo" : c.id === "truco" ? (mv.mesa ? "Truco · ao vivo" : "Truco") : c.id === "salas" ? "Salas" : c.id === "mural" ? "Mural" : "Loja";
             return (
               <button
                 key={c.id}
@@ -306,6 +306,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
       <p className="hall-aviso" aria-live="polite">
         {aviso}
       </p>
+      <MuralJanela />
       {assistindo && <AssistindoJanela id={assistindo} fechar={fecharAssistindo} />}
     </section>
   );

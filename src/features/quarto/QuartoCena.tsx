@@ -3,12 +3,15 @@
  * O quarto próprio desenhado em qualquer tamanho (6, 9 ou 12): piso em xadrez, as duas paredes com a tinta, o neon e o
  * pôster equipados (como no quarto fixo da ficha), a porta no piso (0, 0) e os móveis na ordem certa (camadasQuarto).
  * Serve para a ficha, para a tela de arrumar e, na fase 35, para as visitas. Com `aoTocarPiso`, cada piso vira um alvo.
+ * Com `tipo`, desenha as cenas especiais (cenas.ts): a rua (gramado e a fachada do K-FOFO com a porta) e o corredor
+ * dos quartos (uma porta por nanico, aberta ou fechada, tocável).
  */
 import { memo, useId, useMemo } from "react";
 import { ANCORA, caixaDoBoneco, CEL_H, CEL_W, ordemZ, quadroSprite, type Caixa, type Sentido } from "@/features/hall/hall";
 import { BaloesSvg } from "@/features/hall/ChatHabbo";
 import { desenharMovel, Poligonos, type Poly, type Pt } from "./Moveis";
 import { camadasQuarto, type Retangulo } from "./quarto";
+import { MARCA_PENALTI, type PortaCorredor } from "./cenas";
 
 const TW = 46, TH = 23, ZS = 1.3, WH = 150, MARGEM = 24;
 
@@ -34,6 +37,40 @@ export function projecao(n: number) {
   const X0 = n * TW + MARGEM, Y0 = WH * ZS + MARGEM + 10;
   const p = (i: number, j: number, z = 0): Pt => [X0 + (i - j) * TW, Y0 + (i + j) * TH - z * ZS];
   return { p, largura: 2 * n * TW + 2 * MARGEM, altura: Y0 + 2 * n * TH + MARGEM };
+}
+
+/** A rua: gramado em dois tons, a calçada de terra da porta até a árvore, a marca do pênalti e a fachada do K-FOFO. */
+function fundoRua(n: number, p: (i: number, j: number, z?: number) => Pt): Poly[] {
+  const L: Poly[] = [];
+  const poly = (q: Pt[], c: string, linha = false) => L.push({ q, c, linha });
+  /* a fachada do K-FOFO na parede da direita (j = 0), com a porta no piso (0, 0) */
+  poly([p(0, 0), p(n, 0), p(n, 0, WH), p(0, 0, WH)], "fachada");
+  for (let z = 10; z < WH; z += 12) poly([p(0, 0, z), p(n, 0, z), p(n, 0, z + 1.5), p(0, 0, z + 1.5)], "fachada-linha");
+  poly([p(0, 0, WH), p(n, 0, WH), p(n, 0, WH + 10), p(0, 0, WH + 10)], "topo2");
+  poly([p(0.12, 0), p(0.88, 0), p(0.88, 0, 104), p(0.12, 0, 104)], "porta", true);
+  poly([p(2.2, 0, 112), p(6.4, 0, 112), p(6.4, 0, 138), p(2.2, 0, 138)], "placa-kfofo", true);
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) poly([p(i, j), p(i + 1, j), p(i + 1, j + 1), p(i, j + 1)], (i + j) % 2 ? "grama0" : "grama1");
+  for (let k = 0; k < 4; k++) poly([p(0.2 + k, 0.25 + k), p(1.0 + k, 0.25 + k), p(1.0 + k, 1.0 + k), p(0.2 + k, 1.0 + k)], "terra");
+  poly([p(MARCA_PENALTI.i - 0.12, MARCA_PENALTI.j - 0.12), p(MARCA_PENALTI.i + 0.12, MARCA_PENALTI.j - 0.12), p(MARCA_PENALTI.i + 0.12, MARCA_PENALTI.j + 0.12), p(MARCA_PENALTI.i - 0.12, MARCA_PENALTI.j + 0.12)], "cal");
+  poly([p(9.2, 1.4), p(n, 1.4), p(n, 5.6), p(9.2, 5.6)], "cal-area", true);
+  return L;
+}
+
+/** O corredor: as duas paredes sem janela nem pôster, o carpete comprido e a saída para o K-FOFO no piso (0, 0). */
+function fundoCorredor(n: number, p: (i: number, j: number, z?: number) => Pt): Poly[] {
+  const L: Poly[] = [];
+  const poly = (q: Pt[], c: string, linha = false) => L.push({ q, c, linha });
+  poly([p(0, 0), p(0, n), p(0, n, WH), p(0, 0, WH)], "parede1");
+  poly([p(0, 0), p(n, 0), p(n, 0, WH), p(0, 0, WH)], "parede2");
+  poly([p(0, 0, WH), p(0, n, WH), p(0, n, WH + 10), p(0, 0, WH + 10)], "topo1");
+  poly([p(0, 0, WH), p(n, 0, WH), p(n, 0, WH + 10), p(0, 0, WH + 10)], "topo2");
+  poly([p(0, 0), p(0, n), p(0, n, 8), p(0, 0, 8)], "rodape1");
+  poly([p(0, 0), p(n, 0), p(n, 0, 8), p(0, 0, 8)], "rodape2");
+  poly([p(0.12, 0), p(0.88, 0), p(0.88, 0, 104), p(0.12, 0, 104)], "porta", true);
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) poly([p(i, j), p(i + 1, j), p(i + 1, j + 1), p(i, j + 1)], (i + j) % 2 ? "piso0" : "piso1");
+  poly([p(1.2, 1.2), p(n - 0.6, 1.2), p(n - 0.6, n - 0.6), p(1.2, n - 0.6)], "carpete0");
+  poly([p(1.5, 1.5), p(n - 0.9, 1.5), p(n - 0.9, n - 0.9), p(1.5, n - 0.9)], "carpete1");
+  return L;
 }
 
 function paredes(n: number, p: (i: number, j: number, z?: number) => Pt, e: Equip): Poly[] {
@@ -92,6 +129,10 @@ export const QuartoCena = memo(function QuartoCena({
   aoTocarMovel,
   bonecos,
   brilhos,
+  tipo = "quarto",
+  portas,
+  aoTocarPorta,
+  aoTocarSaida,
 }: {
   tamanho: number;
   equip: Equip;
@@ -105,10 +146,15 @@ export const QuartoCena = memo(function QuartoCena({
   aoTocarMovel?: (id: number) => void;
   bonecos?: readonly BonecoCena[];
   brilhos?: readonly { id: string; i: number; j: number }[];
+  tipo?: "quarto" | "rua" | "corredor";
+  portas?: readonly PortaCorredor[];
+  aoTocarPorta?: (fid: string) => void;
+  /** a porta do piso (0, 0): na rua e no corredor, volta ao K-FOFO */
+  aoTocarSaida?: () => void;
 }) {
   const n = tamanho;
   const { p, largura, altura } = useMemo(() => projecao(n), [n]);
-  const fundo = useMemo(() => paredes(n, p, equip), [n, p, equip]);
+  const fundo = useMemo(() => (tipo === "rua" ? fundoRua(n, p) : tipo === "corredor" ? fundoCorredor(n, p) : paredes(n, p, equip)), [n, p, equip, tipo]);
   const ordem = useMemo(() => camadasQuarto(moveis.map((m) => m.ret)), [moveis]);
   /* com bonecos: quem está em pé entra na ordem com os móveis; quem está sentado vem logo depois do móvel dele */
   const camadas = useMemo(() => {
@@ -133,6 +179,19 @@ export const QuartoCena = memo(function QuartoCena({
   return (
     <svg className="quarto quarto-cena" viewBox={`0 0 ${largura} ${altura}`} role="img" aria-label={nome ? `Quarto de ${nome}` : "Quarto"}>
       <Poligonos lista={fundo} />
+      {tipo === "rua" && (
+        <text className="quarto-placa-texto" {...rotParede(p, 4.3, 0, 120)}>
+          K-FOFO
+        </text>
+      )}
+      {aoTocarSaida && (
+        <polygon className="quarto-alvo-porta" points={[p(0.12, 0), p(0.88, 0), p(0.88, 0, 104), p(0.12, 0, 104)].map((v) => v.join(",")).join(" ")} onClick={aoTocarSaida}>
+          <title>Voltar ao K-FOFO</title>
+        </polygon>
+      )}
+      {portas?.map((d) => (
+        <PortaNaParede key={d.fid} d={d} p={p} aoTocar={aoTocarPorta} />
+      ))}
       {/* sombra de cada móvel no chão (luz de cima à esquerda: cai para +i), menos dos tapetes */}
       <defs>
         <filter id={sombraId} x="-20%" y="-20%" width="140%" height="140%">
@@ -252,3 +311,39 @@ export const MovelPrevia = memo(function MovelPrevia({ desenho, w, d }: { desenh
     </svg>
   );
 });
+
+/** Texto deitado numa parede: "dir" (j = 0) sobe para a direita; "esq" (i = 0) sobe para a esquerda. */
+function rotParede(p: (i: number, j: number, z?: number) => Pt, i: number, j: number, z: number) {
+  const [x, y] = p(i, j, z);
+  return { x, y, textAnchor: "middle" as const, transform: `rotate(${j === 0 ? 26.57 : -26.57} ${x} ${y})` };
+}
+
+/** Uma porta do corredor: aberta (o quarto existe, dá para entrar) ou fechada, com a placa do nome em cima. */
+function PortaNaParede({ d, p, aoTocar }: { d: PortaCorredor; p: (i: number, j: number, z?: number) => Pt; aoTocar?: (fid: string) => void }) {
+  const ponto = (a: number, z: number) => (d.parede === "dir" ? p(a, 0, z) : p(0, a, z));
+  const ret = (a: number, b: number, z0: number, z1: number) => [ponto(a, z0), ponto(b, z0), ponto(b, z1), ponto(a, z1)].map((v) => v.join(",")).join(" ");
+  const meio = (d.a + d.b) / 2;
+  const placa = d.parede === "dir" ? rotParede(p, meio, 0, 112) : rotParede(p, 0, meio, 112);
+  return (
+    <g
+      className={"quarto-porta-nanico" + (d.aberta ? " aberta" : "")}
+      onClick={aoTocar ? () => aoTocar(d.fid) : undefined}
+      role="button"
+      aria-label={d.aberta ? `Entrar no quarto de ${d.nome}` : `Quarto de ${d.nome}: porta fechada`}
+    >
+      <polygon points={ret(d.a - 0.05, d.b + 0.05, 0, 100)} className="q-batente q-linha" />
+      {d.aberta ? (
+        <>
+          <polygon points={ret(d.a, d.b, 0, 96)} className="q-porta-dentro" />
+          <polygon points={ret(d.a, d.a + (d.b - d.a) * 0.35, 0, 96)} className="q-porta q-linha" />
+        </>
+      ) : (
+        <polygon points={ret(d.a, d.b, 0, 96)} className="q-porta q-linha" />
+      )}
+      <polygon points={ret(meio - 0.42, meio + 0.42, 104, 120)} className="q-placa-nome q-linha" />
+      <text className="quarto-placa-nome" {...placa}>
+        {d.nome.length > 9 ? d.nome.slice(0, 8) + "…" : d.nome}
+      </text>
+    </g>
+  );
+}

@@ -5645,6 +5645,50 @@ begin
   begin alter publication supabase_realtime add table public.banca; exception when duplicate_object then null; end;
 end $;
 
+-- 49) Mural do K-FOFO (03/11/2026, pedido do João): no lugar do quadro dos troféus, um mural de cortiça onde os nanicos
+--     pregam recados livres (até 200 letras, numa nota colorida). Os avisos automáticos (hall da fama, banca, eventos)
+--     são montados no site com o que já existe; aqui fica só o que alguém escreveu. Apaga sozinho com 30 dias.
+create table if not exists public.mural_recados (
+  id      bigint generated always as identity primary key,
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  texto   text not null check (char_length(texto) between 1 and 200),
+  cor     text not null default 'amarelo' check (cor in ('amarelo', 'rosa', 'azul', 'verde')),
+  em      timestamptz not null default now()
+);
+create index if not exists mural_recados_em on public.mural_recados (em desc);
+alter table public.mural_recados enable row level security;
+revoke all on public.mural_recados from public, anon, authenticated;
+grant select, delete on public.mural_recados to authenticated;
+grant insert (texto, cor) on public.mural_recados to authenticated;
+drop policy if exists mural_recados_ler on public.mural_recados;
+create policy mural_recados_ler on public.mural_recados for select to authenticated using (public.eh_membro());
+drop policy if exists mural_recados_pregar on public.mural_recados;
+create policy mural_recados_pregar on public.mural_recados for insert to authenticated
+  with check (public.eh_membro() and user_id = auth.uid());
+drop policy if exists mural_recados_tirar on public.mural_recados;
+create policy mural_recados_tirar on public.mural_recados for delete to authenticated using (user_id = auth.uid());
+
+-- o autor é sempre quem está logado, o texto sai limpo, 10 recados por hora; e o que tem mais de 30 dias some
+create or replace function public.mural_recado_protecao() returns trigger
+language plpgsql security definer set search_path = public as $
+begin
+  new.user_id := auth.uid();
+  new.em := now();
+  new.texto := btrim(regexp_replace(coalesce(new.texto, ''), '[\x00-\x09\x0B-\x1F\x7F]', ' ', 'g'));
+  if new.texto = '' then raise exception 'Escreva alguma coisa no recado.' using errcode = 'P0001'; end if;
+  perform public.limitar('mural', 10, interval '1 hour', 'Calma: no máximo 10 recados por hora no mural.');
+  delete from public.mural_recados where em < now() - interval '30 days';
+  return new;
+end $;
+revoke all on function public.mural_recado_protecao() from public, anon, authenticated;
+drop trigger if exists mural_recado_protecao on public.mural_recados;
+create trigger mural_recado_protecao before insert on public.mural_recados for each row execute function public.mural_recado_protecao();
+
+do $
+begin
+  begin alter publication supabase_realtime add table public.mural_recados; exception when duplicate_object then null; end;
+end $;
+
 -- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo e as 2 tabelas e 3 funções do quarto próprio e as 2 tabelas e 3 funções do blackjack e as 4 tabelas e 6 funções do pôquer
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')

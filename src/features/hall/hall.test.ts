@@ -115,29 +115,29 @@ describe("ordemZ", () => {
   };
 
   it("o boneco passa atrás e na frente da mesa", () => {
-    expect(ordem({ i: 6, j: 2 })).toBe("atras");
-    expect(ordem({ i: 2, j: 2 })).toBe("atras");
-    expect(ordem({ i: 6, j: 5 })).toBe("frente");
-    expect(ordem({ i: 11, j: 4 })).toBe("frente");
+    expect(ordem({ i: 6, j: 0 })).toBe("atras");
+    expect(ordem({ i: 9, j: 0 })).toBe("atras");
+    expect(ordem({ i: 6, j: 3 })).toBe("frente");
+    expect(ordem({ i: 9, j: 5 })).toBe("frente");
   });
 });
 
 describe("sala nova (14×11)", () => {
   it("posição antiga que agora cai num móvel não vale (a pessoa volta para a entrada)", () => {
-    /* (7, 3) era livre antes da planta nova e agora é a mesa comprida */
-    expect(posValida({ i: 7, j: 3 })).toBe(false);
+    /* (7, 2) era livre antes da remodelação e agora é a mesa comprida */
+    expect(posValida({ i: 7, j: 2 })).toBe(false);
     expect(posValida({ i: 12, j: 9 })).toBe(false);
   });
 
   it("pisoLivreNaTela só devolve piso sem móvel", () => {
     const [x, y] = tela(6.5, 5.5);
     expect(pisoLivreNaTela(x, y)).toEqual({ i: 6, j: 5 });
-    const [mx, my] = tela(6.5, 3.5);
+    const [mx, my] = tela(6.5, 1.9);
     expect(pisoLivreNaTela(mx, my)).toBeNull();
   });
 
   it("cada móvel que abre algo tem a placa dentro da sala", () => {
-    expect(CLICAVEIS.map((c) => c.id)).toEqual(["salas", "tv", "trofeus", "truco", "loja"]);
+    expect(CLICAVEIS.map((c) => c.id)).toEqual(["salas", "tv", "mural", "truco", "loja"]);
     for (const c of CLICAVEIS) {
       expect(c.rotulo.i).toBeGreaterThanOrEqual(0);
       expect(c.rotulo.j).toBeLessThanOrEqual(NJ);
