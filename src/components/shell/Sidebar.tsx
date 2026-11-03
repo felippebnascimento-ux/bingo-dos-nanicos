@@ -171,7 +171,7 @@ function EuPainel() {
         </button>
         <BotoesVozEu />
         {!naVoz && <CarteiraChip />}
-        <button type="button" className={"eu-cfg" + (naConfig ? " on" : "")} aria-label="Configurações" title="Configurações" aria-expanded={naConfig} onClick={() => setApp({ configAberto: true })}>
+        <button type="button" className={"eu-cfg" + (naConfig ? " on" : "")} aria-label="Configurações" data-dica="Configurações" data-dica-fim="" aria-expanded={naConfig} onClick={() => setApp({ configAberto: true })}>
           <IcAjustes />
         </button>
       </div>

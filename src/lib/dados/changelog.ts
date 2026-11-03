@@ -393,6 +393,14 @@ export const CHANGELOG: EntradaLog[] = [
       "A sua transmissão no menu ficou compacta, dentro do painel da voz: Ao vivo, quantos assistem, a qualidade e os botões de qualidade e parar; tocar no Ao vivo mostra ou esconde a prévia",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Painel da voz caprichado como o do Discord: botões do mesmo tamanho, fundo suave ao passar o mouse e dicas num balãozinho que não sai cortado",
+      "Sem o som do PC na transmissão: uma linha com o botão Corrigir, que abre a janela de transmitir explicando o que fazer",
+      "A qualidade da sua transmissão aparece curta (1440p60)",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
