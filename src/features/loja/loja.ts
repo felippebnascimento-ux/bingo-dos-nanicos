@@ -4,7 +4,7 @@
  */
 export type Espaco = "cadeira" | "mesa" | "tapete" | "poster" | "planta" | "parede" | "luz" | "titulo" | "moldura" | "escudo" | "consumivel" | "celular" | "cabeca" | "quarto" | "movel";
 export type Anim = "fumar" | "charuto" | "beber" | "tremer" | "tonto";
-export type ItemLoja = { id: string; nome: string; descricao: string; espaco: Espaco; preco: number; dados: { cor?: string; texto?: string; anim?: Anim; w?: number; d?: number; desenho?: string; tamanho?: number }; ordem: number };
+export type ItemLoja = { id: string; nome: string; descricao: string; espaco: Espaco; preco: number; dados: { cor?: string; texto?: string; anim?: Anim; w?: number; d?: number; desenho?: string; tamanho?: number }; ordem: number; estoque?: number; lancamento?: number };
 export type LinhaMochila = { userId: string; itemId: string; qtd: number; equipado: boolean };
 
 /** Os grupos da vitrine, na ordem em que aparecem (`curto` é o filtro no topo). */
@@ -82,7 +82,27 @@ export function lerItem(r: Record<string, unknown>): ItemLoja | null {
       tamanho: d.tamanho === 6 || d.tamanho === 9 || d.tamanho === 12 ? d.tamanho : undefined,
     },
     ordem: typeof r.ordem === "number" ? r.ordem : 0,
+    /* raro (seção 55): quantos existem no mundo e a hora em que sai */
+    ...(typeof r.estoque === "number" && Number.isInteger(r.estoque) && r.estoque >= 1 ? { estoque: r.estoque } : {}),
+    ...(typeof r.lancamento === "string" && Number.isFinite(Date.parse(r.lancamento)) ? { lancamento: Date.parse(r.lancamento) } : {}),
   };
+}
+
+/** Um raro (seção 55): quantos restam, se esgotou e quando sai (null se já saiu). Item comum devolve null. */
+export function estadoRaro(it: Pick<ItemLoja, "estoque" | "lancamento">, vendidos: number, agora: number) {
+  if (!it.estoque) return null;
+  const restam = Math.max(0, it.estoque - vendidos);
+  return { total: it.estoque, restam, esgotado: restam === 0, saiEm: it.lancamento && it.lancamento > agora ? it.lancamento : null };
+}
+
+/** "07/11 às 20h" no horário de Brasília. */
+export function quandoSai(ms: number): string {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+      .formatToParts(new Date(ms))
+      .map((x) => [x.type, x.value]),
+  );
+  return `${p.day}/${p.month} às ${p.hour}h${p.minute === "00" ? "" : p.minute}`;
 }
 
 /** Itens de um grupo da vitrine, em ordem. */
@@ -101,7 +121,9 @@ export function equipados(linhas: readonly LinhaMochila[], itens: readonly ItemL
 }
 
 /** Dá para comprar? Devolve o motivo para o botão (o banco confere de novo). */
-export function podeComprar(it: ItemLoja, tenho: number, saldo: number | null): { ok: boolean; motivo?: string } {
+export function podeComprar(it: ItemLoja, tenho: number, saldo: number | null, raro: ReturnType<typeof estadoRaro> = null): { ok: boolean; motivo?: string } {
+  if (raro?.esgotado) return { ok: false, motivo: "Esgotado" };
+  if (raro?.saiEm) return { ok: false, motivo: `Sai ${quandoSai(raro.saiEm)}` };
   if (posicionavel(it)) {
     if (tenho >= MAX_MOVEL) return { ok: false, motivo: `Máximo de ${MAX_MOVEL}` };
   } else if (!acumula(it.espaco) && tenho > 0) return { ok: false, motivo: "Na mochila" };

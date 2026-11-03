@@ -6532,6 +6532,98 @@ end $$;
 revoke all on function public.troca_cancelar(bigint) from public, anon;
 grant execute on function public.troca_cancelar(bigint) to authenticated;
 
+-- 55) raros limitados, como os LTD do Habbo (03/11/2026, pedido do João) -------------------------------------------------
+--   Um item da loja com `estoque` é raro: cada cópia vendida ganha um número ("3 de 15") em raros_numeros, que todo
+--   membro lê (quem tem cada número é público). `lancamento` = só vende a partir dessa hora. O controle fica num gatilho
+--   da mochila (raro_na_mochila), então a compra continua sendo o comprar() de sempre: esgotado ou antes da hora, o
+--   gatilho recusa e a compra inteira volta (as moedas também). Na troca, o número vai junto (troca_mover marca
+--   `nanicos.troca` e passa os números).
+alter table public.loja_itens add column if not exists estoque int;
+alter table public.loja_itens add column if not exists lancamento timestamptz;
+alter table public.loja_itens drop constraint if exists loja_itens_estoque_check;
+alter table public.loja_itens add constraint loja_itens_estoque_check check (estoque is null or estoque between 1 and 1000);
+
+create table if not exists public.raros_numeros (
+  item_id text not null references public.loja_itens(id) on delete cascade,
+  numero  int not null check (numero >= 1),
+  user_id uuid references auth.users(id) on delete set null,
+  em      timestamptz not null default now(),
+  primary key (item_id, numero)
+);
+alter table public.raros_numeros enable row level security;
+revoke all on public.raros_numeros from public, anon, authenticated;
+grant select on public.raros_numeros to authenticated;
+drop policy if exists raros_numeros_ler on public.raros_numeros;
+create policy raros_numeros_ler on public.raros_numeros for select to authenticated using (public.eh_membro());
+do $$
+begin
+  begin alter publication supabase_realtime add table public.raros_numeros; exception when duplicate_object then null; end;
+end $$;
+
+create or replace function public.raro_na_mochila() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  v_est int;
+  v_lan timestamptz;
+  v_n   int;
+  k     int;
+begin
+  select estoque, lancamento into v_est, v_lan from public.loja_itens where id = new.item_id for update;
+  if v_est is null then return new; end if;
+  -- troca e mercado: o número muda de dono em troca_mover, não nasce outro
+  if current_setting('nanicos.troca', true) = '1' then return new; end if;
+  -- "insere ou soma" (o comprar de móvel): quem já tem a linha passa pelo caminho do UPDATE, que conta a cópia nova
+  if tg_op = 'INSERT' and exists (select 1 from public.mochila where user_id = new.user_id and item_id = new.item_id) then return new; end if;
+  if tg_op = 'UPDATE' and new.qtd <= old.qtd then return new; end if;
+  if v_lan is not null and v_lan > now() then
+    raise exception 'Esse raro só sai em %.', to_char(v_lan at time zone 'America/Sao_Paulo', 'DD/MM "às" HH24"h"MI') using errcode = 'P0001';
+  end if;
+  for k in 1 .. (new.qtd - case when tg_op = 'UPDATE' then old.qtd else 0 end) loop
+    select count(*) into v_n from public.raros_numeros where item_id = new.item_id;
+    if v_n >= v_est then raise exception 'Esgotado! Todos os % já foram vendidos.', v_est using errcode = 'P0001'; end if;
+    insert into public.raros_numeros (item_id, numero, user_id) values (new.item_id, v_n + 1, new.user_id);
+  end loop;
+  return new;
+end $$;
+revoke all on function public.raro_na_mochila() from public, anon, authenticated;
+drop trigger if exists raro_na_mochila on public.mochila;
+create trigger raro_na_mochila before insert or update of qtd on public.mochila for each row execute function public.raro_na_mochila();
+
+-- troca_mover de novo (seção 54): marca a troca para o gatilho dos raros e passa os números junto com os itens
+create or replace function public.troca_mover(p_de uuid, p_para uuid, p_itens jsonb) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  k text;
+  v jsonb;
+  n int;
+begin
+  perform set_config('nanicos.troca', '1', true);
+  for k, v in select * from jsonb_each(p_itens) loop
+    n := (v::text)::int;
+    if public.troca_livre(p_de, k) < n then
+      raise exception '% não tem mais % livre para trocar.', (select name from public.friends where user_id = p_de), coalesce((select nome from public.loja_itens where id = k), 'esse item') using errcode = 'P0001';
+    end if;
+    if coalesce((select qtd from public.mochila where user_id = p_para and item_id = k), 0) + n > public.item_maximo(k) then
+      raise exception '% já tem o máximo de %.', (select name from public.friends where user_id = p_para), coalesce((select nome from public.loja_itens where id = k), 'esse item') using errcode = 'P0001';
+    end if;
+    update public.mochila set qtd = qtd - n where user_id = p_de and item_id = k;
+    delete from public.mochila where user_id = p_de and item_id = k and qtd <= 0;
+    insert into public.mochila (user_id, item_id, qtd) values (p_para, k, n)
+      on conflict (user_id, item_id) do update set qtd = public.mochila.qtd + excluded.qtd;
+    update public.raros_numeros set user_id = p_para
+     where (item_id, numero) in (select item_id, numero from public.raros_numeros where item_id = k and user_id = p_de order by numero desc limit n);
+  end loop;
+  perform set_config('nanicos.troca', '', true);
+end $$;
+revoke all on function public.troca_mover(uuid, uuid, jsonb) from public, anon, authenticated;
+
+-- os primeiros raros: a estátua sai já; o globo de plasma sai no churrasco de sábado (07/11/2026, 20h de Brasília)
+insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem, estoque, lancamento) values
+  ('raro-estatua', 'Estátua Dourada do Nanico', 'Raro: só 15 no mundo, cada um com o seu número.', 'movel', 3000, '{"w":1,"d":1,"desenho":"estatua"}', 150, 15, null),
+  ('raro-plasma',  'Globo de Plasma',           'Raro: só 25, com raios roxos lá dentro. Sai no churrasco de sábado.', 'movel', 1500, '{"w":1,"d":1,"desenho":"plasma"}', 151, 25, '2026-11-07 20:00:00-03')
+on conflict (id) do update set nome = excluded.nome, descricao = excluded.descricao, espaco = excluded.espaco,
+  preco = excluded.preco, dados = excluded.dados, ordem = excluded.ordem, estoque = excluded.estoque, lancamento = excluded.lancamento;
+
 -- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo e as 2 tabelas e 3 funções do quarto próprio e as 2 tabelas e 3 funções do blackjack e as 4 tabelas e 6 funções do pôquer
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')

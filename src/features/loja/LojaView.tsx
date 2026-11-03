@@ -14,12 +14,12 @@ import { formatarMoedas } from "@/lib/moedas";
 import { friendOf, setApp, useApp } from "@/lib/store";
 import { DesenhoItem } from "./Itens";
 import { abrirCelular } from "@/features/celular/rede";
-import { acumula, doGrupo, equipavel, GRUPOS, MAX_MOVEL, NOME_ESPACO, NOME_RARIDADE, podeComprar, posicionavel, progressoCompra, raridade, type ItemLoja } from "./loja";
+import { acumula, doGrupo, equipavel, estadoRaro, GRUPOS, MAX_MOVEL, NOME_ESPACO, NOME_RARIDADE, podeComprar, posicionavel, progressoCompra, quandoSai, raridade, type ItemLoja } from "./loja";
 import { MovelPrevia, QuartoCena, type MovelCena } from "@/features/quarto/QuartoCena";
 import { desenhoDo } from "@/features/quarto/Moveis";
 import { abrirArrumar, iniciarQuartos, useQuartos } from "@/features/quarto/quartoDados";
 import { diferenca, podeComprarQuarto } from "@/features/quarto/quarto";
-import { comprar, equipar, useLoja, useMinhaMochila, usar } from "./lojaDados";
+import { comprar, equipar, useLoja, useMinhaMochila, usar, useRaros } from "./lojaDados";
 
 const FOCO: Partial<Record<ItemLoja["espaco"], "parede" | "chao" | "mesa" | "poster" | "cadeira" | "planta">> = {
   parede: "parede",
@@ -71,6 +71,7 @@ function CartaoItem({ it, tenho, equipado, saldo, abrir }: { it: ItemLoja; abrir
         {tenho > 0 && !acumula(it.espaco) && <span className="loja-qtd">{equipado ? "equipado" : "na mochila"}</span>}
       </button>
       <h3>{it.nome}</h3>
+      <SeloRaro it={it} />
       <p className="hint">{it.descricao}</p>
       <AcoesItem it={it} tenho={tenho} equipado={equipado} saldo={saldo} />
     </article>
@@ -104,6 +105,7 @@ function ItemDetalhe({ it, fechar, ...estado }: { it: ItemLoja; fechar: () => vo
         <div className="loja-detalhe-tx">
           <small>{NOME_ESPACO[it.espaco]}</small>
           <h2 id="itemTitulo">{it.nome}</h2>
+          <SeloRaro it={it} />
           <p>{it.descricao}</p>
         </div>
         <AcoesItem it={it} {...estado} />
@@ -112,10 +114,31 @@ function ItemDetalhe({ it, fechar, ...estado }: { it: ItemLoja; fechar: () => vo
   );
 }
 
+/** Raro (seção 55): quantos restam, esgotado ou quando sai, e os números que eu tenho. */
+function useRaro(it: ItemLoja) {
+  const numeros = useRaros((s) => s.numeros);
+  const myUid = useApp((s) => s.myUid);
+  const [agora] = useState(() => Date.now());
+  const doItem = it.estoque ? numeros.filter((n) => n.item === it.id) : [];
+  return { raro: estadoRaro(it, doItem.length, agora), meus: doItem.filter((n) => n.uid === myUid).map((n) => n.numero) };
+}
+
+function SeloRaro({ it }: { it: ItemLoja }) {
+  const { raro, meus } = useRaro(it);
+  if (!raro) return null;
+  return (
+    <p className={"loja-ltd" + (raro.esgotado ? " fim" : "")}>
+      <b>RARO</b> {raro.esgotado ? "Esgotado" : raro.saiEm ? `Sai ${quandoSai(raro.saiEm)} · ${raro.total} no mundo` : `Restam ${raro.restam} de ${raro.total}`}
+      {meus.length > 0 && <span> · seu nº {meus.join(", ")}</span>}
+    </p>
+  );
+}
+
 function AcoesItem({ it, tenho, equipado, saldo }: { it: ItemLoja } & Estado) {
   const { sure, pedir } = useSure();
   const ocupado = useLoja((s) => s.ocupado);
-  const pode = podeComprar(it, tenho, saldo);
+  const { raro } = useRaro(it);
+  const pode = podeComprar(it, tenho, saldo, raro);
   return (
     <>
       {it.espaco === "celular" && tenho === 0 && saldo !== null && saldo < it.preco && (

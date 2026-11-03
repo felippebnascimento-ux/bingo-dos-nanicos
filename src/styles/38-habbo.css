@@ -26,3 +26,11 @@
 .troca-botoes{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
 .troca-pilula{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));translate:-50% 0;z-index:55;padding:10px 16px;border:0;border-radius:99px;background:var(--accent);color:var(--accent-ink);font:700 14px var(--body);box-shadow:0 8px 24px var(--shadow);cursor:pointer}
 @media (max-width:760px){.troca-pilula{bottom:calc(76px + env(safe-area-inset-bottom))}}
+
+/* raros na vitrine (seção 55) e a cor do globo de plasma (--quarto-plasma) */
+.loja-ltd{margin:0;display:flex;flex-wrap:wrap;gap:4px;align-items:center;font:600 12px var(--body);color:var(--accent)}
+.loja-ltd b{padding:1px 6px;border-radius:6px;background:var(--accent);color:var(--accent-ink);font:800 10px var(--display);letter-spacing:.06em}
+.loja-ltd.fim{color:var(--muted)}
+.loja-ltd.fim b{background:var(--muted)}
+.quarto-vars,.loja-previa,.mochila-previa,.ficha-quarto{--quarto-plasma:#9B6BFF}
+.quarto .q-plasma{fill:var(--quarto-plasma);opacity:.85;filter:drop-shadow(0 0 6px var(--quarto-plasma))}

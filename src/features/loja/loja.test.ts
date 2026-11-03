@@ -74,3 +74,18 @@ describe("loja", () => {
     expect(textoConsumo("DD", { id: "cafe", nome: "Cafezinho" })).toBe("DD tomou um cafezinho");
   });
 });
+
+describe("raros (seção 55)", () => {
+  it("restam, esgotado e quando sai", async () => {
+    const { estadoRaro, quandoSai, podeComprar } = await import("./loja");
+    expect(estadoRaro({}, 3, 0)).toBeNull();
+    expect(estadoRaro({ estoque: 15 }, 3, 0)).toEqual({ total: 15, restam: 12, esgotado: false, saiEm: null });
+    expect(estadoRaro({ estoque: 15 }, 15, 0)?.esgotado).toBe(true);
+    const sabado = Date.parse("2026-11-07T23:00:00Z");
+    expect(estadoRaro({ estoque: 25, lancamento: sabado }, 0, sabado - 1)?.saiEm).toBe(sabado);
+    expect(estadoRaro({ estoque: 25, lancamento: sabado }, 0, sabado + 1)?.saiEm).toBeNull();
+    expect(quandoSai(sabado)).toBe("07/11 às 20h");
+    const it = { id: "x", nome: "x", descricao: "", espaco: "movel" as const, preco: 10, dados: { w: 1 as const, d: 1 as const }, ordem: 0 };
+    expect(podeComprar(it, 0, 100, { total: 1, restam: 0, esgotado: true, saiEm: null })).toEqual({ ok: false, motivo: "Esgotado" });
+  });
+});

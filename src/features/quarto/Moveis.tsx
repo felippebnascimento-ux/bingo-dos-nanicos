@@ -111,6 +111,18 @@ const DESENHO_QUARTO: Record<string, Desenho> = {
     if (giro) k.box(f.i + 0.38, r.j + 0.3, 0.02, 0.4, 30, "ouro0", "ouro0", "ouro1", 26);
     else k.box(r.i + 0.3, f.j + 0.38, 0.4, 0.02, 30, "ouro0", "ouro1", "ouro0", 26);
   },
+  /* raros (seção 55) */
+  estatua: (k, r) => {
+    k.box(r.i + 0.22, r.j + 0.22, 0.56, 0.56, 22, "madeira0", "madeira1", "madeira2");
+    k.box(r.i + 0.36, r.j + 0.36, 0.28, 0.28, 46, "ouro0", "ouro1", "ouro2", 22);
+    k.box(r.i + 0.33, r.j + 0.33, 0.34, 0.12, 8, "ouro0", "ouro1", "ouro2", 56);
+    k.box(r.i + 0.39, r.j + 0.39, 0.22, 0.22, 20, "ouro0", "ouro1", "ouro2", 68);
+  },
+  plasma: (k, r) => {
+    k.box(r.i + 0.3, r.j + 0.3, 0.4, 0.4, 14, "preto0", "preto1", "preto2");
+    k.box(r.i + 0.27, r.j + 0.27, 0.46, 0.46, 34, "plasma", "plasma", "plasma", 14);
+    k.box(r.i + 0.45, r.j + 0.45, 0.1, 0.1, 22, "neon-ouro", "neon-ouro", "neon-ouro", 20);
+  },
   /* os itens de piso que já existiam (fase 11) */
   "cadeira-gamer": (k, r, giro) => cadeira(k, r, giro, ["preto0", "preto1", "preto2"], 70),
   "cadeira-trono": (k, r, giro) => cadeira(k, r, giro, ["ouro0", "ouro1", "ouro2"], 90),

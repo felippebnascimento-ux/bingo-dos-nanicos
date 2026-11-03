@@ -35,13 +35,27 @@ async function carregarMochila() {
 
 export async function carregarLoja() {
   try {
-    const { data, error } = await sb().from("loja_itens").select("id,nome,descricao,espaco,preco,dados,ordem").eq("ativo", true);
+    const { data, error } = await sb().from("loja_itens").select("id,nome,descricao,espaco,preco,dados,ordem,estoque,lancamento").eq("ativo", true);
     if (error) throw error;
     useLoja.setState({ itens: (data || []).map((r) => lerItem(r as Record<string, unknown>)).filter((i): i is ItemLoja => !!i) });
     await carregarMochila();
+    await carregarRaros();
   } catch (e) {
     console.warn("Loja desligada: rode a seção 15 do supabase/sql/seguranca.sql.", (e as Error)?.message);
   }
+}
+
+/* ---------- raros (seção 55): quem tem cada número; todo membro lê ---------- */
+export type NumeroRaro = { item: string; numero: number; uid: string | null };
+export const useRaros = create<{ numeros: NumeroRaro[] }>()(() => ({ numeros: [] }));
+async function carregarRaros() {
+  const { data, error } = await sb().from("raros_numeros").select("item_id,numero,user_id").limit(5000);
+  if (error) return;
+  useRaros.setState({
+    numeros: (data || []).flatMap((r) =>
+      typeof r.item_id === "string" && typeof r.numero === "number" ? [{ item: r.item_id, numero: r.numero, uid: typeof r.user_id === "string" ? r.user_id : null }] : [],
+    ),
+  });
 }
 
 let ligado = false;
@@ -52,6 +66,7 @@ export function iniciarLoja() {
   ligado = true;
   void carregarLoja();
   /* qualquer troca na mochila (de qualquer um): relê, juntando várias trocas seguidas numa leitura só */
+  aoMudarTabela("raros_numeros", () => void carregarRaros());
   aoMudarTabela("mochila", () => {
     clearTimeout(timer);
     timer = setTimeout(() => void carregarMochila().catch(() => {}), 400);

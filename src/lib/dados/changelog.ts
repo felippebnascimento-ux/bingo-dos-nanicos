@@ -687,6 +687,13 @@ export const CHANGELOG: EntradaLog[] = [
       "Mudar a oferta desfaz os dois aceites; fechar a janela não cancela (a pílula embaixo reabre). Móveis colocados no quarto e o próprio quarto não entram",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Raros na Loja: itens numerados com estoque curto. A Estátua Dourada do Nanico já saiu (só 15 no mundo) e o Globo de Plasma sai no churrasco de sábado, às 20h (só 25)",
+      "Cada raro tem o seu número, que aparece na loja (seu nº 3), e o número vai junto numa troca. Esgotou, acabou",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
