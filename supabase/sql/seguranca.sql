@@ -1190,7 +1190,7 @@ grant execute on function public.rodizio_desistir(text) to authenticated;
 -- inteiro de novo falha nas linhas que já existem com o motivo novo)
 alter table public.extrato drop constraint if exists extrato_motivo_check;
 alter table public.extrato add constraint extrato_motivo_check
-  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco', 'missao', 'bolsa', 'duelo'));
+  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco', 'missao', 'bolsa', 'duelo', 'troca', 'mercado'));
 
 create table if not exists public.zoeiras (
   id   bigint generated always as identity primary key,
@@ -1276,7 +1276,7 @@ grant execute on function public.placar_zoeira(uuid) to authenticated;
 --     (semana_vez) e o pagamento acontece uma vez só (trofeus_pagar confere o extrato).
 alter table public.extrato drop constraint if exists extrato_motivo_check;
 alter table public.extrato add constraint extrato_motivo_check
-  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco', 'missao', 'bolsa', 'duelo'));
+  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco', 'missao', 'bolsa', 'duelo', 'troca', 'mercado'));
 
 create table if not exists public.trofeus_semana (
   semana    date not null,
@@ -3845,7 +3845,7 @@ end $$;
 --     (saldo de agora e o extrato do dia). O ref é a data, então chamar de novo no mesmo dia não paga.
 alter table public.extrato drop constraint if exists extrato_motivo_check;
 alter table public.extrato add constraint extrato_motivo_check
-  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco', 'missao', 'bolsa', 'duelo'));
+  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco', 'missao', 'bolsa', 'duelo', 'troca', 'mercado'));
 
 -- a bolsa de 03/11/2026 do Abreutz foi paga à mão como 'admin' antes desta seção; vira 'bolsa' para contar como do dia
 update public.extrato set motivo = 'bolsa', ref = '2026-11-03' where motivo = 'admin' and ref = 'bolsa:2026-11-03';
@@ -5716,7 +5716,7 @@ end $$;
 --   que não conta como cassino. As escolhas ficam em duelo_chutes, que ninguém lê: só saem quando a cobrança acaba.
 alter table public.extrato drop constraint if exists extrato_motivo_check;
 alter table public.extrato add constraint extrato_motivo_check
-  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco', 'missao', 'bolsa', 'duelo'));
+  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco', 'missao', 'bolsa', 'duelo', 'troca', 'mercado'));
 
 create table if not exists public.duelos (
   id              bigint generated always as identity primary key,
@@ -6341,6 +6341,196 @@ begin
 end $$;
 revoke all on function public.usar_movel(bigint, text) from public, anon;
 grant execute on function public.usar_movel(bigint, text) to authenticated;
+
+-- 54) troca entre nanicos, como no Habbo (03/11/2026, pedido do João) --------------------------------------------------
+--   Dois membros abrem uma troca, cada um põe itens da mochila e moedas no seu lado e os dois aceitam. Mexer na oferta
+--   desfaz os "aceito". Quando os dois aceitam, troca_aceitar confere tudo de novo (o que cada um tem livre, o máximo
+--   que o outro pode ter de cada item, o saldo) e troca tudo de uma vez: ou a troca inteira acontece, ou nada muda.
+--   Não dá para trocar o quarto (é o tamanho do quarto) nem um móvel que está colocado no quarto (guarde antes).
+--   Só os dois da troca leem a linha (o RLS vale no tempo real). Moedas no extrato com o motivo 'troca'.
+alter table public.extrato drop constraint if exists extrato_motivo_check;
+alter table public.extrato add constraint extrato_motivo_check
+  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco', 'missao', 'bolsa', 'duelo', 'troca', 'mercado'));
+
+create table if not exists public.trocas (
+  id            bigint generated always as identity primary key,
+  de            uuid not null references auth.users(id) on delete cascade,
+  para          uuid not null references auth.users(id) on delete cascade,
+  estado        text not null default 'aberta' check (estado in ('aberta', 'feita', 'cancelada')),
+  de_itens      jsonb not null default '{}'::jsonb check (octet_length(de_itens::text) <= 1000),
+  para_itens    jsonb not null default '{}'::jsonb check (octet_length(para_itens::text) <= 1000),
+  de_moedas     int not null default 0 check (de_moedas between 0 and 1000000),
+  para_moedas   int not null default 0 check (para_moedas between 0 and 1000000),
+  de_ok         boolean not null default false,
+  para_ok       boolean not null default false,
+  criada_em     timestamptz not null default now(),
+  atualizada_em timestamptz not null default now()
+);
+create index if not exists trocas_abertas on public.trocas (estado, atualizada_em);
+alter table public.trocas enable row level security;
+revoke all on public.trocas from public, anon, authenticated;
+grant select on public.trocas to authenticated;
+drop policy if exists trocas_ler on public.trocas;
+create policy trocas_ler on public.trocas for select to authenticated
+  using (public.eh_membro() and (de = auth.uid() or para = auth.uid()));
+do $$
+begin
+  begin alter publication supabase_realtime add table public.trocas; exception when duplicate_object then null; end;
+end $$;
+
+-- quanto de um item a pessoa tem livre para trocar: o da mochila menos o que está colocado no quarto; o quarto não troca
+create or replace function public.troca_livre(p_uid uuid, p_item text) returns int
+language sql stable security definer set search_path = public as $$
+  select case when (select espaco from public.loja_itens where id = p_item) = 'quarto' then 0
+    else greatest(0, coalesce((select qtd from public.mochila where user_id = p_uid and item_id = p_item), 0)
+      - (select count(*)::int from public.quarto_moveis where user_id = p_uid and item_id = p_item)) end;
+$$;
+revoke all on function public.troca_livre(uuid, text) from public, anon, authenticated;
+
+-- o máximo de um item que alguém pode ter (as mesmas regras do comprar): móvel 4, escudo 3, consumível 20, o resto 1
+create or replace function public.item_maximo(p_item text) returns int
+language sql stable security definer set search_path = public as $$
+  select case when public.eh_posicionavel(p_item) then 4
+    else case (select espaco from public.loja_itens where id = p_item) when 'escudo' then 3 when 'consumivel' then 20 else 1 end end;
+$$;
+revoke all on function public.item_maximo(text) from public, anon, authenticated;
+
+-- troca_abrir(nanico): uma troca aberta por pessoa; as paradas há 30 min caem sozinhas
+create or replace function public.troca_abrir(p_para uuid) returns bigint
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid  uuid := auth.uid();
+  v_para uuid;
+  v_id   bigint;
+begin
+  if v_uid is null or not public.eh_membro() then raise exception 'Só os membros trocam.' using errcode = 'P0001'; end if;
+  select user_id into v_para from public.friends where id = p_para and user_id is not null;
+  if v_para is null then raise exception 'Não achei esse nanico.' using errcode = 'P0001'; end if;
+  if v_para = v_uid then raise exception 'Trocar com você mesmo não vale.' using errcode = 'P0001'; end if;
+  perform public.limitar('troca', 10, interval '1 minute', 'Calma: muitas trocas seguidas.');
+  update public.trocas set estado = 'cancelada', atualizada_em = now()
+   where estado = 'aberta' and atualizada_em < now() - interval '30 minutes';
+  if exists (select 1 from public.trocas where estado = 'aberta' and v_uid in (de, para)) then
+    raise exception 'Você já tem uma troca aberta. Termine ou cancele antes.' using errcode = 'P0001';
+  end if;
+  if exists (select 1 from public.trocas where estado = 'aberta' and v_para in (de, para)) then
+    raise exception 'Esse nanico já está numa troca. Tente daqui a pouco.' using errcode = 'P0001';
+  end if;
+  insert into public.trocas (de, para) values (v_uid, v_para) returning id into v_id;
+  return v_id;
+end $$;
+revoke all on function public.troca_abrir(uuid) from public, anon;
+grant execute on function public.troca_abrir(uuid) to authenticated;
+
+-- troca_oferecer(troca, itens {item: qtd}, moedas): troca o meu lado inteiro e desfaz os dois "aceito"
+create or replace function public.troca_oferecer(p_id bigint, p_itens jsonb, p_moedas int) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+  t     public.trocas;
+  k     text;
+  v     jsonb;
+  v_sal int;
+begin
+  select * into t from public.trocas where id = p_id for update;
+  if not found or v_uid is null or v_uid not in (t.de, t.para) then raise exception 'Troca não encontrada.' using errcode = 'P0001'; end if;
+  if t.estado <> 'aberta' then raise exception 'Essa troca já acabou.' using errcode = 'P0001'; end if;
+  if p_itens is null or jsonb_typeof(p_itens) <> 'object' then raise exception 'Itens inválidos.' using errcode = 'P0001'; end if;
+  if (select count(*) from jsonb_object_keys(p_itens)) > 12 then raise exception 'No máximo 12 itens diferentes por lado.' using errcode = 'P0001'; end if;
+  for k, v in select * from jsonb_each(p_itens) loop
+    if jsonb_typeof(v) <> 'number' or (v::text)::numeric <> floor((v::text)::numeric) or (v::text)::int not between 1 and 20 then
+      raise exception 'Quantidade inválida.' using errcode = 'P0001';
+    end if;
+    if public.troca_livre(v_uid, k) < (v::text)::int then
+      raise exception 'Você não tem % livre para trocar (guarde do quarto antes, se estiver colocado).', coalesce((select nome from public.loja_itens where id = k), 'esse item') using errcode = 'P0001';
+    end if;
+  end loop;
+  select saldo into v_sal from public.carteiras where user_id = v_uid;
+  if p_moedas is null or p_moedas < 0 or p_moedas > coalesce(v_sal, 0) then raise exception 'Você não tem essas moedas.' using errcode = 'P0001'; end if;
+  perform public.limitar('troca_oferta', 60, interval '1 minute', 'Calma: muitas mudanças seguidas.');
+  if v_uid = t.de then
+    update public.trocas set de_itens = p_itens, de_moedas = p_moedas, de_ok = false, para_ok = false, atualizada_em = now() where id = p_id;
+  else
+    update public.trocas set para_itens = p_itens, para_moedas = p_moedas, de_ok = false, para_ok = false, atualizada_em = now() where id = p_id;
+  end if;
+end $$;
+revoke all on function public.troca_oferecer(bigint, jsonb, int) from public, anon;
+grant execute on function public.troca_oferecer(bigint, jsonb, int) to authenticated;
+
+-- passa os itens de um lado para o outro (interna; troca_aceitar já travou e conferiu)
+create or replace function public.troca_mover(p_de uuid, p_para uuid, p_itens jsonb) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  k text;
+  v jsonb;
+  n int;
+begin
+  for k, v in select * from jsonb_each(p_itens) loop
+    n := (v::text)::int;
+    if public.troca_livre(p_de, k) < n then
+      raise exception '% não tem mais % livre para trocar.', (select name from public.friends where user_id = p_de), coalesce((select nome from public.loja_itens where id = k), 'esse item') using errcode = 'P0001';
+    end if;
+    if coalesce((select qtd from public.mochila where user_id = p_para and item_id = k), 0) + n > public.item_maximo(k) then
+      raise exception '% já tem o máximo de %.', (select name from public.friends where user_id = p_para), coalesce((select nome from public.loja_itens where id = k), 'esse item') using errcode = 'P0001';
+    end if;
+    update public.mochila set qtd = qtd - n where user_id = p_de and item_id = k;
+    delete from public.mochila where user_id = p_de and item_id = k and qtd <= 0;
+    insert into public.mochila (user_id, item_id, qtd) values (p_para, k, n)
+      on conflict (user_id, item_id) do update set qtd = public.mochila.qtd + excluded.qtd;
+  end loop;
+end $$;
+revoke all on function public.troca_mover(uuid, uuid, jsonb) from public, anon, authenticated;
+
+-- troca_aceitar(troca): marca o meu "aceito"; com os dois aceitos, faz a troca inteira (ou nada)
+create or replace function public.troca_aceitar(p_id bigint) returns text
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+  t     public.trocas;
+begin
+  select * into t from public.trocas where id = p_id for update;
+  if not found or v_uid is null or v_uid not in (t.de, t.para) then raise exception 'Troca não encontrada.' using errcode = 'P0001'; end if;
+  if t.estado <> 'aberta' then raise exception 'Essa troca já acabou.' using errcode = 'P0001'; end if;
+  if v_uid = t.de then t.de_ok := true; else t.para_ok := true; end if;
+  if not (t.de_ok and t.para_ok) then
+    update public.trocas set de_ok = t.de_ok, para_ok = t.para_ok, atualizada_em = now() where id = p_id;
+    return 'esperando';
+  end if;
+  if t.de_itens = '{}'::jsonb and t.para_itens = '{}'::jsonb and t.de_moedas = 0 and t.para_moedas = 0 then
+    raise exception 'A troca está vazia.' using errcode = 'P0001';
+  end if;
+  -- trava as mochilas e as carteiras dos dois, sempre na mesma ordem (sem impasse com outra troca)
+  perform 1 from public.mochila where user_id in (t.de, t.para) order by user_id, item_id for update;
+  perform 1 from public.carteiras where user_id in (t.de, t.para) order by user_id for update;
+  if t.de_moedas > coalesce((select saldo from public.carteiras where user_id = t.de), 0)
+     or t.para_moedas > coalesce((select saldo from public.carteiras where user_id = t.para), 0) then
+    raise exception 'Alguém não tem mais as moedas da oferta.' using errcode = 'P0001';
+  end if;
+  perform public.troca_mover(t.de, t.para, t.de_itens);
+  perform public.troca_mover(t.para, t.de, t.para_itens);
+  if t.de_moedas > 0 then
+    perform public.creditar(t.de, -t.de_moedas, 'troca', p_id::text);
+    perform public.creditar(t.para, t.de_moedas, 'troca', p_id::text);
+  end if;
+  if t.para_moedas > 0 then
+    perform public.creditar(t.para, -t.para_moedas, 'troca', p_id::text);
+    perform public.creditar(t.de, t.para_moedas, 'troca', p_id::text);
+  end if;
+  update public.trocas set de_ok = true, para_ok = true, estado = 'feita', atualizada_em = now() where id = p_id;
+  return 'feita';
+end $$;
+revoke all on function public.troca_aceitar(bigint) from public, anon;
+grant execute on function public.troca_aceitar(bigint) to authenticated;
+
+-- troca_cancelar(troca): qualquer um dos dois desiste
+create or replace function public.troca_cancelar(p_id bigint) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  update public.trocas set estado = 'cancelada', atualizada_em = now()
+   where id = p_id and estado = 'aberta' and auth.uid() in (de, para);
+end $$;
+revoke all on function public.troca_cancelar(bigint) from public, anon;
+grant execute on function public.troca_cancelar(bigint) to authenticated;
 
 -- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo e as 2 tabelas e 3 funções do quarto próprio e as 2 tabelas e 3 funções do blackjack e as 4 tabelas e 6 funções do pôquer
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger

@@ -1,0 +1,28 @@
+/* Recursos no jeito do Habbo (fase de 03/11/2026): troca entre nanicos (troca/), e os próximos (mercado, navegador de
+   quartos, jogo de pintar o chão, grupos e efeitos) ficam aqui também. Só a paleta do site. */
+
+/* troca entre nanicos */
+.troca-gate{z-index:60}
+.troca{width:min(640px,calc(100vw - 24px));max-height:calc(100dvh - 32px);overflow:auto;display:grid;gap:12px;padding:16px;border-radius:var(--r-lg,18px);background:var(--surface);color:var(--ink);box-shadow:0 16px 48px var(--shadow)}
+.troca-topo{display:flex;align-items:center;gap:8px}
+.troca-topo b{flex:1;font:700 16px var(--display)}
+.troca-lados{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:560px){.troca-lados{grid-template-columns:1fr}}
+.troca-lado{display:grid;gap:8px;align-content:start;padding:12px;border-radius:14px;background:var(--surface-2);border:2px solid transparent}
+.troca-lado.ok{border-color:var(--accent)}
+.troca-lado h3{margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px;font:700 13px var(--display);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.troca-ok{padding:2px 8px;border-radius:99px;background:var(--accent);color:var(--accent-ink);font:700 11px var(--body);text-transform:none;letter-spacing:0}
+.troca-itens{list-style:none;margin:0;padding:0;display:grid;gap:4px;max-height:240px;overflow:auto}
+.troca-itens li{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;border-radius:8px;font:500 14px var(--body)}
+.troca-itens li.on{background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.troca-passo{display:flex;align-items:center;gap:6px}
+.troca-passo button{width:26px;height:26px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:700 15px var(--body);cursor:pointer}
+.troca-passo button:disabled{opacity:.35;cursor:default}
+.troca-passo b{min-width:34px;text-align:center;font:700 13px var(--display)}
+.troca-moedas{display:flex;align-items:center;justify-content:space-between;gap:8px;font:600 14px var(--body)}
+.troca-moedas input{width:110px;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:700 14px var(--body)}
+.troca-moedas-dele{margin:0;font:700 14px var(--body);color:var(--accent)}
+.troca-dica{margin:0}
+.troca-botoes{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.troca-pilula{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));translate:-50% 0;z-index:55;padding:10px 16px;border:0;border-radius:99px;background:var(--accent);color:var(--accent-ink);font:700 14px var(--body);box-shadow:0 8px 24px var(--shadow);cursor:pointer}
+@media (max-width:760px){.troca-pilula{bottom:calc(76px + env(safe-area-inset-bottom))}}

@@ -26,6 +26,7 @@ import type { Friend } from "@/lib/tipos";
 import { AtributosFicha } from "./AtributosFicha";
 import { NoSitio } from "./NoSitio";
 import { seguir } from "@/features/hall/seguir";
+import { abrirTroca } from "@/features/troca/trocas";
 import { carregarFicha, useFicha } from "./estado";
 import { csTexto, eloDaFicha, textoElo } from "./numeros";
 import { BrasaoElo, NivelGc } from "@/features/emblemas/brasao";
@@ -239,6 +240,18 @@ function FichaAberta({ f }: { f: Friend }) {
               }}
             >
               Ir até {f.name} (está no site agora)
+            </button>
+          )}
+          {!eu && f.user_id && (
+            <button
+              className="linkish"
+              type="button"
+              onClick={() => {
+                fechar();
+                void abrirTroca(f.id);
+              }}
+            >
+              Propor uma troca para {f.name}
             </button>
           )}
         </div>

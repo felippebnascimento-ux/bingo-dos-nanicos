@@ -680,6 +680,13 @@ export const CHANGELOG: EntradaLog[] = [
       "Pênalti x1: quando a partida acaba, a tela volta sozinha para os duelos em 8 segundos",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Troca entre nanicos: no cartão do perfil ou na ficha, toque em Propor troca. Cada um põe itens da mochila e moedas no seu lado e, quando os dois aceitam, a troca acontece de uma vez",
+      "Mudar a oferta desfaz os dois aceites; fechar a janela não cancela (a pílula embaixo reabre). Móveis colocados no quarto e o próprio quarto não entram",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

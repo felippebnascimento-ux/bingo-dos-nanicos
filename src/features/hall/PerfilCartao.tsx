@@ -15,6 +15,7 @@ import { friendOf, setApp, useApp } from "@/lib/store";
 import type { Boneco } from "./bonecos";
 import { abrirMenu } from "./zoeiraSala";
 import { seguir } from "./seguir";
+import { abrirTroca } from "@/features/troca/trocas";
 
 export function PerfilCartao({ b }: { b: Boneco }) {
   const fid = b.fid;
@@ -121,6 +122,18 @@ export function PerfilCartao({ b }: { b: Boneco }) {
           }}
         >
           Ir até {f.name}
+        </button>
+      )}
+      {!souEu && (
+        <button
+          type="button"
+          className="btn soft sm perfil-ficha"
+          onClick={() => {
+            abrirMenu(null);
+            void abrirTroca(fid);
+          }}
+        >
+          Propor troca
         </button>
       )}
     </aside>
