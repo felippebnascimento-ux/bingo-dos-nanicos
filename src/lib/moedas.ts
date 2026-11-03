@@ -66,10 +66,10 @@ export const MOTIVOS: Readonly<Record<string, string>> = {
   trofeu: "Troféu da semana",
   churrasco: "Espetinho do churrasco",
   missao: "Missão do dia",
-  bolsa: "Bolsa Cassino",
+  bolsa: "Bolsa Nanica",
 };
 
-/** Bolsa Cassino (seção 36 do SQL): abaixo disto, o banco dá 5.000 uma vez por dia. Só para saber quando pedir. */
+/** Bolsa Nanica (seção 36 do SQL; antes Bolsa Cassino): abaixo disto, o botão do K-FOFO pede e o banco dá 5.000 uma vez por dia. */
 export const BOLSA_ABAIXO_DE = 100;
 
 /* ---------- ranking ---------- */

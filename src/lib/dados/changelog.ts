@@ -410,7 +410,7 @@ export const CHANGELOG: EntradaLog[] = [
   {
     data: "03/11/2026",
     itens: [
-      "Bolsa Cassino: quem ficar com menos de 100 moedas ganha 5.000, uma vez por dia, e volta para o jogo",
+      { t: "Bolsa Cassino: quem ficar com menos de 100 moedas ganha 5.000, uma vez por dia, e volta para o jogo", off: "trocado pelo botão da Bolsa Nanica no K-FOFO na v1.118" },
     ],
   },
   {
@@ -543,6 +543,10 @@ export const CHANGELOG: EntradaLog[] = [
       "Missões do dia pagam bem mais (de 100 a 200 cada) e fazer as 3 dá +250",
       "Tempo no site rende 5 moedas a cada 6 minutos (no happy hour, 5 a cada 3)",
     ],
+  },
+  {
+    data: "03/11/2026",
+    itens: ["Bolsa Nanica: com menos de 100 moedas, aparece no K-FOFO o botão para pedir 5.000 moedas, uma vez por dia"],
   },
 ];
 
