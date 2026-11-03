@@ -63,6 +63,8 @@ export type AppState = {
   /** meu piso no hall (vai na presença; só muda quando o boneco chega) */
   /** piso do meu boneco e, se estiver sentado, o assento (`s`) */
   hallPos: { i: number; j: number; s?: string } | null;
+  /** quarto próprio onde o meu boneco está (friend id do dono; null = K-FOFO). Vai na presença; nunca fica salvo */
+  meuQuarto: string | null;
 
   /* tela */
   aba: Aba;
@@ -118,6 +120,7 @@ export const useApp = create<AppState>()(() => ({
   vozSurdo: false,
   canalTexto: "geral",
   hallPos: null,
+  meuQuarto: null,
   aba: "hall",
   sideMin: false,
   membrosMin: false,

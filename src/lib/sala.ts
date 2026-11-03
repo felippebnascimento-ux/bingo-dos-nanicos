@@ -15,6 +15,7 @@ import { getApp, MY_KEY, setApp, useApp } from "./store";
 import type { Presence } from "./tipos";
 import { bingoLines } from "./bingo";
 import { posHall } from "@/features/hall/hall";
+import { useQuartos } from "@/features/quarto/quartoDados";
 
 /** Eventos de broadcast. Evento novo: acrescente aqui e escreva o handler com as conferências. */
 export const EVENTOS = ["rtc", "reacao", "risco", "hall"] as const;
@@ -136,6 +137,7 @@ export function cleanPresence(key: unknown, d: unknown): Presence | null {
   const o = d as Record<string, unknown>;
   const name = typeof o.name === "string" ? o.name.trim().slice(0, 40) : "";
   if (!name) return null;
+  const quarto = quartoValido(o.quarto);
   return {
     key,
     name,
@@ -143,7 +145,8 @@ export function cleanPresence(key: unknown, d: unknown): Presence | null {
     lines: Math.max(0, Math.min(12, Math.floor(Number(o.lines)) || 0)),
     live: sidValido(o.live) ? o.live : null,
     cam: sidValido(o.cam) ? o.cam : null,
-    pos: posHall(o.pos),
+    pos: quarto ? posNoQuarto(o.pos, quarto) : posHall(o.pos),
+    quarto,
     sala: typeof o.sala === "string" && getApp().salas.some((x) => x.id === o.sala) ? o.sala : null,
     voz: sidValido(o.voz) ? o.voz : null,
     mudo: o.mudo === true,
@@ -151,6 +154,28 @@ export function cleanPresence(key: unknown, d: unknown): Presence | null {
     texto: canalValido(o.texto) ? o.texto : null,
     at: Number(o.at) || 0,
   };
+}
+
+/**
+ * Quarto próprio da presença (fase 35): o friend id de um nanico que existe e tem quarto (antes de os quartos
+ * carregarem, basta o nanico existir). Os móveis e os assentos o boneco confere depois, com a grade do quarto.
+ */
+function quartoValido(v: unknown): string | null {
+  if (typeof v !== "string" || v.length > 64) return null;
+  const uid = getApp().friends.find((f) => f.id === v)?.user_id;
+  if (!uid) return null;
+  const q = useQuartos.getState();
+  return !q.carregou || q.quartos[uid] ? v : null;
+}
+
+/** Piso dentro do quarto (inteiros de 0 ao lado do quarto); o assento vai como veio, conferido pelo boneco. */
+function posNoQuarto(v: unknown, dono: string): { i: number; j: number; s?: string } | null {
+  if (!v || typeof v !== "object") return null;
+  const { i, j, s } = v as Record<string, unknown>;
+  const uid = getApp().friends.find((f) => f.id === dono)?.user_id;
+  const tam = (uid && useQuartos.getState().quartos[uid]) || 12;
+  if (!Number.isInteger(i) || !Number.isInteger(j) || (i as number) < 0 || (j as number) < 0 || (i as number) >= tam || (j as number) >= tam) return null;
+  return typeof s === "string" && s.length <= 24 ? { i: i as number, j: j as number, s } : { i: i as number, j: j as number };
 }
 
 /** Canal de texto que existe: "geral" ou o id de uma sala. */
@@ -193,6 +218,7 @@ export function trackMe() {
       live: s.myLiveSid,
       cam: s.myCamSid,
       pos: s.hallPos,
+      quarto: s.meuQuarto,
       sala: s.minhaSala,
       voz: s.myVozSid,
       mudo: s.vozMudo,
@@ -225,6 +251,7 @@ export function joinRoom(onTabela: (tabela: string) => void) {
       s.myCamSid !== p.myCamSid ||
       s.myName !== p.myName ||
       s.hallPos !== p.hallPos ||
+      s.meuQuarto !== p.meuQuarto ||
       s.minhaSala !== p.minhaSala ||
       s.myVozSid !== p.myVozSid ||
       s.vozMudo !== p.vozMudo ||

@@ -498,6 +498,13 @@ export const CHANGELOG: EntradaLog[] = [
       "Doze móveis novos (cama, sofá, setup gamer, TV, estante, frigobar e mais); trocar por um quarto maior custa só a diferença e os móveis continuam no lugar",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Quarto próprio: teletransporte para o seu quarto e visite o quarto dos outros nanicos",
+      "No quarto dá para andar e sentar na cama, no sofá, na poltrona e no puff; a lista \"Na sala agora\" e os membros mostram quem está em qual quarto",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

@@ -204,9 +204,10 @@ const PASSOS: readonly Piso[] = [
   { i: 0, j: -1 },
 ];
 
-/** Menor caminho de `de` até `para` (os dois inclusos), desviando dos móveis. `[]` se não dá para chegar. */
-export function caminho(de: Piso, para: Piso): Piso[] {
-  if (!livre(para.i, para.j)) return [];
+/** Menor caminho de `de` até `para` (os dois inclusos), desviando dos móveis. `[]` se não dá para chegar.
+    `ok` é a grade (a do hall; no quarto próprio, a do quarto). */
+export function caminho(de: Piso, para: Piso, ok: (i: number, j: number) => boolean = livre): Piso[] {
+  if (!ok(para.i, para.j)) return [];
   if (de.i === para.i && de.j === para.j) return [{ ...de }];
   const veio = new Map<string, string | null>([[chave(de.i, de.j), null]]);
   const fila: Piso[] = [de];
@@ -215,7 +216,7 @@ export function caminho(de: Piso, para: Piso): Piso[] {
     for (const d of PASSOS) {
       const b = { i: a.i + d.i, j: a.j + d.j };
       const k = chave(b.i, b.j);
-      if (veio.has(k) || !livre(b.i, b.j)) continue;
+      if (veio.has(k) || !ok(b.i, b.j)) continue;
       veio.set(k, chave(a.i, a.j));
       if (b.i === para.i && b.j === para.j) {
         const out: Piso[] = [];

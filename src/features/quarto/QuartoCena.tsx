@@ -5,7 +5,7 @@
  * Serve para a ficha, para a tela de arrumar e, na fase 35, para as visitas. Com `aoTocarPiso`, cada piso vira um alvo.
  */
 import { memo, useMemo } from "react";
-import { ANCORA, CEL_H, CEL_W } from "@/features/hall/hall";
+import { ANCORA, caixaDoBoneco, CEL_H, CEL_W, ordemZ, quadroSprite, type Caixa, type Sentido } from "@/features/hall/hall";
 import { desenharMovel, Poligonos, type Poly, type Pt } from "./Moveis";
 import { camadasQuarto, type Retangulo } from "./quarto";
 
@@ -13,6 +13,18 @@ const TW = 46, TH = 23, ZS = 1.3, WH = 150, MARGEM = 24;
 
 export type MovelCena = { id: number; desenho: string; ret: Retangulo; giro: boolean };
 export type Equip = { parede?: string; luz?: string; poster?: string };
+/** Um boneco andando no quarto (visitas, fase 35): a posição em pisos e, sentado, o centro do assento e o móvel. */
+export type BonecoCena = {
+  key: string;
+  nome: string;
+  folha: string | null;
+  i: number;
+  j: number;
+  sentido: Sentido;
+  quadro: number;
+  sentado: { i: number; j: number; movel: number } | null;
+  eu: boolean;
+};
 
 /** A projeção de um quarto de lado n: a origem fica no canto de cima, com folga para as paredes. */
 export function projecao(n: number) {
@@ -75,6 +87,8 @@ export const QuartoCena = memo(function QuartoCena({
   aoTocarPiso,
   aoPassarPiso,
   aoTocarMovel,
+  bonecos,
+  brilhos,
 }: {
   tamanho: number;
   equip: Equip;
@@ -86,11 +100,29 @@ export const QuartoCena = memo(function QuartoCena({
   aoTocarPiso?: (i: number, j: number) => void;
   aoPassarPiso?: (i: number, j: number) => void;
   aoTocarMovel?: (id: number) => void;
+  bonecos?: readonly BonecoCena[];
+  brilhos?: readonly { id: string; i: number; j: number }[];
 }) {
   const n = tamanho;
   const { p, largura, altura } = useMemo(() => projecao(n), [n]);
   const fundo = useMemo(() => paredes(n, p, equip), [n, p, equip]);
   const ordem = useMemo(() => camadasQuarto(moveis.map((m) => m.ret)), [moveis]);
+  /* com bonecos: quem está em pé entra na ordem com os móveis; quem está sentado vem logo depois do móvel dele */
+  const camadas = useMemo(() => {
+    if (!bonecos?.length) return ordem.map((k) => ({ movel: k }));
+    const empe = bonecos.flatMap((b, k) => (b.sentado ? [] : [k]));
+    const caixas: Caixa[] = [...moveis.map((m) => ({ i0: m.ret.i, i1: m.ret.i + m.ret.w, j0: m.ret.j, j1: m.ret.j + m.ret.d })), ...empe.map((k) => caixaDoBoneco(bonecos[k].i, bonecos[k].j))];
+    const out: ({ movel: number } | { boneco: number })[] = [];
+    for (const k of ordemZ(caixas)) {
+      if (k < moveis.length) {
+        out.push({ movel: k });
+        bonecos.forEach((b, x) => b.sentado?.movel === moveis[k].id && out.push({ boneco: x }));
+      } else out.push({ boneco: empe[k - moveis.length] });
+    }
+    /* sentado num móvel que acabou de sair: aparece por cima de tudo até levantar */
+    bonecos.forEach((b, x) => b.sentado && !moveis.some((m) => m.id === b.sentado!.movel) && out.push({ boneco: x }));
+    return out;
+  }, [ordem, moveis, bonecos]);
   const escala = 1.6;
   const [px, py] = p(0.5, 0.5);
   return (
@@ -123,8 +155,9 @@ export const QuartoCena = memo(function QuartoCena({
             .join(" ")}
         />
       )}
-      {ordem.map((k) => {
-        const m = moveis[k];
+      {camadas.map((c) => {
+        if ("boneco" in c) return <BonecoNoQuarto key={"b:" + bonecos![c.boneco].key} b={bonecos![c.boneco]} p={p} />;
+        const m = moveis[c.movel];
         return (
           <g
             key={m.id}
@@ -135,6 +168,10 @@ export const QuartoCena = memo(function QuartoCena({
           </g>
         );
       })}
+      {brilhos?.map((b) => {
+        const [x, y] = p(b.i + 0.5, b.j + 0.5);
+        return <circle key={b.id} className="quarto-brilho" cx={x} cy={y - 50} r={46} pointerEvents="none" />;
+      })}
       {boneco && (
         <svg x={px - ANCORA.x * escala} y={py - ANCORA.y * escala} width={CEL_W * escala} height={CEL_H * escala} viewBox={`0 0 ${CEL_W} ${CEL_H}`} pointerEvents="none">
           <image href={boneco} width={CEL_W * 5} height={CEL_H * 2} />
@@ -143,6 +180,33 @@ export const QuartoCena = memo(function QuartoCena({
     </svg>
   );
 });
+
+/** O boneco no quarto: o quadro da folha (espelhado nos lados esquerdos), ou um pino com as iniciais, e o nome. */
+const ESCALA_VISITA = 1.15;
+function BonecoNoQuarto({ b, p }: { b: BonecoCena; p: (i: number, j: number, z?: number) => Pt }) {
+  const [x, y0] = b.sentado ? p(b.sentado.i, b.sentado.j) : p(b.i + 0.5, b.j + 0.5);
+  /* sentado, o quadril desce para o estofado (como o .boneco.sentado do hall) */
+  const y = y0 + (b.sentado ? CEL_H * ESCALA_VISITA * 0.19 : 0);
+  const q = quadroSprite(b.sentido, b.sentado ? 0 : b.quadro);
+  const w = CEL_W * ESCALA_VISITA, h = CEL_H * ESCALA_VISITA;
+  const vx = -q.x, vy = -q.y;
+  return (
+    <g className={"quarto-boneco" + (b.eu ? " eu" : "")} pointerEvents="none">
+      {b.folha ? (
+        <svg x={x - ANCORA.x * ESCALA_VISITA} y={y - ANCORA.y * ESCALA_VISITA} width={w} height={h} viewBox={`${vx} ${vy} ${CEL_W} ${CEL_H}`}>
+          <g transform={q.espelha ? `translate(${2 * vx + CEL_W} 0) scale(-1 1)` : undefined}>
+            <image href={b.folha} width={CEL_W * 5} height={CEL_H * 2} />
+          </g>
+        </svg>
+      ) : (
+        <circle className="quarto-pino" cx={x} cy={y - 40} r={16} />
+      )}
+      <text className="quarto-boneco-nome" x={x} y={y - h * 0.92} textAnchor="middle">
+        {b.nome}
+      </text>
+    </g>
+  );
+}
 
 /** Prévia de um móvel sozinho (loja, mochila e guardados), recortada em volta do desenho. */
 export const MovelPrevia = memo(function MovelPrevia({ desenho, w, d }: { desenho: string; w: number; d: number }) {
