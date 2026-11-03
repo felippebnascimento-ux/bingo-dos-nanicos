@@ -22,8 +22,42 @@ type Mesa = { id: number; nome: string | null; aposta: number; estado: string; s
 
 /* estrelas e grade do céu, fixas */
 const ESTRELAS = Array.from({ length: 60 }, (_, i) => ({ x: (i * 137) % 1000, y: (i * 71) % 330, r: i % 5 ? 1 : 1.8, o: 0.2 + (i % 4) * 0.15 }));
-const W = 1000, H = 420, X0 = 40, Y0 = 390, X1 = 860, Y1 = 70;
+/* a curva termina antes da borda: o avião (cerca de 15% da largura) cabe inteiro na frente dela */
+const W = 1000, H = 420, X0 = 40, Y0 = 390, X1 = 800, Y1 = 95;
 const naTela = ([x, y]: [number, number]): [number, number] => [X0 + x * (X1 - X0), Y0 - y * (Y0 - Y1)];
+
+/** O avião de lado (nariz para a direita). `trem`: rodas para baixo, parado na pista. */
+function Aviao({ trem }: { trem?: boolean }) {
+  return (
+    <svg viewBox="0 0 170 80">
+      {trem && (
+        <g className="av-trem">
+          <path d="M84 50 L86 63 M32 47 L31 55" />
+          <circle cx="86" cy="66" r="4.5" />
+          <circle cx="31" cy="57" r="3" />
+        </g>
+      )}
+      <path d="M15 37 L7 11 Q7 8 10 8 L21 8 L42 33 Z" className="av-cauda" />
+      <path d="M10 41 L36 40 L31 48 L13 49 Q8 47 10 41 Z" className="av-cauda" />
+      <path d="M10 34 C40 28 96 24 126 26 C142 27 152 32 154 39 C152 46 142 50 126 51 C96 53 40 50 10 44 Q5 39 10 34 Z" className="av-corpo" />
+      <path d="M10 44 C40 50 96 53 126 51 C142 50 152 46 154 39 C150 49 136 54 118 54 C86 55 40 52 12 46 Z" className="av-barriga" />
+      <path d="M22 37 C60 33 104 32 146 35" className="av-faixa" />
+      <path d="M97 27 C101 15 119 13 129 26 Z" className="av-vidro" />
+      <path d="M103 24 C106 18 113 17 118 19" className="av-reflexo" />
+      <path d="M62 42 L104 42 Q107 43 104 46 L81 66 Q79 68 75 68 L61 68 Q57 68 58 64 Z" className="av-asa" />
+      <path d="M61 63 L80 63" className="av-faixa fina" />
+      <path d="M152 32 Q164 39 152 46 Z" className="av-nariz" />
+      <ellipse cx="160" cy="39" rx="4" ry="25" className="av-disco" />
+      <ellipse cx="160" cy="39" rx="2.2" ry="24" className="av-helice" />
+    </svg>
+  );
+}
+
+/* nuvens (uma faixa que se repete: a 2ª metade é a cópia da 1ª, para o laço não pular) */
+const NUVEM = "c0-9 8-16 18-16c5-9 18-12 26-5c9-6 23-2 25 9c9 1 15 6 15 12z";
+const NUVENS: [number, number, number][] = [
+  [40, 60, 1], [230, 120, 0.7], [380, 40, 0.9], [560, 150, 0.6], [700, 80, 1.1], [880, 130, 0.8],
+];
 
 /* ---------- sons ---------- */
 type Som = { ctx: AudioContext; motor: OscillatorNode; volume: GainNode };
@@ -104,8 +138,10 @@ export function Aviaozinho() {
 
   const multRef = useRef<HTMLSpanElement>(null);
   const linhaRef = useRef<SVGPathElement>(null);
+  const linhaRef2 = useRef<SVGPathElement>(null);
   const areaRef = useRef<SVGPathElement>(null);
   const aviaoRef = useRef<HTMLDivElement>(null);
+  const fumacaRef = useRef<HTMLDivElement>(null);
   const t0 = useRef(0);
   const fimRef = useRef<Fim | null>(null);
   const somRef = useRef<Som | null>(null);
@@ -160,6 +196,7 @@ export function Aviaozinho() {
       const pts = curva(Math.min(ms, Math.log(Math.max(1, m)) / 0.07 * 1000 + 1)).map(naTela);
       const d = "M" + pts.map((p) => p.map((v) => v.toFixed(1)).join(" ")).join(" L");
       linhaRef.current?.setAttribute("d", d);
+      linhaRef2.current?.setAttribute("d", d);
       const [ux, uy] = pts[pts.length - 1];
       areaRef.current?.setAttribute("d", `${d} L${ux.toFixed(1)} ${Y0} L${X0} ${Y0} Z`);
       const [px, py] = pts[pts.length - 2] ?? pts[0];
@@ -174,6 +211,10 @@ export function Aviaozinho() {
       setAgora(m);
       if (acabou) {
         parado = true;
+        if (fumacaRef.current) {
+          fumacaRef.current.style.left = `${(ux / W) * 100}%`;
+          fumacaRef.current.style.top = `${(uy / H) * 100}%`;
+        }
         setCaiu(true);
         if (!mudoRef.current) explosao(somRef.current);
         fecharSom(somRef.current);
@@ -249,6 +290,11 @@ export function Aviaozinho() {
     local.set("roleta-som", mudo ? "1" : "0");
   };
 
+  /* escala do lado esquerdo: acompanha o topo da curva (o mesmo de curva() em aviao.ts) */
+  const topo = Math.max(2, (voo ? agora : 1) * 1.25);
+  const marcas = [0.25, 0.5, 0.75, 1].map((k) => ({ k, m: 1 + (topo - 1) * k }));
+  const faixa = voo ? faixaVoo(agora) : "lo";
+
   const ultimos = historico.filter((a) => a.jogo === "aviao").map((a) => Number(a.resultado.valor)).filter((n) => n >= 1).slice(0, 12);
   const sacou = fim?.estado === "sacou";
   const podeSacar = voando && !fim;
@@ -265,11 +311,12 @@ export function Aviaozinho() {
         </ol>
       </div>
 
-      <div className={"av-ceu" + (caiu ? " caiu" : "")}>
+      <div className={"av-ceu" + (caiu ? " caiu" : "") + (voando ? " voando" : "")}>
+        <span className="av-lua" aria-hidden="true" />
         <svg className="av-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
           <defs>
             <linearGradient id="av-area" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" className="av-st-area" stopOpacity=".55" />
+              <stop offset="0" className="av-st-area" stopOpacity=".38" />
               <stop offset="1" className="av-st-area" stopOpacity="0" />
             </linearGradient>
             <linearGradient id="av-linha" x1="0" x2="1">
@@ -278,33 +325,59 @@ export function Aviaozinho() {
             </linearGradient>
           </defs>
           {ESTRELAS.map((s, i) => (
-            <circle key={i} cx={s.x} cy={s.y} r={s.r} className="av-estrela" opacity={s.o} />
+            <circle key={i} cx={s.x} cy={s.y} r={s.r} className={"av-estrela" + (i % 7 === 0 ? " pisca" : "")} opacity={s.o} />
           ))}
-          {Array.from({ length: 8 }, (_, i) => <line key={"v" + i} x1={X0 + i * 120} y1={0} x2={X0 + i * 120} y2={H} className="av-grade" />)}
-          {Array.from({ length: 7 }, (_, i) => <line key={"h" + i} x1={0} y1={30 + i * 60} x2={W} y2={30 + i * 60} className="av-grade" />)}
-          <path ref={areaRef} fill="url(#av-area)" d="" />
-          <path ref={linhaRef} fill="none" stroke="url(#av-linha)" strokeWidth={6} strokeLinecap="round" d="" />
+          {marcas.map(({ k }) => (
+            <line key={k} x1={X0} y1={Y0 - k * (Y0 - Y1)} x2={W} y2={Y0 - k * (Y0 - Y1)} className="av-grade" vectorEffect="non-scaling-stroke" />
+          ))}
         </svg>
-        {voo && (
-          <div ref={aviaoRef} className={"av-aviao" + (caiu ? " foi" : "")} aria-hidden="true">
-            <svg viewBox="-60 0 200 80">
-              <path d="M0 40 Q-30 40 -60 46" className="av-rastro" />
-              <ellipse cx="70" cy="42" rx="52" ry="13" className="av-corpo" />
-              <ellipse cx="70" cy="38" rx="48" ry="6" className="av-brilho" />
-              <path d="M22 40 L6 18 L18 18 L36 36Z" className="av-asa2" />
-              <path d="M60 44 L40 72 L56 72 L84 46Z" className="av-asa2" />
-              <path d="M58 36 L46 14 L58 14 L78 36Z" className="av-asa" />
-              <ellipse cx="96" cy="37" rx="10" ry="6" className="av-vidro" />
-              <rect x="120" y="38" width="6" height="8" rx="2" className="av-nariz" />
-              <ellipse cx="128" cy="42" rx="3" ry="18" className="av-helice" />
-            </svg>
+        {/* nuvens em duas camadas (a de trás mais lenta); só andam durante o voo */}
+        {[0, 1].map((c) => (
+          <svg key={c} className={"av-nuvens c" + c} viewBox="0 0 2000 220" preserveAspectRatio="none" aria-hidden="true">
+            {[0, 1000].map((dx) =>
+              NUVENS.map(([x, y, e], k) => <path key={dx + "-" + k} d={`M0 0${NUVEM}`} transform={`translate(${dx + x + c * 90} ${y + c * 30}) scale(${(c ? 1.6 : 2.4) * e})`} className="av-nuvem" />),
+            )}
+          </svg>
+        ))}
+        <svg className="av-chao" viewBox="0 0 1000 120" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0 70 L80 40 L150 62 L240 22 L330 58 L420 34 L520 66 L610 30 L700 60 L800 26 L900 56 L1000 38 L1000 120 L0 120 Z" className="av-serra" />
+          <path d="M0 96 Q250 78 500 90 T1000 86 L1000 120 L0 120 Z" className="av-morro" />
+          <rect x="0" y="108" width="1000" height="12" className="av-pista" />
+          {Array.from({ length: 14 }, (_, k) => (
+            <rect key={k} x={20 + k * 72} y="113" width="30" height="2" className="av-pista-faixa" />
+          ))}
+        </svg>
+        <svg className="av-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
+          <path ref={areaRef} fill="url(#av-area)" d="" />
+          <path ref={linhaRef} fill="none" className="av-linha-luz" vectorEffect="non-scaling-stroke" d="" />
+          <path ref={linhaRef2} fill="none" stroke="url(#av-linha)" className="av-linha" vectorEffect="non-scaling-stroke" d="" />
+        </svg>
+        <ol className="av-escala" aria-hidden="true">
+          {marcas.map(({ k, m }) => (
+            <li key={k} style={{ bottom: `${(k * (Y0 - Y1) + (H - Y0)) / H * 100}%` }}>
+              {m.toFixed(m < 10 ? 1 : 0).replace(".", ",")}×
+            </li>
+          ))}
+        </ol>
+        {(!voo || caiu) && (
+          <div className={"av-aviao parado" + (caiu ? " volta" : "")} aria-hidden="true">
+            <Aviao trem />
           </div>
         )}
-        <div className="av-mult" aria-live="polite">
+        {voo && (
+          <div ref={aviaoRef} className={"av-aviao" + (caiu ? " foi" : "")} aria-hidden="true">
+            <Aviao />
+          </div>
+        )}
+        <div ref={fumacaRef} className={"av-fumaca" + (caiu ? " on" : "")} aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </div>
+        <div className={"av-mult av-m-" + faixa} aria-live="polite">
           <span ref={multRef}>{voo ? textoMult(agora) : "1,00×"}</span>
           <small>{caiu ? `VOOU EM ${textoMult(fim?.crash ?? agora)}` : voando ? (sacou ? `VOCÊ SACOU EM ${textoMult(fim!.sacou!)}` : "VOANDO…") : "APOSTE E DECOLE"}</small>
         </div>
-        <span className="av-base">1,0×</span>
       </div>
 
       <div className="av-grid">

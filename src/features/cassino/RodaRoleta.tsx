@@ -115,18 +115,27 @@ function Roda({ id }: { id: string }) {
       <circle r={R_NUM_EXT} className="rr-fio" />
       <circle r={R_NUM_INT} className="rr-fio" />
       <circle r={R_CONE} fill={`url(#${id}-cone)`} className="rr-cone" />
-      <circle r={R_CONE * 0.55} fill={`url(#${id}-cone2)`} />
+      {/* anéis da madeira do cone */}
+      {[0.86, 0.72].map((k) => (
+        <circle key={k} r={R_CONE * k} className="rr-anel" />
+      ))}
+      <circle r={R_CONE * 0.55} fill={`url(#${id}-cone2)`} className="rr-cone-meio" />
       {[45, 135, 225, 315].map((a) => {
-        const [x, y] = polar(R_CONE * 0.62, a);
+        const [x, y] = polar(R_CONE * 0.64, a);
+        /* braço afinando do centro para a ponta */
+        const [l0x, l0y] = polar(5, a - 90), [l1x, l1y] = polar(5, a + 90);
+        const [p0x, p0y] = polar(1.6, a - 90), [p1x, p1y] = polar(1.6, a + 90);
         return (
           <g key={a}>
-            <line x1={0} y1={0} x2={x} y2={y} className="rr-braco" />
-            <circle cx={x} cy={y} r={6} fill={`url(#${id}-ouro)`} className="rr-ponta" />
+            <path d={`M${l0x} ${l0y}L${x + p0x} ${y + p0y}L${x + p1x} ${y + p1y}L${l1x} ${l1y}Z`} fill={`url(#${id}-ouro)`} className="rr-braco" />
+            <circle cx={x} cy={y} r={6.5} fill={`url(#${id}-ouro)`} className="rr-ponta" />
+            <circle cx={x - 2} cy={y - 2} r={2} className="rr-brilho" />
           </g>
         );
       })}
-      <circle r={13} fill={`url(#${id}-ouro)`} className="rr-ponta" />
-      <circle r={5} cx={-3} cy={-3} className="rr-brilho" />
+      <circle r={16} fill={`url(#${id}-ouro)`} className="rr-ponta" />
+      <circle r={9} fill={`url(#${id}-ouro)`} className="rr-ponta" />
+      <circle r={4} cx={-4} cy={-4} className="rr-brilho" />
     </>
   );
 }
@@ -139,6 +148,9 @@ export function RodaRoleta({ giro, onFim }: { giro: Giro | null; onFim?: (casa: 
   const rodaRef = useRef<SVGGElement>(null);
   const bolaRef = useRef<SVGGElement>(null);
   const brilhoRef = useRef<SVGPathElement>(null);
+  /* a moldura do vencedor fica acima do reflexo, num grupo que gira junto com a roda */
+  const molduraRef = useRef<SVGGElement>(null);
+  const molduraCasaRef = useRef<SVGPathElement>(null);
   const angulo = useRef(0);
   const fimRef = useRef(onFim);
   const [mudo, setMudo] = useState(() => local.get("roleta-som") === "0");
@@ -163,6 +175,7 @@ export function RodaRoleta({ giro, onFim }: { giro: Giro | null; onFim?: (casa: 
       const q = quadroDoGiro(p, t);
       angulo.current = q.roda;
       roda.setAttribute("transform", `rotate(${q.roda})`);
+      molduraRef.current?.setAttribute("transform", `rotate(${q.roda})`);
       const [x, y] = polar(raioDaBola(q.raio), q.bola);
       bola.setAttribute("transform", `translate(${x} ${y})`);
       bola.style.opacity = "1";
@@ -177,6 +190,7 @@ export function RodaRoleta({ giro, onFim }: { giro: Giro | null; onFim?: (casa: 
       setTimeout(() => som?.parar(), 400);
       const a0 = anguloDa(giro.casa) - FATIA / 2;
       brilhoRef.current?.setAttribute("d", setor(R_CASA_INT, R_NUM_EXT, a0, a0 + FATIA));
+      molduraCasaRef.current?.setAttribute("d", setor(R_CASA_INT, R_NUM_EXT, a0, a0 + FATIA));
       setFinal(giro.casa);
       setRodando(false);
       fimRef.current?.(giro.casa, corDa(giro.casa));
@@ -251,27 +265,67 @@ export function RodaRoleta({ giro, onFim }: { giro: Giro | null; onFim?: (casa: 
               <stop offset="0" className="rr-st-bola0" />
               <stop offset="1" className="rr-st-bola1" />
             </radialGradient>
+            {/* fundo dos bolsos mais escuro perto do cone, como uma cavidade */}
+            <radialGradient id={`${id}-fundo`} gradientUnits="userSpaceOnUse" cx="0" cy="0" r={R_NUM_EXT}>
+              <stop offset={(R_CONE + 1) / R_NUM_EXT} className="rr-st-escuro" stopOpacity="0" />
+              <stop offset={(R_CONE + 1.5) / R_NUM_EXT} className="rr-st-escuro" stopOpacity=".5" />
+              <stop offset={R_NUM_INT / R_NUM_EXT} className="rr-st-escuro" stopOpacity="0" />
+              <stop offset={(R_NUM_EXT - 6) / R_NUM_EXT} className="rr-st-escuro" stopOpacity="0" />
+              <stop offset="1" className="rr-st-escuro" stopOpacity=".35" />
+            </radialGradient>
+            {/* luz de cima à esquerda: não gira com a roda */}
+            <radialGradient id={`${id}-luz`} cx="32%" cy="22%" r="75%">
+              <stop offset="0" className="rr-st-luz" stopOpacity=".32" />
+              <stop offset=".45" className="rr-st-luz" stopOpacity=".06" />
+              <stop offset="1" className="rr-st-luz" stopOpacity="0" />
+            </radialGradient>
+            <linearGradient id={`${id}-bisel`} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" className="rr-st-ouro0" />
+              <stop offset=".5" className="rr-st-aro1" />
+              <stop offset="1" className="rr-st-escuro" stopOpacity=".6" />
+            </linearGradient>
+            <filter id={`${id}-brilha`} x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3.5" />
+            </filter>
           </defs>
           {/* parados: aro, madeira, pista e os 8 losangos */}
           <circle r={R_ARO} fill={`url(#${id}-aro)`} className="rr-aro" />
+          <circle r={R_ARO - 3} fill="none" stroke={`url(#${id}-bisel)`} strokeWidth={3} />
           <circle r={R_MADEIRA} className="rr-madeira" />
+          <circle r={R_MADEIRA - 1} className="rr-madeira-fio" />
           <circle r={R_PISTA_EXT} fill={`url(#${id}-pista)`} />
+          {/* veios da madeira da pista */}
+          {[171, 166, 160, 155].map((r) => (
+            <circle key={r} r={r} className="rr-veio" />
+          ))}
           <circle r={R_PISTA_INT + 1} className="rr-pista-borda" />
           {Array.from({ length: 8 }, (_, k) => {
             const a = 22.5 + k * 45;
             const [x, y] = polar(R_PISTA_INT + 13, a);
-            return <path key={k} d="M0 -7L3 0 0 7-3 0Z" transform={`translate(${x} ${y}) rotate(${a})`} fill={`url(#${id}-ouro)`} className="rr-losango" />;
+            return (
+              <g key={k} transform={`translate(${x} ${y}) rotate(${a})`}>
+                <path d="M1.2 -9.5L4.4 1 1.2 10.5-2 1Z" className="rr-sombra" />
+                <path d="M0 -10L3.6 0 0 10-3.6 0Z" fill={`url(#${id}-ouro)`} className="rr-losango" />
+              </g>
+            );
           })}
           {/* a roda que gira */}
           {/* o ângulo é posto direto no elemento pela animação (o React não mexe nele) */}
           <g ref={rodaRef}>
             <Roda id={id} />
-            <path ref={brilhoRef} className={"rr-ganhou" + (final !== null ? " on" : "")} d="" />
+            <path ref={brilhoRef} className={"rr-ganhou-luz" + (final !== null ? " on" : "")} filter={`url(#${id}-brilha)`} d="" />
           </g>
+          {/* parados por cima da roda: a cavidade dos bolsos, a moldura do vencedor e o reflexo da luz */}
+          <circle r={R_NUM_EXT} fill={`url(#${id}-fundo)`} className="rr-sem-toque" />
+          <g ref={molduraRef}>
+            <path ref={molduraCasaRef} className={"rr-ganhou" + (final !== null ? " on" : "")} d="" />
+          </g>
+          <circle r={R_MADEIRA} fill={`url(#${id}-luz)`} className="rr-sem-toque" />
           {/* a bolinha (some até o primeiro giro) */}
           <g ref={bolaRef} style={{ opacity: 0 }}>
-            <circle r={7.5} cx={1.5} cy={2} className="rr-sombra" />
+            <circle r={7.5} cx={2} cy={2.5} className="rr-sombra" />
             <circle r={6.5} fill={`url(#${id}-bola)`} className="rr-bola" />
+            <circle r={2.2} cx={-2.2} cy={-2.4} className="rr-bola-luz" />
           </g>
         </svg>
         <button type="button" className="rr-mudo" aria-pressed={mudo} aria-label={mudo ? "Ligar o som da roleta" : "Desligar o som da roleta"} onClick={trocarSom}>

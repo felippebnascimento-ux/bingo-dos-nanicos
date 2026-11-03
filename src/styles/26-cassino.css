@@ -61,11 +61,12 @@
 .casa-mini.neutro{background:var(--olive)}
 .cassino-lista small{color:var(--muted);font-size:11px}
 
-/* roleta animada (RodaRoleta.tsx): ilustração com cores próprias --roleta-* (exceção como o hall); o vermelho e o
-   preto das casas são os da mesa (--live e --accent-ink) e o 0 é o verde (--olive) */
+/* roleta animada (RodaRoleta.tsx): ilustração com cores próprias --roleta-* (exceção como o hall), inclusive o vermelho,
+   o preto e o verde de cassino das casas (--roleta-vermelho/preto/verde, iguais nos dois temas e na mesa) */
 .rr{
   --roleta-aro0:#E7C88A; --roleta-aro1:#A9793A; --roleta-madeira:#6B4022; --roleta-pista0:#4A2A14; --roleta-pista1:#2E190B;
   --roleta-cone0:#B07A45; --roleta-cone1:#5E3518; --roleta-ouro0:#FFF1C2; --roleta-ouro1:#B8862C; --roleta-prata:#D9DDE0;
+  --roleta-vermelho:#C8102E; --roleta-preto:#17171A; --roleta-verde:#0B7A3B;
   --roleta-numero:#F6E7C1; --roleta-bola0:#FFFFFF; --roleta-bola1:#BFC3C7; --roleta-sombra:rgba(0,0,0,.45); --roleta-feltro:#2F6B3A; --roleta-branco:#FFFFFF; --roleta-escuro:#000000;
   display:grid;justify-items:center;gap:10px}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .rr{--roleta-aro0:#CDB078;--roleta-aro1:#8E6531;--roleta-feltro:#24552E}}
@@ -77,40 +78,52 @@
 .rr-st-cone0{stop-color:var(--roleta-cone0)}.rr-st-cone1{stop-color:var(--roleta-cone1)}
 .rr-st-ouro0{stop-color:var(--roleta-ouro0)}.rr-st-ouro1{stop-color:var(--roleta-ouro1)}
 .rr-st-bola0{stop-color:var(--roleta-bola0)}.rr-st-bola1{stop-color:var(--roleta-bola1)}
+.rr-st-escuro{stop-color:var(--roleta-escuro)}.rr-st-luz{stop-color:var(--roleta-branco)}
+.rr-sem-toque{pointer-events:none}
 .rr-aro{stroke:var(--roleta-aro1);stroke-width:2}
 .rr-madeira{fill:var(--roleta-madeira)}
+.rr-madeira-fio{fill:none;stroke:var(--roleta-escuro);stroke-opacity:.35;stroke-width:2}
+.rr-veio{fill:none;stroke:var(--roleta-aro0);stroke-opacity:.07;stroke-width:1}
 .rr-pista-borda{fill:none;stroke:var(--roleta-ouro1);stroke-width:1.5;opacity:.7}
-.rr-losango{stroke:var(--roleta-ouro1);stroke-width:.6}
-.rr-casa.rr-vermelho{fill:var(--live)}.rr-casa.rr-preto{fill:var(--accent-ink)}.rr-casa.rr-verde{fill:var(--olive)}
-.rr-bolso.rr-vermelho{fill:color-mix(in srgb,var(--live) 70%,var(--roleta-escuro))}.rr-bolso.rr-preto{fill:color-mix(in srgb,var(--accent-ink) 70%,var(--roleta-escuro))}.rr-bolso.rr-verde{fill:color-mix(in srgb,var(--olive) 70%,var(--roleta-escuro))}
-.rr-num{fill:var(--roleta-numero);font:800 11px var(--display);text-anchor:middle}
-.rr-divisa{stroke:var(--roleta-prata);stroke-width:1.2}
-.rr-fio{fill:none;stroke:var(--roleta-prata);stroke-width:1.4}
+.rr-losango{stroke:var(--roleta-ouro1);stroke-width:.7}
+.rr-casa.rr-vermelho{fill:var(--roleta-vermelho)}.rr-casa.rr-preto{fill:var(--roleta-preto)}.rr-casa.rr-verde{fill:var(--roleta-verde)}
+.rr-bolso.rr-vermelho{fill:color-mix(in srgb,var(--roleta-vermelho) 70%,var(--roleta-escuro))}.rr-bolso.rr-preto{fill:color-mix(in srgb,var(--roleta-preto) 70%,var(--roleta-escuro))}.rr-bolso.rr-verde{fill:color-mix(in srgb,var(--roleta-verde) 70%,var(--roleta-escuro))}
+.rr-num{fill:var(--roleta-numero);font:800 13px var(--display);text-anchor:middle;letter-spacing:-.02em;paint-order:stroke;stroke:var(--roleta-escuro);stroke-opacity:.35;stroke-width:1.6px}
+.rr-divisa{stroke:var(--roleta-prata);stroke-width:1.6;stroke-linecap:round}
+.rr-fio{fill:none;stroke:var(--roleta-prata);stroke-width:2}
 .rr-cone{stroke:var(--roleta-ouro1);stroke-width:1.5}
-.rr-braco{stroke:var(--roleta-ouro1);stroke-width:4;stroke-linecap:round}
+.rr-anel{fill:none;stroke:var(--roleta-escuro);stroke-opacity:.18;stroke-width:1.2}
+.rr-cone-meio{stroke:var(--roleta-ouro1);stroke-opacity:.5;stroke-width:1}
+.rr-braco{stroke:var(--roleta-ouro1);stroke-width:.8}
 .rr-ponta{stroke:var(--roleta-ouro1);stroke-width:.8}
 .rr-brilho{fill:var(--roleta-branco);opacity:.6}
 .rr-sombra{fill:var(--roleta-sombra)}
 .rr-bola{stroke:rgba(0,0,0,.25);stroke-width:.6}
-.rr-ganhou{fill:none;stroke:var(--roleta-ouro0);stroke-width:3;opacity:0}
+.rr-bola-luz{fill:var(--roleta-branco);opacity:.9}
+.rr-ganhou{fill:none;stroke:var(--roleta-ouro0);stroke-width:3;stroke-linejoin:round;opacity:0}
 .rr-ganhou.on{opacity:1;animation:rr-pulso 1s ease-in-out 3}
-@keyframes rr-pulso{50%{stroke-width:6;opacity:.6}}
-@media (prefers-reduced-motion:reduce){.rr-ganhou.on{animation:none}}
+/* o brilho dourado atrás da casa que saiu (borrado pelo filtro do SVG) */
+.rr-ganhou-luz{fill:var(--roleta-ouro0);opacity:0;transition:opacity .4s}
+.rr-ganhou-luz.on{opacity:.55;animation:rr-luz 1s ease-in-out 3}
+@keyframes rr-pulso{50%{stroke-width:5.5;opacity:.7}}
+@keyframes rr-luz{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.rr-ganhou.on,.rr-ganhou-luz.on{animation:none}}
 .rr-mudo{position:absolute;top:10px;right:10px;width:36px;height:36px;display:grid;place-items:center;border:0;border-radius:50%;background:rgba(0,0,0,.35);color:var(--roleta-branco);cursor:pointer}
 .rr-mudo:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .rr-resultado{margin:0;font:800 18px var(--display);letter-spacing:.02em;color:var(--muted)}
 .rr-resultado b{display:inline-grid;place-items:center;min-width:42px;height:42px;margin-right:6px;border-radius:50%;font-size:20px;color:var(--stamp-ink)}
-.rr-resultado.vermelho{color:var(--live)}.rr-resultado.vermelho b{background:var(--live)}
-.rr-resultado.preto{color:var(--ink)}.rr-resultado.preto b{background:var(--accent-ink)}
-.rr-resultado.verde{color:var(--olive)}.rr-resultado.verde b{background:var(--olive)}
+.rr-resultado.vermelho{color:var(--roleta-vermelho)}.rr-resultado.vermelho b{background:var(--roleta-vermelho)}
+.rr-resultado.preto{color:var(--ink)}.rr-resultado.preto b{background:var(--roleta-preto)}
+.rr-resultado.verde{color:var(--roleta-verde)}.rr-resultado.verde b{background:var(--roleta-verde)}
 .rr-ultimos{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
 .rr-ultimos li{width:28px;height:28px;display:grid;place-items:center;border-radius:50%;font:700 12px var(--display);color:var(--stamp-ink)}
-.rr-ultimos .rr-vermelho{background:var(--live)}.rr-ultimos .rr-preto{background:var(--accent-ink)}.rr-ultimos .rr-verde{background:var(--olive)}
+.rr-ultimos .rr-vermelho{background:var(--roleta-vermelho)}.rr-ultimos .rr-preto{background:var(--roleta-preto)}.rr-ultimos .rr-verde{background:var(--roleta-verde)}
 
 /* roleta de mesa (RoletaMesa.tsx): o feltro com a roda e o resultado, a mesa de fichas e os controles.
    Feltro, fichas e textos são da ilustração (--rm-* e --ficha-*, como o hall); vermelho/preto/verde das casas são --live, --accent-ink e --olive */
 .rm-caixa{grid-column:1 / -1;min-width:0}
 .rm{
+  --roleta-vermelho:#C8102E; --roleta-preto:#17171A; --roleta-verde:#0B7A3B;
   --ficha-5:#F2F2F2; --ficha-10:#D11F35; --ficha-25:#1F9D55; --ficha-50:#2563EB; --ficha-100:#151515;
   --rm-creme:#F3E7C9; --rm-feltro1:#13703F; --rm-feltro2:#0A4527; --rm-madeira:#6B4F25; --rm-ouro:#D8B46A; --rm-ouro2:#A9803A; --rm-verdeclaro:#86EFAC; --rm-vermelhoclaro:#FF8A98;
   position:relative;display:grid;gap:18px;padding:24px;border-radius:24px;color:var(--rm-creme);border:0;
@@ -127,9 +140,9 @@
 .rm-res b{display:block;font:800 30px/1.1 var(--display);letter-spacing:.02em;color:var(--stamp-ink)}
 .rm-res small{display:block;margin-top:4px;font:600 14px var(--body);color:var(--rm-creme);opacity:.85}
 .rm-bola{flex:none;width:84px;height:84px;border-radius:50%;display:grid;place-items:center;font:800 38px var(--display);color:var(--stamp-ink);box-shadow:0 0 0 4px var(--rm-ouro),0 0 32px color-mix(in srgb,var(--rm-ouro) 60%,transparent)}
-.rm-bola.rm-vermelho{background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--live) 60%,var(--stamp-ink)),var(--live) 55%,color-mix(in srgb,var(--live) 55%,var(--ink)))}
-.rm-bola.rm-preto{background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--accent-ink) 70%,var(--stamp-ink)),var(--accent-ink) 60%)}
-.rm-bola.rm-verde{background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--olive) 60%,var(--stamp-ink)),var(--olive) 60%)}
+.rm-bola.rm-vermelho{background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--roleta-vermelho) 60%,var(--stamp-ink)),var(--roleta-vermelho) 55%,color-mix(in srgb,var(--roleta-vermelho) 55%,var(--ink)))}
+.rm-bola.rm-preto{background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--roleta-preto) 70%,var(--stamp-ink)),var(--roleta-preto) 60%)}
+.rm-bola.rm-verde{background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--roleta-verde) 60%,var(--stamp-ink)),var(--roleta-verde) 60%)}
 .rm-ganho{display:grid;gap:3px;padding:12px 16px;border-radius:14px;border:1px solid color-mix(in srgb,var(--rm-creme) 30%,transparent);background:rgb(0 0 0 / .18)}
 .rm-ganho b{font:800 18px var(--body)}
 .rm-ganho small{font:600 13px var(--body);opacity:.85}
@@ -139,7 +152,7 @@
 .rm-ultimos{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
 .rm-ultimos li{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:800 12px var(--display);color:var(--stamp-ink);box-shadow:inset 0 -2px 0 rgb(0 0 0 / .3)}
 .rm-ultimos li.primeiro{width:36px;height:36px;box-shadow:0 0 0 2px var(--rm-ouro)}
-.rm-vermelho{background:var(--live)}.rm-preto{background:var(--accent-ink)}.rm-verde{background:var(--olive)}
+.rm-vermelho{background:var(--roleta-vermelho)}.rm-preto{background:var(--roleta-preto)}.rm-verde{background:var(--roleta-verde)}
 .rm-barra{display:flex;height:10px;border-radius:6px;overflow:hidden;background:rgb(0 0 0 / .25)}
 .rm-barra span{display:block;height:100%}
 .rm-barra-legenda{display:flex;justify-content:space-between;margin:0;font:700 12px var(--body);opacity:.85}
@@ -151,10 +164,10 @@
 .rm-lugar:hover:not(:disabled){background:rgb(255 255 255 / .08)}
 .rm-lugar:disabled{cursor:default}
 .rm-lugar:focus-visible{outline:3px solid var(--rm-ouro);outline-offset:-3px}
-.rm-zero{background:var(--olive);font-size:20px}
+.rm-zero{background:var(--roleta-verde);font-size:20px}
 .rm-num b{width:min(38px,80%);height:30px;border-radius:6px;display:grid;place-items:center}
 .rm-num.rm-vermelho,.rm-num.rm-preto{background:none}
-.rm-num.rm-vermelho b{background:var(--live)}.rm-num.rm-preto b{background:var(--accent-ink)}
+.rm-num.rm-vermelho b{background:var(--roleta-vermelho)}.rm-num.rm-preto b{background:var(--roleta-preto)}
 .rm-fora{font:800 12px var(--body);letter-spacing:.06em;color:var(--rm-creme)}
 .rm-losango{width:38px;height:22px;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
 .rm-lugar.ganhou{box-shadow:inset 0 0 0 3px var(--rm-ouro),inset 0 0 22px color-mix(in srgb,var(--rm-ouro) 55%,transparent);background:color-mix(in srgb,var(--rm-ouro) 12%,transparent)}
@@ -191,36 +204,73 @@
 /* aviãozinho (Aviaozinho.tsx): usa o feltro e as fichas da roleta (.rm); o céu e o avião são ilustração (--av-*) */
 .aviao{
   --av-ceu0:#0C1424; --av-ceu1:#13203A; --av-ceu2:#1C1C34; --av-roxo:#3B1D4A; --av-laranja:#FFB347; --av-vermelho:#FF3B3B; --av-area:#FF5A3C;
-  --av-corpo:#E8283D; --av-corpo2:#B5162A; --av-asa:#C81D32; --av-vidro:#9FD8FF; --av-helice:#DDDDDD; --av-cinza:#555555;
+  --av-corpo:#E8283D; --av-corpo2:#A8132A; --av-asa:#D0203A; --av-vidro:#9FD8FF; --av-helice:#DDDDDD; --av-cinza:#5B6170; --av-faixa:#FFF3E0; --av-pneu:#1E1E22;
+  --av-lua0:#FFF6DA; --av-lua1:#E9D9A6; --av-ouro:#FFD27A; --av-serra:#161A33; --av-morro:#0E1124; --av-pista:#0A0C18;
   --av-lo:#7CC4FF; --av-mid:#C79BFF; --av-hi:#FF7AB8; --av-pessego:#FFB38A}
 .av-mudo{position:absolute;top:16px;right:16px;z-index:3;width:38px;height:38px;display:grid;place-items:center;border:0;border-radius:50%;background:rgb(0 0 0 / .35);color:var(--rm-creme);cursor:pointer}
 .av-hist{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:7px}
 .av-hist li{padding:5px 10px;border-radius:20px;background:rgb(0 0 0 / .35);font:800 13px var(--body)}
 .av-hist .av-lo{color:var(--av-lo)}.av-hist .av-mid{color:var(--av-mid)}.av-hist .av-hi{color:var(--av-hi)}
 .av-vazio{opacity:.7;font-weight:600}
-.av-ceu{position:relative;height:clamp(240px,42vw,420px);border-radius:18px;overflow:hidden;
-  background:radial-gradient(ellipse at 70% 110%,var(--av-roxo) 0%,transparent 60%),linear-gradient(180deg,var(--av-ceu0) 0%,var(--av-ceu1) 60%,var(--av-ceu2) 100%);
+.av-ceu{position:relative;height:clamp(240px,42vw,420px);border-radius:18px;overflow:hidden;isolation:isolate;
+  background:radial-gradient(ellipse 70% 55% at 75% 100%,var(--av-roxo) 0%,transparent 70%),radial-gradient(ellipse 50% 40% at 15% 100%,color-mix(in srgb,var(--av-laranja) 18%,transparent),transparent 70%),linear-gradient(180deg,var(--av-ceu0) 0%,var(--av-ceu1) 55%,var(--av-ceu2) 100%);
   box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--rm-ouro) 35%,transparent),inset 0 0 60px rgb(0 0 0 / .6)}
 .av-ceu.caiu{animation:av-treme .45s ease-out}
 @keyframes av-treme{20%{transform:translate(-6px,3px)}40%{transform:translate(5px,-4px)}60%{transform:translate(-3px,2px)}80%{transform:translate(2px,-1px)}}
 .av-svg{position:absolute;inset:0;width:100%;height:100%}
 .av-estrela{fill:var(--stamp-ink)}
-.av-grade{stroke:rgb(255 255 255 / .06)}
+.av-estrela.pisca{animation:av-pisca 2.4s ease-in-out infinite}
+@keyframes av-pisca{50%{opacity:.08}}
+.av-grade{stroke:rgb(255 255 255 / .07);stroke-dasharray:4 6}
+.av-lua{position:absolute;right:9%;top:12%;width:clamp(26px,5vw,48px);aspect-ratio:1;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,var(--av-lua0),var(--av-lua1) 70%);box-shadow:0 0 40px 8px color-mix(in srgb,var(--av-lua0) 25%,transparent);opacity:.85}
+/* nuvens: faixa com o dobro da largura que anda meia volta e recomeça; param quando não está voando */
+.av-nuvens{position:absolute;left:0;width:200%;pointer-events:none;animation:av-nuvens 26s linear infinite;animation-play-state:paused}
+.av-nuvens.c0{top:4%;height:62%;opacity:.09}
+.av-nuvens.c1{top:20%;height:55%;opacity:.05;animation-duration:48s}
+.av-ceu.voando .av-nuvens{animation-play-state:running}
+@keyframes av-nuvens{to{transform:translateX(-50%)}}
+.av-nuvem{fill:var(--stamp-ink)}
+.av-chao{position:absolute;left:0;right:0;bottom:0;width:100%;height:24%;pointer-events:none}
+.av-serra{fill:var(--av-serra)}.av-morro{fill:var(--av-morro)}.av-pista{fill:var(--av-pista)}.av-pista-faixa{fill:var(--av-pessego);opacity:.5}
 .av-st-area{stop-color:var(--av-area)}.av-st-linha0{stop-color:var(--av-laranja)}.av-st-linha1{stop-color:var(--av-vermelho)}
-.av-aviao{position:absolute;left:4%;top:93%;width:clamp(70px,13%,140px);transform:translate(-30%,-62%) rotate(var(--ang,-10deg));transform-origin:30% 50%;filter:drop-shadow(0 6px 10px rgb(0 0 0 / .5));pointer-events:none}
+.av-linha{stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.av-linha-luz{stroke:var(--av-area);stroke-width:16;stroke-linecap:round;opacity:.28;filter:blur(6px)}
+.av-ceu.caiu .av-linha{stroke:var(--av-cinza)}.av-ceu.caiu .av-linha-luz{opacity:0}
+.av-escala{position:absolute;left:10px;top:0;bottom:0;margin:0;padding:0;list-style:none;pointer-events:none}
+.av-escala li{position:absolute;left:0;transform:translateY(50%);font:700 11px var(--body);color:var(--rm-creme);opacity:.45;font-variant-numeric:tabular-nums;white-space:nowrap}
+/* o avião: a cauda fica na ponta da curva */
+.av-aviao{position:absolute;z-index:2;left:4%;top:93%;width:clamp(84px,15%,150px);transform:translate(-4%,-58%) rotate(var(--ang,-10deg));transform-origin:4% 58%;filter:drop-shadow(0 8px 10px rgb(0 0 0 / .5));pointer-events:none}
 .av-aviao svg{display:block;width:100%;height:auto;overflow:visible}
-.av-aviao.foi{transition:left 1.2s ease-in,top 1.2s ease-in,opacity 1.2s;left:120% !important;top:-30% !important;opacity:0}
-.av-corpo{fill:var(--av-corpo)}.av-brilho{fill:var(--av-corpo);opacity:.6;filter:brightness(1.3)}
-.av-asa{fill:var(--av-asa)}.av-asa2{fill:var(--av-corpo2)}.av-vidro{fill:var(--av-vidro);opacity:.9}.av-nariz{fill:var(--av-cinza)}
-.av-helice{fill:var(--av-helice);opacity:.75;transform-origin:128px 42px;animation:av-helice .12s linear infinite}
-@keyframes av-helice{50%{transform:scaleY(.15)}}
-.av-rastro{fill:none;stroke:rgb(255 255 255 / .3);stroke-width:3}
-@media (prefers-reduced-motion:reduce){.av-helice,.av-ceu.caiu{animation:none}.av-aviao.foi{transition:none}}
-.av-mult{position:absolute;left:0;right:0;top:22%;text-align:center;pointer-events:none}
-.av-mult span{display:block;font:800 clamp(44px,9vw,96px)/1 var(--display);color:var(--stamp-ink);text-shadow:0 0 40px color-mix(in srgb,var(--av-area) 55%,transparent);font-variant-numeric:tabular-nums}
-.av-mult small{display:block;margin-top:10px;font:700 14px var(--body);letter-spacing:.2em;color:var(--av-pessego)}
-.av-ceu.caiu .av-mult span{color:var(--av-vermelho);text-shadow:0 0 30px color-mix(in srgb,var(--av-vermelho) 60%,transparent)}
-.av-base{position:absolute;left:18px;bottom:12px;font:700 12px var(--body);opacity:.5}
+.av-aviao.parado{top:auto;bottom:5%;transform:translate(-4%,0);--ang:0deg}
+.av-aviao.parado.volta{animation:av-volta .6s ease-out 1.6s both}
+@keyframes av-volta{from{opacity:0;transform:translate(-40%,0)}to{opacity:1;transform:translate(-4%,0)}}
+.av-aviao.foi{transition:left 1.1s cubic-bezier(.5,0,.9,.4),top 1.1s cubic-bezier(.5,0,.9,.4),opacity 1.1s,transform 1.1s;left:125% !important;top:-35% !important;opacity:0;--ang:-35deg}
+.av-corpo{fill:var(--av-corpo)}.av-barriga{fill:var(--av-corpo2)}.av-cauda{fill:var(--av-corpo2)}
+.av-asa{fill:var(--av-asa);stroke:var(--av-corpo2);stroke-width:1}
+.av-faixa{fill:none;stroke:var(--av-faixa);stroke-width:3;stroke-linecap:round;opacity:.9}.av-faixa.fina{stroke-width:2}
+.av-vidro{fill:var(--av-vidro)}.av-reflexo{fill:none;stroke:var(--stamp-ink);stroke-width:2;stroke-linecap:round;opacity:.7}
+.av-nariz{fill:var(--av-cinza)}
+.av-disco{fill:var(--av-helice);opacity:.14}
+.av-helice{fill:var(--av-helice);opacity:.8;transform-box:fill-box;transform-origin:center;animation:av-helice .1s linear infinite}
+.av-aviao.parado .av-helice{animation-duration:.5s}
+@keyframes av-helice{50%{transform:scaleY(.12)}}
+.av-trem path{stroke:var(--av-cinza);stroke-width:2.5;stroke-linecap:round}.av-trem circle{fill:var(--av-pneu);stroke:var(--av-cinza);stroke-width:1.5}
+/* a fumaça no ponto em que o avião foi embora */
+.av-fumaca{position:absolute;z-index:1;width:0;height:0;pointer-events:none}
+.av-fumaca i{position:absolute;left:-30px;top:-30px;width:60px;height:60px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--av-laranja) 80%,var(--stamp-ink)) 0%,var(--av-vermelho) 35%,color-mix(in srgb,var(--av-cinza) 60%,transparent) 60%,transparent 72%);opacity:0;transform:scale(.2)}
+.av-fumaca.on i{animation:av-fumaca 1.1s ease-out forwards}
+.av-fumaca.on i:nth-child(2){left:-10px;top:-46px;animation-delay:.08s}
+.av-fumaca.on i:nth-child(3){left:-48px;top:-14px;animation-delay:.16s}
+@keyframes av-fumaca{0%{opacity:.95;transform:scale(.2)}60%{opacity:.6}100%{opacity:0;transform:scale(1.8)}}
+@media (prefers-reduced-motion:reduce){.av-helice,.av-ceu.caiu,.av-nuvens,.av-estrela.pisca,.av-fumaca.on i,.av-aviao.parado.volta{animation:none}.av-aviao.foi{transition:none}}
+.av-mult{position:absolute;z-index:3;left:0;right:0;top:20%;text-align:center;pointer-events:none}
+.av-mult span{display:block;font:800 clamp(44px,9vw,96px)/1 var(--display);color:var(--stamp-ink);text-shadow:0 4px 0 rgb(0 0 0 / .25),0 0 40px color-mix(in srgb,var(--av-area) 55%,transparent);font-variant-numeric:tabular-nums;transition:color .3s}
+.av-mult.av-m-mid span{color:var(--av-ouro);text-shadow:0 4px 0 rgb(0 0 0 / .25),0 0 44px color-mix(in srgb,var(--av-ouro) 60%,transparent)}
+.av-mult.av-m-hi span{color:var(--av-hi);text-shadow:0 4px 0 rgb(0 0 0 / .25),0 0 50px color-mix(in srgb,var(--av-hi) 70%,transparent)}
+.av-mult small{display:inline-block;margin-top:12px;padding:5px 12px;border-radius:99px;background:rgb(0 0 0 / .3);font:700 13px var(--body);letter-spacing:.2em;color:var(--av-pessego)}
+.av-ceu.caiu .av-mult span{color:var(--av-vermelho);text-shadow:0 4px 0 rgb(0 0 0 / .25),0 0 30px color-mix(in srgb,var(--av-vermelho) 60%,transparent)}
+.av-ceu.caiu .av-mult small{color:var(--stamp-ink);background:color-mix(in srgb,var(--av-vermelho) 70%,transparent)}
 .av-grid{display:grid;gap:18px}
 @media (min-width:900px){.av-grid{grid-template-columns:1.1fr .9fr}}
 .av-painel{display:grid;gap:10px;align-content:start;padding:18px;border-radius:18px;background:rgb(0 0 0 / .25);border:1px solid color-mix(in srgb,var(--rm-creme) 15%,transparent)}

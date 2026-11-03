@@ -290,6 +290,13 @@ export const CHANGELOG: EntradaLog[] = [
     data: "02/11/2026",
     itens: ["Caça-níquel de cara nova: máquina com lâmpadas, alavanca, rolos que param um de cada vez, painel de LED, giro automático ×10 e modo rápido"],
   },
+  {
+    data: "02/11/2026",
+    itens: [
+      "Roleta mais bonita: vermelho de cassino de verdade, números maiores, cruzeta dourada brilhando e um brilho na casa que saiu",
+      "Aviãozinho de cara nova: avião desenhado de novo, esperando na pista, nuvens passando, lua, montanhas, escala do multiplicador e fumaça quando ele vai embora",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
