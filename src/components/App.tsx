@@ -20,6 +20,7 @@ import { TrofeusView } from "@/features/trofeus/TrofeusView";
 import { JogarView } from "@/features/jogar/JogarView";
 import { NanicadasView } from "@/features/nanicadas/NanicadasView";
 import { NanicosView } from "@/features/nanicos/NanicosView";
+import { AmigosView } from "@/features/amigos/AmigosView";
 import { PerfilView } from "@/features/perfil/PerfilView";
 import { LiveView } from "@/features/live/LiveView";
 import { TrucoView } from "@/features/truco/TrucoView";
@@ -59,6 +60,7 @@ export default function App() {
             <JogarView hidden={aba !== "jogar"} />
             <NanicadasView hidden={aba !== "frases"} />
             <NanicosView hidden={aba !== "nanicos"} />
+            <AmigosView hidden={aba !== "amigos"} />
             <TrucoView hidden={aba !== "truco"} />
             <CassinoView hidden={aba !== "cassino"} />
             <MidiasView hidden={aba !== "midias"} />

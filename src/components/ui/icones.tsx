@@ -153,6 +153,13 @@ export const IcNanicos = (p: P) => (
     <path d="M15.5 14.6c2.6-.3 4.6 1.1 5 4.4" />
   </Base>
 );
+export const IcAmigos = (p: P) => (
+  <Base {...p}>
+    <circle cx="10" cy="8" r="3.2" />
+    <path d="M4.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6" />
+    <path d="M18 8v6M15 11h6" />
+  </Base>
+);
 export const IcAoVivo = (p: P) => (
   <Base {...p}>
     <circle cx="12" cy="12" r="2.2" />
