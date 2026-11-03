@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { sb } from "@/lib/supabase";
 import type { Pagamentos, Rolo } from "./regras";
 
-export type Jogo = "roleta" | "aviao" | "limbo" | "dado" | "slot" | "penalti";
+export type Jogo = "roleta" | "aviao" | "limbo" | "dado" | "slot" | "penalti" | "blackjack";
 export type Estado = { hash: string; cliente: string; nonce: number };
 export type Aposta = { id: number; jogo: Jogo; aposta: number; escolha: Record<string, unknown>; resultado: Record<string, unknown>; pagou: number; hash: string; nonce: number; em: string };
 export type Revelada = { id: number; semente_hex: string; hash: string; semente_cliente: string; ultimo_nonce: number };

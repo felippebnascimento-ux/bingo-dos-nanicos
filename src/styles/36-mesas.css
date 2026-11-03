@@ -9,8 +9,9 @@
   --mesa-feltro0:#2F7350; --mesa-feltro1:#174230; --mesa-feltro2:#0F2E21;
   --mesa-ouro:#D2AE6A; --mesa-ouro-fio:rgb(210 174 106 / .45);
   --mesa-placa:rgb(14 12 10 / .78); --mesa-branco:#FFFFFF; --mesa-texto:#F7F2E7; --mesa-vermelho:#E0503C;
-  --ficha-vermelha:#C8342F; --ficha-azul:#2F6FB5; --ficha-verde:#2E8B4E; --ficha-preta:#1E1E1E; --ficha-roxa:#6F3FA8; --ficha-ouro:#C9A04E;
   position:relative;width:100%;aspect-ratio:2 / 1;container-type:inline-size;color:var(--mesa-texto)}
+/* as fichas valem também fora da mesa (a barra de apostar) */
+.mesa-cartas,.mesa-acoes,.bj-jogo{--ficha-vermelha:#C8342F; --ficha-azul:#2F6FB5; --ficha-verde:#2E8B4E; --ficha-preta:#1E1E1E; --ficha-roxa:#6F3FA8; --ficha-ouro:#C9A04E; --mesa-branco:#FFFFFF}
 .mesa-cartas.meia-lua{aspect-ratio:2 / 1.18}
 /* borda de couro acolchoada, com a costura */
 .mesa-couro{position:absolute;inset:7% 4% 11%;border-radius:50% / 50%;padding:2.2cqw;
@@ -186,3 +187,53 @@
 }
 /* no celular, a minha placa sairia em cima da minha mão (o meu tempo já aparece na barra) */
 @media (max-width:640px){.tr-lugar-mesa.sul:has(.mesa-lugar.eu){display:none}}
+
+/* ---------- blackjack ---------- */
+.bj-arco{position:absolute;inset:0;z-index:1;width:100%;height:100%;pointer-events:none}
+.bj-arco-1{font:800 24px var(--display);letter-spacing:.2em;fill:rgb(210 174 106 / .7)}
+.bj-arco-2{font:600 14px var(--body);letter-spacing:.16em;fill:rgb(255 255 255 / .45)}
+.bj-dealer{display:flex;align-items:center;gap:.8cqw}
+.bj-lugar{gap:.4cqw}
+.bj-maos{display:flex;gap:1.2cqw;align-items:flex-end}
+.bj-uma{display:grid;justify-items:center;gap:.4cqw;padding:.3cqw;border-radius:.8cqw;transition:box-shadow .2s}
+.bj-uma.vez{box-shadow:0 0 0 .2cqw var(--mesa-ouro),0 0 2cqw rgb(210 174 106 / .35)}
+.bj-mao > .cfr + .cfr{margin-left:-2.6cqw}
+.bj-mao .cfr{min-width:34px}
+.mesa-res.empate{background:rgb(255 255 255 / .85);color:var(--mesa-couro1)}
+.bj-livre{opacity:.6}
+.bj-fichas{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.bj-ficha{position:relative;display:grid;place-items:center;padding:0;border:0;border-radius:50%;background:none;cursor:pointer;transition:transform .12s}
+.bj-ficha b{position:absolute;font:800 11px var(--display);color:#fff;text-shadow:0 1px 2px rgb(0 0 0 / .7);pointer-events:none}
+.bj-ficha:hover{transform:translateY(-2px)}
+.bj-ficha.on{transform:translateY(-4px)}
+.bj-ficha.on .mesa-ficha{filter:drop-shadow(0 0 0 2px var(--accent)) drop-shadow(0 4px 6px rgb(0 0 0 / .5));outline:2px solid var(--accent);border-radius:50%}
+.bj-ficha .mesa-ficha{width:38px;height:38px}
+.bj-espera{padding:8px 4px}
+.bj-justo{margin:8px auto 0;max-width:640px;text-align:center;font-size:12px}
+.bj-justo .linkish{margin-left:6px}
+.bj-hash{font-family:ui-monospace,monospace}
+.bj-caixa{padding:14px}
+.mesa-bt:disabled{opacity:.45;cursor:default;filter:none}
+/* blackjack no celular: mesa mais alta e peças compactas para os 5 lugares caberem no arco */
+@media (max-width:640px){
+  .mesa-cartas.meia-lua{aspect-ratio:1 / 1.85}
+  .bj-mao .cfr,.bj-dealer .cfr{min-width:26px}
+  .bj-mao > .cfr + .cfr{margin-left:-15px}
+  .bj-lugar .mesa-lugar{width:auto}
+  .bj-lugar .mesa-placa{min-width:0;padding:2px 6px}
+  .bj-lugar .mesa-placa b{font-size:10.5px}
+  .bj-lugar .mesa-rosto{min-width:30px}
+  .bj-lugar .mesa-pilha b,.bj-lugar .mesa-soma,.bj-lugar .mesa-res{font-size:9px;padding:1px 4px}
+  .bj-lugar .mesa-pilha-fichas .mesa-ficha{min-width:14px;min-height:14px}
+  .bj-arco-1{font-size:30px}.bj-arco-2{display:none}
+  .bj-fichas{gap:4px}.bj-ficha .mesa-ficha{width:34px;height:34px}
+}
+/* no celular os 5 lugares ficam em fileiras (no arco não cabem): 1 e 5 em cima, 2 e 4 no meio, 3 embaixo */
+@media (max-width:640px){
+  .bj-arco{display:none}
+  .na-mesa.bj-l1{left:25% !important;top:38% !important}
+  .na-mesa.bj-l5{left:75% !important;top:38% !important}
+  .na-mesa.bj-l2{left:25% !important;top:62% !important}
+  .na-mesa.bj-l4{left:75% !important;top:62% !important}
+  .na-mesa.bj-l3{left:50% !important;top:83% !important}
+}

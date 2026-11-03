@@ -1,7 +1,7 @@
 "use client";
 /*
  * Aba Cassino: moedas fictícias (sem compra e sem saque): roleta e aviãozinho ao vivo (rodadas para todo
- * mundo junto), o pênalti e o caça-níquel (individuais, este com jackpot do grupo). O banco sorteia; aqui só escolhemos a aposta, animamos até o resultado que
+ * mundo junto), o blackjack ao vivo (todos contra o mesmo dealer), o pênalti e o caça-níquel (individuais, este com jackpot do grupo). O banco sorteia; aqui só escolhemos a aposta, animamos até o resultado que
  * o banco mandou e mostramos como conferir que nada foi trocado.
  */
 import { useEffect, useState } from "react";
@@ -11,6 +11,7 @@ import { sb } from "@/lib/supabase";
 import { toast } from "@/lib/toast";
 import { carregar, msgDe, useCassino, type Aposta, type Jogo, type Revelada } from "./estado";
 import { Aviaozinho } from "./Aviaozinho";
+import { Blackjack } from "./Blackjack";
 import { CacaNiquel } from "./CacaNiquel";
 import { Penalti } from "./Penalti";
 import { RoletaMesa } from "./RoletaMesa";
@@ -24,10 +25,11 @@ function apostaDaRoleta(total: number, e: Record<string, unknown>) {
 const JOGOS: { id: Jogo; nome: string }[] = [
   { id: "roleta", nome: "Roleta" },
   { id: "aviao", nome: "Aviãozinho" },
+  { id: "blackjack", nome: "Blackjack" },
   { id: "penalti", nome: "Pênalti" },
   { id: "slot", nome: "Caça-níquel" },
 ];
-const NOME_JOGO: Record<Jogo, string> = { roleta: "Roleta", aviao: "Aviãozinho", limbo: "Limbo", dado: "Maior ou menor", slot: "Caça-níquel", penalti: "Pênalti" };
+const NOME_JOGO: Record<Jogo, string> = { roleta: "Roleta", aviao: "Aviãozinho", limbo: "Limbo", dado: "Maior ou menor", slot: "Caça-níquel", penalti: "Pênalti", blackjack: "Blackjack" };
 
 /** Uma linha do histórico: o que apostou e o que saiu, em poucas palavras. */
 function descreve(a: Aposta): { aposta: string; saiu: string; cor?: string } {
@@ -40,6 +42,10 @@ function descreve(a: Aposta): { aposta: string; saiu: string; cor?: string } {
   if (a.jogo === "penalti") {
     const g = Number(e.gols) || 0;
     return { aposta: `${a.aposta} · ${g} ${g === 1 ? "gol" : "gols"}`, saiu: a.pagou ? `${Number(r.valor).toFixed(2).replace(".", ",")}×` : "defendeu" };
+  }
+  if (a.jogo === "blackjack") {
+    const p = Number(r.pontos), d = Number(r.dealer_pontos);
+    return { aposta: `${a.aposta}${e.dobrou ? " · dobrou" : ""}${Number(e.mao) === 2 ? " · 2ª mão" : ""}`, saiu: r.estado === "estourou" ? `estourou (${p})` : r.estado === "blackjack" ? "blackjack" : `${p} × ${d > 21 ? "estourou" : d}` };
   }
   return { aposta: `${a.aposta} no caça-níquel`, saiu: Array.isArray(r.simbolos) ? `${r.simbolos.length} rolos` : "" };
 }
@@ -83,7 +89,7 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
 
   /* quanto a casa leva no jogo escolhido */
   const casaLeva =
-    jogo === "roleta" ? vantagemDaCasa() : jogo === "slot" ? (rolos.length ? Math.round((1 - rtpSlot(rolos, pagamentos)) * 1000) / 10 : 8) : 3;
+    jogo === "roleta" ? vantagemDaCasa() : jogo === "blackjack" ? 0.5 : jogo === "slot" ? (rolos.length ? Math.round((1 - rtpSlot(rolos, pagamentos)) * 1000) / 10 : 8) : 3;
 
   return (
     <section id="view-cassino" className="inner" hidden={hidden}>
@@ -111,6 +117,11 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
             {jogo === "aviao" && (
               <div className="rm-caixa">
                 <Aviaozinho />
+              </div>
+            )}
+            {jogo === "blackjack" && (
+              <div className="rm-caixa bj-caixa">
+                <Blackjack ativa={!hidden} />
               </div>
             )}
             {jogo === "penalti" && (

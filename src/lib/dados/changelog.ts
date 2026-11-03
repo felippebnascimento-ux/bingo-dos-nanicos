@@ -517,6 +517,14 @@ export const CHANGELOG: EntradaLog[] = [
     data: "03/11/2026",
     itens: ["Truco repaginado: mesa oval de cassino com borda de couro e feltro, os nanicos sentados em volta com o anel do tempo, o grito em balão, as cartas jogadas viradas para quem jogou e a sua mão grande na beira da mesa"],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Cassino: blackjack ao vivo, todo mundo na mesma mesa contra o mesmo dealer; a primeira aposta abre a rodada (10 s para apostar, de 5 a 200)",
+      "Na sua vez: pedir, parar, dobrar ou dividir, com 15 s para decidir; o dealer pede até 16 e para em 17, e o blackjack paga 3 para 2",
+      "Dá para conferir cada rodada: o sapato é embaralhado por um segredo que aparece no fim",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
