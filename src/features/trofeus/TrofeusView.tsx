@@ -1,11 +1,12 @@
-"use client";
+﻿"use client";
 /*
- * Aba Troféus (abre pelo quadro na parede do Sítio; fica fora do menu): um cartão por troféu com o pódio
- * da semana escolhida, o "Mais rico" de agora e o hall da fama. Clicar num rosto abre a ficha.
+ * Aba Troféus, o Hall da Fama (abre pelo quadro na parede do K-FOFO; fica fora do menu): o LoL e o CS2 da semana
+ * escolhida (quem mais venceu, o melhor KDA e quem mais perdeu), o "Mais rico" de agora e a contagem de 1º lugares.
+ * Clicar num rosto abre a ficha.
  */
 import { useState, type ComponentType } from "react";
 import { Avatar } from "@/components/ui/Avatar";
-import { IcControle, IcMapa, IcMoeda, IcPergunta, IcPiano, IcPrato, IcVoltar } from "@/components/ui/icones";
+import { IcCoroa, IcMoeda, IcPrato, IcTaca, IcVoltar } from "@/components/ui/icones";
 import { useRanking } from "@/features/moedas/Ranking";
 import { friendOf, setApp, useApp } from "@/lib/store";
 import type { Friend } from "@/lib/tipos";
@@ -13,13 +14,20 @@ import { formatarValor, podio, rotuloSemana, TROFEUS, type TrofeuId } from "./tr
 import { useTrofeus } from "./trofeusDados";
 
 const ICONE: Record<TrofeuId, ComponentType<{ tam?: number }>> = {
-  feeder: IcPrato,
-  turista: IcMapa,
-  piano: IcPiano,
-  viciado: IcControle,
-  sumido: IcPergunta,
+  lol_vitorias: IcTaca,
+  lol_kda: IcCoroa,
+  lol_derrotas: IcPrato,
+  cs_vitorias: IcTaca,
+  cs_kda: IcCoroa,
+  cs_derrotas: IcPrato,
   rico: IcMoeda,
 };
+const JOGOS = [
+  { id: "lol", nome: "League of Legends", fonte: "pelo op.gg de cada um" },
+  { id: "cs", nome: "Counter-Strike 2", fonte: "pelo Leetify de cada um" },
+] as const;
+/* colunas do hall da fama: "LoL · Mais venceu" */
+const SEMANAIS = TROFEUS.filter((t) => t.jogo !== "site");
 const SEMANAS = 8;
 
 type Linha = { fid: string; valor: number };
@@ -73,7 +81,7 @@ function Cartao({ id, lista, friends, agora }: { id: TrofeuId; lista: Linha[]; f
                 <span className="trofeu-pos">{i + 2}º</span>
                 <Rosto f={f} size="xs" />
                 <span className="nome">{f?.name ?? "?"}</span>
-                <span className="valor">{formatarValor(id, l.valor).split(" ")[id === "piano" ? 1 : 0]}</span>
+                <span className="valor">{formatarValor(id, l.valor).split(" ")[id.endsWith("_kda") ? 1 : 0]}</span>
               </li>
             );
           })}
@@ -106,10 +114,10 @@ export function TrofeusView({ hidden }: { hidden: boolean }) {
         <IcVoltar tam={14} /> Voltar ao K-FOFO
       </button>
       <header className="hero">
-        <h1>Troféus da semana</h1>
-        <p>Calculados pelas partidas de LoL de cada um, toda segunda-feira. Clique num rosto para ver a ficha.</p>
+        <h1>Hall da Fama</h1>
+        <p>O LoL e o CS2 da semana, calculados toda segunda-feira. Clique num rosto para ver a ficha.</p>
       </header>
-      {calculando && <p className="hint">Calculando os troféus da semana passada… Isso pode levar alguns minutos.</p>}
+      {calculando && <p className="hint">Calculando o hall da fama da semana passada… Isso pode levar alguns minutos.</p>}
       {semanas.length > 1 && (
         <div className="seg trofeus-semanas" role="radiogroup" aria-label="Semana">
           {semanas.map((s) => (
@@ -120,26 +128,32 @@ export function TrofeusView({ hidden }: { hidden: boolean }) {
         </div>
       )}
       {semanas.length === 1 && semana && <p className="hint">Semana de {rotuloSemana(semana)}</p>}
+      {JOGOS.map((j) => (
+        <section key={j.id} className="trofeus-jogo" aria-labelledby={"jogo-" + j.id}>
+          <h2 id={"jogo-" + j.id} className="trofeus-jogo-titulo">
+            {j.nome} <small>{j.fonte}</small>
+          </h2>
+          <div className="trofeus-grade">
+            {TROFEUS.filter((t) => t.jogo === j.id).map((t) => (
+              <Cartao key={t.id} id={t.id} lista={daSemana(t.id)} friends={friends} />
+            ))}
+          </div>
+        </section>
+      ))}
       <div className="trofeus-grade">
-        {TROFEUS.map((t) =>
-          t.id === "rico" ? (
-            <Cartao key={t.id} id="rico" lista={ricos} friends={friends} agora />
-          ) : (
-            <Cartao key={t.id} id={t.id} lista={daSemana(t.id)} friends={friends} />
-          ),
-        )}
+        <Cartao id="rico" lista={ricos} friends={friends} agora />
       </div>
       {comFama.length > 0 && (
         <section className="block trofeus-fama" aria-labelledby="famaTitulo">
-          <h2 id="famaTitulo">Hall da fama</h2>
+          <h2 id="famaTitulo">1º lugares de todas as semanas</h2>
           <div className="trofeus-fama-tabela">
             <table>
               <thead>
                 <tr>
                   <th scope="col">Nanico</th>
-                  {TROFEUS.filter((t) => t.id !== "rico").map((t) => (
+                  {SEMANAIS.map((t) => (
                     <th key={t.id} scope="col">
-                      {t.nome.replace(" da semana", "").replace("Carregou o ", "")}
+                      {t.jogo === "lol" ? "LoL" : "CS2"} · {t.nome.replace("Mais ", "").replace("Melhor ", "")}
                     </th>
                   ))}
                 </tr>
@@ -151,7 +165,7 @@ export function TrofeusView({ hidden }: { hidden: boolean }) {
                       <Rosto f={f} size="xs" />
                       {f.name}
                     </th>
-                    {TROFEUS.filter((t) => t.id !== "rico").map((t) => {
+                    {SEMANAIS.map((t) => {
                       const n = fama[f.id]?.[t.id] ?? 0;
                       return (
                         <td key={t.id} className={n ? "tem" : undefined}>

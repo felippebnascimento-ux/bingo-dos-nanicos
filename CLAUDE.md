@@ -115,9 +115,11 @@ src/
     emblemas/          emblemas e respeitos: emblemas.ts (os 23 emblemas, metas de bronze/prata/ouro espelhadas do SQL,
                        lerEmblemas; puro e testado), emblemasDados.ts (emblemas_de com cache de 2 min, respeitos pelo tempo
                        real, darRespeito), Emblema.tsx (desenho SVG próprio; o "Elo no LoL" usa o brasão oficial e o "Nível da GC" o círculo do nível, de brasao.tsx: `BrasaoElo`, imagem do Community Dragon recortada por CSS, e `NivelGc`) e EmblemasFicha.tsx (bloco da ficha)
-    trofeus/           aba Troféus (aba `trofeus`, fora do menu; abre pelo quadro do Sítio): trofeus.ts (os 6
-                       troféus, pódio, números, enfeites; puro e testado), trofeusDados.ts (lê o pódio e pede o
-                       cálculo à riot-semana) e TrofeusView (cartões, seletor de semana, hall da fama)
+    trofeus/           aba Troféus, o Hall da Fama (aba `trofeus`, fora do menu; abre pelo quadro do Sítio): trofeus.ts
+                       (os 6 troféus da semana, LoL e CS2: mais venceu, melhor KDA e mais perdeu, e o mais rico; pódio,
+                       números, enfeites; puro e testado), trofeusDados.ts (lê o pódio e pede o cálculo à riot-semana) e
+                       TrofeusView (um bloco por jogo, seletor de semana, contagem de 1º lugares). Os troféus antigos
+                       (feeder, turista, piano, viciado, sumido) ficam só no banco, como histórico (seção 46)
     jogar/             JogarView (escalação, cartela, montar cartela), MiniCartela (painel do Ao vivo e
                        cartela flutuante), riot.ts (consulta a função riot-ao-vivo), partida.ts (lanes, puro),
                        RiotBox (com o painel "Apostar"), CellTag; apostas na partida: apostas.ts (pari-mútuo,
@@ -249,7 +251,7 @@ supabase/
   functions/truco-mesa/            Edge Function (Deno): o juiz do truco (embaralha, guarda as mãos, confere as
                                    jogadas, paga a vitória). engine.ts é cópia GERADA por `npm run sincronizar:truco`
                                    (scripts/sincronizar-truco.mjs); o teste engine-copia.test.ts falha se divergir
-  functions/riot-semana/           Edge Function (Deno): troféus da semana; calculo.ts é a regra pura (testada no
+  functions/riot-semana/           Edge Function (Deno): hall da fama da semana (LoL pela Riot, CS2 pelo Leetify); calculo.ts é a regra pura (testada no
                                    site, em src/features/trofeus/calculo.test.ts)
   sql/                 seguranca.sql, contas-e-ao-vivo.sql, supabase.sql e antigos/
 legacy/                site antigo (index.html) e o passo a passo antigo (LEIA-ME.md)
@@ -566,7 +568,7 @@ Mais de uma pessoa (e mais de uma IA) mexe no site. **Toda tarefa começa assim,
 - **Origens:** a função só aceita chamadas das origens listadas em `ORIGENS`, que incluem a Vercel e `localhost:8810/8811`.
 - **Chave da Riot:** fica em **Edge Functions → Secrets → `RIOT_API_KEY`**. Não copie para lugar nenhum.
 - **Chave da Steam:** fica em **Edge Functions → Secrets → `STEAM_API_KEY`** (tirada em steamcommunity.com/dev/apikey). Sem ela, a ficha mostra só os números do LoL.
-- **Edge Function `riot-semana`** (usa o segredo `RIOT_API_KEY`): o site chama ao entrar quando a semana anterior (segunda a domingo, Brasília) não está pronta. Só uma pessoa calcula por vez (`semana_vez`); cada chamada faz no máximo 40 consultas à Riot com pausa e guarda o progresso, e a próxima continua (o site tenta de novo a cada 2,5 min). No fim grava `trofeus_semana` e paga com `trofeus_pagar` (+50 Carregou o piano, +20 Viciado; o `ref` com a semana evita pagar duas vezes). `hall_da_fama()` conta os 1º lugares. O "Mais rico" não tem tabela: é o maior saldo de `carteiras`, ao vivo.
+- **Edge Function `riot-semana`** (usa o segredo `RIOT_API_KEY`): o site chama ao entrar quando a semana anterior (segunda a domingo, Brasília) não está pronta. Só uma pessoa calcula por vez (`semana_vez`); cada chamada faz no máximo 40 consultas à Riot e 60 ao Leetify, com pausa, guarda o progresso, e a próxima continua (o site tenta de novo a cada 2,5 min). O CS2 vem da API pública do Leetify (sem chave): as partidas da semana pelo perfil (`v3/profile`, só o link da Steam com o número) e os abates, mortes e assistências de cada uma (`v2/matches`), guardadas em `riot_semana_partidas` com o id `cs:<partida>`. No fim grava `trofeus_semana` (seção 46: `lol_vitorias`, `lol_derrotas`, `lol_kda` e os mesmos com `cs_`; KDA com pelo menos 3 partidas) e paga com `trofeus_pagar` (+100 ao 1º em vitórias e em KDA de cada jogo; o `ref` com a semana evita pagar duas vezes). Quem mais perdeu leva o chapéu de burro e o melhor KDA a coroa. `hall_da_fama()` conta os 1º lugares. O "Mais rico" não tem tabela: é o maior saldo de `carteiras`, ao vivo.
 - **Edge Function `truco-mesa`:** publicada pelo MCP do Supabase (ou `npx supabase functions deploy truco-mesa`) com os dois arquivos da pasta, `index.ts` e `engine.ts`. Antes de publicar, rode `npm run sincronizar:truco`. Usa só a chave do próprio Supabase.
 - **Edge Function `ficha-jogos`:** busca cada fonte de um nanico no máximo uma vez a cada 6 h (usa no máximo 25 chamadas à Riot por vez). O CS vem da API pública do Leetify (sem chave) pelo número da Steam do `friends.steam` (link `/profiles/<17 dígitos>`; link `/id/` só com a chave da Steam); a GC é o nível da partida mais recente na Gamers Club. As origens aceitas são as mesmas da `riot-ao-vivo`.
 
