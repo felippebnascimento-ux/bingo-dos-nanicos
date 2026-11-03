@@ -671,6 +671,15 @@ export const CHANGELOG: EntradaLog[] = [
       "Dado, Regulador e Quadro de recados já estão na Loja; a luminária que você já tem passa a ligar e desligar",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Pênalti e Pênalti x1 ficam numa aba só, a Pênalti: escolha \"Contra o goleiro\" ou \"x1 contra um nanico\"",
+      "O goleiro agora é o Gamer, com luvas: balança no gol esperando o chute, pula no canto e segura a bola na luva",
+      "A bola virou uma bola de futebol de verdade e faz uma curva no chute",
+      "Pênalti x1: quando a partida acaba, a tela volta sozinha para os duelos em 8 segundos",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

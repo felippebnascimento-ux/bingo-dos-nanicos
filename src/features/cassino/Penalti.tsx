@@ -13,8 +13,8 @@ import { sb } from "@/lib/supabase";
 import { toast } from "@/lib/toast";
 import { local, reduzMovimento } from "@/lib/util";
 import { carregar, msgDe } from "./estado";
-import { entre, membro, type Ponto } from "./goleiro";
-import { colunaDa, MAX_GOLS, multPenalti } from "./mesa";
+import { membro, type Ponto } from "./goleiro";
+import { MAX_GOLS, multPenalti } from "./mesa";
 import { FICHAS } from "./regras";
 import { FichaVisual } from "./RoletaMesa";
 
@@ -57,120 +57,96 @@ function torcida(gol: boolean) {
   }
 }
 
-/* ---------- o goleiro ---------- */
-/* metade esquerda (a direita é o espelho): ombro, cotovelo, punho, palma; quadril, joelho, tornozelo */
-const OMBRO: Ponto = [75, 62], COTOVELO: Ponto = [49, 90], PUNHO: Ponto = [41, 63], PALMA: Ponto = [38, 50];
-const QUADRIL: Ponto = [87, 152], JOELHO: Ponto = [73, 195], TORNOZELO: Ponto = [70, 234];
+/* ---------- o goleiro: o Gamer, com a mesma arte do app (nanicos/4-corpo.webp, 187 × 440) e luvas de goleiro ---------- */
+/* Os braços são recortes da própria arte, por cima do corpo, e giram no ombro (logo acima da barra da manga); o corpo
+   sem os braços fica embaixo. As medidas são da arte: não mexa sem refazer a conta do pulo em 26-cassino.css. */
+const ARTE = "/arte/nanicos/4-corpo.webp";
+/* o braço esquerdo, da manga até a ponta dos dedos (o direito é medido à parte: a arte não é simétrica) */
+const BRACO_E = "M0 222 L46 222 L45 234 L42 242 L41 262 L37 270 L34 278 L34 300 L36 318 L34 322 L34 346 L0 346 Z";
+const BRACO_D = "M187 222 L141 222 L142 234 L143 242 L145 262 L148 274 L150 282 L149 300 L150 318 L152 322 L154 334 L154 346 L187 346 Z";
+/* o corpo: tudo menos os braços abaixo da barra da manga (evenodd fura os dois) */
+const CORPO = "M-1 -1 H188 V441 H-1 Z M-1 232 L45 232 L42 242 L41 262 L37 270 L34 278 L34 300 L36 318 L34 322 L34 346 L-1 346 Z " +
+  "M188 232 L142 232 L143 242 L145 262 L148 274 L150 282 L149 300 L150 318 L152 322 L154 334 L154 346 L188 346 Z";
+/* a luva da mão esquerda (a direita é o espelho): punho, palma, quatro dedos e o dedão para dentro */
 const DEDOS: [Ponto, Ponto][] = [
-  [[31, 46], [27, 32]],
-  [[35, 42], [32.5, 27]],
-  [[39.5, 41], [39, 26]],
-  [[44, 43], [45.5, 30]],
+  [[6, 326], [4.5, 345]],
+  [[13.5, 328], [12.5, 350]],
+  [[21, 328], [21, 350]],
+  [[28.5, 326], [29.5, 345]],
 ];
 
-function LadoGoleiro() {
+function Luva() {
   return (
     <>
-      {/* perna: coxa, canela com o meião e a chuteira */}
-      <path d={membro(QUADRIL, JOELHO, 13, 9)} fill="url(#pn-pele-vol)" />
-      <path d={membro(JOELHO, TORNOZELO, 9, 6)} fill="url(#pn-pele-vol)" />
-      <path d={membro(entre(JOELHO, TORNOZELO, 0.18), TORNOZELO, 8.6, 6.3)} fill="url(#pn-meiao)" />
-      <path d="M57 231 Q69 226 81 233 L83 242 Q69 247 56 242 Z" className="pn-chuteira" />
-      <path d="M59 243.5 L81 243.5" className="pn-chuteira-sola" />
-      {/* braço de manga comprida: ombro, cotovelo e punho */}
-      <path d={membro(OMBRO, COTOVELO, 9.5, 7)} fill="url(#pn-manga)" />
-      <path d={membro(COTOVELO, PUNHO, 7, 5.6)} fill="url(#pn-manga)" />
-      <path d={membro(entre(COTOVELO, PUNHO, 0.72), PUNHO, 6.2, 5.8)} className="pn-punho" />
-      {/* luva aberta: dedão, palma e quatro dedos */}
-      <path d={membro([45, 54], [52, 46], 3.2, 2.6)} fill="url(#pn-luva)" className="pn-luva" />
-      <ellipse cx={PALMA[0]} cy={PALMA[1]} rx="9" ry="10.5" transform={`rotate(-12 ${PALMA[0]} ${PALMA[1]})`} fill="url(#pn-luva)" className="pn-luva" />
+      <path d={membro([33, 300], [41, 318], 5.5, 4.2)} fill="url(#pn-luva)" className="pn-luva" />
       {DEDOS.map(([a, b], k) => (
-        <path key={k} d={membro(a, b, 2.9, 2.3)} fill="url(#pn-luva)" className="pn-luva" />
+        <path key={k} d={membro(a, b, 4.4, 3.6)} fill="url(#pn-luva)" className="pn-luva" />
       ))}
-      <path d="M31 56 Q38 60.5 46 56" className="pn-luva-faixa" />
+      <rect x="0" y="290" width="37" height="42" rx="14" fill="url(#pn-luva)" className="pn-luva" />
+      <rect x="2" y="283" width="33" height="12" rx="4" className="pn-luva-punho" />
+      <path d="M5 312 Q18 318 32 312" className="pn-luva-faixa" />
     </>
   );
 }
 
-/** O goleiro de frente, na espera: pernas abertas e flexionadas, braços abertos, luvas para cima (o pulo é CSS). */
+/** O Gamer no gol, com luvas: a arte dele, os braços abertos na espera (o pulo e os braços são CSS). */
 export function Goleiro() {
   return (
-    <svg viewBox="0 0 200 250" className="pn-goleiro-svg">
+    <svg viewBox="-95 0 377 440" className="pn-goleiro-svg">
       <defs>
-        <linearGradient id="pn-camisa" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" className="pn-st-camisa0" />
-          <stop offset=".55" className="pn-st-camisa1" />
-          <stop offset="1" className="pn-st-camisa2" />
-        </linearGradient>
-        <linearGradient id="pn-manga" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" className="pn-st-camisa0" />
-          <stop offset=".6" className="pn-st-camisa1" />
-          <stop offset="1" className="pn-st-camisa2" />
-        </linearGradient>
-        <linearGradient id="pn-pele-vol" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" className="pn-st-pele0" />
-          <stop offset=".6" className="pn-st-pele1" />
-          <stop offset="1" className="pn-st-pele2" />
-        </linearGradient>
-        <linearGradient id="pn-meiao" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" className="pn-st-camisa0" />
-          <stop offset="1" className="pn-st-camisa2" />
-        </linearGradient>
-        <radialGradient id="pn-rosto" cx="40%" cy="35%" r="70%">
-          <stop offset="0" className="pn-st-pele0" />
-          <stop offset="1" className="pn-st-pele1" />
-        </radialGradient>
         <linearGradient id="pn-luva" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" className="pn-st-luva0" />
           <stop offset="1" className="pn-st-luva1" />
         </linearGradient>
-        <linearGradient id="pn-short" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" className="pn-st-calcao0" />
-          <stop offset="1" className="pn-st-calcao1" />
-        </linearGradient>
+        <clipPath id="pn-gk-corpo">
+          <path d={CORPO} clipRule="evenodd" />
+        </clipPath>
+        <clipPath id="pn-gk-braco-e">
+          <path d={BRACO_E} />
+        </clipPath>
+        <clipPath id="pn-gk-braco-d">
+          <path d={BRACO_D} />
+        </clipPath>
       </defs>
-      <ellipse cx="100" cy="243" rx="52" ry="6" className="pn-sombra" />
-      <LadoGoleiro />
-      <g transform="matrix(-1 0 0 1 200 0)">
-        <LadoGoleiro />
+      <ellipse cx="93.5" cy="434" rx="80" ry="8" className="pn-sombra" />
+      <image href={ARTE} width="187" height="440" clipPath="url(#pn-gk-corpo)" />
+      <g className="pn-braco e">
+        <image href={ARTE} width="187" height="440" clipPath="url(#pn-gk-braco-e)" />
+        <Luva />
       </g>
-      {/* calção */}
-      <path d="M76 134 L124 134 L131 170 Q116 175 104 170 L100 151 L96 170 Q84 175 69 170 Z" fill="url(#pn-short)" className="pn-calcao" />
-      <path d="M77 140 L123 140" className="pn-calcao-cos" />
-      {/* camisa: ombros largos afinando na cintura, painéis do lado mais escuros, gola e faixa no peito */}
-      <path d="M72 56 Q100 46 128 56 Q135 80 129 104 Q125 122 123 138 L77 138 Q75 122 71 104 Q65 80 72 56 Z" fill="url(#pn-camisa)" className="pn-camisa" />
-      <path d="M72 56 Q65 80 71 104 Q75 122 77 138 L85 138 Q80 100 81 59 Z" className="pn-camisa-lado" />
-      <path d="M128 56 Q135 80 129 104 Q125 122 123 138 L115 138 Q120 100 119 59 Z" className="pn-camisa-lado" />
-      <path d="M71 80 L129 72 L129.6 81 L71.4 89 Z" className="pn-listra" />
-      <path d="M90 50.5 L100 61 L110 50.5" className="pn-gola" />
-      <text x="100" y="124" className="pn-numero">1</text>
-      {/* pescoço e cabeça */}
-      <path d="M93 39 L107 39 L108 53 Q100 57 92 53 Z" className="pn-pescoco" />
-      <path d="M93 47 Q100 51 107 47" className="pn-pescoco-sombra" />
-      <ellipse cx="87.5" cy="28" rx="3" ry="4.3" className="pn-pele" />
-      <ellipse cx="112.5" cy="28" rx="3" ry="4.3" className="pn-pele" />
-      <ellipse cx="100" cy="26.5" rx="12.6" ry="15" fill="url(#pn-rosto)" className="pn-cabeca" />
-      <path d="M87.3 24 Q85.5 8.5 100 7.5 Q114.5 8.5 112.7 24 Q110.5 15.5 100 15 Q89.5 15.5 87.3 24 Z" className="pn-cabelo" />
-      <path d="M93 11 Q99 9.4 105 11" className="pn-cabelo-luz" />
-      <path d="M91.6 22.6 Q94.6 21.2 97.6 22.4 M102.4 22.4 Q105.4 21.2 108.4 22.6" className="pn-sobrancelha" />
-      <ellipse cx="95" cy="27" rx="2.6" ry="1.8" className="pn-olho-branco" />
-      <ellipse cx="105" cy="27" rx="2.6" ry="1.8" className="pn-olho-branco" />
-      <circle cx="95.3" cy="27.2" r="1.2" className="pn-olho" />
-      <circle cx="105.3" cy="27.2" r="1.2" className="pn-olho" />
-      <path d="M100 28.4 Q102.5 32.3 99.4 33.4" className="pn-nariz" />
-      <path d="M95.8 36.4 Q100 38.6 104.2 36.4" className="pn-boca" />
+      <g className="pn-braco d">
+        <image href={ARTE} width="187" height="440" clipPath="url(#pn-gk-braco-d)" />
+        <g transform="matrix(-1 0 0 1 187 0)">
+          <Luva />
+        </g>
+      </g>
     </svg>
   );
 }
 
-/** Bola de futebol (gomos pretos), girando durante o chute. */
+/* a bola de futebol clássica (icosaedro truncado, 12 gomos pretos de 5 lados e 20 brancos de 6), vista de frente e
+   calculada uma vez: os pontos já estão no círculo de raio 19 */
+const GOMOS_PRETOS = "M-3.2 -2.9 L4.1 -0.7 L8.4 -6.5 L3.6 -12.2 L-3.5 -10.0Z M4.9 -16.6 L11.0 -15.1 L8.9 -16.3 L1.6 -18.5 L-0.9 -18.7Z M16.2 2.2 L18.7 2.4 L18.4 -4.8 L15.7 -9.3 L14.4 -5.0Z M-16.3 6.0 L-11.6 11.8 L-6.9 9.4 L-8.7 2.2 L-14.5 0.0Z M0.5 11.6 L3.1 16.2 L10.3 14.0 L12.0 8.0 L6.0 6.6Z M-16.9 -8.3 L-14.9 -7.1 L-9.4 -12.1 L-8.0 -16.5 L-12.7 -14.1Z";
+const GOMOS_BRANCOS = "M8.4 -6.5 L14.4 -5.0 L15.7 -9.3 L11.0 -15.1 L4.9 -16.6 L3.6 -12.2Z M-9.4 -12.1 L-3.5 -10.0 L3.6 -12.2 L4.9 -16.6 L-0.9 -18.7 L-8.0 -16.5Z M6.0 6.6 L12.0 8.0 L16.2 2.2 L14.4 -5.0 L8.4 -6.5 L4.1 -0.7Z M-6.9 9.4 L0.5 11.6 L6.0 6.6 L4.1 -0.7 L-3.2 -2.9 L-8.7 2.2Z M-14.5 0.0 L-8.7 2.2 L-3.2 -2.9 L-3.5 -10.0 L-9.4 -12.1 L-14.9 -7.1Z M10.3 14.0 L12.7 14.1 L16.9 8.3 L18.7 2.4 L16.2 2.2 L12.0 8.0Z M-1.6 18.5 L0.9 18.7 L8.0 16.5 L12.7 14.1 L10.3 14.0 L3.1 16.2Z M-8.9 16.3 L-1.6 18.5 L3.1 16.2 L0.5 11.6 L-6.9 9.4 L-11.6 11.8Z M-18.4 4.8 L-16.3 6.0 L-14.5 0.0 L-14.9 -7.1 L-16.9 -8.3 L-18.7 -2.4Z M-11.0 15.1 L-8.9 16.3 L-11.6 11.8 L-16.3 6.0 L-18.4 4.8 L-15.7 9.3Z";
+
+/** Bola de futebol: os gomos giram no chute; a luz e a sombra ficam paradas, como numa bola de verdade. */
 export function Bola() {
   return (
     <svg viewBox="-20 -20 40 40" className="pn-bola-svg">
-      <circle r="19" className="pn-bola-branca" />
-      <path d="M0 -7 L6.7 -2.2 L4.1 5.7 L-4.1 5.7 L-6.7 -2.2 Z" className="pn-gomo" />
-      <path d="M0 -19 L0 -7 M6.7 -2.2 L17 -6 M4.1 5.7 L10.5 15.8 M-4.1 5.7 L-10.5 15.8 M-6.7 -2.2 L-17 -6" className="pn-costura" />
-      <path d="M-5 -18.3 L5 -18.3 L0 -13Z M17.6 -0.5 L14.3 9.5 L11 3Z M-17.6 -0.5 L-14.3 9.5 L-11 3Z" className="pn-gomo" />
+      <defs>
+        <radialGradient id="pn-bola-volume" cx="35%" cy="30%" r="75%">
+          <stop offset="0" className="pn-st-bola0" />
+          <stop offset=".55" className="pn-st-bola1" />
+          <stop offset="1" className="pn-st-bola2" />
+        </radialGradient>
+      </defs>
+      <g className="pn-bola-gira">
+        <circle r="19" className="pn-bola-branca" />
+        <path d={GOMOS_BRANCOS} className="pn-gomo-branco" />
+        <path d={GOMOS_PRETOS} className="pn-gomo" />
+      </g>
+      <circle r="19" fill="url(#pn-bola-volume)" />
+      <ellipse cx="-7" cy="-9" rx="5.5" ry="3.2" transform="rotate(-35 -7 -9)" className="pn-bola-brilho" />
       <circle r="19" className="pn-bola-luz" />
     </svg>
   );
@@ -278,7 +254,8 @@ export function Penalti() {
 
   const mergulho = lance ? ["esq", "meio", "dir"][lance.coluna] + (lance.alto ? " alto" : " baixo") : "";
   /* a bola: na marca, voando até o canto, dentro da rede ou espirrando para fora (para o lado do canto) */
-  const classeBola = !lance ? "" : lance.fase === "rebateu" ? ` z${lance.zona} rebate r${colunaDa(lance.zona)}` : ` z${lance.zona}`;
+  /* defendeu: a bola fica na luva do goleiro, que pulou exatamente naquele canto */
+  const classeBola = !lance ? "" : lance.fase === "rebateu" ? ` z${lance.zona} pega` : ` z${lance.zona}`;
   const semSaldo = !disputa && saldo !== undefined && saldo < ficha;
 
   return (

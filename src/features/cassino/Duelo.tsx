@@ -415,8 +415,10 @@ function Partida({ r }: { r: Rede }) {
   const podeTocar = aberta && papel !== "plateia" && !escolhi && !r.enviando;
   const t = atual ? tempoRestante(atual, agora) : null;
   const placa = lance && lance.fase !== "voando" ? (lance.gol ? "gol" : "defendeu") : null;
-  const mergulho = lance ? ["esq", "meio", "dir"][colunaDaZona(lance.zg)] + (zonaAlta(lance.zg) || lance.zg === "meio" ? " alto" : " baixo") : "";
-  const classeBola = !lance ? "" : lance.fase === "rebateu" ? ` dz-${lance.zb} rebate r${colunaDaZona(lance.zb)}` : ` dz dz-${lance.zb}`;
+  /* o meio do x1 fica na meia-altura: o goleiro agacha um pouco ("centro"); nos cantos, pula alto ou baixo */
+  const mergulho = lance ? ["esq", "meio", "dir"][colunaDaZona(lance.zg)] + (lance.zg === "meio" ? " centro" : zonaAlta(lance.zg) ? " alto" : " baixo") : "";
+  /* defendeu: a bola fica na luva */
+  const classeBola = !lance ? "" : lance.fase === "rebateu" ? ` dz-${lance.zb} pega` : ` dz dz-${lance.zb}`;
   const nomeBatedor = atual ? (atual.batedor === eu ? "Você" : quem(atual.batedor)?.name ?? "Alguém") : "";
   const nomeGoleiro = atual ? (atual.goleiro === eu ? "você" : quem(atual.goleiro)?.name ?? "alguém") : "";
 
@@ -524,10 +526,14 @@ function Partida({ r }: { r: Rede }) {
 
       {(m === "fim" || m === "cancelado") && <Resultado d={d} eu={eu} />}
 
-      {(m === "fim" || m === "cancelado" || !lado) && (
-        <button type="button" className="btn soft dl-voltar" onClick={() => r.irPara(null)}>
-          Voltar aos duelos
-        </button>
+      {m === "fim" || m === "cancelado" ? (
+        <VoltaSozinho key={d.id} segundos={8} onVoltar={() => r.irPara(null)} />
+      ) : (
+        !lado && (
+          <button type="button" className="btn soft dl-voltar" onClick={() => r.irPara(null)}>
+            Voltar aos duelos
+          </button>
+        )
       )}
       {m !== "fim" && d.chutes.length > 0 && <UltimoLance d={d} />}
     </div>
@@ -562,6 +568,30 @@ function Resultado({ d, eu }: { d: DueloT; eu: string | null }) {
     <p className={"av-res dl-fim " + (bom ? "bom" : d.vencedor && meuLado(d, eu) ? "ruim" : "")} role="status">
       {texto}
     </p>
+  );
+}
+
+/** Acabou o duelo: mostra o resultado por alguns segundos e volta sozinho ao saguão (ou na hora, no botão). */
+function VoltaSozinho({ segundos, onVoltar }: { segundos: number; onVoltar: () => void }) {
+  const [desde] = useState(() => Date.now());
+  const [agora, setAgora] = useState(desde);
+  const volta = useRef(onVoltar);
+  useEffect(() => {
+    volta.current = onVoltar;
+  });
+  useEffect(() => {
+    const t = setInterval(() => setAgora(Date.now()), 250);
+    const fim = setTimeout(() => volta.current(), segundos * 1000);
+    return () => {
+      clearInterval(t);
+      clearTimeout(fim);
+    };
+  }, [segundos]);
+  const falta = Math.max(0, Math.ceil((desde + segundos * 1000 - agora) / 1000));
+  return (
+    <button type="button" className="btn soft dl-voltar" onClick={() => volta.current()}>
+      Voltar aos duelos agora <small>· volta sozinho em {falta} s</small>
+    </button>
   );
 }
 
