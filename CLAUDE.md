@@ -71,7 +71,8 @@ src/
                        Ranking.tsx: painel da carteira (abas Ranking e Meu extrato), aberto pela carteira do K-FOFO
                        (`abrirCarteira`), e `useMinhaPosicao()` ("3º lugar")
     hall/              aba K-FOFO (antes "Sítio do Mitz" e, por um dia, "K-FOFO"; no código continua `hall` e "Sítio" nos nomes), sala de 14×11: hall.ts (grade, móveis, CLICAVEIS, caminho, ordem
-                       de desenho; puro e testado), bonecos.ts (movimento, evento `hall`, presença), Sala.tsx
+                       de desenho, `suavizar` (o boneco acelera no 1º passo e freia no último); puro e testado; a sombra dos
+                       móveis é a `SombrasMoveis` do Sala.tsx e a do quarto fica no QuartoCena, luz de cima à esquerda), bonecos.ts (movimento, evento `hall`, presença), Sala.tsx
                        (cômodo em SVG com janelão e porta do banheiro, um móvel por camada, destaque do piso; a disposição segue a
                        planta do grupo de 02/11/2026: entrada pelo vão da frente, sem o portão K-FOFO), Boneco.tsx
                        (tocar abre a ficha), Cantos.tsx ("Na sala agora", ganhos, carteira, dica), Chegadas.tsx ("Fulano entrou!" embaixo do "Na sala agora", pela presença do lobby; não avisa quem só piscou), truco na mesa verde (fase 32): trucoSala.ts (escolhe a partida em jogo mais antiga de useTruco, sem broadcast novo: quem senta em qual cadeira, cartas na mão, gritos por 2,5 s, quem ganhou por 6 s), MesaVerde.tsx (placar na placa "Truco · ao vivo", leque de cartas de verso no boneco e a janela "Assistindo" com a MesaTela e as apostas) e, em hall.ts, os 4 banquinhos (móveis `banco-truco-*`), `CADEIRAS_TRUCO` (fora de ASSENTOS: só o truco põe gente nelas), `PLATEIA_TRUCO`/`pisoDaPlateia` e o `FeltroTruco` do Sala.tsx (cartas no feltro, na camada logo depois da mesa); chat estilo Habbo: baloes.ts (as mensagens novas do #geral viram balões por 9 s, até 3 por pessoa; `juntarBaloes` puro e

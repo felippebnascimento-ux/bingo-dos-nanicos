@@ -49,3 +49,5 @@
 .ficha-visita .btn{width:auto}
 /* no celular, "Na sala agora" é uma fileira de rostos: sem espaço para o "no quarto do" */
 @media (max-width:760px){.hall-sala-quarto{display:none}}
+/* sombra dos móveis no chão (luz de cima à esquerda) */
+.quarto-sombras polygon{fill:var(--accent-ink);opacity:.28}
