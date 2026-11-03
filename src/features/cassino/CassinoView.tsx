@@ -9,6 +9,7 @@ import { useCarteira } from "@/lib/carteira";
 import { formatarMoedas } from "@/lib/moedas";
 import { sb } from "@/lib/supabase";
 import { toast } from "@/lib/toast";
+import { local } from "@/lib/util";
 import { BancaNanica } from "./BancaNanica";
 import { carregar, msgDe, useCassino, useJogoCassino, type Aposta, type Jogo, type Revelada } from "./estado";
 import { Duelo } from "./Duelo";
@@ -30,8 +31,8 @@ const JOGOS: { id: Jogo; nome: string }[] = [
   { id: "aviao", nome: "Aviãozinho" },
   { id: "blackjack", nome: "Blackjack" },
   { id: "poker", nome: "Pôquer" },
+  /* o Pênalti e o Pênalti x1 ficam numa aba só, com a escolha dentro (contra o goleiro ou contra um nanico) */
   { id: "penalti", nome: "Pênalti" },
-  { id: "duelo", nome: "Pênalti x1" },
   { id: "slot", nome: "Caça-níquel" },
 ];
 const NOME_JOGO: Record<Jogo, string> = { roleta: "Roleta", aviao: "Aviãozinho", limbo: "Limbo", dado: "Maior ou menor", slot: "Caça-níquel", penalti: "Pênalti", blackjack: "Blackjack", poker: "Pôquer", duelo: "Pênalti x1" };
@@ -59,7 +60,11 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
   const saldo = useCarteira((s) => s.carteira?.saldo);
   const { ligado, estado, historico, reveladas, feed, rolos, pagamentos } = useCassino();
   const jogo = useJogoCassino((s) => s.jogo);
-  const setJogo = (j: Jogo) => useJogoCassino.setState({ jogo: j });
+  const setJogo = (j: Jogo) => {
+    /* lembra o último modo do pênalti (contra o goleiro ou x1) para a aba abrir nele */
+    if (j === "penalti" || j === "duelo") local.set("pn-modo", j);
+    useJogoCassino.setState({ jogo: j });
+  };
   /* null = ainda não mexeu: mostra a semente do cliente atual */
   const [clienteEditado, setCliente] = useState<string | null>(null);
   const cliente = clienteEditado ?? estado?.cliente ?? "";
@@ -97,6 +102,10 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
   const casaLeva =
     jogo === "duelo" ? 0 : jogo === "roleta" ? vantagemDaCasa() : jogo === "blackjack" ? 0.5 : jogo === "poker" ? 3 : jogo === "slot" ? (rolos.length ? Math.round((1 - rtpSlot(rolos, pagamentos)) * 1000) / 10 : 8) : 3;
 
+  /* o x1 fica dentro da aba Pênalti */
+  const aba: Jogo = jogo === "duelo" ? "penalti" : jogo;
+  const ultimoPenalti: Jogo = local.get("pn-modo") === "duelo" ? "duelo" : "penalti";
+
   return (
     <section id="view-cassino" className="inner" hidden={hidden}>
       <header className="hero">
@@ -115,7 +124,14 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
           </div>
           <div className="seg cassino-jogos" role="radiogroup" aria-label="Escolha o jogo">
             {JOGOS.map((j) => (
-              <button key={j.id} type="button" role="radio" aria-checked={jogo === j.id} className={jogo === j.id ? "on" : undefined} onClick={() => setJogo(j.id)}>
+              <button
+                key={j.id}
+                type="button"
+                role="radio"
+                aria-checked={aba === j.id}
+                className={aba === j.id ? "on" : undefined}
+                onClick={() => setJogo(j.id === "penalti" && aba !== "penalti" ? ultimoPenalti : j.id)}
+              >
                 {j.nome}
               </button>
             ))}
@@ -136,14 +152,17 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
                 <Poquer ativa={!hidden} />
               </div>
             )}
-            {jogo === "penalti" && (
-              <div className="rm-caixa">
-                <Penalti />
-              </div>
-            )}
-            {jogo === "duelo" && (
-              <div className="rm-caixa">
-                <Duelo ativa={!hidden} />
+            {aba === "penalti" && (
+              <div className="rm-caixa pn-caixa">
+                <div className="pn-modos seg" role="radiogroup" aria-label="Como jogar o pênalti">
+                  <button type="button" role="radio" aria-checked={jogo === "penalti"} onClick={() => setJogo("penalti")}>
+                    Contra o goleiro
+                  </button>
+                  <button type="button" role="radio" aria-checked={jogo === "duelo"} onClick={() => setJogo("duelo")}>
+                    x1 contra um nanico
+                  </button>
+                </div>
+                {jogo === "duelo" ? <Duelo ativa={!hidden} /> : <Penalti />}
               </div>
             )}
             {jogo === "slot" && (
