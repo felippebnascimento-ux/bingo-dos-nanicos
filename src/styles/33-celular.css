@@ -6,39 +6,186 @@
 .celular-botao.hall-celular{position:absolute;z-index:120;right:16px;bottom:60px;background:color-mix(in srgb,var(--accent-ink) 88%,transparent);color:var(--stamp-ink);border-color:rgb(255 255 255 / .08)}
 @media (max-width:760px){.celular-botao.hall-celular{position:relative;align-self:flex-start}}
 
-.celular-fundo{position:fixed;inset:0;z-index:1900;display:grid;place-items:center;padding:16px;background:color-mix(in srgb,var(--ink) 55%,transparent)}
-.celular{display:flex;flex-direction:column;width:min(400px,100%);height:min(780px,calc(100vh - 32px));border:10px solid var(--ink);border-radius:36px;background:var(--bg);box-shadow:0 24px 60px var(--shadow);overflow:hidden}
-.celular-barra{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 14px;background:var(--ink);color:var(--stamp-ink);font:600 12px var(--body)}
-.celular-barra b{font:700 13px var(--display)}
-.celular-tela{flex:1;overflow-y:auto;overscroll-behavior:contain}
+/* o iPhone 17 Pro Max: moldura de titânio, botões laterais, tela com a Dynamic Island, barra de status e o indicador
+   de início. Ilustração com cores próprias (--iph-* e, no app, --ig-* do modo escuro do Instagram), como o hall. */
+.celular-fundo{position:fixed;inset:0;z-index:1900;display:grid;place-items:center;padding:16px;background:color-mix(in srgb,var(--ink) 62%,transparent);backdrop-filter:blur(6px)}
+.celular-fundo.anima .iphone{animation:iph-entra .45s cubic-bezier(.2,.9,.25,1.05) both}
+@keyframes iph-entra{from{transform:translateY(40px) scale(.94);opacity:0}}
+.iphone{
+  --iph-titanio0:#4B4E55; --iph-titanio1:#1E2024; --iph-titanio2:#8C9097; --iph-moldura:#050506; --iph-tela:#000000; --iph-branco:#FFFFFF; --iph-lente0:#1D2A4A; --iph-lente1:#05070D;
+  --ig-bg:#000000; --ig-txt:#F5F5F5; --ig-cinza:#A8A8A8; --ig-linha:#262626; --ig-visto:#5B5B5B; --ig-campo:#262626; --ig-cartao:#1C1C1E; --ig-azul:#0095F6; --ig-vermelho:#FF3040;
+  --ig-a1:#FEDA75; --ig-a2:#FA7E1E; --ig-a3:#D62976; --ig-a4:#962FBF; --ig-a5:#4F5BD5;
+  --ig-roxo:#7B2FF7; --ig-laranja:#FF6A2B; --ig-verde:#13A85F; --ig-azul2:#1F6BFF; --ig-preto:#111111;
+  position:relative;height:min(880px,calc(100vh - 32px));aspect-ratio:440 / 956;border-radius:16% / 7.4%;padding:1.6%;
+  background:linear-gradient(135deg,var(--iph-titanio2) 0%,var(--iph-titanio0) 18%,var(--iph-titanio1) 50%,var(--iph-titanio0) 82%,var(--iph-titanio2) 100%);
+  box-shadow:inset 0 0 0 1px rgb(255 255 255 / .18),inset 0 0 0 3px rgb(0 0 0 / .5),0 30px 80px rgb(0 0 0 / .6),0 0 0 1px rgb(0 0 0 / .6)}
+/* botões laterais: ação, volume, liga/desliga e o controle da câmera */
+.iph-botao{position:absolute;width:3px;border-radius:2px;background:linear-gradient(90deg,var(--iph-titanio1),var(--iph-titanio2))}
+.iph-botao.acao{left:-3px;top:17%;height:4%}.iph-botao.vol1{left:-3px;top:24%;height:7%}.iph-botao.vol2{left:-3px;top:33%;height:7%}
+.iph-botao.power{right:-3px;top:26%;height:11%}.iph-botao.camera{right:-2px;top:58%;height:7%;width:2px;opacity:.8}
+.iph-tela{position:relative;height:100%;display:flex;flex-direction:column;border-radius:14.4% / 6.6%;overflow:hidden;background:var(--iph-tela);box-shadow:0 0 0 4px var(--iph-moldura);color:var(--ig-txt)}
+/* barra de status com a ilha no meio */
+.iph-status{position:relative;flex:none;height:54px;display:flex;align-items:center;justify-content:space-between;padding:6px 26px 0 34px;font:600 15px/1 var(--body);color:var(--ig-txt);z-index:5}
+.iph-hora{font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.iph-icones{display:flex;align-items:center;gap:6px}.iph-icones svg{fill:currentColor}
+.iph-bateria{position:relative;width:25px;height:12px;border:1.5px solid color-mix(in srgb,var(--ig-txt) 55%,transparent);border-radius:4px;padding:1.5px}
+.iph-bateria::after{content:"";position:absolute;right:-4px;top:3px;width:2px;height:4px;border-radius:0 2px 2px 0;background:color-mix(in srgb,var(--ig-txt) 55%,transparent)}
+.iph-bateria i{display:block;width:78%;height:100%;border-radius:2px;background:var(--ig-txt)}
+/* Dynamic Island: a pílula preta que cresce com o aviso (post, story, envio) */
+.iph-ilha{position:absolute;left:50%;top:11px;width:126px;height:36px;transform:translateX(-50%);border-radius:20px;background:var(--iph-moldura);
+  display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;padding:0 10px;overflow:hidden;color:var(--iph-branco);
+  transition:width .5s cubic-bezier(.3,1.4,.4,1),height .5s cubic-bezier(.3,1.4,.4,1),border-radius .5s,top .5s;box-shadow:0 0 0 1px rgb(255 255 255 / .04)}
+.iph-ilha::after{content:"";position:absolute;right:16px;top:50%;width:11px;height:11px;margin-top:-5.5px;border-radius:50%;background:radial-gradient(circle at 40% 35%,var(--iph-lente0),var(--iph-lente1) 70%);opacity:1;transition:opacity .2s}
+.iph-ilha.aberta{width:calc(100% - 22px);height:58px;top:8px;border-radius:30px}
+.iph-ilha.aberta::after{opacity:0}
+.iph-ilha-rosto{width:34px !important;height:34px !important;flex:none}
+.iph-ilha-texto{font:600 13px/1.2 var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:iph-texto .4s .15s both}
+@keyframes iph-texto{from{opacity:0;transform:translateY(4px)}}
+.iph-ilha-ponto{width:9px;height:9px;border-radius:50%;background:var(--ig-a3)}.iph-ilha-ponto.post{background:var(--ig-azul)}
+.iph-ilha-gira{width:18px;height:18px;border-radius:50%;border:2.5px solid rgb(255 255 255 / .25);border-top-color:var(--iph-branco);animation:iph-gira .8s linear infinite}
+@keyframes iph-gira{to{transform:rotate(360deg)}}
+.iph-inicio{position:absolute;left:50%;bottom:7px;width:36%;height:5px;transform:translateX(-50%);padding:0;border:0;border-radius:3px;background:var(--ig-txt);opacity:.85;cursor:pointer;z-index:9}
 
-.rede{display:grid;gap:10px;padding:10px}
-.rede-postar{display:grid;gap:6px;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
-.rede-postar textarea{width:100%;resize:vertical;min-height:52px;font:inherit}
-.rede-postar .row{gap:6px;align-items:center;flex-wrap:wrap}
-.rede-conta{margin-left:auto;font-size:11px;color:var(--muted)}
-.rede-arquivo{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
-.rede-post{display:grid;gap:8px;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
-.rede-post header{display:flex;align-items:center;gap:8px}
-.rede-post header small{flex:1;font-size:11px;color:var(--muted)}
-.rede-nome{display:inline-flex;align-items:center;gap:6px;padding:0;border:0;background:none;color:inherit;font:inherit;cursor:pointer}
-.rede-nome b{font:700 13px var(--body)}
-.rede-texto{margin:0;font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
-.rede-post .midia-img{border-radius:10px;aspect-ratio:auto;min-height:120px}
-.rede-post .midia-img img{object-fit:contain;max-height:420px}
-.rede-acoes{display:flex;align-items:center;gap:12px}
-.rede-curtir{padding:2px 8px;border:1px solid var(--line);border-radius:99px;background:none;color:var(--ink);font:600 13px var(--body);cursor:pointer}
-.rede-curtir.on{border-color:var(--live);color:var(--live)}
-.rede-coments ul{display:grid;gap:4px;margin:0 0 6px;padding:0;list-style:none;font-size:13px;overflow-wrap:anywhere}
-.rede-coments li .linkish{margin-left:8px;font-size:12px}
-.rede-coments .row{gap:6px;flex-wrap:nowrap}
-.rede-coments input{flex:1;min-width:0}
-.rede-perfil{display:flex;align-items:center;gap:10px}
-.rede-perfil b{flex:1;font:700 15px var(--display)}
-.rede-mais{justify-self:center}
+/* ---------- InstaNanico (o Instagram do grupo, no modo escuro) ---------- */
+.ig{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;background:var(--ig-bg);font:400 14px/1.35 var(--body);color:var(--ig-txt)}
+.ig-rola{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
+.ig-rola::-webkit-scrollbar{display:none}
+.ig-sem-botao{display:inline-flex;align-items:center;gap:6px;padding:0;border:0;background:none;color:inherit;font:inherit;cursor:pointer}
+.ig-sem-botao:disabled{cursor:default;opacity:.9}
+.ig-sem-botao:focus-visible{outline:2px solid var(--ig-azul);outline-offset:2px;border-radius:4px}
+.ig-cinza{color:var(--ig-cinza)}.ig-azul{color:var(--ig-azul);font-weight:600}.ig-azul:disabled{opacity:.4}.ig-perigo{color:var(--ig-vermelho)}
+.ig-pequeno{font-size:12px}.ig-espaco{flex:1}
+.ig-vazio{padding:28px 20px;text-align:center;color:var(--ig-cinza);list-style:none}
+.ig-topo{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:18px;height:46px;padding:0 14px;background:var(--ig-bg)}
+.ig-titulo{font:700 16px var(--body)}
+/* o logo: letra de mão inclinada (com as fontes do site) */
+.ig-logo{font:italic 700 24px/1 var(--body);letter-spacing:-.04em;transform:skewX(-6deg);display:inline-block}
+/* rosto com o anel dos stories */
+.ig-anel{position:relative;display:inline-grid;place-items:center;flex:none;border-radius:50%;padding:max(2px,6.5%)}
+.ig-anel.novo{background:conic-gradient(from 200deg,var(--ig-a1),var(--ig-a2),var(--ig-a3),var(--ig-a4),var(--ig-a5),var(--ig-a1))}
+.ig-anel.visto{background:var(--ig-visto)}
+.ig-anel .ig-rosto{width:100% !important;height:100% !important;border-radius:50%;box-shadow:0 0 0 max(1.5px,3.5%) var(--ig-bg)}
+.ig-anel.nenhum{padding:0}.ig-anel.nenhum .ig-rosto{box-shadow:none}
+/* fileira de stories */
+.ig-stories{display:flex;gap:12px;padding:8px 12px 12px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--ig-linha)}
+.ig-stories::-webkit-scrollbar{display:none}
+.ig-story-item{display:grid;justify-items:center;gap:5px;flex:none;width:70px}
+.ig-story-item small{max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;color:var(--ig-txt)}
+.ig-story-eu{position:relative}
+.ig-story-mais{position:absolute;right:-2px;bottom:-2px;width:22px;height:22px;display:grid;place-items:center;padding:0;border:3px solid var(--ig-bg);border-radius:50%;background:var(--ig-azul);color:var(--iph-branco);font:700 16px/1 var(--body);cursor:pointer}
+/* postagem */
+.ig-post{position:relative;padding-bottom:14px}
+.ig-post-topo{position:relative;display:flex;align-items:center;gap:8px;padding:8px 12px}
+.ig-user{font-weight:600}
+.ig-pontos{margin-left:auto}
+.ig-menu{position:absolute;right:10px;top:42px;z-index:4;display:grid;min-width:200px;border-radius:14px;overflow:hidden;background:var(--ig-cartao);box-shadow:0 10px 30px rgb(0 0 0 / .6)}
+.ig-menu button{padding:13px 16px;border:0;border-top:1px solid var(--ig-linha);background:none;color:var(--ig-txt);font:500 14px var(--body);text-align:center;cursor:pointer}
+.ig-menu button:first-child{border-top:0}
+.ig-midia{position:relative;background:var(--ig-cartao);user-select:none}
+.ig-midia .midia-img{border-radius:0;aspect-ratio:1;min-height:0}
+.ig-midia .midia-img img{width:100%;height:100%;object-fit:cover}
+.ig-post-texto{display:grid;place-items:center;aspect-ratio:1;padding:28px;text-align:center;font:700 22px/1.25 var(--body);white-space:pre-wrap;overflow-wrap:anywhere;
+  background:linear-gradient(135deg,var(--ig-a4),var(--ig-a3) 55%,var(--ig-a2))}
+.ig-coracao-grande{position:absolute;left:50%;top:50%;color:var(--iph-branco);filter:drop-shadow(0 4px 14px rgb(0 0 0 / .4));animation:ig-coracao .9s cubic-bezier(.2,1.6,.4,1) forwards;pointer-events:none}
+@keyframes ig-coracao{0%{transform:translate(-50%,-50%) scale(0);opacity:0}15%{transform:translate(-50%,-50%) scale(1.15);opacity:1}30%{transform:translate(-50%,-50%) scale(.95)}70%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-60%) scale(1);opacity:0}}
+.ig-acoes{display:flex;align-items:center;gap:16px;padding:10px 12px 6px}
+.ig-curtir.on{color:var(--ig-vermelho);animation:ig-pulo .35s cubic-bezier(.2,1.8,.4,1)}
+@keyframes ig-pulo{40%{transform:scale(1.25)}}
+.ig-curtidas,.ig-legenda{margin:0;padding:0 12px 4px}
+.ig-legenda{white-space:pre-wrap;overflow-wrap:anywhere}
+.ig-curtidas b,.ig-legenda b{font-weight:600}
+.ig-ver-coments{display:flex;padding:2px 12px;color:var(--ig-cinza)}
+.ig-add-coment{display:flex;padding:4px 12px;color:var(--ig-cinza);font-size:13px}
+.ig-mais{display:flex;margin:6px auto 16px}
+/* folha que sobe (comentários, quem viu) */
+.ig-folha-fundo{position:absolute;inset:0;z-index:20;display:flex;align-items:flex-end;background:rgb(0 0 0 / .55);animation:ig-esmaece .2s both}
+@keyframes ig-esmaece{from{opacity:0}}
+.ig-folha{width:100%;max-height:78%;display:flex;flex-direction:column;border-radius:16px 16px 0 0;background:var(--ig-cartao);animation:ig-sobe .3s cubic-bezier(.2,.9,.3,1) both}
+@keyframes ig-sobe{from{transform:translateY(100%)}}
+.ig-alca{width:40px;height:4px;margin:8px auto 4px;border-radius:2px;background:var(--ig-cinza);opacity:.6}
+.ig-folha h3{margin:0;padding:6px 0 10px;text-align:center;font:700 15px var(--body);border-bottom:1px solid var(--ig-linha)}
+.ig-coments{flex:1;overflow-y:auto;margin:0;padding:8px 14px;list-style:none;display:grid;gap:14px;align-content:start}
+.ig-coments li{display:flex;gap:10px}.ig-coments p{margin:0;overflow-wrap:anywhere}
+.ig-comentar{display:flex;align-items:center;gap:10px;padding:10px 14px 26px;border-top:1px solid var(--ig-linha)}
+.ig-comentar input{flex:1;min-width:0;padding:10px 14px;border:1px solid var(--ig-linha);border-radius:22px;background:var(--ig-bg);color:var(--ig-txt);font:inherit}
+/* barra de baixo */
+.ig-barra{flex:none;display:flex;justify-content:space-around;align-items:center;height:50px;padding-bottom:18px;box-sizing:content-box;border-top:1px solid var(--ig-linha);background:var(--ig-bg)}
+.ig-barra .ig-sem-botao{padding:8px;opacity:.95}
+.ig-barra .ig-eu.on .ig-anel{box-shadow:0 0 0 2px var(--ig-txt)}
+/* explorar e grades */
+.ig-busca{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:8px;margin:6px 12px 8px;padding:8px 12px;border-radius:12px;background:var(--ig-campo);color:var(--ig-cinza)}
+.ig-busca input{flex:1;min-width:0;border:0;background:none;color:var(--ig-txt);font:inherit;outline:none}
+.ig-grade{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+.ig-quadrado{position:relative;aspect-ratio:1;padding:0;border:0;overflow:hidden;background:var(--ig-cartao);cursor:pointer}
+.ig-quadrado .midia-img{height:100%;border-radius:0;min-height:0;aspect-ratio:1}
+.ig-quadrado .midia-img img{width:100%;height:100%;object-fit:cover}
+.ig-quadrado-texto{display:grid;place-items:center;height:100%;padding:8px;font:700 11px/1.2 var(--body);color:var(--iph-branco);overflow:hidden;background:linear-gradient(135deg,var(--ig-a4),var(--ig-a3) 55%,var(--ig-a2))}
+.ig-lista-gente{margin:0;padding:6px 14px;list-style:none;display:grid;gap:12px}
+.ig-lista-gente li,.ig-lista-gente li>button{display:flex;align-items:center;gap:12px;text-align:left}
+.ig-lista-gente span{display:grid}
+/* atividade */
+.ig-atividade{margin:0;padding:4px 14px;list-style:none;display:grid;gap:14px}
+.ig-atividade li{display:flex;align-items:center;gap:12px}
+.ig-atividade p{flex:1;margin:0;overflow-wrap:anywhere}
+.ig-mini{width:44px;flex:none}
+/* perfil */
+.ig-perfil{display:flex;align-items:center;gap:24px;padding:8px 16px}
+.ig-perfil dl{flex:1;display:flex;justify-content:space-around;margin:0}
+.ig-perfil dl div{display:grid;justify-items:center}
+.ig-perfil dt{font:700 17px var(--body)}.ig-perfil dd{margin:0;font-size:13px}
+.ig-bio{display:grid;margin:4px 16px 10px}
+.ig-perfil-botoes{display:flex;gap:6px;padding:0 16px 12px}
+.ig-botao-cinza{flex:1;padding:8px;border:0;border-radius:9px;background:var(--ig-campo);color:var(--ig-txt);font:600 13px var(--body);cursor:pointer}
+.ig-aba-grade{display:flex;justify-content:center;padding:10px;border-top:1px solid var(--ig-linha);box-shadow:inset 0 -1px 0 var(--ig-txt)}
+/* novo post / story */
+.ig-novo{display:flex;flex-direction:column;gap:10px;padding-bottom:16px}
+.ig-novo-previa{position:relative;display:grid;place-items:center;aspect-ratio:1;margin:0 12px;border-radius:12px;overflow:hidden;background:var(--ig-cartao);cursor:pointer}
+.ig-novo.story .ig-novo-previa{aspect-ratio:9 / 14}
+.ig-novo-previa img{width:100%;height:100%;object-fit:cover}
+.ig-novo-vazio{display:grid;justify-items:center;gap:8px;color:var(--ig-cinza)}
+.ig-novo-texto{margin:0 12px;padding:10px;border:1px solid var(--ig-linha);border-radius:10px;background:var(--ig-bg);color:var(--ig-txt);font:inherit;resize:none}
+.ig-fundos{display:flex;gap:10px;justify-content:center}
+.ig-fundo{width:30px;height:30px;padding:0;border:2px solid transparent;border-radius:50%;cursor:pointer}.ig-fundo.on{border-color:var(--ig-txt)}
+.ig-modos{display:flex;justify-content:center;gap:22px;padding-top:6px}
+.ig-modos button{padding:6px 0;border:0;background:none;color:var(--ig-cinza);font:700 13px var(--body);letter-spacing:.06em;cursor:pointer}
+.ig-modos button.on{color:var(--ig-txt);box-shadow:inset 0 -2px 0 var(--ig-txt)}
+/* fundos dos stories de texto */
+.f-roxo{background:linear-gradient(160deg,var(--ig-roxo),var(--ig-a3))}
+.f-laranja{background:linear-gradient(160deg,var(--ig-a1),var(--ig-laranja))}
+.f-verde{background:linear-gradient(160deg,var(--ig-verde),var(--ig-azul2))}
+.f-azul{background:linear-gradient(160deg,var(--ig-azul2),var(--ig-a4))}
+.f-preto{background:linear-gradient(160deg,var(--ig-preto),var(--ig-campo))}
+/* ver story */
+.ig-story-tela{position:absolute;inset:0;z-index:15;display:flex;flex-direction:column;background:var(--ig-bg);animation:ig-esmaece .2s both}
+.ig-barras{display:flex;gap:3px;padding:8px 8px 0}
+.ig-barras span{flex:1;height:2.5px;border-radius:2px;background:rgb(255 255 255 / .35);overflow:hidden}
+.ig-barras span.cheia{background:var(--iph-branco)}
+.ig-barras i{display:block;height:100%;background:var(--iph-branco);animation:ig-barra linear forwards;transform-origin:left}
+.ig-barras i.pausa{animation-play-state:paused}
+@keyframes ig-barra{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.ig-story-topo{display:flex;align-items:center;gap:8px;padding:10px 12px;color:var(--iph-branco)}
+.ig-story-topo small{color:rgb(255 255 255 / .7)}
+.ig-story-corpo{position:relative;flex:1;min-height:0;display:grid;place-items:center;margin:0 4px;border-radius:12px;overflow:hidden;touch-action:none;user-select:none}
+.ig-story-corpo .midia-img{position:absolute;inset:0;border-radius:0;min-height:0}
+.ig-story-corpo .midia-img img{width:100%;height:100%;object-fit:cover}
+.ig-story-legenda{position:relative;z-index:1;margin:0 18px;padding:6px 12px;font:700 22px/1.25 var(--body);text-align:center;color:var(--iph-branco);overflow-wrap:anywhere;text-shadow:0 2px 10px rgb(0 0 0 / .35)}
+.ig-story-legenda.sobre-foto{position:absolute;bottom:14%;font-size:17px;border-radius:10px;background:rgb(0 0 0 / .45)}
+.ig-story-lado{position:absolute;top:0;bottom:0;z-index:2;padding:0;border:0;background:none;cursor:pointer}
+.ig-story-lado.esq{left:0;width:33%}.ig-story-lado.dir{right:0;width:67%}
+.ig-story-pe{display:flex;align-items:center;gap:12px;padding:12px 14px 28px;color:var(--iph-branco)}
+.ig-responder{flex:1;padding:10px 16px;border:1px solid rgb(255 255 255 / .45);border-radius:22px;color:rgb(255 255 255 / .8);font-size:13px}
+.ig-visto{font-size:13px}
+@media (prefers-reduced-motion:reduce){
+  .celular-fundo.anima .iphone,.iph-ilha-texto,.iph-ilha-gira,.ig-coracao-grande,.ig-curtir.on,.ig-folha,.ig-folha-fundo,.ig-story-tela{animation:none}
+  .iph-ilha{transition:none}.ig-barras i{animation-duration:1ms !important}
+}
 
-/* celular de verdade: tela inteira, sem moldura */
+/* celular de verdade: o app ocupa a tela inteira, sem a moldura */
 @media (max-width:520px){
   .celular-fundo{padding:0}
-  .celular{width:100%;height:100%;border:0;border-radius:0}
+  .iphone{height:100%;width:100%;aspect-ratio:auto;border-radius:0;padding:0;background:var(--iph-tela);box-shadow:none}
+  .iph-botao{display:none}
+  .iph-tela{border-radius:0;box-shadow:none}
+  .iph-ilha{display:none}
+  .iph-status{display:none}
 }

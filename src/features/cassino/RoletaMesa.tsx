@@ -169,7 +169,7 @@ export function RoletaMesa({ ativa = true }: { ativa?: boolean }) {
     <div className="roleta rm">
       <div className={"rm-topo" + (zoom ? " zoom" : "")}>
         {zoom && giro && <div className="rr-palco" aria-hidden="true" onClick={() => setFechouZoom(giro.id)} />}
-        <RodaRoleta giro={giro} onFim={fimDoGiro} tema="luxo" />
+        <RodaRoleta giro={giro} onFim={fimDoGiro} tema="luxo" semSom={!ativa} />
         {zoom && resultadoNaTela !== null && corRes && (
           <div className="rr-zoom-res" aria-hidden="true">
             <span className={"rm-bola rm-" + corRes}>{resultadoNaTela}</span>
