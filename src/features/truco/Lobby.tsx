@@ -3,24 +3,26 @@ import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { friendOf, useApp } from "@/lib/store";
 import { local } from "@/lib/util";
-import { abrirMesa, useTruco, verMesa } from "./mesa";
+import { abrirMesa, TR_VALORES, useTruco, verMesa } from "./mesa";
 
-type Opt = { modo: 2 | 4; alvo: number; flor: boolean };
+type Opt = { modo: 2 | 4; alvo: number; flor: boolean; valor: number };
 
 /* opções da mesa nova ficam salvas em `truco-opt` (só conveniência) */
 function lerOpt(): Opt {
-  const o: Opt = { modo: 2, alvo: 24, flor: true };
+  const o: Opt = { modo: 2, alvo: 24, flor: true, valor: 0 };
   const d = local.json<Record<string, unknown>>("truco-opt");
   if (d && typeof d === "object") {
     if (d.modo === 2 || d.modo === 4) o.modo = d.modo;
     if (d.alvo === 12 || d.alvo === 24 || d.alvo === 30) o.alvo = d.alvo;
     if (d.flor === false) o.flor = false;
+    if ((TR_VALORES as readonly unknown[]).includes(d.valor)) o.valor = d.valor as number;
   }
   return o;
 }
 
 export function Lobby() {
   const mesas = useTruco((s) => s.mesas);
+  const valores = useTruco((s) => s.valores);
   const friends = useApp((s) => s.friends);
   const myFid = useApp((s) => s.myFid);
   const myUid = useApp((s) => s.myUid);
@@ -50,11 +52,23 @@ export function Lobby() {
             </button>
           ))}
         </div>
+        <div className="seg tr-valor" role="radiogroup" aria-label="Quanto vale por jogador">
+          {TR_VALORES.map((v) => (
+            <button key={v} type="button" role="radio" aria-checked={opt.valor === v} onClick={() => setOpt({ valor: v })}>
+              {v ? `Vale ${v}` : "Grátis"}
+            </button>
+          ))}
+        </div>
+        <p className="hint tr-valor-dica">
+          {opt.valor
+            ? `Cada um paga ${opt.valor} moedas ao começar e quem ganha leva o bolo de ${opt.valor * opt.modo}.`
+            : "Sem moedas em jogo: quem ganha leva +15 (até 3 vitórias pagas por dia)."}
+        </p>
         <label className="tr-flor">
           <input type="checkbox" id="trFlor" checked={opt.flor} onChange={(e) => setOpt({ flor: e.target.checked })} />
           Jogar com flor
         </label>
-        <button className="btn" id="trAbrir" type="button" onClick={() => void abrirMesa(opt.modo, opt.alvo, opt.flor)}>
+        <button className="btn" id="trAbrir" type="button" onClick={() => void abrirMesa(opt.modo, opt.alvo, opt.flor, opt.valor)}>
           Abrir mesa
         </button>
       </div>
@@ -92,6 +106,11 @@ export function Lobby() {
                       {m.modo === 2 ? "1 contra 1" : "2 contra 2"}, até {m.alvo}
                       {m.comFlor ? ", com flor" : ""}. {estado}
                     </small>
+                    {(valores[m.id] ?? 0) > 0 && (
+                      <span className="tr-vale">
+                        Vale {valores[m.id]} · bolo {valores[m.id] * m.modo}
+                      </span>
+                    )}
                   </div>
                   <button className={"btn sm" + (minha || livre ? "" : " soft")} type="button" onClick={() => verMesa(m.id)}>
                     {minha ? "Voltar" : livre ? "Sentar" : "Assistir"}

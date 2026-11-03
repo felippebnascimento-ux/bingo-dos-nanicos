@@ -4054,7 +4054,327 @@ begin
 end $$;
 revoke all on function public.desativar_amigo(text) from public, anon, authenticated;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa e as 3 dos amigos
+-- 40) truco valendo moedas e apostas no truco (fase 31, 03/11/2026) ----------------------------------------------------
+--     Quem abre a mesa escolhe quanto vale (0, 10, 25, 50 ou 100 por jogador; mora em opcoes.valor e no estado da
+--     função). A entrada é cobrada DENTRO do truco_salvar que começa a partida: sem saldo, nada é gravado e ninguém
+--     paga; gravar de novo não cobra de novo (o bolo é um por mesa e partida). Quem ganha leva o bolo, sem taxa.
+--     Mesa de 0 continua com o +15 (até 3 por dia). Mesa fechada ou esquecida devolve as entradas e as apostas.
+--     As apostas na partida (bolo dividido, 5% da casa) ficam em tabelas próprias, separadas das do LoL.
+create table if not exists public.truco_bolos (
+  mesa      text not null,
+  partida   int not null,
+  valor     int not null check (valor in (10, 25, 50, 100)),
+  jogadores jsonb not null,
+  estado    text not null default 'cobrado' check (estado in ('cobrado', 'pago', 'devolvido')),
+  criado_em timestamptz not null default now(),
+  primary key (mesa, partida)
+);
+alter table public.truco_bolos enable row level security;
+revoke all on public.truco_bolos from public, anon, authenticated;
+
+create table if not exists public.truco_mercados (
+  mesa      text not null,
+  partida   int not null,
+  times     jsonb not null,
+  estado    text not null default 'aberto' check (estado in ('aberto', 'fechado', 'pago', 'devolvido')),
+  vencedor  int check (vencedor in (0, 1)),
+  bolo_0    int not null default 0,
+  bolo_1    int not null default 0,
+  casa      int not null default 0,
+  criado_em timestamptz not null default now(),
+  primary key (mesa, partida)
+);
+alter table public.truco_mercados enable row level security;
+revoke all on public.truco_mercados from public, anon, authenticated;
+grant select on public.truco_mercados to authenticated;
+drop policy if exists truco_mercados_ler on public.truco_mercados;
+create policy truco_mercados_ler on public.truco_mercados for select to authenticated using (public.eh_membro());
+
+create table if not exists public.truco_apostas (
+  id      bigserial primary key,
+  mesa    text not null,
+  partida int not null,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  lado    int not null check (lado in (0, 1)),
+  valor   int not null check (valor between 5 and 100),
+  pago    int not null default 0,
+  em      timestamptz not null default now(),
+  unique (mesa, partida, user_id)
+);
+alter table public.truco_apostas enable row level security;
+revoke all on public.truco_apostas from public, anon, authenticated;
+grant select on public.truco_apostas to authenticated;
+drop policy if exists truco_apostas_ler on public.truco_apostas;
+create policy truco_apostas_ler on public.truco_apostas for select to authenticated using (user_id = auth.uid());
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.truco_mercados; exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.truco_apostas; exception when duplicate_object then null; end;
+end $$;
+
+-- cobra a entrada de cada jogador (jogadores = lugar → user_id). Uma vez só por mesa e partida.
+create or replace function public.truco_cobrar(p_mesa text, p_partida int, p_valor int, p_jogadores jsonb)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  j      record;
+  v_nome text;
+begin
+  if coalesce(p_valor, 0) = 0 then return; end if;
+  if p_valor not in (10, 25, 50, 100) then raise exception 'Valor de mesa inválido.' using errcode = 'P0001'; end if;
+  insert into public.truco_bolos (mesa, partida, valor, jogadores) values (p_mesa, p_partida, p_valor, p_jogadores)
+  on conflict (mesa, partida) do nothing;
+  if not found then return; end if;
+  for j in select value::uuid as uid from jsonb_each_text(p_jogadores) loop
+    if coalesce((select saldo from public.carteiras where user_id = j.uid), 0) < p_valor then
+      select name into v_nome from public.friends where user_id = j.uid;
+      raise exception '% está sem moedas para esta mesa.', coalesce(v_nome, 'Alguém') using errcode = 'P0001';
+    end if;
+    perform public.creditar(j.uid, -p_valor, 'truco', p_mesa || ':' || p_partida || ':entrada');
+  end loop;
+end $$;
+
+-- devolve as entradas e as apostas que ainda não foram pagas (mesa fechada ou esquecida)
+create or replace function public.truco_devolver(p_mesa text)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  b record;
+  j record;
+  a record;
+  m record;
+begin
+  for b in select * from public.truco_bolos where mesa = p_mesa and estado = 'cobrado' for update loop
+    for j in select value::uuid as uid from jsonb_each_text(b.jogadores) loop
+      perform public.creditar(j.uid, b.valor, 'truco', p_mesa || ':' || b.partida || ':devolvida');
+    end loop;
+    update public.truco_bolos set estado = 'devolvido' where mesa = b.mesa and partida = b.partida;
+  end loop;
+  for m in select * from public.truco_mercados where mesa = p_mesa and estado in ('aberto', 'fechado') for update loop
+    for a in select id, user_id, valor from public.truco_apostas where mesa = m.mesa and partida = m.partida loop
+      perform public.creditar(a.user_id, a.valor, 'aposta', 'truco:' || p_mesa || ':' || m.partida || ':devolvida');
+      update public.truco_apostas set pago = a.valor where id = a.id;
+    end loop;
+    update public.truco_mercados set estado = 'devolvido' where mesa = m.mesa and partida = m.partida;
+  end loop;
+end $$;
+
+-- truco_salvar ganha p_cobrar ({partida, valor, jogadores}): a cobrança e a gravação são uma coisa só
+drop function if exists public.truco_salvar(text, int, jsonb, jsonb, text, jsonb, uuid, jsonb);
+create or replace function public.truco_salvar(p_mesa text, p_versao int, p_estado jsonb, p_publico jsonb, p_fase text, p_maos jsonb, p_user uuid, p_opcoes jsonb default '{}', p_cobrar jsonb default null)
+returns boolean language plpgsql security definer set search_path = public as $$
+declare
+  v_velha text;
+begin
+  if p_versao = -1 then
+    -- mesas esquecidas somem (devolvendo o que estava valendo); as minhas que não estão em jogo também
+    for v_velha in select id from public.truco_mesas where atualizada_em < now() - interval '3 hours'
+                    or (criada_por = p_user and fase <> 'jogo') loop
+      perform public.truco_devolver(v_velha);
+      delete from public.truco_mesas where id = v_velha;
+    end loop;
+    if exists (select 1 from public.truco_mesas where criada_por = p_user) then
+      raise exception 'Você já tem uma mesa em jogo.' using errcode = 'P0001';
+    end if;
+    insert into public.truco_mesas (id, criada_por, opcoes, publico, fase) values (p_mesa, p_user, p_opcoes, p_publico, p_fase);
+    insert into public.truco_estado (mesa_id, estado, versao) values (p_mesa, p_estado, 0);
+  else
+    update public.truco_estado set estado = p_estado, versao = versao + 1 where mesa_id = p_mesa and versao = p_versao;
+    if not found then return false; end if;
+    update public.truco_mesas set publico = p_publico, fase = p_fase, atualizada_em = now() where id = p_mesa;
+    -- começo de partida valendo: sem saldo de alguém, o erro desfaz a gravação inteira
+    if p_cobrar is not null then
+      perform public.truco_cobrar(p_mesa, (p_cobrar->>'partida')::int, coalesce((p_cobrar->>'valor')::int, 0), p_cobrar->'jogadores');
+    end if;
+  end if;
+  delete from public.truco_maos m where m.mesa_id = p_mesa
+     and not exists (select 1 from jsonb_array_elements(p_maos) x where (x->>'lugar')::int = m.lugar and (x->>'user_id')::uuid = m.user_id);
+  insert into public.truco_maos (mesa_id, lugar, user_id, cartas, mao_n)
+  select p_mesa, (x->>'lugar')::int, (x->>'user_id')::uuid, x->'cartas', (x->>'mao_n')::int from jsonb_array_elements(p_maos) x
+  on conflict (mesa_id, lugar) do update set user_id = excluded.user_id, cartas = excluded.cartas, mao_n = excluded.mao_n
+   where truco_maos.cartas is distinct from excluded.cartas or truco_maos.mao_n <> excluded.mao_n or truco_maos.user_id <> excluded.user_id;
+  return true;
+end $$;
+
+create or replace function public.truco_fechar(p_mesa text, p_user uuid)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from public.truco_mesas where id = p_mesa and criada_por = p_user) then
+    raise exception 'Só quem abriu fecha a mesa.' using errcode = 'P0001';
+  end if;
+  perform public.truco_devolver(p_mesa);
+  delete from public.truco_mesas where id = p_mesa;
+end $$;
+
+-- prêmio: mesa valendo paga o bolo (2× o valor a cada vencedor); mesa de 0, o +15 de antes (até 3 por dia)
+create or replace function public.truco_premiar(p_mesa text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  v_e     jsonb;
+  v_m     jsonb;
+  v_modo  int;
+  v_venc  int;
+  v_part  int;
+  v_ref   text;
+  v_uid   uuid;
+  v_users uuid[] := '{}';
+  v_pagos uuid[] := '{}';
+  b       public.truco_bolos%rowtype;
+  i       int;
+begin
+  select estado into v_e from public.truco_estado where mesa_id = p_mesa for update;
+  v_m := v_e->'M';
+  if v_m is null or v_m->>'fase' <> 'fim' or v_m->'vencedor' is null or jsonb_typeof(v_m->'vencedor') <> 'number' then
+    return '[]'::jsonb;
+  end if;
+  v_modo := (v_m->>'modo')::int;
+  v_venc := (v_m->>'vencedor')::int;
+  v_part := coalesce((v_e->>'partida')::int, 1);
+  for i in 0..v_modo - 1 loop
+    v_uid := null;
+    select f.user_id into v_uid from public.friends f
+     where f.id::text = v_m->'lugares'->i->>'fid' and f.user_id::text = v_m->'lugares'->i->>'key';
+    if v_uid is null or v_uid = any(v_users) then return '[]'::jsonb; end if;
+    v_users := v_users || v_uid;
+  end loop;
+  select * into b from public.truco_bolos where mesa = p_mesa and partida = v_part for update;
+  if found then
+    if b.estado <> 'cobrado' then return '[]'::jsonb; end if;
+    for i in 0..v_modo - 1 loop
+      continue when i % 2 <> v_venc;
+      perform public.creditar(v_users[i + 1], b.valor * 2, 'truco', p_mesa || ':' || v_part || ':premio');
+      v_pagos := v_pagos || v_users[i + 1];
+    end loop;
+    update public.truco_bolos set estado = 'pago' where mesa = p_mesa and partida = v_part;
+    return to_jsonb(v_pagos);
+  end if;
+  v_ref := p_mesa || ':' || v_part;
+  for i in 0..v_modo - 1 loop
+    continue when i % 2 <> v_venc;
+    v_uid := v_users[i + 1];
+    continue when exists (select 1 from public.extrato where user_id = v_uid and motivo = 'truco' and ref = v_ref);
+    continue when (select count(*) from public.extrato where user_id = v_uid and motivo = 'truco' and valor > 0
+                    and coalesce(ref, '') not like '%:devolvida' and coalesce(ref, '') not like '%:premio'
+                    and (em at time zone 'America/Sao_Paulo')::date = public.hoje_br()) >= 3;
+    perform public.creditar(v_uid, 15, 'truco', v_ref);
+    v_pagos := v_pagos || v_uid;
+  end loop;
+  return to_jsonb(v_pagos);
+end $$;
+
+-- mercado de apostas da partida (times = friend id → 0 ou 1)
+create or replace function public.truco_mercado_abrir(p_mesa text, p_partida int, p_times jsonb)
+returns void language sql security definer set search_path = public as $$
+  insert into public.truco_mercados (mesa, partida, times) values (p_mesa, p_partida, p_times) on conflict (mesa, partida) do nothing;
+$$;
+
+create or replace function public.truco_mercado_fechar(p_mesa text, p_partida int)
+returns void language sql security definer set search_path = public as $$
+  update public.truco_mercados set estado = 'fechado' where mesa = p_mesa and partida = p_partida and estado = 'aberto';
+$$;
+
+-- a mesma conta do apostas_liquidar do LoL: 5% da casa; um lado vazio (ou sem vencedor) devolve tudo
+create or replace function public.truco_mercado_liquidar(p_mesa text, p_partida int, p_vencedor int)
+returns text language plpgsql security definer set search_path = public as $$
+declare
+  m       public.truco_mercados%rowtype;
+  a       record;
+  v_total int;
+  v_casa  int;
+  v_bolo  int;
+  v_pago  int;
+  v_soma  int := 0;
+  v_ref   text := 'truco:' || p_mesa || ':' || p_partida;
+begin
+  select * into m from public.truco_mercados where mesa = p_mesa and partida = p_partida for update;
+  if not found then return 'sem_mercado'; end if;
+  if m.estado in ('pago', 'devolvido') then return m.estado; end if;
+  v_total := m.bolo_0 + m.bolo_1;
+  if p_vencedor is null or p_vencedor not in (0, 1) or m.bolo_0 = 0 or m.bolo_1 = 0 then
+    for a in select id, user_id, valor from public.truco_apostas where mesa = p_mesa and partida = p_partida order by id loop
+      perform public.creditar(a.user_id, a.valor, 'aposta', v_ref || ':devolvida');
+      update public.truco_apostas set pago = a.valor where id = a.id;
+    end loop;
+    update public.truco_mercados set estado = 'devolvido', vencedor = case when p_vencedor in (0, 1) then p_vencedor end
+     where mesa = p_mesa and partida = p_partida;
+    return 'devolvido';
+  end if;
+  v_casa := floor(v_total * 0.05);
+  v_bolo := case when p_vencedor = 0 then m.bolo_0 else m.bolo_1 end;
+  for a in select id, user_id, lado, valor from public.truco_apostas where mesa = p_mesa and partida = p_partida order by id loop
+    if a.lado = p_vencedor then
+      v_pago := floor((v_total - v_casa)::numeric * a.valor / v_bolo);
+      if v_pago > 0 then perform public.creditar(a.user_id, v_pago, 'aposta', v_ref || ':premio'); end if;
+    else
+      v_pago := 0;
+    end if;
+    v_soma := v_soma + v_pago;
+    update public.truco_apostas set pago = v_pago where id = a.id;
+  end loop;
+  update public.truco_mercados set estado = 'pago', vencedor = p_vencedor, casa = v_total - v_soma
+   where mesa = p_mesa and partida = p_partida;
+  return 'pago';
+end $$;
+
+-- apostar numa partida de truco: membros; quem joga só aposta no próprio time; uma por pessoa
+create or replace function public.apostar_truco(p_mesa text, p_partida int, p_lado int, p_valor int)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+  v_fid uuid;
+  m     public.truco_mercados%rowtype;
+  v_sal int;
+begin
+  if not public.eh_membro() then raise exception 'Só membros apostam.' using errcode = 'P0001'; end if;
+  perform public.limitar('apostar_truco', 10, interval '1 minute', 'Calma: muitas apostas seguidas.');
+  if p_lado is null or p_lado not in (0, 1) then raise exception 'Escolha um lado.' using errcode = 'P0001'; end if;
+  if p_valor is null or p_valor < 5 or p_valor > 100 then raise exception 'A aposta vai de 5 a 100 moedas.' using errcode = 'P0001'; end if;
+  select * into m from public.truco_mercados where mesa = p_mesa and partida = p_partida for update;
+  if not found or m.estado <> 'aberto' then raise exception 'As apostas desta partida já fecharam.' using errcode = 'P0001'; end if;
+  select id into v_fid from public.friends where user_id = v_uid limit 1;
+  if m.times ? v_fid::text and (m.times->>v_fid::text)::int <> p_lado then
+    raise exception 'Quem está jogando só aposta no próprio time.' using errcode = 'P0001';
+  end if;
+  if exists (select 1 from public.truco_apostas where mesa = p_mesa and partida = p_partida and user_id = v_uid) then
+    raise exception 'Você já apostou nesta partida.' using errcode = 'P0001';
+  end if;
+  v_sal := public.creditar(v_uid, -p_valor, 'aposta', 'truco:' || p_mesa || ':' || p_partida);
+  insert into public.truco_apostas (mesa, partida, user_id, lado, valor) values (p_mesa, p_partida, v_uid, p_lado, p_valor);
+  if p_lado = 0 then update public.truco_mercados set bolo_0 = bolo_0 + p_valor where mesa = p_mesa and partida = p_partida;
+  else update public.truco_mercados set bolo_1 = bolo_1 + p_valor where mesa = p_mesa and partida = p_partida; end if;
+  return jsonb_build_object('saldo', v_sal);
+end $$;
+
+revoke all on function public.truco_cobrar(text, int, int, jsonb) from public, anon, authenticated;
+revoke all on function public.truco_devolver(text) from public, anon, authenticated;
+revoke all on function public.truco_salvar(text, int, jsonb, jsonb, text, jsonb, uuid, jsonb, jsonb) from public, anon, authenticated;
+revoke all on function public.truco_fechar(text, uuid) from public, anon, authenticated;
+revoke all on function public.truco_premiar(text) from public, anon, authenticated;
+revoke all on function public.truco_mercado_abrir(text, int, jsonb) from public, anon, authenticated;
+revoke all on function public.truco_mercado_fechar(text, int) from public, anon, authenticated;
+revoke all on function public.truco_mercado_liquidar(text, int, int) from public, anon, authenticated;
+grant execute on function public.truco_salvar(text, int, jsonb, jsonb, text, jsonb, uuid, jsonb, jsonb) to service_role;
+grant execute on function public.truco_fechar(text, uuid) to service_role;
+grant execute on function public.truco_premiar(text) to service_role;
+grant execute on function public.truco_mercado_abrir(text, int, jsonb) to service_role;
+grant execute on function public.truco_mercado_fechar(text, int) to service_role;
+grant execute on function public.truco_mercado_liquidar(text, int, int) to service_role;
+revoke all on function public.apostar_truco(text, int, int, int) from public, anon;
+grant execute on function public.apostar_truco(text, int, int, int) to authenticated;
+
+-- devoluções não contam como vitória no emblema Truqueiro nem na missão do truco
+do $$
+declare v_def text; v_novo text;
+begin
+  for v_def in select pg_get_functiondef(oid) from pg_proc
+                where pronamespace = 'public'::regnamespace and proname in ('emblemas_de', 'missao_progresso') loop
+    if position(':devolvida' in v_def) = 0 then
+      v_novo := replace(v_def, 'motivo = ''truco'' and valor > 0', 'motivo = ''truco'' and valor > 0 and coalesce(ref, '''') not like ''%:devolvida''');
+      if v_novo <> v_def then execute v_novo; end if;
+    end if;
+  end loop;
+end $$;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -4131,4 +4451,10 @@ select proname::text, 'bolsa' from pg_proc
 union all
 select proname::text, 'amigos' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('eh_membro', 'criar_login_amigo', 'desativar_amigo')
+union all
+select tablename::text, 'truco valendo' from pg_tables
+ where schemaname = 'public' and tablename in ('truco_bolos', 'truco_mercados', 'truco_apostas')
+union all
+select proname::text, 'truco valendo' from pg_proc
+ where pronamespace = 'public'::regnamespace and proname in ('truco_cobrar', 'truco_devolver', 'truco_mercado_abrir', 'truco_mercado_fechar', 'truco_mercado_liquidar', 'apostar_truco')
 order by 2, 1;
