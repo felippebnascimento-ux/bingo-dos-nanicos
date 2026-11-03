@@ -531,6 +531,7 @@ Mais de uma pessoa (e mais de uma IA) mexe no site. **Toda tarefa começa assim,
 - **Edge Function `ficha-jogos`:** busca cada fonte de um nanico no máximo uma vez a cada 6 h (usa no máximo 25 chamadas à Riot por vez). O CS vem da API pública do Leetify (sem chave) pelo número da Steam do `friends.steam` (link `/profiles/<17 dígitos>`; link `/id/` só com a chave da Steam); a GC é o nível da partida mais recente na Gamers Club. As origens aceitas são as mesmas da `riot-ao-vivo`.
 
 ### Pendências conhecidas
+- **Edge Functions da fase 30:** a seção 39 rodou no banco em 03/11/2026 e a `riot-semana` foi publicada com o filtro dos 14. A `truco-mesa`, a `ficha-jogos` e a `riot-ao-vivo` estão prontas no repositório, mas ainda não foram publicadas: a única diferença é recusar amigo inativo (não há nenhum). Publique as três junto com a próxima mudança delas.
 - **Validar a v2 com o grupo:** login, sala, live, câmera, chat, truco entre duas abas, Riot. Depois disso, apagar `legacy/`.
 - **`dados.ts` ↔ `features/jogar/riot.ts`:** um importa o outro. Funciona porque nenhum usa o outro ao carregar. Não chame nada do outro módulo no topo do arquivo.
 
