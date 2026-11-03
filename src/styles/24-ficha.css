@@ -3,16 +3,28 @@
 .ficha-gate{z-index:60;overflow:auto;place-items:start center}
 .ficha-card{width:min(1080px,100%);margin:auto 0;display:grid;gap:18px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px;box-shadow:0 30px 80px -20px var(--shadow)}
 @media (min-width:900px){.ficha-card{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);padding:22px;align-items:start}}
-.ficha-quarto{background:var(--surface-2);border-radius:var(--r-md);overflow:hidden}
+/* o quarto fica parado enquanto a coluna da direita rola (no computador) */
+.ficha-quarto{border-radius:var(--r-md);overflow:hidden;border:1px solid var(--line);background:radial-gradient(120% 90% at 30% 20%,color-mix(in srgb,var(--accent) 10%,var(--surface-2)),var(--surface-2) 70%)}
+@media (min-width:900px){.ficha-quarto{position:sticky;top:0}}
 .quarto{display:block;width:100%;height:auto}
-.ficha{display:grid;gap:16px;align-content:start;min-width:0}
-.ficha-topo{display:flex;align-items:center;gap:14px}
-.ficha-topo .av{width:64px;height:64px;border:3px solid var(--accent)}
+.ficha{display:grid;gap:12px;align-content:start;min-width:0}
+.ficha-topo{display:flex;align-items:center;gap:14px;padding-bottom:4px}
+.ficha-topo .av{width:68px;height:68px;border:3px solid var(--accent);box-shadow:0 6px 18px -6px var(--shadow)}
+.ficha-nome{display:grid;gap:6px;min-width:0}
 .ficha-topo h2{margin:0;font:800 26px/1.1 var(--display);letter-spacing:-.02em;min-width:0;overflow-wrap:anywhere}
+.ficha-selos{display:flex;flex-wrap:wrap;gap:6px}
+.ficha-selo{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 4px;border:1px solid var(--line);border-radius:99px;background:var(--surface-2);color:var(--ink);font:700 12px var(--display);font-variant-numeric:tabular-nums}
+.ficha-selo .hall-moeda{width:18px;height:18px;font-size:9px}
+button.ficha-selo{cursor:pointer}
+button.ficha-selo:hover{border-color:var(--accent)}
+.ficha-selo.eu{padding:3px 10px;background:color-mix(in srgb,var(--accent) 20%,transparent);border-color:transparent;color:var(--accent-text);text-transform:uppercase;letter-spacing:.06em;font-size:10.5px}
 .ficha-fechar{margin-left:auto;flex:none;display:grid;place-items:center;width:40px;height:40px;border:1px solid var(--line);border-radius:50%;background:none;color:var(--ink);cursor:pointer}
 .ficha-fechar:hover{border-color:var(--accent)}
-.ficha-sec{display:grid;gap:10px}
+/* cada bloco é um cartão, com o título pequeno em caixa alta */
+.ficha-sec{display:grid;gap:10px;padding:14px;border:1px solid var(--line);border-radius:var(--r-md);background:color-mix(in srgb,var(--surface-2) 45%,var(--surface))}
 .ficha-sec h3{display:flex;align-items:baseline;gap:8px;margin:0;font:700 12px var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.ficha-acoes{display:flex;flex-wrap:wrap;gap:8px}
+.ficha-acoes .btn{width:auto;display:inline-flex;align-items:center;gap:6px}
 .ficha-sec h3 small{margin-left:auto;font:500 12px var(--body);letter-spacing:0;text-transform:none}
 .ficha-sec .hint{margin:0}
 .ficha-reais{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
@@ -41,16 +53,20 @@
   --quarto-pelucia0:#B4442F; --quarto-pelucia1:#C9583F; --quarto-ouro0:#C9A66B; --quarto-ouro1:#B08D57; --quarto-ouro2:#8F713F;
   --quarto-neon-ouro:#F2C46B; --quarto-neon-vermelho:#FF5A4A; --quarto-rgb1:#E0705A; --quarto-rgb2:#6FBF73; --quarto-rgb3:#6F8FE0;
   --quarto-cacto0:#5E8F4A; --quarto-cacto1:#4B7A3A;
+  /* luz e sombra: o sol da janela no chão, o céu clareando no alto e o canto mais escuro */
+  --quarto-sol:rgb(255 236 190 / .32); --quarto-ceu-claro:#A9BCD6; --quarto-sombra-leve:rgb(20 20 20 / .07);
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .ficha-quarto,:root:not([data-theme="light"]) .loja-previa,:root:not([data-theme="light"]) .mochila-previa{
   --quarto-parede1:#454843; --quarto-parede2:#50544C; --quarto-topo1:#2B2B2A; --quarto-topo2:#333331;
   --quarto-rodape1:#3A3C37; --quarto-rodape2:#42453F; --quarto-piso0:#6F7366; --quarto-piso1:#7C8073; --quarto-ceu:#566B7D;
   --quarto-oliva1:#3A3D35; --quarto-oliva2:#44473E; --quarto-ardosia1:#313C46; --quarto-ardosia2:#3A4753;
+  --quarto-sol:rgb(255 226 160 / .2); --quarto-ceu-claro:#6F8497; --quarto-sombra-leve:rgb(0 0 0 / .12);
 }}
 :root[data-theme="dark"] .ficha-quarto,:root[data-theme="dark"] .loja-previa,:root[data-theme="dark"] .mochila-previa{
   --quarto-parede1:#454843; --quarto-parede2:#50544C; --quarto-topo1:#2B2B2A; --quarto-topo2:#333331;
   --quarto-rodape1:#3A3C37; --quarto-rodape2:#42453F; --quarto-piso0:#6F7366; --quarto-piso1:#7C8073; --quarto-ceu:#566B7D;
   --quarto-oliva1:#3A3D35; --quarto-oliva2:#44473E; --quarto-ardosia1:#313C46; --quarto-ardosia2:#3A4753;
+  --quarto-sol:rgb(255 226 160 / .2); --quarto-ceu-claro:#6F8497; --quarto-sombra-leve:rgb(0 0 0 / .12);
 }
 .quarto .q-linha{stroke:var(--quarto-linha);stroke-width:1;stroke-linejoin:round}
 .quarto .q-parede1{fill:var(--quarto-parede1)} .quarto .q-parede2{fill:var(--quarto-parede2)}
@@ -66,6 +82,7 @@
 .quarto .q-cadeira0{fill:var(--quarto-cadeira0)} .quarto .q-cadeira1{fill:var(--quarto-cadeira1)} .quarto .q-cadeira2{fill:var(--quarto-cadeira2)}
 .quarto .q-planta0{fill:var(--quarto-planta0)} .quarto .q-planta1{fill:var(--quarto-planta1)} .quarto .q-planta2{fill:var(--quarto-planta2)}
 .quarto .q-sombra{fill:var(--shadow)}
+.quarto .q-sol{fill:var(--quarto-sol)} .quarto .q-ceu-claro{fill:var(--quarto-ceu-claro)} .quarto .q-sombra-leve{fill:var(--quarto-sombra-leve)}
 .quarto .q-oliva1{fill:var(--quarto-oliva1)} .quarto .q-oliva2{fill:var(--quarto-oliva2)}
 .quarto .q-ardosia1{fill:var(--quarto-ardosia1)} .quarto .q-ardosia2{fill:var(--quarto-ardosia2)}
 .quarto .q-roxo0{fill:var(--quarto-roxo0)} .quarto .q-roxo1{fill:var(--quarto-roxo1)}
@@ -87,9 +104,12 @@
 .attr .n,.voto-linha .n{font-weight:600;font-size:14px}
 .attr .n small,.voto-linha .n small{font-weight:500;color:var(--muted)}
 .attr .bar{height:12px;border-radius:6px;background:var(--surface-2);overflow:hidden;position:relative}
-.attr .bar i{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:6px}
-.attr .bar i.max{background:var(--live)}
+.attr .bar i{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:6px;transition:width .4s ease-out}
+.attr .bar i.baixo{background:var(--mint)}
+.attr .bar i.alto{background:var(--live)}
+@media (prefers-reduced-motion:reduce){.attr .bar i{transition:none}}
 .attr .v{min-width:36px;font:700 13px var(--display);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.attr .v.alto{color:var(--live)}
 .attr .v.poucos{font:500 11.5px var(--body);color:var(--muted)}
 .attr-rodape{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
 .attr-rodape .btn{width:auto}
@@ -112,13 +132,15 @@
 .no-sitio-seq small{display:block;font-size:12px;color:var(--muted)}
 .no-sitio-tempo{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0}
 .placar-zoeira .no-sitio-tempo{grid-template-columns:repeat(2,minmax(0,1fr))}
-.no-sitio-tempo div{background:var(--surface-2);border-radius:var(--r-md);padding:8px 10px;min-width:0}
+.no-sitio-tempo div{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:8px 10px;min-width:0}
 .no-sitio-tempo dt{font-size:12px;color:var(--muted)}
 .no-sitio-tempo dd{margin:0;font:700 15px var(--display);overflow-wrap:anywhere}
 .no-sitio-barras{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;align-items:end;height:74px}
 .no-sitio-barras span{display:grid;grid-template-rows:1fr auto;gap:3px;height:100%;min-width:0}
-.no-sitio-barras i{align-self:end;height:max(3px,var(--h));border-radius:4px 4px 2px 2px;background:var(--accent)}
+.no-sitio-barras i{align-self:end;height:max(3px,var(--h));border-radius:4px 4px 2px 2px;background:color-mix(in srgb,var(--accent) 45%,transparent)}
 .no-sitio-barras small{font:600 10px var(--body);color:var(--muted);text-align:center}
+.no-sitio-barras .hoje i{background:var(--accent)}
+.no-sitio-barras .hoje small{color:var(--accent-text);font-weight:800}
 
 /* chama pequena ao lado do nome (3 dias seguidos ou mais) */
 .chama-nome{display:inline-flex;align-items:center;gap:1px;margin-left:5px;font:700 11px var(--display);color:var(--live);vertical-align:middle}

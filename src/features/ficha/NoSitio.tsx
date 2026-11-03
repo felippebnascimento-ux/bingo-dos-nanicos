@@ -53,12 +53,16 @@ export function NoSitio({ fid, eu }: { fid: string; eu: boolean }) {
         </div>
       </dl>
       <div className="no-sitio-barras">
-        {[...p.semana].reverse().map((d) => (
-          <span key={d.dia} role="img" aria-label={`${diaDaSemana(d.dia)}: ${textoTempo(d.min)}`} title={`${diaDaSemana(d.dia)}: ${textoTempo(d.min)}`}>
-            <i style={{ ["--h" as string]: `${Math.round((d.min / maior) * 100)}%` }} />
-            <small aria-hidden="true">{diaDaSemana(d.dia).slice(0, 3)}</small>
-          </span>
-        ))}
+        {[...p.semana].reverse().map((d, k, l) => {
+          const hoje = k === l.length - 1;
+          const nome = hoje ? "hoje" : diaDaSemana(d.dia).slice(0, 3);
+          return (
+            <span key={d.dia} className={hoje ? "hoje" : undefined} role="img" aria-label={`${hoje ? "Hoje" : diaDaSemana(d.dia)}: ${textoTempo(d.min)}`} title={`${hoje ? "Hoje" : diaDaSemana(d.dia)}: ${textoTempo(d.min)}`}>
+              <i style={{ ["--h" as string]: `${Math.round((d.min / maior) * 100)}%` }} />
+              <small aria-hidden="true">{nome}</small>
+            </span>
+          );
+        })}
       </div>
     </section>
   );

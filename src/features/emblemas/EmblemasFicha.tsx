@@ -11,7 +11,7 @@ export function EmblemasFicha({ fid }: { fid: string }) {
     void carregarEmblemas(fid);
   }, [fid]);
   return (
-    <section className="ficha-emblemas" aria-labelledby={"emb-" + fid}>
+    <section className="ficha-sec ficha-emblemas" aria-labelledby={"emb-" + fid}>
       <h3 id={"emb-" + fid}>
         Emblemas
         {recebidos !== null && (
@@ -22,7 +22,7 @@ export function EmblemasFicha({ fid }: { fid: string }) {
         )}
       </h3>
       <div className="perfil-emblemas">
-        {lista === undefined ? <small className="hint">Carregando…</small> : lista.length ? lista.map((e) => <Emblema key={e.id} e={e} tam={40} />) : <small className="hint">Nenhum emblema ainda.</small>}
+        {lista === undefined ? <small className="hint">Carregando…</small> : lista.length ? lista.map((e) => <Emblema key={e.id} e={e} tam={44} />) : <small className="hint">Nenhum emblema ainda.</small>}
       </div>
     </section>
   );

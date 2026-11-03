@@ -39,6 +39,4 @@
 .emblema.em-ouro .em-aro{fill:var(--emblema-ouro)}
 .emblema.em-ouro .em-simbolo{stroke:var(--emblema-ouro)}
 /* emblemas na ficha */
-.ficha-emblemas{display:grid;gap:8px}
-.ficha-emblemas h3{margin:0;font:800 15px var(--display)}
-.ficha-emblemas h3 small{font:500 13px var(--body);color:var(--muted)}
+.ficha-emblemas .perfil-emblemas{gap:8px}
