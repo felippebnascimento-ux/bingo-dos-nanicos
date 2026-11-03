@@ -129,9 +129,9 @@ src/
                        sinal da conexão, `sinalDaVoz`), ruido.ts (abrirMic: microfone passado pela RNNoise; sem ela, a supressão
                        do navegador), vozRegras.ts (quem oferece, volume, anel de fala; puro e testado),
                        reacoes.ts, desenho.ts, estado.ts (store + preferências), pip.ts;
-                       telas: LiveView, Palco, Painel (Chat e Cartela; a aba Telas saiu na v1.91), Cameras, Video,
+                       telas: LiveView, Palco, Painel (Chat e Cartela; a aba Telas saiu na v1.90), Cameras, Video,
                        Voos, Rosto, CamNaSala, CamBotoes e CamadaReacoesMinha (reações que chegam na minha transmissão,
-                       fora das abas); no estilo do Discord (v1.91): PainelVoz.tsx (o painel "Voz conectada" embaixo
+                       fora das abas); no estilo do Discord (v1.90): PainelVoz.tsx (o painel "Voz conectada" embaixo
                        do menu com sinal, ruído, desligar e os botões câmera, tela, reações e câmeras; a miniatura da
                        minha transmissão; microfone e fone com a setinha na linha "eu"; as janelas de transmitir, com o
                        que mostrar, 720p/1080p/1440p, 30/60 fps e o som do PC, e a prévia da câmera, `JanelasVoz`) e

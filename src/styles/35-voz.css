@@ -7,14 +7,14 @@
 
 /* ---------- painel da voz ---------- */
 .vz{display:grid;gap:9px;padding:10px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface-2)}
-.vz-topo{display:flex;align-items:center;gap:6px;min-width:0}
-.vz-info{flex:1;display:grid;min-width:0}
-.vz-info b{font-size:13.5px;color:var(--accent-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vz-topo{display:flex;align-items:center;gap:4px;min-width:0}
+.vz-info{flex:1;display:grid;min-width:0;padding-left:2px}
+.vz-info b{font-size:13px;color:var(--accent-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .vz-info b.fora{color:var(--muted)}
 .vz-info small{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.vz-sinal{flex:none;display:grid;place-items:center;width:32px;height:32px;border:0;border-radius:9px;background:var(--accent-soft);color:var(--accent);cursor:pointer}
+.vz-sinal{flex:none;display:grid;place-items:center;width:30px;height:30px;border:0;border-radius:9px;background:var(--accent-soft);color:var(--accent);cursor:pointer}
 .vz-sinal.medio{color:var(--sun)}.vz-sinal.ruim{color:var(--live)}
-.vz-ib{flex:none;display:grid;place-items:center;width:32px;height:32px;border:0;border-radius:9px;background:none;color:var(--muted);cursor:pointer}
+.vz-ib{flex:none;display:grid;place-items:center;width:28px;height:30px;border:0;border-radius:9px;background:none;color:var(--muted);cursor:pointer}
 .vz-ib:hover{background:var(--surface);color:var(--ink)}
 .vz-ib.on{color:var(--accent)}
 .vz-ib.sair{color:var(--live)}
@@ -118,25 +118,38 @@
 .cv-grade{display:grid;gap:12px}
 .cv-grade.vazia{justify-items:center;padding:40px 16px;border-radius:var(--r-lg);background:var(--surface-2);color:var(--muted)}
 .cv-grade.vazia p{margin:0}
-.cv-quadros{display:grid;grid-template-columns:repeat(var(--cols,2),minmax(0,1fr));gap:8px}
+.cv-quadros{display:grid;grid-template-columns:repeat(var(--cols,2),minmax(0,1fr));gap:8px;width:100%;margin:0 auto;
+  /* os quadrados (16:9) cabem na altura da tela: com pouca gente, não ficam gigantes */
+  max-width:max(320px,calc((100vh - 300px) * 16 / 9 * var(--cols,2) / var(--linhas,1)))}
 .cv-foco{display:grid;gap:10px}
 .cv-faixa{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 4px;scrollbar-width:thin}
 .cv-faixa .qd{flex:0 0 170px}
 
 /* quadrado: câmera, rosto ou tela */
-.qd{position:relative;aspect-ratio:16/9;min-width:0;display:grid;place-items:center;border-radius:12px;overflow:hidden;background:var(--olive);box-shadow:0 0 0 0 transparent;transition:box-shadow .15s}
-.qd.f-olive{background:var(--olive)}
-.qd.f-mint{background:var(--mint)}
-.qd.f-accent{background:color-mix(in srgb,var(--olive) 65%,var(--accent))}
-.qd.f-surface{background:color-mix(in srgb,var(--mint) 75%,var(--accent))}
+.qd{position:relative;aspect-ratio:16/9;min-width:0;container-type:inline-size;display:grid;place-items:center;border-radius:12px;overflow:hidden;background:var(--olive);box-shadow:0 0 0 0 transparent;transition:box-shadow .15s}
+/* fundos escuros, como os do Discord (cada um puxa para uma cor da paleta) */
+.qd.f-olive{background:color-mix(in srgb,var(--olive) 55%,var(--accent-ink))}
+.qd.f-mint{background:color-mix(in srgb,var(--mint) 55%,var(--accent-ink))}
+.qd.f-accent{background:color-mix(in srgb,var(--accent) 22%,var(--accent-ink))}
+.qd.f-surface{background:color-mix(in srgb,var(--olive) 30%,var(--accent-ink))}
 .qd.fala{box-shadow:0 0 0 3px var(--accent)}
 .qd.principal{box-shadow:0 0 0 2px var(--live)}
 .qd video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .qd.com-cam video,.qd-cam video{object-fit:cover}
 .qd-cam{position:absolute;inset:0}
 .qd-cam.espelho video{transform:scaleX(-1)}
-.qd-rosto .av{width:clamp(44px,26%,96px);height:auto;aspect-ratio:1;border-radius:50%;font-size:22px}
-.qd.fala .qd-rosto .av{box-shadow:0 0 0 3px var(--accent)}
+.qd .qd-rosto{display:grid;place-items:center;width:clamp(56px,24%,120px);aspect-ratio:1}
+.qd .qd-rosto .av{width:100% !important;height:100% !important;border-radius:50%;font-size:26px;box-shadow:0 6px 20px -6px color-mix(in srgb,var(--accent-ink) 80%,transparent)}
+.qd.fala .qd-rosto .av{box-shadow:0 0 0 3px var(--accent),0 0 0 7px color-mix(in srgb,var(--accent) 25%,transparent)}
+.qd.peq .qd-rosto{width:clamp(36px,30%,56px)}
+/* a minha tela, sem a prévia */
+.qd-minha{display:grid;justify-items:center;gap:8px;padding:10px;text-align:center;color:var(--stamp-ink)}
+.qd-minha b{font-size:14px}
+.qd-minha svg{color:var(--live)}
+.qd.peq .qd-minha b,.qd.peq .qd-minha .btn{display:none}
+.qd-esconder{position:absolute;right:44px;bottom:6px;z-index:2;padding:6px 10px;font-size:12px;opacity:0;transition:opacity .15s}
+.qd:hover .qd-esconder,.qd-esconder:focus-visible{opacity:1}
+@media (hover:none){.qd-esconder{opacity:1}}
 .qd-nome{position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:7px;
   background:color-mix(in srgb,var(--accent-ink) 70%,transparent);color:var(--stamp-ink);font:600 12.5px var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .qd-nome small{display:inline-grid;opacity:.8}
@@ -172,6 +185,7 @@
 .live-grid:fullscreen .stage-col{grid-template-rows:auto minmax(0,1fr) auto}
 .live-grid:fullscreen .palco-foco{height:100%}
 .live-grid:fullscreen .cv-grade{min-height:0;overflow:auto;align-content:center}
+.live-grid:fullscreen .cv-quadros{max-width:max(320px,calc((100vh - 150px) * 16 / 9 * var(--cols,2) / var(--linhas,1)))}
 
 @media (max-width:860px){
   .cv-quadros{grid-template-columns:repeat(min(var(--cols,2),2),minmax(0,1fr))}
@@ -183,9 +197,21 @@
 .cb .fs-out{display:none}
 :fullscreen .cb .fs-in{display:none}
 :fullscreen .cb .fs-out{display:inline}
-.vz-semsom{display:grid;gap:8px}
-.vz-semsom p{margin:0;font-size:12px;line-height:1.45;color:var(--live)}
+.vz-semsom{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.vz-semsom details{flex:1;min-width:0;font-size:12px;color:var(--live)}
+.vz-semsom summary{cursor:pointer;font-weight:600}
+.vz-semsom p{margin:6px 0 0;line-height:1.45;color:var(--muted)}
+.vz-semsom .btn{padding:6px 10px;font-size:12px}
 .vz-ajuda{font-size:12.5px;color:var(--muted)}
 .vz-ajuda summary{cursor:pointer;font-weight:600;color:var(--ink)}
 .vz-ajuda ol{margin:8px 0 0;padding-left:18px;display:grid;gap:6px;line-height:1.45}
-@media (max-width:860px){.qd-assistir b{display:none}.qd-assistir{gap:6px}}
+/* quadro pequeno (faixa do foco, muita gente, celular): só o essencial */
+.qd-curto{display:none}
+@container (max-width:280px){
+  .qd-longo{display:none}
+  .qd-curto{display:inline}
+  .qd-assistir b,.qd-minha b{display:none}
+  .qd-assistir,.qd-minha{gap:6px}
+  .qd-assistir .btn,.qd-minha .btn{padding:6px 10px;font-size:12px}
+}
+@container (max-width:180px){.qd-minha .btn,.qd-olhos{display:none}}

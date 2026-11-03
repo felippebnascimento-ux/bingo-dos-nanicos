@@ -335,7 +335,7 @@ export const CHANGELOG: EntradaLog[] = [
     data: "03/11/2026",
     itens: [
       "InstaNanico Direct: mande mensagens para os nanicos, responda stories e envie publicações pelo aviãozinho; a Dynamic Island avisa quando chega mensagem",
-      { t: "As fotos do feed aparecem inteiras, no formato delas, sem cortar", off: "trocado pelo corte do Instagram na v1.90" },
+      { t: "As fotos do feed aparecem inteiras, no formato delas, sem cortar", off: "trocado pelo corte do Instagram na v1.89" },
     ],
   },
   {
@@ -355,7 +355,15 @@ export const CHANGELOG: EntradaLog[] = [
       "O Ao vivo mostra todo mundo da voz em quadrados, com a câmera ou o rosto e a borda dourada em quem fala, e uma tela para cada transmissão: dá para assistir várias ao mesmo tempo",
       "Clique numa tela para ver em destaque, com o resto do canal embaixo; clique direito num quadrado para tela cheia, janela flutuante, volume da pessoa e silenciar",
       "Ligar a câmera mostra uma prévia antes, com a escolha da câmera e a opção de espelhar",
-      { t: "A aba Telas do painel do Ao vivo", off: "trocada pela grade do canal e pelo painel de voz na v1.91" },
+      { t: "A aba Telas do painel do Ao vivo", off: "trocada pela grade do canal e pelo painel de voz na v1.90" },
+    ],
+  },
+  {
+    data: "03/11/2026",
+    itens: [
+      "A sua própria transmissão não aparece mais como tela dentro da tela: o quadro diz que você está transmitindo e tem o botão Ver prévia",
+      "Quem está sem câmera aparece num quadro escuro com o rosto maior, e os quadros cabem na tela sem ficar gigantes",
+      "O painel da voz cabe inteiro no menu e o aviso de sem som ficou mais curto",
     ],
   },
 ];
