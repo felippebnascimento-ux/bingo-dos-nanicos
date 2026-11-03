@@ -6150,6 +6150,8 @@ create trigger banheiro_pixacao_protecao before insert on public.banheiro_pixaco
 do $$
 begin
   begin alter publication supabase_realtime add table public.banheiro_pixacoes; exception when duplicate_object then null; end;
+end $$;
+
 -- 50) pênalti x1: ranking e chat (03/11/2026, pedido do João) ---------------------------------------------------------
 --   Ranking: duelo_ranking() junta os duelos terminados com vencedor (estado 'fim'; o empate da morte súbita e os
 --   cancelados ficam de fora) e devolve, por pessoa, vitórias, derrotas, o saldo (+aposta por vitória, -aposta por

@@ -182,7 +182,9 @@ export function Aviaozinho({ ativa = true }: { ativa?: boolean }) {
   const r = estado?.rodada ?? null;
   const fase = estado?.fase ?? "parada";
   const crash = r?.resultado && typeof r.resultado.crash === "number" ? (r.resultado.crash as number) : null;
-  const meu = estado?.meu ?? null;
+  /* com a mesa parada, o banco ainda manda a minha aposta do último voo: ela não conta (senão quem apostou por último
+     ficava sem o botão de apostar até outra pessoa abrir um voo; a roleta já faz assim) */
+  const meu = fase === "parada" ? null : (estado?.meu ?? null);
   const minhaAposta = Number(meu?.aposta) || 0;
   const meuAuto = meu && (meu.escolha as { auto?: unknown } | undefined)?.auto != null ? Number((meu.escolha as { auto: unknown }).auto) : null;
   /* o avião desta rodada já está (ou esteve) no ar */
