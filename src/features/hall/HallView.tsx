@@ -14,6 +14,7 @@ import { Boneco } from "./Boneco";
 import { BotaoCelular } from "@/features/celular/Celular";
 import { Missoes } from "@/features/missoes/Missoes";
 import { CarteiraCanto, Dica, Ganhos, NaSala } from "./Cantos";
+import { MochilaCanto } from "@/features/loja/MochilaPainel";
 import { iniciarGanhos } from "./ganhos";
 import { cambalear } from "./zoeira";
 import { iniciarZoeira, useZoeira } from "./zoeiraSala";
@@ -236,7 +237,10 @@ export function HallView({ hidden }: { hidden: boolean }) {
         </div>
         <NaSala />
         <Ganhos />
-        <CarteiraCanto />
+        <div className="hall-bolso">
+          <CarteiraCanto />
+          <MochilaCanto />
+        </div>
         <Missoes canto />
         <BotaoCelular className="hall-canto hall-celular" />
         <Dica />

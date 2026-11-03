@@ -39,6 +39,13 @@ export function lerEmblemas(d: unknown): Emblema[] {
   return out.sort((a, b) => ordem.indexOf(a.id) - ordem.indexOf(b.id));
 }
 
+/** Quanto falta para o próximo nível: null no ouro e no Elo alto (o elo não é uma conta que sobe aos poucos). */
+export function progressoEmblema(e: Emblema): { prox: (typeof NIVEL)[2 | 3]; meta: number; parte: number } | null {
+  if (e.nivel === 3 || e.id === "elo") return null;
+  const meta = EMBLEMAS[e.id].metas[e.nivel];
+  return { prox: NIVEL[(e.nivel + 1) as 2 | 3], meta, parte: Math.min(1, Math.max(0, e.valor / meta)) };
+}
+
 /** "Morador do K-FOFO · prata: 63 h de site aberto (ouro com 200)". */
 export function descreverEmblema(e: Emblema) {
   const d = EMBLEMAS[e.id];
