@@ -73,12 +73,12 @@
 :root[data-theme="dark"] .rr{--roleta-aro0:#CDB078;--roleta-aro1:#8E6531;--roleta-feltro:#24552E}
 .rr-roda-caixa{position:relative;width:min(100%,380px);aspect-ratio:1;padding:12px;border-radius:var(--r-lg);background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--roleta-feltro) 80%,var(--roleta-branco) 20%),var(--roleta-feltro) 70%)}
 /* a roda vista de cima, um pouco inclinada como numa mesa de verdade, com a sombra no feltro */
-.rr-svg{position:relative;z-index:1;display:block;width:100%;height:100%;transform:perspective(1000px) rotateX(26deg);transform-origin:50% 58%;
+.rr-svg{position:relative;z-index:1;display:block;width:100%;height:100%;transform:perspective(1000px) rotateX(18deg);transform-origin:50% 58%;
   filter:drop-shadow(0 2px 2px rgba(0,0,0,.35)) drop-shadow(0 22px 20px rgba(0,0,0,.5))}
 /* a lateral da roda (madeira escura) aparecendo embaixo, como uma tigela vista de cima e de frente */
 .rr-roda-caixa::before{content:"";position:absolute;left:1.5%;right:1.5%;top:1.5%;bottom:1.5%;border-radius:50%;z-index:0;
   background:radial-gradient(circle at 50% 40%,var(--roleta-madeira),var(--roleta-pista1) 70%,var(--roleta-escuro));
-  transform:perspective(1000px) rotateX(26deg) translateY(5.5%);transform-origin:50% 58%;box-shadow:0 0 0 2px color-mix(in srgb,var(--roleta-aro1) 70%,transparent)}
+  transform:perspective(1000px) rotateX(18deg) translateY(4%);transform-origin:50% 58%;box-shadow:0 0 0 2px color-mix(in srgb,var(--roleta-aro1) 70%,transparent)}
 .rr-st-aro0{stop-color:var(--roleta-aro0)}.rr-st-aro1{stop-color:var(--roleta-aro1)}
 .rr-st-pista0{stop-color:var(--roleta-pista0)}.rr-st-pista1{stop-color:var(--roleta-pista1)}
 .rr-st-cone0{stop-color:var(--roleta-cone0)}.rr-st-cone1{stop-color:var(--roleta-cone1)}
@@ -95,7 +95,7 @@
 .rr-losango{stroke:var(--roleta-ouro1);stroke-width:.7}
 .rr-casa.rr-vermelho{fill:var(--roleta-vermelho)}.rr-casa.rr-preto{fill:var(--roleta-preto)}.rr-casa.rr-verde{fill:var(--roleta-verde)}
 .rr-bolso.rr-vermelho{fill:color-mix(in srgb,var(--roleta-vermelho) 70%,var(--roleta-escuro))}.rr-bolso.rr-preto{fill:color-mix(in srgb,var(--roleta-preto) 70%,var(--roleta-escuro))}.rr-bolso.rr-verde{fill:color-mix(in srgb,var(--roleta-verde) 70%,var(--roleta-escuro))}
-.rr-num{fill:var(--roleta-numero);font:800 13px var(--display);text-anchor:middle;letter-spacing:-.02em;paint-order:stroke;stroke:var(--roleta-escuro);stroke-opacity:.35;stroke-width:1.6px}
+.rr-num{fill:var(--roleta-numero);font:800 14.5px var(--display);text-anchor:middle;letter-spacing:-.02em;paint-order:stroke;stroke:var(--roleta-escuro);stroke-opacity:.35;stroke-width:1.6px}
 .rr-divisa{stroke:var(--roleta-prata);stroke-width:1.6;stroke-linecap:round}
 .rr-divisa-sombra{stroke:var(--roleta-escuro);stroke-opacity:.45;stroke-width:1.6;stroke-linecap:round}
 .rr-fio{fill:none;stroke-width:2.4}.rr-fio.fino{stroke-width:1.4}
@@ -135,7 +135,7 @@
 .rm-caixa{grid-column:1 / -1;min-width:0}
 .rm{
   --roleta-vermelho:#C8102E; --roleta-preto:#17171A; --roleta-verde:#0B7A3B;
-  --ficha-5:#F2F2F2; --ficha-10:#D11F35; --ficha-25:#1F9D55; --ficha-50:#2563EB; --ficha-100:#151515;
+  --ficha-5:#F4F4F0; --ficha-5b:#1E3A8A; --ficha-10:#D11F35; --ficha-25:#1F9D55; --ficha-50:#2563EB; --ficha-100:#151515;
   --rm-creme:#F3E7C9; --rm-feltro1:#13703F; --rm-feltro2:#0A4527; --rm-madeira:#6B4F25; --rm-ouro:#D8B46A; --rm-ouro2:#A9803A; --rm-verdeclaro:#86EFAC; --rm-vermelhoclaro:#FF8A98;
   position:relative;display:grid;gap:18px;padding:24px;border-radius:24px;color:var(--rm-creme);border:0;
   /* feltro: fibra (ruído fininho), luz de cima, cantos mais escuros; em volta, filete dourado e a borda de madeira */
@@ -143,10 +143,10 @@
   background-size:160px 160px,auto,auto,auto;
   box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--rm-ouro) 40%,transparent),inset 0 2px 30px rgb(0 0 0 / .45),
     0 0 0 3px var(--rm-ouro2),0 0 0 5px color-mix(in srgb,var(--rm-madeira) 70%,var(--ink)),0 0 0 11px var(--rm-madeira),0 0 0 12px color-mix(in srgb,var(--rm-ouro) 40%,var(--rm-madeira)),0 0 0 14px color-mix(in srgb,var(--rm-madeira) 50%,var(--ink)),0 22px 50px var(--shadow)}
-.rm .rr-roda-caixa{background:none;padding:0;width:min(100%,400px)}
+.rm .rr-roda-caixa{background:none;padding:0;width:min(100%,500px)}
 .rm .rr{gap:0}
 .rm-topo{display:grid;gap:24px;align-items:center;justify-items:center}
-@media (min-width:900px){.rm-topo{grid-template-columns:minmax(0,400px) minmax(0,1fr);justify-items:stretch}}
+@media (min-width:900px){.rm-topo{grid-template-columns:minmax(0,500px) minmax(0,1fr);justify-items:stretch}}
 .rm-lado{display:grid;gap:10px;min-width:0;width:100%;align-content:start}
 .rm-rotulo{margin:6px 0 0;font:700 12px var(--body);letter-spacing:.14em;text-transform:uppercase;color:color-mix(in srgb,var(--rm-creme) 65%,transparent)}
 .rm-espera{margin:0;font:700 18px var(--display);color:color-mix(in srgb,var(--rm-creme) 80%,transparent)}
@@ -211,10 +211,11 @@
 /* fichas */
 .rm-ficha{position:relative;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;flex:none;
   /* ficha de verdade: brilho de cima, listras da borda e a espessura (sombra dura embaixo) */
-  background:radial-gradient(circle at 35% 25%,rgb(255 255 255 / .35),transparent 45%),repeating-conic-gradient(var(--fc) 0 22.5deg,var(--stamp-ink) 22.5deg 45deg);
+  background:radial-gradient(circle at 35% 25%,rgb(255 255 255 / .35),transparent 45%),repeating-conic-gradient(var(--fc) 0 22.5deg,var(--fl,var(--stamp-ink)) 22.5deg 45deg);
   box-shadow:inset 0 0 0 2px rgb(0 0 0 / .18),inset 0 -2px 2px rgb(0 0 0 / .25),0 2px 0 color-mix(in srgb,var(--fc) 55%,var(--ink)),0 4px 0 rgb(0 0 0 / .35),0 8px 12px rgb(0 0 0 / .35)}
 .rm-ficha i{position:absolute;inset:6px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 40% 30%,color-mix(in srgb,var(--fc) 75%,var(--stamp-ink)),var(--fc) 60%);border:1.5px dashed rgb(255 255 255 / .7);box-shadow:inset 0 1px 3px rgb(0 0 0 / .35);text-shadow:0 1px 1px rgb(0 0 0 / .35);font:800 13px var(--body);font-style:normal;color:var(--stamp-ink)}
-.rm-ficha.f5{--fc:var(--ficha-5)}.rm-ficha.f5 i{color:var(--ink);border-color:rgb(0 0 0 / .25)}
+/* a ficha de 5 é branca: listras e número em azul-marinho para não sumir */
+.rm-ficha.f5{--fc:var(--ficha-5);--fl:var(--ficha-5b)}.rm-ficha.f5 i{color:var(--ficha-5b);border-color:color-mix(in srgb,var(--ficha-5b) 70%,transparent);text-shadow:none;font-weight:900}
 .rm-ficha.f10{--fc:var(--ficha-10)}.rm-ficha.f25{--fc:var(--ficha-25)}.rm-ficha.f50{--fc:var(--ficha-50)}.rm-ficha.f100{--fc:var(--ficha-100)}
 .rm-ficha.mini{position:absolute;right:2px;bottom:2px;width:26px;height:26px;z-index:2}
 .rm-ficha.mini i{inset:4px;font-size:9px;border-width:1px}
@@ -604,7 +605,7 @@
 .penalti .pn-escada{margin-right:48px}
 
 /* câmera da roleta: enquanto gira, a roda vai para o meio da tela, grande, com o resto escurecido (RoletaMesa, .zoom) */
-.rm .rr{width:min(100%,400px);aspect-ratio:1}
+.rm .rr{width:min(100%,500px);aspect-ratio:1}
 .rr-palco{position:fixed;inset:0;z-index:60;cursor:zoom-out;background:radial-gradient(ellipse at 50% 45%,color-mix(in srgb,var(--rm-feltro1) 70%,transparent),rgb(0 0 0 / .92) 75%);backdrop-filter:blur(4px);animation:rr-palco .35s ease-out both}
 .rm-topo.zoom .rr-roda-caixa{position:fixed;z-index:61;left:50%;top:44%;width:min(92vw,72vh);transform:translate(-50%,-50%);animation:rr-zoom .6s cubic-bezier(.2,.8,.2,1) both}
 .rr-zoom-res{position:fixed;z-index:62;left:50%;bottom:5vh;transform:translateX(-50%);display:flex;align-items:center;gap:14px;padding:10px 22px 10px 10px;border-radius:99px;
@@ -616,3 +617,25 @@
 @keyframes rr-zoom{from{transform:translate(-50%,-50%) scale(.5);opacity:.3}}
 @keyframes rr-res{from{transform:translateX(-50%) scale(.4);opacity:0}}
 @media (prefers-reduced-motion:reduce){.rr-palco,.rm-topo.zoom .rr-roda-caixa,.rr-zoom-res{animation:none}}
+
+/* estilos da roda (RodaRoleta, data-tema): só cores e materiais. :root na frente para ganhar do tema escuro do site */
+:root .rr[data-tema="luxo"]{
+  --roleta-aro0:#4A4541; --roleta-aro1:#0B0A0A; --roleta-madeira:#151413; --roleta-pista0:#24211F; --roleta-pista1:#070707;
+  --roleta-cone0:#46403A; --roleta-cone1:#100E0D; --roleta-ouro0:#FFF6D6; --roleta-ouro1:#D9B25A; --roleta-prata:#F2D78E; --roleta-prata-esc:#8A6A28;
+  --roleta-vermelho:#C0102A; --roleta-preto:#0C0C0D; --roleta-verde:#0B7A3B; --roleta-numero:#FFE7A6}
+/* luxo: filete dourado em volta da roda, para ela não sumir no feltro escuro */
+.rr[data-tema="luxo"] .rr-aro{stroke:var(--roleta-ouro1);stroke-width:2.5}
+:root .rr[data-tema="monaco"]{
+  --roleta-aro0:#B4543C; --roleta-aro1:#4E150B; --roleta-madeira:#3A0F07; --roleta-pista0:#5C1C10; --roleta-pista1:#250703;
+  --roleta-cone0:#A9503A; --roleta-cone1:#3A0F07; --roleta-ouro0:#FFFFFF; --roleta-ouro1:#8C959D; --roleta-prata:#F4F6F8; --roleta-prata-esc:#7D868E;
+  --roleta-vermelho:#C8102E; --roleta-preto:#141416; --roleta-verde:#0B7A3B; --roleta-numero:#FFFFFF}
+:root .rr[data-tema="neon"]{
+  --roleta-aro0:#22314F; --roleta-aro1:#070C1A; --roleta-madeira:#0A1124; --roleta-pista0:#0F1830; --roleta-pista1:#03060F;
+  --roleta-cone0:#1F2C4A; --roleta-cone1:#080E1E; --roleta-ouro0:#C8FBFF; --roleta-ouro1:#18B4D2; --roleta-prata:#7FE6FF; --roleta-prata-esc:#1B6A86;
+  --roleta-vermelho:#E11D48; --roleta-preto:#0F172A; --roleta-verde:#10B981; --roleta-numero:#E6FAFF}
+/* neon: sem veio de madeira, com o aro brilhando */
+.rr[data-tema="neon"] .rr-com-veio{filter:none}
+.rr[data-tema="neon"] .rr-aro{filter:drop-shadow(0 0 6px var(--roleta-ouro1))}
+.rr[data-tema="neon"] .rr-svg{filter:drop-shadow(0 0 18px color-mix(in srgb,var(--roleta-ouro1) 45%,transparent)) drop-shadow(0 22px 20px rgba(0,0,0,.5))}
+/* luxo: laca preta com reflexo mais forte e o veio quase sumindo */
+.rr[data-tema="luxo"] .rr-com-veio{filter:none}

@@ -152,7 +152,10 @@ function Roda({ id }: { id: string }) {
 export type Giro = { id: number; casa: number };
 
 /** A roda. Quando chega um `giro` novo (id diferente), ela gira até a `casa` dele e chama `onFim`. */
-export function RodaRoleta({ giro, onFim }: { giro: Giro | null; onFim?: (casa: number, cor: Cor) => void }) {
+/** Estilos da roda (só cores e materiais, em 26-cassino.css): madeira clássica, laca preta com ouro, mogno com cromo, neon. */
+export type TemaRoda = "classica" | "luxo" | "monaco" | "neon";
+
+export function RodaRoleta({ giro, onFim, tema = "classica" }: { giro: Giro | null; onFim?: (casa: number, cor: Cor) => void; tema?: TemaRoda }) {
   const id = useId().replace(/:/g, "");
   const rodaRef = useRef<SVGGElement>(null);
   const bolaRef = useRef<SVGGElement>(null);
@@ -269,7 +272,7 @@ export function RodaRoleta({ giro, onFim }: { giro: Giro | null; onFim?: (casa: 
   const cor = final !== null ? corDa(final) : null;
 
   return (
-    <div className="rr">
+    <div className="rr" data-tema={tema}>
       <div className="rr-roda-caixa">
         <svg className="rr-svg" viewBox="-200 -200 400 400" role="img" aria-label={final !== null ? `Roleta: deu ${final} ${cor}` : rodando ? "Roleta girando" : "Roleta parada"}>
           <defs>
@@ -346,11 +349,11 @@ export function RodaRoleta({ giro, onFim }: { giro: Giro | null; onFim?: (casa: 
             </radialGradient>
           </defs>
           {/* parados: aro, madeira, pista e os 8 losangos */}
-          <circle r={R_ARO} fill={`url(#${id}-aro)`} className="rr-aro" filter={`url(#${id}-madeira)`} />
+          <circle r={R_ARO} fill={`url(#${id}-aro)`} className="rr-aro rr-com-veio" filter={`url(#${id}-madeira)`} />
           <circle r={R_ARO - 3} fill="none" stroke={`url(#${id}-bisel)`} strokeWidth={3} />
-          <circle r={R_MADEIRA} className="rr-madeira" filter={`url(#${id}-madeira)`} />
+          <circle r={R_MADEIRA} className="rr-madeira rr-com-veio" filter={`url(#${id}-madeira)`} />
           <circle r={R_MADEIRA - 1} className="rr-madeira-fio" />
-          <circle r={R_PISTA_EXT} fill={`url(#${id}-pista)`} filter={`url(#${id}-madeira)`} />
+          <circle r={R_PISTA_EXT} fill={`url(#${id}-pista)`} filter={`url(#${id}-madeira)`} className="rr-com-veio" />
           <circle r={R_PISTA_EXT} fill={`url(#${id}-borda)`} />
           {/* veios da madeira da pista */}
           {[171, 166, 160, 155].map((r) => (

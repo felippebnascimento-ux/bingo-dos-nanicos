@@ -313,6 +313,7 @@ export const CHANGELOG: EntradaLog[] = [
       "Roleta com câmera: quando ela gira, vai para o meio da tela, grande, e mostra o número e quanto você ganhou antes de voltar (toque fora ou Esc fecha)",
       "Bolinha mais real: pula nos losangos e entre as casas, com a sombra se afastando, e balança de leve antes de parar na casa",
       "Pênalti: o botão de sacar voltou a aparecer, verde e pulsando",
+      "Roleta nova em laca preta com ouro, maior e com números mais fáceis de ler; a ficha de 5 ganhou listras azuis para não sumir",
     ],
   },
 ];
