@@ -1,7 +1,7 @@
 "use client";
 /*
- * Aba Cassino: moedas fictícias (sem compra e sem saque): roleta, aviãozinho e pênalti ao vivo (rodadas para todo
- * mundo junto) e o caça-níquel com jackpot do grupo. O banco sorteia; aqui só escolhemos a aposta, animamos até o resultado que
+ * Aba Cassino: moedas fictícias (sem compra e sem saque): roleta e aviãozinho ao vivo (rodadas para todo
+ * mundo junto), o pênalti e o caça-níquel (individuais, este com jackpot do grupo). O banco sorteia; aqui só escolhemos a aposta, animamos até o resultado que
  * o banco mandou e mostramos como conferir que nada foi trocado.
  */
 import { useEffect, useState } from "react";

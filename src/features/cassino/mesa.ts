@@ -1,11 +1,12 @@
 /*
- * Mesas ao vivo (seção 32 do seguranca.sql): roleta, aviãozinho e pênalti em rodadas para todo mundo junto.
- * Aqui só o que é regra pura: ler o estado que o banco manda, o relógio do banco, os tempos e as contas do pênalti.
+ * Mesas ao vivo (seção 32 do seguranca.sql): roleta e aviãozinho em rodadas para todo mundo junto.
+ * Aqui só o que é regra pura: ler o estado que o banco manda, o relógio do banco e os tempos; e as contas do pênalti
+ * (seção 32b), que é individual.
  * Quem decide fase, sorteio e pagamento é o banco; o site só mostra.
  */
 import { conferir, hashDaSemente } from "./regras";
 
-export type JogoMesa = "roleta" | "aviao" | "penalti";
+export type JogoMesa = "roleta" | "aviao";
 export type Fase = "parada" | "apostas" | "jogo" | "resultado";
 export type Pessoa = {
   nome: string;
@@ -43,7 +44,7 @@ export type EstadoMesa = {
 };
 
 /** Tempo de apostas de cada mesa (igual a mesa_janela no SQL), só para a barra de contagem. */
-export const JANELA_MS: Record<JogoMesa, number> = { roleta: 15000, aviao: 8000, penalti: 10000 };
+export const JANELA_MS: Record<JogoMesa, number> = { roleta: 15000, aviao: 8000 };
 
 const FASES: Fase[] = ["parada", "apostas", "jogo", "resultado"];
 const ms = (v: unknown) => (typeof v === "string" ? Date.parse(v) : NaN);
@@ -52,7 +53,7 @@ const obj = (v: unknown) => (v && typeof v === "object" && !Array.isArray(v) ? (
 /** Confere o que veio do banco (mesa_estado) e põe nos tipos do site; algo estranho → null. */
 export function lerEstado(d: unknown): EstadoMesa | null {
   const o = obj(d);
-  if (!o || (o.jogo !== "roleta" && o.jogo !== "aviao" && o.jogo !== "penalti")) return null;
+  if (!o || (o.jogo !== "roleta" && o.jogo !== "aviao")) return null;
   const fase = FASES.includes(o.fase as Fase) ? (o.fase as Fase) : "parada";
   const agora = ms(o.agora);
   if (!Number.isFinite(agora)) return null;

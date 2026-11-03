@@ -1,38 +1,40 @@
 "use client";
 /*
- * Pênalti ao vivo (aba Cassino, no lugar do Maior ou menor): todo mundo chuta na mesma rodada contra o goleiro da casa.
- * Aposta uma vez, escolhe o canto; o goleiro pula numa das 3 colunas (o banco sorteia uma vez para todos). Gol nas
- * outras duas: o multiplicador sobe (1,45× → 7,36× no 5º gol) e dá para sacar antes do próximo chute.
- * O banco decide tudo (penalti_entrar / penalti_chutar / penalti_sacar / mesa_estado); aqui só a cena e os botões.
- * A cena é ilustração (--pn-*): estádio, torcida, refletores, gol com rede, goleiro e bola.
+ * Pênalti (aba Cassino, no lugar do Maior ou menor): cada um joga a sua disputa contra o goleiro da casa.
+ * Aposta uma vez e escolhe o canto; o banco sorteia na hora a coluna em que o goleiro pula (penalti_chutar). Gol nas
+ * outras duas: o multiplicador sobe (1,45× → 7,36× no 5º gol) e dá para sacar depois de cada gol. Defendeu, a bola
+ * espirra para fora. A cena é ilustração (--pn-*): estádio, torcida, refletores, gol com rede, goleiro e bola.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { IcSemSom, IcVolume } from "@/components/ui/icones";
 import { useCarteira } from "@/lib/carteira";
 import { formatarMoedas } from "@/lib/moedas";
+import { sb } from "@/lib/supabase";
 import { toast } from "@/lib/toast";
 import { local, reduzMovimento } from "@/lib/util";
-import { msgDe } from "./estado";
-import { colunaDa, conferirRodada, ehGol, faltam, JANELA_MS, MAX_GOLS, multPenalti, type Rodada } from "./mesa";
-import { chamarMesa, useMesa } from "./mesaDados";
+import { carregar, msgDe } from "./estado";
+import { entre, membro, type Ponto } from "./goleiro";
+import { colunaDa, MAX_GOLS, multPenalti } from "./mesa";
 import { FICHAS } from "./regras";
-import { FichaVisual, MesaStatus, useRelogio } from "./RoletaMesa";
+import { FichaVisual } from "./RoletaMesa";
 
 const ZONAS = [0, 1, 2, 3, 4, 5];
 const NOME_ZONA = ["alto à esquerda", "alto no meio", "alto à direita", "baixo à esquerda", "baixo no meio", "baixo à direita"];
+const vezes = (m: number) => `${m.toFixed(2).replace(".", ",")}×`;
+const espera = (ms: number) => new Promise((ok) => setTimeout(ok, ms));
 
 /* ---------- sons (Web Audio) ---------- */
-function apito(grave = false) {
+function apito() {
   try {
     const ctx = new AudioContext(), o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime;
     o.type = "square";
-    o.frequency.setValueAtTime(grave ? 520 : 2300, t);
-    g.gain.setValueAtTime(0.05, t);
-    g.gain.exponentialRampToValueAtTime(0.001, t + (grave ? 0.5 : 0.25));
+    o.frequency.setValueAtTime(2300, t);
+    g.gain.setValueAtTime(0.04, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
     o.connect(g).connect(ctx.destination);
     o.start(t);
-    o.stop(t + 0.6);
-    setTimeout(() => void ctx.close(), 900);
+    o.stop(t + 0.3);
+    setTimeout(() => void ctx.close(), 600);
   } catch {
     /* sem som */
   }
@@ -55,38 +57,64 @@ function torcida(gol: boolean) {
   }
 }
 
-/** Um lado do goleiro (braço, luva, perna e chuteira); o outro lado é o espelho. */
+/* ---------- o goleiro ---------- */
+/* metade esquerda (a direita é o espelho): ombro, cotovelo, punho, palma; quadril, joelho, tornozelo */
+const OMBRO: Ponto = [75, 62], COTOVELO: Ponto = [49, 90], PUNHO: Ponto = [41, 63], PALMA: Ponto = [38, 50];
+const QUADRIL: Ponto = [87, 152], JOELHO: Ponto = [73, 195], TORNOZELO: Ponto = [70, 234];
+const DEDOS: [Ponto, Ponto][] = [
+  [[31, 46], [27, 32]],
+  [[35, 42], [32.5, 27]],
+  [[39.5, 41], [39, 26]],
+  [[44, 43], [45.5, 30]],
+];
+
 function LadoGoleiro() {
   return (
     <>
-      {/* perna: coxa, joelho flexionado, meião até a chuteira */}
-      <path d="M66 112 L53 130" className="pn-coxa" />
-      <path d="M53 130 L49 153" className="pn-canela" />
-      <path d="M52.5 134 L51 141" className="pn-meia-faixa" />
-      <path d="M38 152 Q48 145 60 151 L61 157 Q49 161 38 158 Z" className="pn-chuteira" />
-      <path d="M42 156 L58 156" className="pn-chuteira-sola" />
-      {/* braço aberto: ombro, cotovelo e punho, com a manga comprida */}
-      <path d="M60 57 Q42 58 33 64 Q24 58 21 48" className="pn-braco" />
-      <path d="M23.5 52 L19 50" className="pn-punho" />
-      {/* luva aberta, dedos para cima */}
-      <path
-        d="M11 50 Q5 40 8 27 Q9.5 23 12 25 L13.5 34 L13.5 21 Q15 17 17.5 20 L18.5 33 L20 19.5 Q22 16 24.5 19.5 L24 33 L27 25.5 Q30 23 31 27 L28 41 Q27 50 19 52 Z"
-        fill="url(#pn-luva)"
-        className="pn-luva"
-      />
-      <path d="M12 46 Q19 49 26 45" className="pn-luva-faixa" />
+      {/* perna: coxa, canela com o meião e a chuteira */}
+      <path d={membro(QUADRIL, JOELHO, 13, 9)} fill="url(#pn-pele-vol)" />
+      <path d={membro(JOELHO, TORNOZELO, 9, 6)} fill="url(#pn-pele-vol)" />
+      <path d={membro(entre(JOELHO, TORNOZELO, 0.18), TORNOZELO, 8.6, 6.3)} fill="url(#pn-meiao)" />
+      <path d="M57 231 Q69 226 81 233 L83 242 Q69 247 56 242 Z" className="pn-chuteira" />
+      <path d="M59 243.5 L81 243.5" className="pn-chuteira-sola" />
+      {/* braço de manga comprida: ombro, cotovelo e punho */}
+      <path d={membro(OMBRO, COTOVELO, 9.5, 7)} fill="url(#pn-manga)" />
+      <path d={membro(COTOVELO, PUNHO, 7, 5.6)} fill="url(#pn-manga)" />
+      <path d={membro(entre(COTOVELO, PUNHO, 0.72), PUNHO, 6.2, 5.8)} className="pn-punho" />
+      {/* luva aberta: dedão, palma e quatro dedos */}
+      <path d={membro([45, 54], [52, 46], 3.2, 2.6)} fill="url(#pn-luva)" className="pn-luva" />
+      <ellipse cx={PALMA[0]} cy={PALMA[1]} rx="9" ry="10.5" transform={`rotate(-12 ${PALMA[0]} ${PALMA[1]})`} fill="url(#pn-luva)" className="pn-luva" />
+      {DEDOS.map(([a, b], k) => (
+        <path key={k} d={membro(a, b, 2.9, 2.3)} fill="url(#pn-luva)" className="pn-luva" />
+      ))}
+      <path d="M31 56 Q38 60.5 46 56" className="pn-luva-faixa" />
     </>
   );
 }
 
-/** O goleiro de frente, agachado na espera, braços abertos (o pulo é CSS). */
+/** O goleiro de frente, na espera: pernas abertas e flexionadas, braços abertos, luvas para cima (o pulo é CSS). */
 function Goleiro() {
   return (
-    <svg viewBox="0 0 160 168" className="pn-goleiro-svg">
+    <svg viewBox="0 0 200 250" className="pn-goleiro-svg">
       <defs>
         <linearGradient id="pn-camisa" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" className="pn-st-camisa0" />
-          <stop offset="1" className="pn-st-camisa1" />
+          <stop offset=".55" className="pn-st-camisa1" />
+          <stop offset="1" className="pn-st-camisa2" />
+        </linearGradient>
+        <linearGradient id="pn-manga" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" className="pn-st-camisa0" />
+          <stop offset=".6" className="pn-st-camisa1" />
+          <stop offset="1" className="pn-st-camisa2" />
+        </linearGradient>
+        <linearGradient id="pn-pele-vol" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" className="pn-st-pele0" />
+          <stop offset=".6" className="pn-st-pele1" />
+          <stop offset="1" className="pn-st-pele2" />
+        </linearGradient>
+        <linearGradient id="pn-meiao" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" className="pn-st-camisa0" />
+          <stop offset="1" className="pn-st-camisa2" />
         </linearGradient>
         <radialGradient id="pn-rosto" cx="40%" cy="35%" r="70%">
           <stop offset="0" className="pn-st-pele0" />
@@ -101,32 +129,36 @@ function Goleiro() {
           <stop offset="1" className="pn-st-calcao1" />
         </linearGradient>
       </defs>
-      <ellipse cx="80" cy="161" rx="44" ry="5" className="pn-sombra" />
+      <ellipse cx="100" cy="243" rx="52" ry="6" className="pn-sombra" />
       <LadoGoleiro />
-      <g transform="matrix(-1 0 0 1 160 0)">
+      <g transform="matrix(-1 0 0 1 200 0)">
         <LadoGoleiro />
       </g>
       {/* calção */}
-      <path d="M57 96 L103 96 L107 117 L85 118 L80 109 L75 118 L53 117 Z" fill="url(#pn-short)" className="pn-calcao" />
-      {/* camisa: ombros largos, corpo inclinado para a frente */}
-      <path d="M57 52 Q80 43 103 52 L108 73 Q107 89 102 100 L58 100 Q53 89 52 73 Z" fill="url(#pn-camisa)" className="pn-camisa" />
-      <path d="M53 66 L107 60 L107.6 67 L53.6 73 Z" className="pn-listra" />
-      <path d="M58 100 Q53 89 52 73 L57 52 Q62 76 66 100 Z" className="pn-camisa-sombra" />
-      <path d="M71 48.5 L80 58 L89 48.5" className="pn-gola" />
-      <text x="80" y="93" className="pn-numero">1</text>
+      <path d="M76 134 L124 134 L131 170 Q116 175 104 170 L100 151 L96 170 Q84 175 69 170 Z" fill="url(#pn-short)" className="pn-calcao" />
+      <path d="M77 140 L123 140" className="pn-calcao-cos" />
+      {/* camisa: ombros largos afinando na cintura, painéis do lado mais escuros, gola e faixa no peito */}
+      <path d="M72 56 Q100 46 128 56 Q135 80 129 104 Q125 122 123 138 L77 138 Q75 122 71 104 Q65 80 72 56 Z" fill="url(#pn-camisa)" className="pn-camisa" />
+      <path d="M72 56 Q65 80 71 104 Q75 122 77 138 L85 138 Q80 100 81 59 Z" className="pn-camisa-lado" />
+      <path d="M128 56 Q135 80 129 104 Q125 122 123 138 L115 138 Q120 100 119 59 Z" className="pn-camisa-lado" />
+      <path d="M71 80 L129 72 L129.6 81 L71.4 89 Z" className="pn-listra" />
+      <path d="M90 50.5 L100 61 L110 50.5" className="pn-gola" />
+      <text x="100" y="124" className="pn-numero">1</text>
       {/* pescoço e cabeça */}
-      <path d="M74 40 L86 40 L87 51 Q80 54 73 51 Z" className="pn-pescoco" />
-      <ellipse cx="66.5" cy="31" rx="3" ry="4.2" className="pn-pele" />
-      <ellipse cx="93.5" cy="31" rx="3" ry="4.2" className="pn-pele" />
-      <ellipse cx="80" cy="29" rx="13" ry="15" fill="url(#pn-rosto)" className="pn-cabeca" />
-      <path d="M67 27 Q65 12 80 11 Q95 12 93 27 Q91 19 80 18.5 Q69 19 67 27 Z" className="pn-cabelo" />
-      <path d="M71.5 25.5 Q74.5 24 77.5 25.2 M82.5 25.2 Q85.5 24 88.5 25.5" className="pn-sobrancelha" />
-      <ellipse cx="75" cy="29.8" rx="2.7" ry="1.9" className="pn-olho-branco" />
-      <ellipse cx="85" cy="29.8" rx="2.7" ry="1.9" className="pn-olho-branco" />
-      <circle cx="75.4" cy="30" r="1.25" className="pn-olho" />
-      <circle cx="85.4" cy="30" r="1.25" className="pn-olho" />
-      <path d="M80 31 Q82.6 35 79.4 36.2" className="pn-nariz" />
-      <path d="M75.5 39.2 Q80 41.6 84.5 39.2" className="pn-boca" />
+      <path d="M93 39 L107 39 L108 53 Q100 57 92 53 Z" className="pn-pescoco" />
+      <path d="M93 47 Q100 51 107 47" className="pn-pescoco-sombra" />
+      <ellipse cx="87.5" cy="28" rx="3" ry="4.3" className="pn-pele" />
+      <ellipse cx="112.5" cy="28" rx="3" ry="4.3" className="pn-pele" />
+      <ellipse cx="100" cy="26.5" rx="12.6" ry="15" fill="url(#pn-rosto)" className="pn-cabeca" />
+      <path d="M87.3 24 Q85.5 8.5 100 7.5 Q114.5 8.5 112.7 24 Q110.5 15.5 100 15 Q89.5 15.5 87.3 24 Z" className="pn-cabelo" />
+      <path d="M93 11 Q99 9.4 105 11" className="pn-cabelo-luz" />
+      <path d="M91.6 22.6 Q94.6 21.2 97.6 22.4 M102.4 22.4 Q105.4 21.2 108.4 22.6" className="pn-sobrancelha" />
+      <ellipse cx="95" cy="27" rx="2.6" ry="1.8" className="pn-olho-branco" />
+      <ellipse cx="105" cy="27" rx="2.6" ry="1.8" className="pn-olho-branco" />
+      <circle cx="95.3" cy="27.2" r="1.2" className="pn-olho" />
+      <circle cx="105.3" cy="27.2" r="1.2" className="pn-olho" />
+      <path d="M100 28.4 Q102.5 32.3 99.4 33.4" className="pn-nariz" />
+      <path d="M95.8 36.4 Q100 38.6 104.2 36.4" className="pn-boca" />
     </svg>
   );
 }
@@ -144,64 +176,75 @@ function Bola() {
   );
 }
 
-type Chute = { id: number; zona: number | null; coluna: number; alto: boolean };
+type Disputa = { aposta: number; gols: number };
+/** O chute na tela: `fase` = voando (até o canto), rebateu (o goleiro pegou e ela espirra) ou parou (dentro do gol). */
+type Lance = { zona: number; coluna: number; alto: boolean; gol: boolean; fase: "voando" | "rebateu" | "parou" };
 
 export function Penalti() {
   const saldo = useCarteira((s) => s.carteira?.saldo);
-  const { estado, ligada, agora, recarregar } = useMesa("penalti");
   const [ficha, setFicha] = useState(10);
+  const [disputa, setDisputa] = useState<Disputa | null>(null);
+  const [lance, setLance] = useState<Lance | null>(null);
+  const [placa, setPlaca] = useState<"gol" | "defendeu" | null>(null);
+  const [fim, setFim] = useState<{ texto: string; bom: boolean } | null>(null);
+  const [ultimos, setUltimos] = useState<boolean[]>([]);
   const [ocupado, setOcupado] = useState(false);
   const [mudo, setMudo] = useState(() => local.get("roleta-som") === "0");
-  /* depois do voo da bola: mostra GOL! ou DEFENDEU! (da rodada `id`) */
-  const [placaDe, setPlacaDe] = useState<{ id: number; tipo: "gol" | "defendeu" } | null>(null);
-  const [conferida, setConferida] = useState<string | null>(null);
-  useRelogio(true);
 
-  const r: Rodada | null = estado?.rodada ?? null;
-  const fase = estado?.fase ?? "parada";
-  const meu = estado?.meu ?? null;
-  const naDisputa = meu?.estado === "ativa";
-  const gols = naDisputa ? Number(meu?.gols) || 0 : 0;
-  const minhaZona = naDisputa && meu?.zona != null ? Number(meu.zona) : null;
-  const minhaAposta = Number(meu?.aposta) || 0;
-  const segundos = r && fase === "apostas" ? faltam(r.fechaEm, agora()) : 0;
-  const res = r?.resultado && typeof r.resultado.coluna === "number" ? r.resultado : null;
-
-  /* o banco mostrou onde o goleiro pula: a bola vai para o meu canto (ou o de alguém da rodada) e ele pula.
-     Com o chute novo aberto (ou a mesa parada), a bola volta para a marca. */
-  const rid = r?.id ?? null;
-  const emCampo = fase === "jogo" || fase === "resultado";
-  const zonaDoChute = estado?.gente.find((p) => p.eu)?.zona ?? estado?.gente.find((p) => p.zona != null)?.zona ?? null;
-  const colunaGk = res ? Number(res.coluna) : null;
-  const altoGk = res?.alto === true;
-  const chute: Chute | null = useMemo(
-    () => (rid !== null && colunaGk !== null && emCampo ? { id: rid, zona: zonaDoChute, coluna: colunaGk, alto: altoGk } : null),
-    [rid, colunaGk, altoGk, emCampo, zonaDoChute],
-  );
-  const placa = placaDe && chute && placaDe.id === chute.id ? placaDe.tipo : null;
-  const chuteId = chute?.id ?? null;
+  /* volta para a disputa aberta (recarregou a página no meio) */
   useEffect(() => {
-    if (chuteId === null || colunaGk === null) return;
-    if (!mudo) apito();
-    const t = setTimeout(() => {
-      const gol = zonaDoChute != null ? ehGol(zonaDoChute, colunaGk) : null;
-      if (gol === null) return;
-      setPlacaDe({ id: chuteId, tipo: gol ? "gol" : "defendeu" });
-      if (!mudo) torcida(gol);
-    }, reduzMovimento() ? 0 : 1150);
-    return () => clearTimeout(t);
-    // uma vez por chute (o som e a zona são lidos na hora)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chuteId]);
+    let vivo = true;
+    void sb()
+      .rpc("penalti_estado")
+      .then(({ data }) => {
+        if (vivo && data && typeof data === "object") setDisputa({ aposta: Number((data as Disputa).aposta), gols: Number((data as Disputa).gols) });
+      });
+    return () => {
+      vivo = false;
+    };
+  }, []);
 
-  const tocarZona = async (z: number) => {
-    if (ocupado || fase === "jogo") return;
+  const gols = disputa?.gols ?? 0;
+
+  const chutar = async (zona: number) => {
+    if (ocupado) return;
+    if (!disputa && saldo !== undefined && saldo < ficha) return toast("Sem moedas para essa ficha.");
     setOcupado(true);
+    setPlaca(null);
+    setFim(null);
+    setLance(null);
     try {
-      if (naDisputa) await chamarMesa("penalti_chutar", { p_zona: z });
-      else await chamarMesa("penalti_entrar", { p_aposta: ficha, p_zona: z });
-      setConferida(null);
-      await recarregar();
+      let atual = disputa;
+      if (!atual) {
+        const c = await sb().rpc("penalti_comecar", { p_aposta: ficha });
+        if (c.error) throw c.error;
+        atual = { aposta: ficha, gols: 0 };
+        setDisputa(atual);
+      }
+      const { data, error } = await sb().rpc("penalti_chutar", { p_zona: zona });
+      if (error) throw error;
+      const r = data as { gol: boolean; coluna: number; alto: boolean; gols: number; estado: string; pagou: number };
+      if (!mudo) apito();
+      /* um quadro com a bola na marca, depois ela voa (a transição do CSS precisa da mudança de classe) */
+      await espera(30);
+      /* defendeu: o goleiro pula na altura da bola; gol: ele pula para o outro lado, alto ou baixo como o banco sorteou */
+      const alto = r.gol ? r.alto : zona < 3;
+      setLance({ zona, coluna: r.coluna, alto, gol: r.gol, fase: "voando" });
+      await espera(reduzMovimento() ? 0 : 560);
+      setLance({ zona, coluna: r.coluna, alto, gol: r.gol, fase: r.gol ? "parou" : "rebateu" });
+      setPlaca(r.gol ? "gol" : "defendeu");
+      if (!mudo) torcida(r.gol);
+      setUltimos((u) => [r.gol, ...u].slice(0, 12));
+      if (r.estado === "ativa") setDisputa({ aposta: atual.aposta, gols: r.gols });
+      else {
+        setDisputa(null);
+        setFim(
+          r.estado === "completa"
+            ? { texto: `5 gols! +${formatarMoedas(r.pagou - atual.aposta)} moedas`, bom: true }
+            : { texto: `O goleiro pegou: −${atual.aposta} moedas`, bom: false },
+        );
+        void carregar();
+      }
     } catch (e) {
       toast(msgDe(e, "Não deu para chutar. Confira a internet."));
     } finally {
@@ -210,12 +253,17 @@ export function Penalti() {
   };
 
   const sacar = async () => {
-    if (ocupado) return;
+    if (ocupado || !disputa) return;
     setOcupado(true);
     try {
-      const d = await chamarMesa("penalti_sacar", {});
-      toast(`+${formatarMoedas(Number(d.pagou))} moedas: saiu com ${String(Number(d.mult).toFixed(2)).replace(".", ",")}×`);
-      await recarregar();
+      const { data, error } = await sb().rpc("penalti_sacar");
+      if (error) throw error;
+      const d = data as { pagou: number; mult: number };
+      setFim({ texto: `Você saiu com ${vezes(d.mult)}: +${formatarMoedas(d.pagou - disputa.aposta)} moedas`, bom: true });
+      setDisputa(null);
+      setLance(null);
+      setPlaca(null);
+      void carregar();
     } catch (e) {
       toast(msgDe(e, "Não deu para sacar. Confira a internet."));
     } finally {
@@ -223,39 +271,28 @@ export function Penalti() {
     }
   };
 
-  const conferirEsta = async () => {
-    if (!r) return;
-    const c = await conferirRodada("penalti", r);
-    if (!c) return;
-    const col = Math.floor(c.u * 3);
-    setConferida(`${c.hashOk ? "O segredo bate com o hash" : "O segredo NÃO bate com o hash"} · a conta dá a coluna ${col + 1}${res && col === Number(res.coluna) ? ", igual à do goleiro" : ", DIFERENTE da do goleiro"}`);
-  };
-
   const trocarSom = () => {
     setMudo(!mudo);
     local.set("roleta-som", mudo ? "1" : "0");
   };
 
-  if (ligada === false) return <p className="block hint">O pênalti ao vivo ainda não foi ligado no banco (seção 32 do seguranca.sql).</p>;
-
-  const podeEscolher = fase !== "jogo" && (naDisputa || !meu || meu.estado !== "ativa");
-  const semSaldo = !naDisputa && saldo !== undefined && saldo < ficha;
-  const mergulho = chute ? ["esq", "meio", "dir"][chute.coluna] + (chute.alto ? " alto" : " baixo") : "";
-  const alvo = chute?.zona ?? null;
+  const mergulho = lance ? ["esq", "meio", "dir"][lance.coluna] + (lance.alto ? " alto" : " baixo") : "";
+  /* a bola: na marca, voando até o canto, dentro da rede ou espirrando para fora (para o lado do canto) */
+  const classeBola = !lance ? "" : lance.fase === "rebateu" ? ` z${lance.zona} rebate r${colunaDa(lance.zona)}` : ` z${lance.zona}`;
+  const semSaldo = !disputa && saldo !== undefined && saldo < ficha;
 
   return (
     <div className="rm penalti">
       <button type="button" className="av-mudo" aria-pressed={mudo} aria-label={mudo ? "Ligar o som" : "Desligar o som"} onClick={trocarSom}>
         {mudo ? <IcSemSom /> : <IcVolume />}
       </button>
-      <MesaStatus jogo="penalti" fase={fase} rodada={r} agora={agora()} gente={estado?.gente.filter((p) => p.estado === "ativa").length ?? 0} />
 
       {/* escada do multiplicador: um degrau por gol */}
       <ol className="pn-escada" aria-label="Multiplicador por gol">
         {Array.from({ length: MAX_GOLS }, (_, k) => k + 1).map((g) => (
-          <li key={g} className={(naDisputa && g <= gols ? "feito" : "") + (naDisputa && g === gols + 1 ? " proximo" : "")}>
+          <li key={g} className={(g <= gols ? "feito" : "") + (disputa && g === gols + 1 ? " proximo" : "")}>
             <small>{g}º gol</small>
-            {multPenalti(g).toFixed(2).replace(".", ",")}×
+            {vezes(multPenalti(g))}
           </li>
         ))}
       </ol>
@@ -278,27 +315,21 @@ export function Penalti() {
             <Goleiro />
           </div>
           <div className="pn-zonas" role="group" aria-label="Escolha o canto do chute">
-            {ZONAS.map((z) => {
-              const escolhida = minhaZona === z;
-              const outros = estado?.gente.filter((p) => !p.eu && p.zona === z).length ?? 0;
-              return (
-                <button
-                  key={z}
-                  type="button"
-                  className={"pn-zona" + (escolhida ? " minha" : "") + (chute && colunaDa(z) === chute.coluna ? " defendida" : "")}
-                  disabled={!podeEscolher || ocupado || semSaldo}
-                  aria-pressed={escolhida}
-                  aria-label={`Chutar ${NOME_ZONA[z]}`}
-                  onClick={() => void tocarZona(z)}
-                >
-                  {escolhida && <span className="pn-mira" aria-hidden="true" />}
-                  {outros > 0 && <small className="pn-outros">{outros}</small>}
-                </button>
-              );
-            })}
+            {ZONAS.map((z) => (
+              <button
+                key={z}
+                type="button"
+                className={"pn-zona" + (lance?.zona === z ? " minha" : "")}
+                disabled={ocupado || semSaldo}
+                aria-label={`Chutar ${NOME_ZONA[z]}`}
+                onClick={() => void chutar(z)}
+              >
+                {lance?.zona === z && lance.fase === "voando" && <span className="pn-mira" aria-hidden="true" />}
+              </button>
+            ))}
           </div>
         </div>
-        <div className={"pn-bola" + (alvo !== null ? " z" + alvo : chute ? " fora" : "")} aria-hidden="true">
+        <div className={"pn-bola" + classeBola} aria-hidden="true">
           <Bola />
         </div>
         <span className="pn-bola-sombra" aria-hidden="true" />
@@ -307,39 +338,31 @@ export function Penalti() {
             {placa === "gol" ? "GOL!" : "DEFENDEU!"}
           </div>
         )}
-        {!chute && (
+        {!lance && (
           <p className="pn-dica" aria-live="polite">
-            {fase === "apostas"
-              ? naDisputa
-                ? minhaZona === null
-                  ? `Escolha o canto · ${segundos} s`
-                  : `Chute ${NOME_ZONA[minhaZona]} · troca até ${segundos} s`
-                : `Rodada aberta: escolha o canto para entrar · ${segundos} s`
-              : naDisputa
-                ? "Próximo chute já vai abrir"
-                : "Escolha a ficha e toque num canto do gol para começar"}
+            {disputa ? `Escolha o canto do ${gols + 1}º chute` : "Escolha a ficha e toque num canto do gol"}
           </p>
         )}
       </div>
 
       <div className="av-grid">
         <div className="av-painel">
-          {naDisputa ? (
+          {disputa ? (
             <>
-              <p className="rm-rotulo">Sua disputa · aposta {minhaAposta}</p>
+              <p className="rm-rotulo">Sua disputa · aposta {disputa.aposta}</p>
               <p className="pn-agora">
                 {gols ? (
                   <>
-                    {gols} {gols === 1 ? "gol" : "gols"} · <b>{multPenalti(gols).toFixed(2).replace(".", ",")}×</b> = {formatarMoedas(Math.floor(minhaAposta * multPenalti(gols)))} moedas
+                    {gols} {gols === 1 ? "gol" : "gols"} · <b>{vezes(multPenalti(gols))}</b> = {formatarMoedas(Math.floor(disputa.aposta * multPenalti(gols)))} moedas
                   </>
                 ) : (
-                  "Primeiro chute: faça o gol para subir o multiplicador"
+                  "Toque num canto do gol: faça o gol para subir o multiplicador"
                 )}
               </p>
               {gols > 0 && (
-                <button type="button" className="av-sacar" disabled={ocupado || fase === "jogo"} onClick={() => void sacar()}>
-                  SACAR {formatarMoedas(Math.floor(minhaAposta * multPenalti(gols)))} MOEDAS
-                  <small>ou chute de novo para {multPenalti(gols + 1).toFixed(2).replace(".", ",")}×</small>
+                <button type="button" className="av-sacar" disabled={ocupado} onClick={() => void sacar()}>
+                  SACAR {formatarMoedas(Math.floor(disputa.aposta * multPenalti(gols)))} MOEDAS
+                  <small>ou chute de novo para {vezes(multPenalti(gols + 1))}</small>
                 </button>
               )}
             </>
@@ -354,65 +377,28 @@ export function Penalti() {
                 ))}
               </div>
               <p className="pn-agora">{semSaldo ? "Sem moedas para essa ficha." : `Toque num canto do gol para apostar ${ficha} e chutar.`}</p>
-              {meu && meu.estado !== "ativa" && (
-                <p className={"av-res " + (Number(meu.pagou) > 0 ? "bom" : "ruim")}>
-                  {meu.estado === "perdeu"
-                    ? `O goleiro pegou: −${minhaAposta} moedas`
-                    : meu.estado === "completa"
-                      ? `5 gols! +${formatarMoedas(Number(meu.pagou) - minhaAposta)} moedas`
-                      : `Você saiu com +${formatarMoedas(Number(meu.pagou) - minhaAposta)} moedas`}
-                </p>
-              )}
             </>
           )}
-          {r && (
-            <p className="rm-justo">
-              Chute #{r.id} · hash <span className="hash">{r.hash.slice(0, 12)}…</span>
-              {r.segredo && (
-                <button type="button" className="linkish" onClick={() => void conferirEsta()}>
-                  Conferir
-                </button>
-              )}
-              {conferida && <small>{conferida}</small>}
-            </p>
-          )}
+          {fim && <p className={"av-res " + (fim.bom ? "bom" : "ruim")}>{fim.texto}</p>}
         </div>
         <div className="av-painel">
-          <p className="rm-rotulo">Batedores</p>
-          <ul className="av-mesa">
-            {estado?.gente.length ? (
-              estado.gente.map((p, k) => (
-                <li key={k} className={p.eu ? "eu" : undefined}>
-                  <span className="av-av" aria-hidden="true">
-                    {p.nome[0]}
-                  </span>
-                  <span className="av-nome">
-                    {p.nome}
-                    {p.eu ? " (você)" : ""} · {p.aposta}
-                  </span>
-                  {p.estado === "perdeu" ? (
-                    <b className="ruim">🧤 defendeu</b>
-                  ) : p.estado === "sacou" || p.estado === "completa" ? (
-                    <b className="ok">saiu · +{formatarMoedas(p.pagou - p.aposta)}</b>
-                  ) : p.gol === true ? (
-                    <b className="ok">⚽ GOL · {Number(p.mult).toFixed(2).replace(".", ",")}×</b>
-                  ) : p.chutou ? (
-                    <b className="voa">chutou</b>
-                  ) : (
-                    <b className="voa">
-                      {p.gols ? `${Number(p.mult).toFixed(2).replace(".", ",")}× · ` : ""}escolhendo…
-                    </b>
-                  )}
+          <p className="rm-rotulo">Últimos chutes</p>
+          <ol className="pn-ultimos" aria-label="Últimos chutes">
+            {ultimos.length ? (
+              ultimos.map((g, k) => (
+                <li key={k} className={g ? "gol" : "defesa"} title={g ? "Gol" : "Defendeu"}>
+                  {g ? "⚽" : "🧤"}
                 </li>
               ))
             ) : (
-              <li className="av-vazio">Ninguém na marca ainda. O primeiro chute abre a rodada para todo mundo.</li>
+              <li className="av-vazio">nenhum chute ainda</li>
             )}
-          </ul>
+          </ol>
+          <p className="hint">O goleiro pula numa das 3 colunas (o banco sorteia na hora, com o mesmo motor justo do cassino): nas outras duas é gol.</p>
         </div>
       </div>
       <p className="hint rm-pe">
-        Mesa ao vivo: a primeira aposta abre a rodada e todo mundo tem {JANELA_MS.penalti / 1000} s para escolher o canto. O goleiro pula numa das 3 colunas: nas outras duas é gol. Cada gol sobe o multiplicador; saque quando quiser ou vá até o 5º gol ({multPenalti(5).toFixed(2).replace(".", ",")}×). Sem escolher a tempo, você sai com o que tem. A casa leva 3%.
+        Cada gol sobe o multiplicador; saque quando quiser ou vá até o 5º gol ({vezes(multPenalti(5))}). Se o goleiro pegar, você perde a aposta. A casa leva 3%.
       </p>
     </div>
   );

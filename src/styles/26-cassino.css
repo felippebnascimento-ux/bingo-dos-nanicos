@@ -73,8 +73,12 @@
 :root[data-theme="dark"] .rr{--roleta-aro0:#CDB078;--roleta-aro1:#8E6531;--roleta-feltro:#24552E}
 .rr-roda-caixa{position:relative;width:min(100%,380px);aspect-ratio:1;padding:12px;border-radius:var(--r-lg);background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--roleta-feltro) 80%,var(--roleta-branco) 20%),var(--roleta-feltro) 70%)}
 /* a roda vista de cima, um pouco inclinada como numa mesa de verdade, com a sombra no feltro */
-.rr-svg{display:block;width:100%;height:100%;transform:perspective(1100px) rotateX(14deg);transform-origin:50% 60%;
-  filter:drop-shadow(0 2px 2px rgba(0,0,0,.35)) drop-shadow(0 18px 18px rgba(0,0,0,.45))}
+.rr-svg{position:relative;z-index:1;display:block;width:100%;height:100%;transform:perspective(1000px) rotateX(26deg);transform-origin:50% 58%;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.35)) drop-shadow(0 22px 20px rgba(0,0,0,.5))}
+/* a lateral da roda (madeira escura) aparecendo embaixo, como uma tigela vista de cima e de frente */
+.rr-roda-caixa::before{content:"";position:absolute;left:1.5%;right:1.5%;top:1.5%;bottom:1.5%;border-radius:50%;z-index:0;
+  background:radial-gradient(circle at 50% 40%,var(--roleta-madeira),var(--roleta-pista1) 70%,var(--roleta-escuro));
+  transform:perspective(1000px) rotateX(26deg) translateY(5.5%);transform-origin:50% 58%;box-shadow:0 0 0 2px color-mix(in srgb,var(--roleta-aro1) 70%,transparent)}
 .rr-st-aro0{stop-color:var(--roleta-aro0)}.rr-st-aro1{stop-color:var(--roleta-aro1)}
 .rr-st-pista0{stop-color:var(--roleta-pista0)}.rr-st-pista1{stop-color:var(--roleta-pista1)}
 .rr-st-cone0{stop-color:var(--roleta-cone0)}.rr-st-cone1{stop-color:var(--roleta-cone1)}
@@ -114,7 +118,7 @@
 @keyframes rr-pulso{50%{stroke-width:5.5;opacity:.7}}
 @keyframes rr-luz{50%{opacity:.25}}
 @media (prefers-reduced-motion:reduce){.rr-ganhou.on,.rr-ganhou-luz.on{animation:none}}
-.rr-mudo{position:absolute;top:10px;right:10px;width:36px;height:36px;display:grid;place-items:center;border:0;border-radius:50%;background:rgba(0,0,0,.35);color:var(--roleta-branco);cursor:pointer}
+.rr-mudo{position:absolute;z-index:2;top:10px;right:10px;width:36px;height:36px;display:grid;place-items:center;border:0;border-radius:50%;background:rgba(0,0,0,.35);color:var(--roleta-branco);cursor:pointer}
 .rr-mudo:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .rr-resultado{margin:0;font:800 18px var(--display);letter-spacing:.02em;color:var(--muted)}
 .rr-resultado b{display:inline-grid;place-items:center;min-width:42px;height:42px;margin-right:6px;border-radius:50%;font-size:20px;color:var(--stamp-ink)}
@@ -168,22 +172,39 @@
 .rm-barra-legenda .v{color:var(--rm-vermelhoclaro)}.rm-barra-legenda .z{color:var(--rm-verdeclaro)}
 
 /* a mesa: deitada no computador, em pé no celular (posições em --r/--c e --rm/--cm) */
-.rm-mesa{display:grid;grid-template-columns:52px repeat(12,minmax(0,1fr)) 54px;grid-template-rows:repeat(3,48px) 42px 42px;border:2px solid color-mix(in srgb,var(--rm-creme) 70%,transparent);border-radius:6px;overflow:hidden}
-.rm-lugar{position:relative;grid-row:var(--r) / span var(--h);grid-column:var(--c) / span var(--w);display:grid;place-items:center;min-width:0;padding:0;border:1px solid color-mix(in srgb,var(--rm-creme) 45%,transparent);background:none;color:var(--stamp-ink);font:800 15px var(--display);cursor:pointer}
-.rm-lugar:hover:not(:disabled){background:rgb(255 255 255 / .08)}
+/* a mesa como num cassino de verdade: casas cheias de vermelho e preto com brilho, filetes dourados, o 0 verde com ponta,
+   apostas de fora pintadas no feltro em creme; a ficha fica no meio da casa */
+.rm-mesa{position:relative;display:grid;grid-template-columns:56px repeat(12,minmax(0,1fr)) 56px;grid-template-rows:repeat(3,52px) 44px 44px;padding:3px;border-radius:10px;
+  background:color-mix(in srgb,var(--rm-ouro2) 55%,var(--rm-feltro2));box-shadow:0 0 0 1px var(--rm-ouro),0 0 0 4px color-mix(in srgb,var(--rm-madeira) 80%,var(--ink)),0 0 0 5px color-mix(in srgb,var(--rm-ouro) 50%,transparent),0 10px 24px rgb(0 0 0 / .45)}
+.rm-lugar{position:relative;grid-row:var(--r) / span var(--h);grid-column:var(--c) / span var(--w);display:grid;place-items:center;min-width:0;padding:0;margin:0;
+  border:1px solid color-mix(in srgb,var(--rm-ouro) 70%,transparent);background:radial-gradient(ellipse at 50% 30%,color-mix(in srgb,var(--rm-feltro1) 92%,var(--stamp-ink)),var(--rm-feltro2));
+  color:var(--stamp-ink);font:800 17px var(--display);cursor:pointer;transition:filter .12s,box-shadow .12s}
+.rm-lugar:hover:not(:disabled){filter:brightness(1.18);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--rm-ouro) 85%,transparent),inset 0 0 18px color-mix(in srgb,var(--rm-ouro) 35%,transparent)}
 .rm-lugar:disabled{cursor:default}
 .rm-lugar:focus-visible{outline:3px solid var(--rm-ouro);outline-offset:-3px}
-.rm-zero{background:var(--roleta-verde);font-size:20px}
-.rm-num b{width:min(38px,80%);height:30px;border-radius:6px;display:grid;place-items:center}
+/* o 0: verde, com a ponta para fora da mesa */
+.rm-zero{font-size:24px;border:0;background:linear-gradient(180deg,color-mix(in srgb,var(--roleta-verde) 75%,var(--stamp-ink)),var(--roleta-verde) 45%,color-mix(in srgb,var(--roleta-verde) 70%,var(--ink)));
+  clip-path:polygon(42% 0,100% 0,100% 100%,42% 100%,0 50%);text-shadow:0 2px 0 rgb(0 0 0 / .35);padding-left:10px}
+/* número: a casa inteira pintada, com luz de cima e o número em branco com sombra */
+.rm-num b{position:absolute;inset:0;display:grid;place-items:center;border-radius:0;text-shadow:0 2px 0 rgb(0 0 0 / .4);font-variant-numeric:tabular-nums}
 .rm-num.rm-vermelho,.rm-num.rm-preto{background:none}
-.rm-num.rm-vermelho b{background:var(--roleta-vermelho)}.rm-num.rm-preto b{background:var(--roleta-preto)}
-.rm-fora{font:800 12px var(--body);letter-spacing:.06em;color:var(--rm-creme)}
-.rm-losango{width:38px;height:22px;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+.rm-num.rm-vermelho b{background:linear-gradient(180deg,color-mix(in srgb,var(--roleta-vermelho) 70%,var(--stamp-ink)) 0%,var(--roleta-vermelho) 42%,color-mix(in srgb,var(--roleta-vermelho) 72%,var(--ink)) 100%)}
+.rm-num.rm-preto b{background:linear-gradient(180deg,color-mix(in srgb,var(--roleta-preto) 78%,var(--stamp-ink)) 0%,var(--roleta-preto) 45%,color-mix(in srgb,var(--roleta-preto) 80%,var(--ink)) 100%)}
+.rm-num .rm-ficha.mini{right:50%;bottom:50%;transform:translate(50%,50%);z-index:2}
+.rm-fora{font:800 13px var(--display);letter-spacing:.1em;color:var(--rm-creme);text-shadow:0 1px 0 rgb(0 0 0 / .4)}
+.rm-fora .rm-ficha.mini{right:6px;bottom:50%;transform:translateY(50%)}
+.rm-losango{width:44px;height:24px;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);box-shadow:inset 0 0 0 2px var(--rm-ouro)}
+.rm-losango.rm-vermelho{background:linear-gradient(180deg,color-mix(in srgb,var(--roleta-vermelho) 70%,var(--stamp-ink)),var(--roleta-vermelho))}
+.rm-losango.rm-preto{background:linear-gradient(180deg,color-mix(in srgb,var(--roleta-preto) 70%,var(--stamp-ink)),var(--roleta-preto))}
 .rm-lugar.ganhou{box-shadow:inset 0 0 0 3px var(--rm-ouro),inset 0 0 22px color-mix(in srgb,var(--rm-ouro) 55%,transparent);background:color-mix(in srgb,var(--rm-ouro) 12%,transparent)}
+.rm-lugar.ganhou b{box-shadow:inset 0 0 0 3px var(--rm-ouro),inset 0 0 20px color-mix(in srgb,var(--rm-ouro) 70%,transparent);z-index:1}
+.rm-lugar.ganhou.rm-zero{filter:brightness(1.25)}
 @media (max-width:760px){
   .rm{padding:16px}
   .rm-mesa{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:none;grid-auto-rows:40px}
   .rm-lugar{grid-row:var(--rm) / span var(--hm);grid-column:var(--cm) / span var(--wm)}
+  /* em pé, o 0 fica em cima: a ponta aponta para cima */
+  .rm-zero{clip-path:polygon(0 42%,50% 0,100% 42%,100% 100%,0 100%);padding:10px 0 0}
 }
 
 /* fichas */
@@ -462,12 +483,12 @@
 .rm-justo small{flex-basis:100%}
 @media (prefers-reduced-motion:reduce){.mesa-ao-vivo i{animation:none}.mesa-barra span{transition:none}}
 
-/* pênalti ao vivo (Penalti.tsx): no feltro (.rm); o estádio, o goleiro e a bola são ilustração (--pn-*) */
+/* pênalti (Penalti.tsx): no feltro (.rm); o estádio, o goleiro e a bola são ilustração (--pn-*) */
 .penalti{
   --pn-noite0:#0B1226; --pn-noite1:#1A2440; --pn-grama0:#2E8B3E; --pn-grama1:#26773A; --pn-grama2:#1C5E2C; --pn-cal:#F4F6EF;
   --pn-trave:#FAFAF7; --pn-trave-sombra:#B9BDB4; --pn-luz:#FFF6D8; --pn-torcida0:#2A3150; --pn-torcida1:#4A3A55;
   --pn-camisa0:#D8FF4A; --pn-camisa1:#86C21E; --pn-camisa2:#4E7A0E; --pn-calcao:#1B1E24; --pn-calcao2:#3A3F4A; --pn-meia:#C7F23A; --pn-luva:#FF8A2A; --pn-luva2:#C2500C;
-  --pn-pele:#F0C29A; --pn-pele2:#D29A6E; --pn-pele3:#9C6440; --pn-cabelo:#2B1B12; --pn-chuteira:#111111;
+  --pn-pele:#F2C7A0; --pn-pele2:#D49C70; --pn-pele3:#9C6440; --pn-cabelo:#2B1B12; --pn-chuteira:#111111;
   --pn-bola:#FFFFFF; --pn-gomo:#16181C; --pn-mira:#FFD27A; --pn-gol:#86EFAC; --pn-defendeu:#FF8A98}
 .pn-escada{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
 .pn-escada li{display:grid;place-items:center;padding:7px 4px;border-radius:12px;background:rgb(0 0 0 / .28);border:1px solid color-mix(in srgb,var(--rm-creme) 14%,transparent);font:800 15px var(--display);font-variant-numeric:tabular-nums}
@@ -490,31 +511,28 @@
 .pn-gol{position:absolute;left:18%;right:18%;top:12%;height:30%;z-index:1}
 .pn-rede{position:absolute;inset:0;background:repeating-linear-gradient(45deg,rgb(255 255 255 / .16) 0 1px,transparent 1px 9px),repeating-linear-gradient(-45deg,rgb(255 255 255 / .16) 0 1px,transparent 1px 9px),linear-gradient(180deg,rgb(0 0 0 / .45),rgb(0 0 0 / .2))}
 .pn-trave{position:absolute;inset:-4px -4px 0;border:6px solid var(--pn-trave);border-bottom:0;border-radius:3px 3px 0 0;box-shadow:inset 0 0 0 1px var(--pn-trave-sombra),3px 4px 8px rgb(0 0 0 / .45)}
-.pn-goleiro{position:absolute;left:50%;bottom:-4%;width:26%;transform:translateX(-50%);transform-origin:50% 90%;transition:transform .55s cubic-bezier(.2,.8,.3,1) .35s;z-index:2;filter:drop-shadow(0 6px 6px rgb(0 0 0 / .4))}
+.pn-goleiro{position:absolute;left:50%;bottom:-3%;width:30%;transform:translateX(-50%);transform-origin:50% 90%;transition:transform .45s cubic-bezier(.2,.8,.3,1) .05s;z-index:2;filter:drop-shadow(0 6px 6px rgb(0 0 0 / .4))}
 .pn-goleiro-svg{display:block;width:100%;height:auto;overflow:visible}
-.pn-goleiro.esq.alto{transform:translate(-145%,-30%) rotate(-62deg)}.pn-goleiro.esq.baixo{transform:translate(-140%,-12%) rotate(-80deg)}
-.pn-goleiro.dir.alto{transform:translate(45%,-30%) rotate(62deg)}.pn-goleiro.dir.baixo{transform:translate(40%,-12%) rotate(80deg)}
+.pn-goleiro.esq.alto{transform:translate(-122%,-26%) rotate(-62deg)}.pn-goleiro.esq.baixo{transform:translate(-116%,-10%) rotate(-80deg)}
+.pn-goleiro.dir.alto{transform:translate(22%,-26%) rotate(62deg)}.pn-goleiro.dir.baixo{transform:translate(16%,-10%) rotate(80deg)}
 .pn-goleiro.meio.alto{transform:translate(-50%,-24%)}.pn-goleiro.meio.baixo{transform:translate(-50%,4%) scaleY(.88)}
-.pn-st-camisa0{stop-color:var(--pn-camisa0)}.pn-st-camisa1{stop-color:var(--pn-camisa1)}
-.pn-st-pele0{stop-color:var(--pn-pele)}.pn-st-pele1{stop-color:var(--pn-pele2)}
+.pn-st-camisa0{stop-color:var(--pn-camisa0)}.pn-st-camisa1{stop-color:var(--pn-camisa1)}.pn-st-camisa2{stop-color:var(--pn-camisa2)}
+.pn-st-pele0{stop-color:var(--pn-pele)}.pn-st-pele1{stop-color:var(--pn-pele2)}.pn-st-pele2{stop-color:var(--pn-pele3)}
 .pn-st-luva0{stop-color:var(--pn-luva)}.pn-st-luva1{stop-color:var(--pn-luva2)}
 .pn-st-calcao0{stop-color:var(--pn-calcao2)}.pn-st-calcao1{stop-color:var(--pn-calcao)}
-.pn-camisa{stroke:var(--pn-camisa2);stroke-width:1.2;stroke-linejoin:round}
-.pn-camisa-sombra{fill:var(--pn-camisa2);opacity:.35}
-.pn-listra{fill:var(--pn-calcao);opacity:.5}
-.pn-gola{fill:none;stroke:var(--pn-calcao);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-.pn-numero{font:800 20px var(--display);fill:var(--pn-calcao);text-anchor:middle;opacity:.85}
-.pn-calcao{stroke:var(--pn-calcao);stroke-width:1}
-.pn-coxa{fill:none;stroke:var(--pn-pele2);stroke-width:13;stroke-linecap:round}
-.pn-canela{fill:none;stroke:var(--pn-meia);stroke-width:11;stroke-linecap:round}
-.pn-meia-faixa{stroke:var(--pn-calcao);stroke-width:11;opacity:.55}
-.pn-chuteira{fill:var(--pn-chuteira)}.pn-chuteira-sola{stroke:var(--pn-luva);stroke-width:1.5;stroke-linecap:round}
-.pn-braco{fill:none;stroke:var(--pn-camisa1);stroke-width:11;stroke-linecap:round;stroke-linejoin:round}
-.pn-punho{stroke:var(--pn-calcao);stroke-width:11;stroke-linecap:butt;opacity:.6}
-.pn-luva{stroke:var(--pn-luva2);stroke-width:1;stroke-linejoin:round}
-.pn-luva-faixa{fill:none;stroke:var(--pn-trave);stroke-width:2.4;stroke-linecap:round;opacity:.9}
-.pn-pele{fill:var(--pn-pele2)}.pn-pescoco{fill:var(--pn-pele2)}.pn-cabeca{stroke:var(--pn-pele2);stroke-width:.6}
-.pn-cabelo{fill:var(--pn-cabelo)}
+.pn-camisa{stroke:var(--pn-camisa2);stroke-width:1;stroke-linejoin:round}
+.pn-camisa-lado{fill:var(--pn-camisa2);opacity:.45}
+.pn-listra{fill:var(--pn-calcao);opacity:.55}
+.pn-gola{fill:none;stroke:var(--pn-calcao);stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
+.pn-numero{font:800 24px var(--display);fill:var(--pn-calcao);text-anchor:middle;opacity:.85}
+.pn-calcao{stroke:var(--pn-calcao);stroke-width:1}.pn-calcao-cos{stroke:var(--pn-camisa1);stroke-width:2;opacity:.8}
+.pn-chuteira{fill:var(--pn-chuteira)}.pn-chuteira-sola{stroke:var(--pn-luva);stroke-width:1.6;stroke-linecap:round}
+.pn-punho{fill:var(--pn-calcao);opacity:.7}
+.pn-luva{stroke:var(--pn-luva2);stroke-width:.8;stroke-linejoin:round}
+.pn-luva-faixa{fill:none;stroke:var(--pn-trave);stroke-width:2.6;stroke-linecap:round;opacity:.9}
+.pn-pele{fill:var(--pn-pele2)}.pn-pescoco{fill:var(--pn-pele2)}.pn-pescoco-sombra{fill:none;stroke:var(--pn-pele3);stroke-width:2;opacity:.5}
+.pn-cabeca{stroke:var(--pn-pele2);stroke-width:.6}
+.pn-cabelo{fill:var(--pn-cabelo)}.pn-cabelo-luz{fill:none;stroke:var(--pn-trave);stroke-width:1.4;stroke-linecap:round;opacity:.25}
 .pn-sobrancelha{fill:none;stroke:var(--pn-cabelo);stroke-width:1.8;stroke-linecap:round}
 .pn-olho-branco{fill:var(--pn-trave)}.pn-olho{fill:var(--pn-calcao)}
 .pn-nariz{fill:none;stroke:var(--pn-pele3);stroke-width:1.3;stroke-linecap:round}
@@ -528,19 +546,23 @@
 .pn-mira{position:absolute;left:50%;top:50%;width:34%;max-width:46px;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;border:3px solid var(--pn-mira);box-shadow:0 0 14px var(--pn-mira)}
 .pn-mira::before,.pn-mira::after{content:"";position:absolute;background:var(--pn-mira)}
 .pn-mira::before{left:50%;top:-30%;bottom:-30%;width:2px;transform:translateX(-50%)}.pn-mira::after{top:50%;left:-30%;right:-30%;height:2px;transform:translateY(-50%)}
-.pn-outros{position:absolute;right:6px;top:4px;min-width:20px;padding:1px 6px;border-radius:99px;background:rgb(0 0 0 / .55);font:800 11px var(--body);color:var(--rm-creme)}
 /* a bola: sai da marca e vai até o canto (menor, porque fica mais longe) */
-.pn-bola{position:absolute;z-index:4;left:50%;top:77%;width:6.5%;transform:translate(-50%,-50%);transition:left .9s cubic-bezier(.25,.6,.35,1),top .9s cubic-bezier(.25,.6,.35,1),width .9s ease-out;filter:drop-shadow(0 4px 4px rgb(0 0 0 / .45))}
+/* a bola volta para a marca sem animação; voa até o canto em ~0,55 s; defendida, espirra para fora */
+.pn-bola{position:absolute;z-index:4;left:50%;top:77%;width:6.5%;transform:translate(-50%,-50%);filter:drop-shadow(0 4px 4px rgb(0 0 0 / .45))}
+.pn-bola:is(.z0,.z1,.z2,.z3,.z4,.z5){transition:left .55s cubic-bezier(.3,.6,.4,1),top .55s cubic-bezier(.3,.6,.4,1),width .55s ease-out}
+.pn-bola.rebate{transition:left .7s cubic-bezier(.1,.6,.3,1),top .7s cubic-bezier(.2,.5,.5,1),width .7s ease-out,opacity .7s ease-in .3s;opacity:0}
+.pn-bola.rebate.r0{left:3% !important;top:58% !important;width:4.5% !important}
+.pn-bola.rebate.r1{left:62% !important;top:-6% !important;width:3% !important}
+.pn-bola.rebate.r2{left:97% !important;top:58% !important;width:4.5% !important}
 .pn-bola-svg{display:block;width:100%;height:auto}
-.pn-bola:is(.z0,.z1,.z2,.z3,.z4,.z5,.fora) .pn-bola-svg{animation:pn-gira .9s linear}
+.pn-bola:is(.z0,.z1,.z2,.z3,.z4,.z5) .pn-bola-svg{animation:pn-gira .55s linear}
+.pn-bola.rebate .pn-bola-svg{animation:pn-gira .7s linear reverse}
 @keyframes pn-gira{to{transform:rotate(720deg)}}
 .pn-bola.z0{left:29%;top:20%;width:3.6%}.pn-bola.z1{left:50%;top:20%;width:3.6%}.pn-bola.z2{left:71%;top:20%;width:3.6%}
 .pn-bola.z3{left:29%;top:34%;width:3.6%}.pn-bola.z4{left:50%;top:34%;width:3.6%}.pn-bola.z5{left:71%;top:34%;width:3.6%}
-.pn-bola.fora{left:50%;top:30%;width:3.6%}
 .pn-bola-sombra{position:absolute;left:50%;top:80%;width:7%;height:1.6%;transform:translateX(-50%);border-radius:50%;background:rgb(0 0 0 / .35);filter:blur(2px)}
 .pn-bola-branca{fill:var(--pn-bola);stroke:rgb(0 0 0 / .3);stroke-width:.8}.pn-gomo{fill:var(--pn-gomo)}.pn-costura{stroke:var(--pn-gomo);stroke-width:1.2;fill:none}
 .pn-bola-luz{fill:none;stroke:rgb(0 0 0 / .22);stroke-width:3}
-.pn-zona.defendida{background:color-mix(in srgb,var(--pn-defendeu) 12%,transparent)}
 .pn-placa{position:absolute;z-index:6;left:50%;top:50%;transform:translate(-50%,-50%);font:800 clamp(40px,9vw,92px)/1 var(--display);letter-spacing:.04em;text-shadow:0 5px 0 rgb(0 0 0 / .35);animation:pn-placa .5s cubic-bezier(.2,1.6,.4,1) both}
 .pn-placa.gol{color:var(--pn-gol);text-shadow:0 5px 0 rgb(0 0 0 / .35),0 0 40px color-mix(in srgb,var(--pn-gol) 70%,transparent)}
 .pn-placa.defendeu{color:var(--pn-defendeu);text-shadow:0 5px 0 rgb(0 0 0 / .35),0 0 40px color-mix(in srgb,var(--pn-defendeu) 60%,transparent)}
@@ -566,3 +588,9 @@
 /* o botão de som fica no canto do feltro: a placa do jackpot abre espaço para ele */
 .cn .cn-jackpot{margin-right:48px}
 .rm .mesa-status{padding-right:58px}
+.pn-ultimos{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.pn-ultimos li{width:32px;height:32px;display:grid;place-items:center;border-radius:50%;background:rgb(0 0 0 / .3);font-size:16px}
+.pn-ultimos li.gol{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--pn-gol) 70%,transparent)}
+.pn-ultimos li.defesa{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--pn-defendeu) 70%,transparent)}
+.pn-ultimos li.av-vazio{width:auto;height:auto;background:none}
+.penalti .pn-escada{margin-right:48px}

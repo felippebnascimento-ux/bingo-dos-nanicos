@@ -302,7 +302,8 @@ export const CHANGELOG: EntradaLog[] = [
     data: "02/11/2026",
     itens: [
       "Cassino ao vivo: roleta e aviãozinho agora são rodadas para todo mundo junto. A primeira aposta abre a rodada, a contagem aparece para todos e quem entrar a tempo joga na mesma roleta e no mesmo avião",
-      "Pênalti no lugar do Maior ou menor: todos chutam juntos contra o goleiro da casa, cada gol sobe o multiplicador (até 7,36× no 5º) e dá para sacar quando quiser",
+      "Pênalti no lugar do Maior ou menor: cada um chuta contra o goleiro da casa, cada gol sobe o multiplicador (até 7,36× no 5º) e dá para sacar quando quiser; defendeu, a bola espirra para fora",
+      "Goleiro novo, com corpo de atleta, e mesa da roleta igual à de cassino: casas vermelhas e pretas inteiras, filetes dourados e o 0 com ponta; a roda fica inclinada como numa mesa de verdade",
       "Jackpot do grupo no caça-níquel: 1% de cada giro de qualquer nanico vai para o prêmio, e quem tirar 3 bolas leva tudo",
     ],
   },

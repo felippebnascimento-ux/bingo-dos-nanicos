@@ -293,7 +293,6 @@ export function useRelogio(ativo = true) {
 const TEXTO_FASE: Record<JogoMesa, Record<Fase, string>> = {
   roleta: { parada: "Mesa esperando a primeira aposta", apostas: "Apostas abertas", jogo: "Girando", resultado: "Resultado" },
   aviao: { parada: "Esperando o primeiro passageiro", apostas: "Embarque aberto", jogo: "No ar", resultado: "Pousou" },
-  penalti: { parada: "Esperando o primeiro batedor", apostas: "Escolham o canto", jogo: "Chute!", resultado: "Resultado" },
 };
 
 /** Faixa de cima de toda mesa ao vivo: o que está acontecendo, a contagem e quantos estão na rodada. */

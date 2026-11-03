@@ -3112,9 +3112,9 @@ grant execute on function public.aviao_mesa() to authenticated;
 alter table public.jogos_stats drop constraint if exists jogos_stats_fonte_check;
 alter table public.jogos_stats add constraint jogos_stats_fonte_check check (fonte in ('lol', 'steam', 'cs'));
 
--- 32) mesas ao vivo: roleta, aviãozinho e pênalti em rodadas para todo mundo junto, como num cassino online ------------
+-- 32) mesas ao vivo: roleta e aviãozinho em rodadas para todo mundo junto, como num cassino online -----------------------
 --   A mesa fica parada até alguém apostar. A primeira aposta abre a rodada com um tempo de apostas (roleta 15 s,
---   aviãozinho 8 s, pênalti 10 s) e quem chegar nesse tempo entra na mesma rodada. Quando o tempo acaba, o banco sorteia
+--   aviãozinho 8 s) e quem chegar nesse tempo entra na mesma rodada. Quando o tempo acaba, o banco sorteia
 --   UMA vez para todos e cada um recebe pelo que apostou. Ninguém lê as tabelas direto: só pelas funções abaixo.
 --   Justo: cada rodada nasce com um segredo aleatório; o sha256 dele (hash) aparece antes de apostar e o segredo é
 --   revelado quando a rodada acaba. u = primeiros 52 bits de HMAC-SHA256(segredo, "jogo:id") (a mesma conta do motor).
@@ -3127,7 +3127,7 @@ alter table public.cassino_apostas add constraint cassino_apostas_jogo_check
 
 create table if not exists public.mesa_rodadas (
   id        bigint generated always as identity primary key,
-  jogo      text not null check (jogo in ('roleta', 'aviao', 'penalti')),
+  jogo      text not null check (jogo in ('roleta', 'aviao')),
   abre_em   timestamptz not null default clock_timestamp(),
   fecha_em  timestamptz not null,
   segredo   bytea not null,
@@ -3150,41 +3150,14 @@ create table if not exists public.mesa_apostas (
   em        timestamptz not null default clock_timestamp(),
   unique (rodada_id, user_id)
 );
--- pênalti: a série de cada um (aposta uma vez, cada gol multiplica, saca quando quiser; até 5 gols)
-create table if not exists public.penalti_series (
-  id        bigint generated always as identity primary key,
-  user_id   uuid not null references auth.users(id) on delete cascade,
-  aposta    int not null check (aposta between 5 and 100),
-  gols      int not null default 0 check (gols between 0 and 5),
-  estado    text not null default 'ativa' check (estado in ('ativa', 'sacou', 'perdeu', 'completa')),
-  pagou     int not null default 0,
-  desde     bigint not null references public.mesa_rodadas(id),
-  em        timestamptz not null default clock_timestamp()
-);
-create index if not exists penalti_series_ativas on public.penalti_series (estado) where estado = 'ativa';
-create table if not exists public.penalti_chutes (
-  serie_id  bigint not null references public.penalti_series(id) on delete cascade,
-  rodada_id bigint not null references public.mesa_rodadas(id) on delete cascade,
-  zona      int not null check (zona between 0 and 5),
-  gol       boolean,
-  primary key (serie_id, rodada_id)
-);
 alter table public.mesa_rodadas   enable row level security;
 alter table public.mesa_apostas   enable row level security;
-alter table public.penalti_series enable row level security;
-alter table public.penalti_chutes enable row level security;
-revoke all on public.mesa_rodadas, public.mesa_apostas, public.penalti_series, public.penalti_chutes from public, anon, authenticated;
+revoke all on public.mesa_rodadas, public.mesa_apostas from public, anon, authenticated;
 
 -- tempos de cada mesa (segundos): apostas e quanto tempo depois do fechamento a tela ainda mostra o resultado
 create or replace function public.mesa_janela(p_jogo text) returns interval
 language sql immutable as $$
-  select case p_jogo when 'roleta' then interval '15 seconds' when 'aviao' then interval '8 seconds' else interval '10 seconds' end;
-$$;
-
--- pênalti: o multiplicador depois de g gols (gol em 2 de 3 colunas; a casa leva 3% uma vez só)
-create or replace function public.penalti_mult(p_gols int) returns numeric
-language sql immutable as $$
-  select case when p_gols <= 0 then 1 else floor(0.97 / power(2.0 / 3.0, p_gols) * 100) / 100 end;
+  select case p_jogo when 'roleta' then interval '15 seconds' else interval '8 seconds' end;
 $$;
 
 -- número da rodada (0 a 1), igual ao motor do cassino, a partir do segredo dela
@@ -3246,13 +3219,9 @@ language plpgsql security definer set search_path = public as $$
 declare
   r      public.mesa_rodadas;
   a      record;
-  s      record;
   v_pg   int;
   v_casa int;
   v_cr   numeric;
-  v_gk   int;
-  v_ch   record;
-  v_gol  boolean;
 begin
   select * into r from public.mesa_rodadas where id = p_id for update;
   if r.liquidada or r.resultado is null or clock_timestamp() < r.fim_em then return; end if;
@@ -3278,40 +3247,12 @@ begin
         perform public.mesa_registrar(a.user_id, 'aviao', a.aposta, a.escolha, jsonb_build_object('valor', v_cr), 0, r);
       end if;
     end loop;
-  else
-    v_gk := (r.resultado->>'coluna')::int;
-    -- todas as séries ativas que já existiam quando a rodada fechou
-    for s in select * from public.penalti_series where estado = 'ativa' and desde <= r.id for update loop
-      select * into v_ch from public.penalti_chutes where serie_id = s.id and rodada_id = r.id;
-      if not found then
-        -- não chutou a tempo: sai com o que tem (sem gol, devolve a aposta)
-        v_pg := floor(s.aposta * public.penalti_mult(s.gols))::int;
-        update public.penalti_series set estado = 'sacou', pagou = v_pg where id = s.id;
-        perform public.creditar(s.user_id, v_pg, 'cassino', 'penalti');
-        perform public.mesa_registrar(s.user_id, 'penalti', s.aposta, jsonb_build_object('gols', s.gols, 'saiu', true), jsonb_build_object('valor', public.penalti_mult(s.gols)), v_pg, r);
-        continue;
-      end if;
-      v_gol := v_ch.zona % 3 <> v_gk;
-      update public.penalti_chutes set gol = v_gol where serie_id = s.id and rodada_id = r.id;
-      if not v_gol then
-        update public.penalti_series set estado = 'perdeu' where id = s.id;
-        perform public.mesa_registrar(s.user_id, 'penalti', s.aposta, jsonb_build_object('gols', s.gols), jsonb_build_object('valor', 0), 0, r);
-      elsif s.gols + 1 >= 5 then
-        v_pg := floor(s.aposta * public.penalti_mult(5))::int;
-        update public.penalti_series set gols = 5, estado = 'completa', pagou = v_pg where id = s.id;
-        perform public.creditar(s.user_id, v_pg, 'cassino', 'penalti');
-        perform public.mesa_registrar(s.user_id, 'penalti', s.aposta, jsonb_build_object('gols', 5), jsonb_build_object('valor', public.penalti_mult(5)), v_pg, r);
-      else
-        update public.penalti_series set gols = s.gols + 1 where id = s.id;
-      end if;
-    end loop;
   end if;
   update public.mesa_rodadas set liquidada = true where id = r.id;
 end $$;
 revoke all on function public.mesa_liquidar(bigint) from public, anon, authenticated;
 
--- faz a mesa andar: sorteia a rodada que fechou, paga a que acabou e, no pênalti, abre o próximo chute se ainda tem
--- gente na série. Devolve a rodada atual (a última). Uma trava por jogo para duas pessoas não andarem juntas.
+-- faz a mesa andar: sorteia a rodada que fechou e paga a que acabou. Devolve a rodada atual (a última). Uma trava por jogo para duas pessoas não andarem juntas.
 create or replace function public.mesa_avancar(p_jogo text) returns public.mesa_rodadas
 language plpgsql security definer set search_path = public as $$
 declare
@@ -3330,24 +3271,16 @@ begin
       update public.mesa_rodadas set resultado = jsonb_build_object('casa', v_c, 'cor',
           case when v_c = 0 then 'verde' when v_c = any (array[1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]) then 'vermelho' else 'preto' end),
         fim_em = r.fecha_em + interval '9 seconds' where id = r.id returning * into r;
-    elsif r.jogo = 'aviao' then
+    else
       v_cr := greatest(1, floor((0.97 / (1 - v_u)) * 100) / 100);
       -- o avião decola no fechamento; vai embora quando o multiplicador chega no ponto de queda
       update public.mesa_rodadas set resultado = jsonb_build_object('crash', v_cr),
         fim_em = r.fecha_em + make_interval(secs => ln(v_cr) / 0.07) where id = r.id returning * into r;
-    else
-      update public.mesa_rodadas set resultado = jsonb_build_object('coluna', floor(v_u * 3)::int, 'alto', floor(v_u * 6)::int % 2 = 1),
-        fim_em = r.fecha_em + interval '3 seconds' where id = r.id returning * into r;
     end if;
   end if;
   if not r.liquidada and r.resultado is not null and clock_timestamp() >= r.fim_em then
     perform public.mesa_liquidar(r.id);
     select * into r from public.mesa_rodadas where id = r.id;
-  end if;
-  -- pênalti: quem fez gol continua; o próximo chute abre sozinho 2 s depois do anterior
-  if r.jogo = 'penalti' and r.liquidada and clock_timestamp() >= r.fim_em + interval '2 seconds'
-     and exists (select 1 from public.penalti_series where estado = 'ativa') then
-    r := public.mesa_abrir('penalti');
   end if;
   return r;
 end $$;
@@ -3363,7 +3296,7 @@ begin
   if r.id is not null and clock_timestamp() < r.fecha_em then return r; end if;
   if r.id is not null and (not r.liquidada or clock_timestamp() < r.fim_em + interval '2 seconds') then
     raise exception '%', case p_jogo when 'roleta' then 'A roleta está girando. Aposte na próxima rodada.'
-      when 'aviao' then 'O avião está no ar. Aposte no próximo voo.' else 'O chute está acontecendo. Entre no próximo.' end
+      else 'O avião está no ar. Aposte no próximo voo.' end
       using errcode = 'P0001';
   end if;
   return public.mesa_abrir(p_jogo);
@@ -3479,83 +3412,8 @@ end $$;
 revoke all on function public.mesa_sacar_aviao() from public, anon;
 grant execute on function public.mesa_sacar_aviao() to authenticated;
 
--- pênalti ao vivo: entra (cobra a aposta) e já escolhe o canto do primeiro chute
-create or replace function public.penalti_entrar(p_aposta int, p_zona int) returns jsonb
-language plpgsql security definer set search_path = public as $$
-declare
-  v_uid uuid := auth.uid();
-  r     public.mesa_rodadas;
-  v_id  bigint;
-  v_sal int;
-begin
-  if not public.eh_nanico() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
-  if p_aposta is null or p_aposta not between 5 and 100 then raise exception 'A aposta vai de 5 a 100 moedas.' using errcode = 'P0001'; end if;
-  if p_zona is null or p_zona not between 0 and 5 then raise exception 'Escolha um canto do gol.' using errcode = 'P0001'; end if;
-  if exists (select 1 from public.penalti_series where user_id = v_uid and estado = 'ativa') then
-    raise exception 'Você já está na disputa: chute ou saque.' using errcode = 'P0001';
-  end if;
-  perform public.limitar('cassino', 30, interval '1 minute', 'Calma: muitas apostas seguidas. Espere um pouco.');
-  r := public.mesa_para_apostar('penalti');
-  v_sal := public.creditar(v_uid, -p_aposta, 'cassino', 'penalti');
-  insert into public.penalti_series (user_id, aposta, desde) values (v_uid, p_aposta, r.id) returning id into v_id;
-  insert into public.penalti_chutes (serie_id, rodada_id, zona) values (v_id, r.id, p_zona);
-  return jsonb_build_object('serie', v_id, 'rodada', r.id, 'saldo', v_sal);
-end $$;
-revoke all on function public.penalti_entrar(int, int) from public, anon;
-grant execute on function public.penalti_entrar(int, int) to authenticated;
-
--- pênalti ao vivo: escolhe (ou troca) o canto do chute da rodada aberta
-create or replace function public.penalti_chutar(p_zona int) returns jsonb
-language plpgsql security definer set search_path = public as $$
-declare
-  v_uid uuid := auth.uid();
-  r     public.mesa_rodadas;
-  s     public.penalti_series;
-begin
-  if not public.eh_nanico() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
-  if p_zona is null or p_zona not between 0 and 5 then raise exception 'Escolha um canto do gol.' using errcode = 'P0001'; end if;
-  perform public.limitar('penalti_chute', 40, interval '1 minute', 'Calma: muitos chutes seguidos.');
-  select * into s from public.penalti_series where user_id = v_uid and estado = 'ativa' for update;
-  if not found then raise exception 'Entre na disputa primeiro.' using errcode = 'P0001'; end if;
-  r := public.mesa_avancar('penalti');
-  if r.id is null or clock_timestamp() >= r.fecha_em then raise exception 'Espere o próximo chute abrir.' using errcode = 'P0001'; end if;
-  insert into public.penalti_chutes (serie_id, rodada_id, zona) values (s.id, r.id, p_zona)
-    on conflict (serie_id, rodada_id) do update set zona = excluded.zona;
-  return jsonb_build_object('rodada', r.id, 'zona', p_zona);
-end $$;
-revoke all on function public.penalti_chutar(int) from public, anon;
-grant execute on function public.penalti_chutar(int) to authenticated;
-
--- pênalti ao vivo: sai com o multiplicador atual (antes de chutar na rodada aberta)
-create or replace function public.penalti_sacar() returns jsonb
-language plpgsql security definer set search_path = public as $$
-declare
-  v_uid uuid := auth.uid();
-  r     public.mesa_rodadas;
-  s     public.penalti_series;
-  v_pg  int;
-  v_sal int;
-begin
-  if not public.eh_nanico() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
-  r := public.mesa_avancar('penalti');
-  select * into s from public.penalti_series where user_id = v_uid and estado = 'ativa' for update;
-  if not found then raise exception 'Você não está na disputa.' using errcode = 'P0001'; end if;
-  if s.gols = 0 then raise exception 'Faça pelo menos um gol para sacar.' using errcode = 'P0001'; end if;
-  if r.id is not null and clock_timestamp() >= r.fecha_em and not r.liquidada then
-    raise exception 'O chute está acontecendo. Espere o resultado.' using errcode = 'P0001';
-  end if;
-  delete from public.penalti_chutes where serie_id = s.id and rodada_id = r.id;
-  v_pg := floor(s.aposta * public.penalti_mult(s.gols))::int;
-  update public.penalti_series set estado = 'sacou', pagou = v_pg where id = s.id;
-  v_sal := public.creditar(v_uid, v_pg, 'cassino', 'penalti');
-  perform public.mesa_registrar(v_uid, 'penalti', s.aposta, jsonb_build_object('gols', s.gols), jsonb_build_object('valor', public.penalti_mult(s.gols)), v_pg, r);
-  return jsonb_build_object('pagou', v_pg, 'saldo', v_sal, 'mult', public.penalti_mult(s.gols));
-end $$;
-revoke all on function public.penalti_sacar() from public, anon;
-grant execute on function public.penalti_sacar() to authenticated;
-
 -- o que a tela mostra: a rodada (fase, tempos e o relógio do banco), quem está nela e as últimas rodadas.
--- O resultado só sai quando pode: roleta e pênalti no fechamento, aviãozinho quando ele vai embora.
+-- O resultado só sai quando pode: a roleta no fechamento, o aviãozinho quando ele vai embora.
 create or replace function public.mesa_estado(p_jogo text) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
@@ -3568,44 +3426,25 @@ declare
   v_meu  jsonb;
 begin
   if not public.eh_nanico() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
-  if p_jogo is null or p_jogo not in ('roleta', 'aviao', 'penalti') then raise exception 'Mesa inválida.' using errcode = 'P0001'; end if;
+  if p_jogo is null or p_jogo not in ('roleta', 'aviao') then raise exception 'Mesa inválida.' using errcode = 'P0001'; end if;
   r := public.mesa_avancar(p_jogo);
   v_ag := clock_timestamp();
   if r.id is null then
     v_fase := 'parada';
   elsif v_ag < r.fecha_em then v_fase := 'apostas';
   elsif r.fim_em is null or v_ag < r.fim_em then v_fase := 'jogo';
-  elsif p_jogo = 'penalti' and exists (select 1 from public.penalti_series where estado = 'ativa') then v_fase := 'resultado';
   elsif v_ag < r.fim_em + interval '4 seconds' then v_fase := 'resultado';
   else v_fase := 'parada';
   end if;
   v_res := case when r.id is null or r.resultado is null then null
                 when p_jogo = 'aviao' and v_ag < r.fim_em then null
                 else r.resultado end;
-  if p_jogo = 'penalti' then
-    v_gente := coalesce((select jsonb_agg(jsonb_build_object('nome', f.name, 'eu', s.user_id = v_uid, 'aposta', s.aposta, 'gols', s.gols,
-        'estado', s.estado, 'pagou', s.pagou, 'mult', public.penalti_mult(s.gols),
-        'chutou', c.zona is not null,
-        -- o canto dos outros só aparece depois do chute; o meu, sempre
-        'zona', case when s.user_id = v_uid or v_ag >= r.fecha_em then c.zona end,
-        'gol', c.gol) order by s.em)
-      from public.penalti_series s
-      left join public.friends f on f.user_id = s.user_id
-      left join public.penalti_chutes c on c.serie_id = s.id and c.rodada_id = r.id
-      where s.estado = 'ativa' or (r.id is not null and s.id in (select serie_id from public.penalti_chutes where rodada_id = r.id))
-         or s.em > v_ag - interval '20 seconds'), '[]'::jsonb);
-    v_meu := (select jsonb_build_object('serie', s.id, 'aposta', s.aposta, 'gols', s.gols, 'estado', s.estado, 'pagou', s.pagou,
-        'mult', public.penalti_mult(s.gols), 'proximo', public.penalti_mult(s.gols + 1),
-        'zona', (select zona from public.penalti_chutes where serie_id = s.id and rodada_id = r.id))
-      from public.penalti_series s where s.user_id = v_uid order by s.id desc limit 1);
-  else
     v_gente := coalesce((select jsonb_agg(jsonb_build_object('nome', f.name, 'eu', a.user_id = v_uid, 'aposta', a.aposta, 'estado', a.estado,
         'sacou', a.sacou, 'pagou', a.pagou,
         'fichas', case when p_jogo = 'roleta' then jsonb_array_length(a.escolha->'fichas') end) order by a.em)
       from public.mesa_apostas a left join public.friends f on f.user_id = a.user_id where a.rodada_id = r.id), '[]'::jsonb);
     v_meu := (select jsonb_build_object('aposta', a.aposta, 'escolha', a.escolha, 'estado', a.estado, 'sacou', a.sacou, 'pagou', a.pagou)
       from public.mesa_apostas a where a.rodada_id = r.id and a.user_id = v_uid);
-  end if;
   return jsonb_build_object(
     'jogo', p_jogo, 'fase', v_fase, 'agora', v_ag,
     'rodada', case when r.id is null then null else jsonb_build_object('id', r.id, 'hash', r.hash, 'abre_em', r.abre_em,
@@ -3617,6 +3456,136 @@ begin
 end $$;
 revoke all on function public.mesa_estado(text) from public, anon;
 grant execute on function public.mesa_estado(text) to authenticated;
+
+-- 32b) pênalti (no lugar do maior ou menor): cada um joga a sua disputa, contra o goleiro da casa ------------------------
+--   Aposta uma vez (5 a 100) e chuta: o goleiro pula numa das 3 colunas, sorteada pelo mesmo motor justo de cada um
+--   (cassino_numero: coluna = floor(u × 3)). Gol nas outras duas colunas: o multiplicador sobe, 0,97 ÷ (2/3)^gols
+--   (1,45× no 1º, 7,36× no 5º, que paga sozinho; a casa leva 3% uma vez só). Pode sacar depois de cada gol.
+--   Ao terminar (defesa, saque ou 5 gols) vira uma aposta 'penalti' com o hash e o nonce do último chute (conferível).
+create table if not exists public.penalti_jogos (
+  id          bigint generated always as identity primary key,
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  aposta      int not null check (aposta between 5 and 100),
+  gols        int not null default 0 check (gols between 0 and 5),
+  estado      text not null default 'ativa' check (estado in ('ativa', 'sacou', 'perdeu', 'completa')),
+  pagou       int not null default 0,
+  ult_hash    text,
+  ult_nonce   int,
+  ult_coluna  int,
+  em          timestamptz not null default now()
+);
+create unique index if not exists penalti_jogos_um_ativo on public.penalti_jogos (user_id) where estado = 'ativa';
+alter table public.penalti_jogos enable row level security;
+revoke all on public.penalti_jogos from public, anon, authenticated;
+
+-- o multiplicador depois de g gols
+create or replace function public.penalti_mult(p_gols int) returns numeric
+language sql immutable as $$
+  select case when p_gols <= 0 then 1 else floor(0.97 / power(2.0 / 3.0, p_gols) * 100) / 100 end;
+$$;
+
+-- fecha a disputa: paga (se for o caso) e guarda na história
+create or replace function public.penalti_fechar(p_id bigint, p_estado text) returns int
+language plpgsql security definer set search_path = public as $$
+declare
+  j    public.penalti_jogos;
+  v_pg int := 0;
+  v_sal int;
+begin
+  select * into j from public.penalti_jogos where id = p_id for update;
+  if p_estado in ('sacou', 'completa') then v_pg := floor(j.aposta * public.penalti_mult(j.gols))::int; end if;
+  update public.penalti_jogos set estado = p_estado, pagou = v_pg where id = j.id;
+  if v_pg > 0 then v_sal := public.creditar(j.user_id, v_pg, 'cassino', 'penalti');
+  else select saldo into v_sal from public.carteiras where user_id = j.user_id; end if;
+  insert into public.cassino_apostas (user_id, jogo, aposta, escolha, resultado, pagou, hash, nonce)
+    values (j.user_id, 'penalti', j.aposta, jsonb_build_object('gols', j.gols, 'fim', p_estado),
+            jsonb_build_object('coluna', j.ult_coluna, 'valor', case when v_pg > 0 then public.penalti_mult(j.gols) else 0 end),
+            v_pg, coalesce(j.ult_hash, ''), coalesce(j.ult_nonce, 0));
+  return v_sal;
+end $$;
+revoke all on function public.penalti_fechar(bigint, text) from public, anon, authenticated;
+
+-- começa uma disputa (cobra a aposta)
+create or replace function public.penalti_comecar(p_aposta int) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+  v_id  bigint;
+  v_sal int;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
+  if p_aposta is null or p_aposta not between 5 and 100 then raise exception 'A aposta vai de 5 a 100 moedas.' using errcode = 'P0001'; end if;
+  if exists (select 1 from public.penalti_jogos where user_id = v_uid and estado = 'ativa') then
+    raise exception 'Você já está numa disputa: chute ou saque.' using errcode = 'P0001';
+  end if;
+  perform public.limitar('cassino', 30, interval '1 minute', 'Calma: muitas apostas seguidas. Espere um pouco.');
+  v_sal := public.creditar(v_uid, -p_aposta, 'cassino', 'penalti');
+  insert into public.penalti_jogos (user_id, aposta) values (v_uid, p_aposta) returning id into v_id;
+  return jsonb_build_object('id', v_id, 'gols', 0, 'saldo', v_sal);
+end $$;
+revoke all on function public.penalti_comecar(int) from public, anon;
+grant execute on function public.penalti_comecar(int) to authenticated;
+
+-- chuta num canto (0–2 em cima, 3–5 embaixo; esquerda, meio, direita): o banco sorteia o pulo do goleiro na hora
+create or replace function public.penalti_chutar(p_zona int) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+  j     public.penalti_jogos;
+  r     record;
+  v_col int;
+  v_gol boolean;
+  v_sal int;
+  v_est text := 'ativa';
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
+  if p_zona is null or p_zona not between 0 and 5 then raise exception 'Escolha um canto do gol.' using errcode = 'P0001'; end if;
+  select * into j from public.penalti_jogos where user_id = v_uid and estado = 'ativa' for update;
+  if not found then raise exception 'Aposte para começar a disputa.' using errcode = 'P0001'; end if;
+  perform public.limitar('penalti_chute', 40, interval '1 minute', 'Calma: muitos chutes seguidos.');
+  select * into r from public.cassino_numero(v_uid);
+  v_col := floor(r.u * 3)::int;
+  v_gol := p_zona % 3 <> v_col;
+  update public.penalti_jogos set gols = gols + case when v_gol then 1 else 0 end, ult_hash = r.hash, ult_nonce = r.nonce, ult_coluna = v_col
+   where id = j.id returning * into j;
+  if not v_gol then v_est := 'perdeu'; v_sal := public.penalti_fechar(j.id, 'perdeu');
+  elsif j.gols >= 5 then v_est := 'completa'; v_sal := public.penalti_fechar(j.id, 'completa');
+  else select saldo into v_sal from public.carteiras where user_id = v_uid; end if;
+  select * into j from public.penalti_jogos where id = j.id;
+  return jsonb_build_object('gol', v_gol, 'coluna', v_col, 'alto', floor(r.u * 6)::int % 2 = 1, 'gols', j.gols, 'estado', v_est,
+    'mult', public.penalti_mult(j.gols), 'pagou', j.pagou, 'saldo', v_sal, 'hash', r.hash, 'nonce', r.nonce);
+end $$;
+revoke all on function public.penalti_chutar(int) from public, anon;
+grant execute on function public.penalti_chutar(int) to authenticated;
+
+-- sai com o multiplicador atual (precisa de pelo menos um gol)
+create or replace function public.penalti_sacar() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+  j     public.penalti_jogos;
+  v_sal int;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
+  select * into j from public.penalti_jogos where user_id = v_uid and estado = 'ativa' for update;
+  if not found then raise exception 'Você não está numa disputa.' using errcode = 'P0001'; end if;
+  if j.gols = 0 then raise exception 'Faça pelo menos um gol para sacar.' using errcode = 'P0001'; end if;
+  v_sal := public.penalti_fechar(j.id, 'sacou');
+  return jsonb_build_object('pagou', floor(j.aposta * public.penalti_mult(j.gols))::int, 'mult', public.penalti_mult(j.gols), 'saldo', v_sal);
+end $$;
+revoke all on function public.penalti_sacar() from public, anon;
+grant execute on function public.penalti_sacar() to authenticated;
+
+-- a disputa que está aberta (para voltar a ela depois de recarregar a página)
+create or replace function public.penalti_estado() returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
+  return (select jsonb_build_object('id', id, 'aposta', aposta, 'gols', gols, 'mult', public.penalti_mult(gols))
+            from public.penalti_jogos where user_id = auth.uid() and estado = 'ativa');
+end $$;
+revoke all on function public.penalti_estado() from public, anon;
+grant execute on function public.penalti_estado() to authenticated;
 
 -- 33) jackpot do caça-níquel: 1% de cada giro de qualquer nanico vai para um prêmio do grupo; três bolas levam tudo -----
 --   Começa em 500. Quem tirar 3 bolas (o prêmio máximo da tabela) ganha o 1.000× de sempre e mais o jackpot, que volta
@@ -3677,7 +3646,7 @@ end $$;
 revoke all on function public.apostar_slot(int) from public, anon;
 grant execute on function public.apostar_slot(int) to authenticated;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho e as 8 das mesas ao vivo
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo e as 4 do pênalti
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -3741,5 +3710,8 @@ select proname::text, 'aviao' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('aviao_decolar', 'aviao_ver', 'aviao_sacar', 'aviao_mesa')
 union all
 select proname::text, 'mesas' from pg_proc
- where pronamespace = 'public'::regnamespace and proname in ('mesa_estado', 'mesa_avancar', 'mesa_apostar_roleta', 'mesa_apostar_aviao', 'mesa_sacar_aviao', 'penalti_entrar', 'penalti_chutar', 'penalti_sacar')
+ where pronamespace = 'public'::regnamespace and proname in ('mesa_estado', 'mesa_avancar', 'mesa_apostar_roleta', 'mesa_apostar_aviao', 'mesa_sacar_aviao')
+union all
+select proname::text, 'penalti' from pg_proc
+ where pronamespace = 'public'::regnamespace and proname in ('penalti_comecar', 'penalti_chutar', 'penalti_sacar', 'penalti_estado')
 order by 2, 1;
