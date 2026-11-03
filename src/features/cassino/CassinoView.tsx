@@ -9,6 +9,7 @@ import { useCarteira } from "@/lib/carteira";
 import { formatarMoedas } from "@/lib/moedas";
 import { sb } from "@/lib/supabase";
 import { toast } from "@/lib/toast";
+import { BancaNanica } from "./BancaNanica";
 import { carregar, msgDe, useCassino, type Aposta, type Jogo, type Revelada } from "./estado";
 import { Aviaozinho } from "./Aviaozinho";
 import { Blackjack } from "./Blackjack";
@@ -97,6 +98,7 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
     <section id="view-cassino" className="inner" hidden={hidden}>
       <header className="hero">
         <h1>Cassino</h1>
+        <BancaNanica />
       </header>
       {ligado === false ? (
         <p className="block hint">O cassino ainda não foi ligado no banco (seção 11 do seguranca.sql).</p>

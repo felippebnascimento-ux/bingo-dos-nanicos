@@ -5610,6 +5610,41 @@ begin
   end if;
 end $;
 
+-- 47) Banca Nanica (03/11/2026, pedido do João): todo dinheiro perdido no cassino vai para a banca, e o que o cassino
+--     paga sai dela. Uma linha só, mantida por um gatilho no extrato: cada linha com motivo 'cassino' (aposta, prêmio,
+--     fichas do pôquer) mexe na banca ao contrário do jogador. Começa com o saldo de tudo que já foi jogado.
+--     O pênalti x1 e o truco são entre jogadores (motivos próprios) e não passam pela banca.
+create table if not exists public.banca (
+  id         int primary key default 1 check (id = 1),
+  valor      bigint not null default 0,
+  atualizada timestamptz not null default now()
+);
+alter table public.banca enable row level security;
+revoke all on public.banca from public, anon, authenticated;
+grant select on public.banca to authenticated;
+drop policy if exists banca_ler on public.banca;
+create policy banca_ler on public.banca for select to authenticated using (public.eh_membro());
+insert into public.banca (id, valor)
+  select 1, coalesce(-sum(valor), 0) from public.extrato where motivo = 'cassino'
+on conflict (id) do nothing;
+
+create or replace function public.banca_extrato() returns trigger
+language plpgsql security definer set search_path = public as $
+begin
+  if new.motivo = 'cassino' and new.valor <> 0 then
+    update public.banca set valor = valor - new.valor, atualizada = now() where id = 1;
+  end if;
+  return new;
+end $;
+revoke all on function public.banca_extrato() from public, anon, authenticated;
+drop trigger if exists banca_extrato on public.extrato;
+create trigger banca_extrato after insert on public.extrato for each row execute function public.banca_extrato();
+
+do $
+begin
+  begin alter publication supabase_realtime add table public.banca; exception when duplicate_object then null; end;
+end $;
+
 -- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo e as 2 tabelas e 3 funções do quarto próprio e as 2 tabelas e 3 funções do blackjack e as 4 tabelas e 6 funções do pôquer
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
