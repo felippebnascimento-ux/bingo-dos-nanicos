@@ -214,6 +214,14 @@ const roda = (ci: number, cj: number, r: number, z: number, n = 28): Pt[] =>
   Array.from({ length: n }, (_, k) => p(ci + r * Math.cos((2 * Math.PI * k) / n), cj + r * Math.sin((2 * Math.PI * k) / n), z));
 
 const DESENHO: Record<string, (L: Forma[], m: Movel, F: Forma[]) => void> = {
+  bau: (L, { i, j, w, d }) => {
+    caixa(L, i, j, w, d, 26, "madeira", "madeira", "madeiral");
+    caixa(L, i, j, w, d, 9, "placa", "madeiral", "madeira", 26);
+    const frente = i + w;
+    const meio = j + d / 2;
+    poly(L, [p(frente, meio - 0.12, 18), p(frente, meio + 0.12, 18),
+      p(frente, meio + 0.12, 29), p(frente, meio - 0.12, 29)], "placa", "madeiral");
+  },
   churrasqueira: (L, m) => {
     const { i, j, w, d } = m;
     caixa(L, i, j, w, d, 88, "churr0", "churr1", "churr2");

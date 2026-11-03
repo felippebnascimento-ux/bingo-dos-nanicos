@@ -44,6 +44,7 @@ export type Movel = { id: string; i: number; j: number; w: number; d: number };
    de 03/11/2026, desenho do João); a cozinha fica encostada do lado direito (i = 14) e a entrada é o vão na parede
    da frente (j = 11). A mesa comprida foi para perto do Mural. */
 export const MOVEIS: readonly Movel[] = [
+  { id: "bau", i: 0, j: 1, w: 1, d: 3 },
   { id: "churrasqueira", i: 10.8, j: 0, w: 2.2, d: 1.1 },
   /* cozinha: balcão com pia e fogão, e a geladeira (que é a Loja) na ponta */
   { id: "cozinha", i: 13.05, j: 1.3, w: 0.95, d: 1.75 },
@@ -64,8 +65,9 @@ export const MOVEIS: readonly Movel[] = [
 ];
 
 /** Móveis que abrem alguma coisa, e o ponto (i, j, z) onde fica a placa com o nome. */
-export type Clicavel = { id: "tv" | "truco" | "loja" | "salas" | "mural" | "banheiro"; rotulo: { i: number; j: number; z: number } };
+export type Clicavel = { id: "tv" | "truco" | "loja" | "salas" | "mural" | "banheiro" | "bau"; rotulo: { i: number; j: number; z: number } };
 export const CLICAVEIS: readonly Clicavel[] = [
+  { id: "bau", rotulo: { i: 0.5, j: 2.5, z: 48 } },
   /* a porta de vidro: a rua, o corredor dos quartos e as salas tipo lan house (fase 05) */
   { id: "salas", rotulo: { i: 0, j: 5.6, z: 150 } },
   /* a TV, na parede da direita, entre o banheiro e o Mural */

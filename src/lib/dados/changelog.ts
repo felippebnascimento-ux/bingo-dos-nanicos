@@ -645,6 +645,7 @@ export const CHANGELOG: EntradaLog[] = [
     data: "03/11/2026",
     itens: ["Aviãozinho: quem apostou no último voo volta a ter o botão de apostar com a mesa parada (antes ficava preso até outra pessoa abrir um voo)"],
   },
+  { data: "03/11/2026", itens: ["O baú do Sítio abre uma prévia dos Campeões Selados"] },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
