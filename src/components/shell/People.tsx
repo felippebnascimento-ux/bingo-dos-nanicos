@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { ChamaNome } from "@/features/ficha/NoSitio";
 import { Avatar } from "@/components/ui/Avatar";
-import { IcSeta, IcVoltar } from "@/components/ui/icones";
+import { IcQuarto, IcSeta, IcVoltar } from "@/components/ui/icones";
 import { ehAmigo, soAmigos, soNanicos } from "@/lib/dados/nanicos";
 import { CamNaSala } from "@/features/live/CamNaSala";
 import { setLive } from "@/features/live/estado";
@@ -89,8 +89,9 @@ export function useNanicosOnline(): PresencaNanico[] {
   const mudo = useApp((s) => s.vozMudo);
   const surdo = useApp((s) => s.vozSurdo);
   const texto = useApp((s) => (s.aba === "chat" ? s.canalTexto : null));
+  const quarto = useApp((s) => s.meuQuarto);
   const lista = umPorNanico(online, MY_KEY);
-  const meu = { sala, live: live ?? null, cam: cam ?? null, voz, mudo: !!voz && mudo, surdo: !!voz && surdo, texto };
+  const meu = { sala, live: live ?? null, cam: cam ?? null, voz, mudo: !!voz && mudo, surdo: !!voz && surdo, texto, quarto };
   const i = lista.findIndex((p) => p.chaves.includes(MY_KEY));
   if (i >= 0) lista[i] = { ...lista[i], ...meu, live: live ?? lista[i].live, cam: cam ?? lista[i].cam, chaveCam: cam ? MY_KEY : lista[i].chaveCam };
   else if (myName)
@@ -102,7 +103,10 @@ export function useNanicosOnline(): PresencaNanico[] {
 /* quem está falando aparece só nos canais de voz (à esquerda), não aqui */
 function Membro({ p, f }: { p: PresencaNanico | null; f: Friend | undefined }) {
   const salas = useApp((s) => s.salas);
+  const friends = useApp((s) => s.friends);
   const nome = f?.name ?? p?.name ?? "";
+  /* num quarto próprio (fase 35): a casinha ao lado de onde está */
+  const dono = p?.quarto ? friends.find((x) => x.id === p.quarto) : undefined;
   const eu = !!p?.chaves.includes(MY_KEY);
   const online = !!p;
   /* quem está ao vivo: um clique assiste, de qualquer sala (entra só para ver, sem voz) */
@@ -156,6 +160,11 @@ function Membro({ p, f }: { p: PresencaNanico | null; f: Friend | undefined }) {
         </span>
         {onde && (
           <small className="onde">
+            {dono && (
+              <span className="membro-quarto" title={`No quarto do ${dono.name}`}>
+                <IcQuarto tam={12} />
+              </span>
+            )}
             {onde}
           </small>
         )}

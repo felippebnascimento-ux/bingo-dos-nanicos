@@ -337,3 +337,11 @@ export const IcMais3 = (p: P) => (
     <path d="M5 12h.01M12 12h.01M19 12h.01" />
   </Base>
 );
+/** Quarto próprio: a casinha com a cama (quem está num quarto, na lista de membros). */
+export const IcQuarto = (p: P) => (
+  <Base {...p}>
+    <path d="M3.5 11 12 4l8.5 7" />
+    <path d="M5.5 9.5V20h13V9.5" />
+    <path d="M8 17v-3h8v3M8 14.5h3" />
+  </Base>
+);

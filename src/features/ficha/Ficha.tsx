@@ -10,7 +10,8 @@ import { TituloNanico } from "@/features/loja/Itens";
 import { useEquipados, useLoja } from "@/features/loja/lojaDados";
 import { tipoAcessorio } from "@/features/loja/Acessorio";
 import { QuartoCena } from "@/features/quarto/QuartoCena";
-import { paraCena } from "@/features/quarto/ArrumarQuarto";
+import { paraCena } from "@/features/quarto/visita";
+import { FichaQuarto } from "@/features/quarto/QuartoVisita";
 import { abrirArrumar, iniciarQuartos, moveisDe, useQuartos } from "@/features/quarto/quartoDados";
 import { abrirCarteira, useRanking } from "@/features/moedas/Ranking";
 import { formatarMoedas, ordinal } from "@/lib/moedas";
@@ -181,6 +182,7 @@ function FichaAberta({ f }: { f: Friend }) {
             </button>
           </div>
           <NoSitio fid={f.id} eu={eu} />
+          <FichaQuarto fid={f.id} uid={f.user_id} eu={eu} />
           <EmblemasFicha fid={f.id} />
           <Links f={f} />
           {/* amigo dos nanicos não recebe votos nos atributos (o banco também recusa) */}

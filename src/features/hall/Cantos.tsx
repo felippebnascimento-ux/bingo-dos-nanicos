@@ -14,10 +14,12 @@ import { formatarMoedas, motivoGanho } from "@/lib/moedas";
 import { friendDaPresenca, friendOf, MY_KEY, setApp, useApp } from "@/lib/store";
 import { hueOf, initials, local } from "@/lib/util";
 import { useGanhos } from "./ganhos";
+import { irParaQuarto } from "@/features/quarto/visita";
 
 /** "Na sala agora": tocar num nome abre a ficha; quem está ao vivo tem "Assistir". Dá para recolher. */
 export function NaSala() {
   const friends = useApp((s) => s.friends);
+  const meuQuarto = useApp((s) => s.meuQuarto);
   const lista = usePessoasNaSala(true);
   const [min, setMin] = useState(() => local.get("hall-sala-min") === "1");
   const alternar = () => {
@@ -38,6 +40,9 @@ export function NaSala() {
             const f = friendDaPresenca(p, friends);
             const nome = f ? f.name : p.name;
             const eu = p.key === MY_KEY;
+            /* num quarto próprio (fase 35): "no quarto do Fulano", e tocar leva até lá */
+            const quarto = eu ? meuQuarto : (p.quarto ?? null);
+            const dono = quarto ? friends.find((x) => x.id === quarto) : undefined;
             return (
               <li key={p.key} className={eu ? "eu" : undefined}>
                 <button
@@ -60,6 +65,11 @@ export function NaSala() {
                     <ChamaNome fid={f?.id} />
                   </span>
                 </button>
+                {dono && quarto && !eu && (
+                  <button type="button" className="linkish hall-sala-quarto" aria-label={`Ir para o quarto do ${dono.name}`} onClick={() => irParaQuarto(quarto)}>
+                    no quarto do {dono.name}
+                  </button>
+                )}
                 {p.live && (
                   <button type="button" className="hall-assistir" aria-label={eu ? "Ver a sua transmissão" : `Assistir a tela de ${nome}`} onClick={() => assistirLive(p.key, p.sala)}>
                     <span className="live-pill vira">

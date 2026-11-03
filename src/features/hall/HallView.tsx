@@ -34,6 +34,7 @@ import { enfeites } from "@/features/trofeus/trofeus";
 import { useTrofeus } from "@/features/trofeus/trofeusDados";
 import { assentoNaTela, CADEIRAS_TRUCO, camadasHall, CLICAVEIS, livre, MOVEIS, naMesaVerde, pisoDaPlateia, pisoLivreNaTela, pisoNaTela, VB_ESTREITO, VB_LARGO, type Caixa2D, type Clicavel, type Piso } from "./hall";
 import { Destaque, emPorcento, FeltroTruco, Fundo, MovelCamada, tvCaixa } from "./Sala";
+import { BotaoMeuQuarto, QuartoVisita, TopoQuarto } from "@/features/quarto/QuartoVisita";
 
 /** Setas → um piso: direita/esquerda seguem a parede da direita, cima/baixo a da esquerda. */
 const SETAS: Record<string, [number, number]> = {
@@ -68,6 +69,9 @@ const mesmoPiso = (a: Piso | null, b: Piso | null) => a === b || (!!a && !!b && 
 export function HallView({ hidden }: { hidden: boolean }) {
   const bonecos = useHall((s) => s.bonecos);
   const aviso = useHall((s) => s.aviso);
+  const brilhos = useHall((s) => s.brilhos);
+  /* fase 35: no quarto de alguém, a cena troca (a aba continua a do K-FOFO) */
+  const quarto = useApp((s) => s.meuQuarto);
   const friends = useApp((s) => s.friends);
   const aoVivo = useApp((s) => !!s.myLiveSid || s.online.some((p) => p.live && p.key !== MY_KEY));
   const naMesa = useTruco((s) => s.mesas.reduce((n, m) => n + m.lugares.filter(Boolean).length, 0));
@@ -168,11 +172,18 @@ export function HallView({ hidden }: { hidden: boolean }) {
 
   return (
     <section id="view-hall" className="inner" hidden={hidden}>
-      <header className="hero">
-        <h1>K-FOFO</h1>
-      </header>
+      {quarto ? (
+        <TopoQuarto dono={quarto} />
+      ) : (
+        <header className="hero">
+          <h1>K-FOFO</h1>
+        </header>
+      )}
       <FaixaEvento />
       <div className="hall hall-area">
+        {quarto ? (
+          <QuartoVisita dono={quarto} />
+        ) : (
         <div
           className="hall-palco"
           style={{ aspectRatio: `${vb.w} / ${vb.h}` }}
@@ -220,6 +231,11 @@ export function HallView({ hidden }: { hidden: boolean }) {
           <ZoeiraCamada bonecos={bonecos} vb={vb} />
           <ConsumoCamada bonecos={vistos} vb={vb} />
           <LuzHappy />
+          {/* o brilho do teletransporte de quem foi para um quarto ou voltou */}
+          {brilhos.map((b) => {
+            const pos = emPorcento(vb, b.i + 0.5, b.j + 0.5, 50);
+            return <span key={b.id} className="hall-brilho" style={{ left: pct(pos.left), top: pct(pos.top) }} aria-hidden="true" />;
+          })}
           <button
             type="button"
             className="hall-tv"
@@ -261,6 +277,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
             return b ? <MenuBoneco key={b.key} b={b} vb={vb} /> : null;
           })()}
         </div>
+        )}
         <div className="hall-esq">
           <NaSala />
           <Chegadas />
@@ -269,6 +286,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
         <div className="hall-bolso">
           <CarteiraCanto />
           <MochilaCanto />
+          <BotaoMeuQuarto />
         </div>
         <Missoes canto />
         <BotaoCelular className="hall-canto hall-celular" />

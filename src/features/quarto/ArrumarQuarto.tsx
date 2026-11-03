@@ -11,21 +11,10 @@ import { useApp } from "@/lib/store";
 import { Previa } from "@/features/loja/LojaView";
 import { posicionavel, type ItemLoja } from "@/features/loja/loja";
 import { useEquipados, useLoja, useMinhaMochila } from "@/features/loja/lojaDados";
-import { cabe, pisoDo, type MovelNoQuarto, type Retangulo } from "./quarto";
-import { desenhoDo } from "./Moveis";
-import { QuartoCena, type MovelCena } from "./QuartoCena";
+import { cabe, pisoDo, type Retangulo } from "./quarto";
+import { QuartoCena } from "./QuartoCena";
 import { guardarMovel, iniciarQuartos, moverMovel, moveisDe, porMovel, useQuartos } from "./quartoDados";
-
-/** Os móveis de alguém prontos para desenhar (com o piso do item e o giro). */
-export function paraCena(moveis: readonly MovelNoQuarto[], itens: readonly ItemLoja[] | null): MovelCena[] {
-  if (!itens) return [];
-  return moveis.flatMap((m) => {
-    const it = itens.find((x) => x.id === m.itemId);
-    if (!it || !it.dados.w || !it.dados.d) return [];
-    const { w, d } = pisoDo(it.dados.w, it.dados.d, m.giro);
-    return [{ id: m.id, desenho: desenhoDo(it), ret: { i: m.i, j: m.j, w, d }, giro: m.giro }];
-  });
-}
+import { paraCena } from "./visita";
 
 type Escolha = { tipo: "guardado"; item: ItemLoja } | { tipo: "movel"; id: number; mover: boolean } | null;
 

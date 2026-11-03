@@ -26,3 +26,26 @@
   .arrumar{min-height:100%;border-radius:0;border:0;padding:12px}
   .arrumar-palco .quarto-cena{min-width:560px}
 }
+
+/* ---------- visitas (fase 35): o quarto no lugar do cômodo do K-FOFO ---------- */
+.quarto-topo{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.quarto-topo .btn{width:auto}
+.quarto-visita{border-radius:var(--r-md);background:var(--surface-2);cursor:default}
+.quarto-visita .quarto-cena{max-height:min(78vh,860px)}
+.quarto-visita-vazio{padding:40px 0;text-align:center}
+.quarto-boneco-nome{font:700 13px var(--body);fill:var(--ink);paint-order:stroke;stroke:var(--surface);stroke-width:3px}
+.quarto-boneco.eu .quarto-boneco-nome{fill:var(--accent)}
+.quarto-pino{fill:var(--accent);stroke:var(--surface);stroke-width:3}
+/* o brilho do teletransporte: um clarão rápido onde a pessoa some ou aparece */
+.quarto-brilho{fill:color-mix(in srgb,var(--accent) 55%,transparent);animation:teleporte .7s ease-out forwards}
+.hall-brilho{position:absolute;z-index:110;width:7%;aspect-ratio:1;border-radius:50%;translate:-50% -50%;pointer-events:none;background:radial-gradient(circle,color-mix(in srgb,var(--accent) 70%,transparent),transparent 70%);animation:teleporte .7s ease-out forwards}
+@keyframes teleporte{from{opacity:1;scale:.3}to{opacity:0;scale:1.6}}
+.quarto-brilho{transform-box:fill-box;transform-origin:center}
+@media (prefers-reduced-motion:reduce){.quarto-brilho,.hall-brilho{display:none}}
+.hall-meu-quarto{width:auto;border-radius:99px}
+.hall-sala-quarto{flex:none;font-size:11px;white-space:nowrap}
+.membro-quarto{display:inline-flex;vertical-align:-2px;margin-right:4px;color:var(--accent)}
+.ficha-visita{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0}
+.ficha-visita .btn{width:auto}
+/* no celular, "Na sala agora" é uma fileira de rostos: sem espaço para o "no quarto do" */
+@media (max-width:760px){.hall-sala-quarto{display:none}}

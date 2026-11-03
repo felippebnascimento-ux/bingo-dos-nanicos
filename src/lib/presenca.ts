@@ -51,6 +51,8 @@ export function umPorNanico(online: readonly Presence[], minhaChave: string): Pr
       surdo: naVoz?.surdo ?? false,
       texto: lendo?.texto ?? null,
       pos: (eu ?? comPos ?? recente).pos,
+      /* o quarto anda junto com o piso: os dois vêm da mesma aba */
+      quarto: (eu ?? comPos ?? recente).quarto ?? null,
       /* a sala vem da aba que está na voz ou numa sala, nunca de uma aba no lobby que só renovou a presença por último
          (senão, com duas abas, a pessoa pula entre a sala e o lobby a cada renovação) */
       sala: (eu ?? naVoz ?? numaSala ?? recente).sala,

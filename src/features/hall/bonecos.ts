@@ -8,7 +8,12 @@ import { aoMudarPresenca, aoReceber, enviar, estaNaSala, limitePorPessoa } from 
 import { getApp, MY_KEY, setApp, useApp } from "@/lib/store";
 import { umPorNanico, type PresencaNanico } from "@/lib/presenca";
 import { local, reduzMovimento } from "@/lib/util";
-import { assentoDe, caminho, entradaDe, entradaSorteada, posHall, posValida, sentido, type Piso, type Sentido } from "./hall";
+import { assentoDe, caminho, entradaDe, entradaSorteada, livre, posHall, posValida, sentido, type Piso, type Sentido } from "./hall";
+import { assentoDoQuarto, pisoLivreMaisPerto, posQuarto, type Grade } from "@/features/quarto/grade";
+import { PORTA } from "@/features/quarto/quarto";
+import { iniciarQuartos, useQuartos } from "@/features/quarto/quartoDados";
+import { gradeDe } from "@/features/quarto/visita";
+import { iniciarLoja } from "@/features/loja/lojaDados";
 
 export type Boneco = {
   key: string;
@@ -35,7 +40,41 @@ type Interno = Boneco & {
   vaiSentar: string | null;
 };
 
-export const useHall = create<{ bonecos: Boneco[]; aviso: string }>()(() => ({ bonecos: [], aviso: "" }));
+/** brilho do teletransporte (alguém sumiu ou apareceu na cena indo para um quarto ou voltando ao K-FOFO) */
+export type Brilho = { id: string; i: number; j: number };
+export const useHall = create<{ bonecos: Boneco[]; aviso: string; brilhos: Brilho[] }>()(() => ({ bonecos: [], aviso: "", brilhos: [] }));
+
+/* ---------- cena: o K-FOFO ou o quarto de alguém (fase 35) ---------- */
+/** A cena que estou vendo: o quarto de alguém (friend id do dono) ou o K-FOFO (null). */
+const cena = () => getApp().meuQuarto;
+/** A grade do quarto que estou vendo (null no K-FOFO ou se o quarto ainda não carregou). */
+const gradeCena = (): Grade | null => {
+  const q = cena();
+  return q ? gradeDe(q) : null;
+};
+const nada = () => false;
+const livreCena = () => (cena() ? (gradeCena()?.livre ?? nada) : livre);
+/** O assento pelo id, na cena (sofás do hall ou os móveis de sentar do quarto). */
+function assentoCena(id: unknown): { id: string; chegar: Piso; olha: Sentido } | null {
+  if (!cena()) return assentoDe(id);
+  const g = gradeCena();
+  return g ? assentoDoQuarto(g, id) : null;
+}
+/** Confere um piso (e o assento) com a grade da cena. */
+function posCena(v: unknown) {
+  if (!cena()) return posHall(v);
+  const g = gradeCena();
+  return g ? posQuarto(v, g) : null;
+}
+/** Onde aparece quem chega à cena sem piso: a porta do quarto ou uma entrada do K-FOFO. */
+const chegadaCena = (id: string): Piso => (cena() ? { ...PORTA } : entradaDe(id));
+
+function brilhar(lista: Brilho[]) {
+  if (!lista.length || reduzMovimento()) return;
+  useHall.setState((s) => ({ brilhos: [...s.brilhos, ...lista] }));
+  const ids = new Set(lista.map((b) => b.id));
+  setTimeout(() => useHall.setState((s) => ({ brilhos: s.brilhos.filter((b) => !ids.has(b.id)) })), 700);
+}
 
 const B = new Map<string, Interno>();
 /** pisos por segundo */
@@ -54,7 +93,7 @@ const publicar = () =>
 const visivel = () => getApp().aba === "hall" && typeof document !== "undefined" && !document.hidden;
 
 function novo(key: string, name: string, fid: string | null, p: Piso & { s?: string }): Interno {
-  const a = assentoDe(p.s);
+  const a = assentoCena(p.s);
   return {
     key, name, fid, i: p.i, j: p.j, sentido: a?.olha ?? "frente-direita", quadro: 0, senta: a?.id ?? null,
     de: { i: p.i, j: p.j }, alvo: { i: p.i, j: p.j }, fila: [], progresso: 0, desde: 0, vaiSentar: null,
@@ -70,15 +109,15 @@ function parar(b: Interno) {
   b.progresso = 0;
   b.quadro = 0;
   /* chegou no piso do assento: senta, olhando para o lado do móvel */
-  const a = assentoDe(b.vaiSentar);
+  const a = assentoCena(b.vaiSentar);
   b.senta = a && a.chegar.i === b.alvo.i && a.chegar.j === b.alvo.j ? a.id : null;
   if (a && b.senta) b.sentido = a.olha;
   b.vaiSentar = null;
   if (b.key === MY_KEY) {
     const pos = b.senta ? { ...b.alvo, s: b.senta } : { ...b.alvo };
     setApp({ hallPos: pos });
-    /* o assento não fica salvo: ao voltar ao site, a pessoa aparece em pé */
-    local.setJson("hall-pos", { ...b.alvo });
+    /* o assento não fica salvo: ao voltar ao site, a pessoa aparece em pé; o piso do quarto também não (abre no K-FOFO) */
+    if (!cena()) local.setJson("hall-pos", { ...b.alvo });
   }
 }
 
@@ -95,7 +134,7 @@ function proximoPasso(b: Interno) {
 
 /** Leva o boneco até `para`. Se estiver no meio de um passo, termina o passo e segue dali. */
 function rota(b: Interno, para: Piso, sentar: string | null = null): boolean {
-  const c = caminho(b.alvo, para);
+  const c = caminho(b.alvo, para, livreCena());
   if (!c.length) return false;
   /* levanta para andar (ou para trocar de assento no mesmo piso) */
   b.senta = null;
@@ -186,9 +225,28 @@ function sincronizar() {
     return publicar();
   }
   /* um boneco por nanico: as várias abas (e presenças antigas) de alguém viram um só */
-  const lista: Pick<PresencaNanico, "id" | "chaves" | "name" | "fid" | "pos">[] = umPorNanico(s.online, MY_KEY);
+  const todos: Pick<PresencaNanico, "id" | "chaves" | "name" | "fid" | "pos" | "quarto">[] = umPorNanico(s.online, MY_KEY);
+  const aqui = cena();
+  /* teletransporte: quem trocou de cena (foi para um quarto ou voltou) some ou aparece com um brilho */
+  const brilhos: Brilho[] = [];
+  const teleportou = new Set<string>();
+  for (const p of todos) {
+    const antes = cenaAntes.get(p.id), agora = p.quarto ?? null;
+    if (p.id === MY_KEY || primeiraLista || antes === undefined || antes === agora) continue;
+    teleportou.add(p.id);
+    const b = B.get(p.id);
+    if (antes === aqui && b) brilhos.push({ id: `${p.id}:${Date.now()}:s`, i: b.i, j: b.j });
+    else if (agora === aqui) {
+      const pp = posCena(p.pos) ?? chegadaCena(p.id);
+      brilhos.push({ id: `${p.id}:${Date.now()}:a`, i: pp.i, j: pp.j });
+    }
+  }
+  cenaAntes.clear();
+  for (const p of todos) cenaAntes.set(p.id, p.quarto ?? null);
+  /* só quem está na mesma cena (no K-FOFO, quem não está em quarto nenhum) */
+  const lista = todos.filter((p) => p.id === MY_KEY || (p.quarto ?? null) === aqui);
   /* eu apareço mesmo antes da presença chegar (ou se a sala cair) */
-  if (!lista.some((p) => p.id === MY_KEY)) lista.push({ id: MY_KEY, chaves: [MY_KEY], name: s.myName, fid: s.myFid, pos: s.hallPos });
+  if (!lista.some((p) => p.id === MY_KEY)) lista.push({ id: MY_KEY, chaves: [MY_KEY], name: s.myName, fid: s.myFid, pos: s.hallPos, quarto: aqui });
   const ids = new Set<string>();
   const entraram: string[] = [];
   chaveDoBoneco.clear();
@@ -196,31 +254,63 @@ function sincronizar() {
     ids.add(p.id);
     for (const k of p.chaves) chaveDoBoneco.set(k, p.id);
     const eu = p.id === MY_KEY;
-    const pos = (eu ? s.hallPos : p.pos) || entradaDe(p.id);
+    /* no quarto, o piso de cada um é conferido com a grade dele (móveis e assentos) */
+    const dele = eu ? null : posCena(p.pos);
+    const pos = (eu ? s.hallPos : dele) || chegadaCena(p.id);
     const b = B.get(p.id);
     if (!b) {
       B.set(p.id, novo(p.id, eu ? s.myName : p.name, eu ? s.myFid : p.fid, pos));
-      if (!eu) entraram.push(p.name);
+      if (!eu && !teleportou.has(p.id)) entraram.push(p.name);
       continue;
     }
     b.name = eu ? s.myName : p.name;
     b.fid = eu ? s.myFid : p.fid;
     /* perdeu algum destino? a presença corrige, andando até o piso certo (e sentando, se ela estiver sentada) */
-    if (!eu && p.pos && !andando(b) && (b.alvo.i !== p.pos.i || b.alvo.j !== p.pos.j || b.senta !== (p.pos.s ?? null))) rota(b, p.pos, p.pos.s ?? null);
+    if (dele && !andando(b) && (b.alvo.i !== dele.i || b.alvo.j !== dele.j || b.senta !== (dele.s ?? null))) rota(b, dele, dele.s ?? null);
   }
   for (const k of [...B.keys()]) if (!ids.has(k)) B.delete(k);
   if (entraram.length && !primeiraLista) useHall.setState({ aviso: `${entraram.join(", ")} entrou no hall` });
   primeiraLista = false;
   publicar();
+  brilhar(brilhos);
+}
+
+/* lembra a cena de cada nanico, para saber quem se teletransportou */
+const cenaAntes = new Map<string, string | null>();
+
+/** Troquei de cena (fui para um quarto ou voltei): a cena começa vazia e se monta de novo, com o meu brilho na chegada. */
+function trocarCena() {
+  /* sem terminarTudo: ele pararia o meu boneco no piso da cena antiga (e mudaria o hallPos de volta) */
+  if (raf) cancelAnimationFrame(raf);
+  raf = 0;
+  B.clear();
+  primeiraLista = true;
+  sincronizar();
+  const eu = B.get(MY_KEY);
+  if (eu) brilhar([{ id: `${MY_KEY}:${Date.now()}:a`, i: eu.i, j: eu.j }]);
+}
+
+/** Um móvel do quarto caiu em cima de mim (o dono arrumando): vou para o piso livre mais perto. */
+function sairDeBaixo() {
+  const g = gradeCena();
+  const b = B.get(MY_KEY);
+  if (!cena() || !g || !b) return;
+  const fim = b.fila.length ? b.fila[b.fila.length - 1] : b.alvo;
+  const sentado = b.senta ?? b.vaiSentar;
+  if (g.livre(fim.i, fim.j) && (!sentado || assentoDoQuarto(g, sentado))) return;
+  const p = pisoLivreMaisPerto(fim, g);
+  if (p) andarAte(p);
 }
 
 /* ---------- comandos ---------- */
 /** Leva o meu boneco até o piso (e senta no assento `sentar`, que tem que sair daquele piso) e avisa a sala. */
 export function andarAte(para: Piso, sentar: string | null = null) {
   const b = B.get(MY_KEY);
-  const p = posHall(sentar ? { ...para, s: sentar } : para);
+  const p = posCena(sentar ? { ...para, s: sentar } : para);
   if (!b || !p) return;
-  if (rota(b, p, p.s ?? null)) enviar("hall", { para: p.s ? { i: p.i, j: p.j, s: p.s } : { i: p.i, j: p.j } });
+  const q = cena();
+  /* no quarto, o destino leva o dono (`q`): só quem está vendo aquele quarto anima */
+  if (rota(b, p, p.s ?? null)) enviar("hall", { para: p.s ? { i: p.i, j: p.j, s: p.s } : { i: p.i, j: p.j }, ...(q ? { q } : {}) });
 }
 
 /** Setas do teclado: um piso a partir de onde o boneco vai parar. */
@@ -234,7 +324,10 @@ export function andarUmPiso(di: number, dj: number) {
 /* o destino vem de outro navegador: confere tudo antes de andar */
 const hallLimite = limitePorPessoa(8, 2000);
 function onHall(m: Record<string, unknown>) {
-  const para = posHall(m.para);
+  /* `q` = dono do quarto (sem ele, o K-FOFO): só anima quem está vendo a mesma cena, com a grade dela */
+  const q = m.q === undefined || m.q === null ? null : typeof m.q === "string" && m.q.length <= 64 ? m.q : undefined;
+  if (q === undefined || q !== cena()) return;
+  const para = posCena(m.para);
   if (typeof m.from !== "string" || m.from === MY_KEY || !para) return;
   if (!estaNaSala(m.from) || !hallLimite(m.from)) return;
   /* qualquer aba daquele nanico move o mesmo boneco (inclusive uma outra aba minha move o meu) */
@@ -251,8 +344,17 @@ export function iniciarHall() {
   setApp({ hallPos: posValida(salvo) ? { i: salvo.i, j: salvo.j } : entradaSorteada() });
   aoReceber("hall", onHall);
   aoMudarPresenca(sincronizar);
+  iniciarLoja();
+  void iniciarQuartos();
+  /* o dono arrumando com gente dentro: os móveis mudam na hora e quem ficou embaixo de um sai */
+  useQuartos.subscribe((s, p) => {
+    if (s.moveis === p.moveis && s.quartos === p.quartos) return;
+    sairDeBaixo();
+    if (cena()) sincronizar();
+  });
   useApp.subscribe((s, p) => {
-    if (s.fase !== p.fase || s.myName !== p.myName) sincronizar();
+    if (s.meuQuarto !== p.meuQuarto) trocarCena();
+    else if (s.fase !== p.fase || s.myName !== p.myName) sincronizar();
     if (s.aba !== p.aba && s.aba !== "hall") terminarTudo();
   });
   if (typeof document !== "undefined") document.addEventListener("visibilitychange", () => document.hidden && terminarTudo());
