@@ -55,8 +55,6 @@
 .mochila-nome{display:flex;flex-direction:column;flex:1;min-width:0}
 .mochila-nome b{font:600 13px var(--body);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mochila-nome small{color:var(--muted);font-size:11px}
-.ficha-mochila summary{cursor:pointer;font:700 13px var(--display)}
-.ficha-mochila .mochila{margin:10px 0}
 
 /* ---------- título e moldura ---------- */
 .titulo-nanico{display:block;font:600 11px var(--body);color:var(--accent);letter-spacing:.01em}

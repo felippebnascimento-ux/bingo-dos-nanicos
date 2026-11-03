@@ -428,6 +428,15 @@ export const CHANGELOG: EntradaLog[] = [
       "O cigarrinho e a latinha acompanham quem está sentado",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Ficha caprichada: cada parte num cartão, a posição no ranking com as moedas embaixo do nome e o dia de hoje destacado no gráfico da semana",
+      "Os atributos mudam de cor pela nota (baixa, média e alta)",
+      "Quarto mais bonito: sol entrando pela janela, sombra no canto, peitoril e uma prateleira com livros e um troféu",
+      "Na sua ficha, os botões Minha mochila e Abrir a loja",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

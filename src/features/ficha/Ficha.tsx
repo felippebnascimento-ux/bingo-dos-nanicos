@@ -5,10 +5,11 @@
  */
 import { useEffect, useMemo, useRef, type KeyboardEvent as KE } from "react";
 import { Avatar } from "@/components/ui/Avatar";
-import { IcFechar } from "@/components/ui/icones";
+import { IcFechar, IcLoja, IcMochila } from "@/components/ui/icones";
 import { TituloNanico } from "@/features/loja/Itens";
-import { MochilaLista } from "@/features/loja/LojaView";
-import { useEquipados } from "@/features/loja/lojaDados";
+import { useEquipados, useLoja } from "@/features/loja/lojaDados";
+import { abrirCarteira, useRanking } from "@/features/moedas/Ranking";
+import { formatarMoedas, ordinal } from "@/lib/moedas";
 import { verNanicadas } from "@/features/nanicos/NanicosView";
 import { opggNick, opggOf, opggSmurfOf } from "@/features/perfil/opgg";
 import { steamNome, steamOf } from "@/features/perfil/steam";
@@ -81,6 +82,27 @@ function Links({ f }: { f: Friend }) {
   );
 }
 
+/** Selos embaixo do nome: posição no ranking com o saldo, e "você" na própria ficha. */
+function Selos({ f, eu }: { f: Friend; eu: boolean }) {
+  const lista = useRanking();
+  const linha = lista?.find((l) => l.fid === f.id);
+  if (!eu && !linha?.pos) return null;
+  return (
+    <div className="ficha-selos">
+      {eu && <span className="ficha-selo eu">você</span>}
+      {linha?.pos && linha.saldo !== null && (
+        <button type="button" className="ficha-selo" title="Abrir o ranking" onClick={() => {
+            setApp({ fichaAberta: null });
+            abrirCarteira();
+          }}>
+          <span className="hall-moeda" aria-hidden="true">$</span>
+          {ordinal(linha.pos)} · {formatarMoedas(linha.saldo)}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function FichaNanico() {
   const fid = useApp((s) => s.fichaAberta);
   const friends = useApp((s) => s.friends);
@@ -126,10 +148,13 @@ function FichaAberta({ f }: { f: Friend }) {
         <div className="ficha">
           <div className="ficha-topo">
             <Avatar f={f} size="lg" />
-            <h2 id="fichaNome">
-              {f.name}
-              <TituloNanico userId={f.user_id} />
-            </h2>
+            <div className="ficha-nome">
+              <h2 id="fichaNome">
+                {f.name}
+                <TituloNanico userId={f.user_id} />
+              </h2>
+              <Selos f={f} eu={eu} />
+            </div>
             <button className="ficha-fechar" type="button" ref={fecharRef} aria-label="Fechar a ficha" title="Fechar" onClick={fechar}>
               <IcFechar />
             </button>
@@ -139,13 +164,21 @@ function FichaAberta({ f }: { f: Friend }) {
           <Links f={f} />
           <AtributosFicha f={f} eu={eu} />
           {eu && (
-            <details className="ficha-sec ficha-mochila">
-              <summary>Minha mochila</summary>
-              <MochilaLista />
-              <button type="button" className="linkish" onClick={() => setApp({ aba: "loja", fichaAberta: null })}>
-                Abrir a loja
+            <div className="ficha-acoes">
+              <button
+                type="button"
+                className="btn soft sm"
+                onClick={() => {
+                  fechar();
+                  useLoja.setState({ mochilaAberta: true });
+                }}
+              >
+                <IcMochila tam={16} /> Minha mochila
               </button>
-            </details>
+              <button type="button" className="btn soft sm" onClick={() => setApp({ aba: "loja", fichaAberta: null })}>
+                <IcLoja tam={16} /> Abrir a loja
+              </button>
+            </div>
           )}
           <button
             className="linkish"

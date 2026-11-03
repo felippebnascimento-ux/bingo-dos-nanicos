@@ -9,6 +9,9 @@ import type { Friend } from "@/lib/tipos";
 import { toast } from "@/lib/toast";
 import { carregarAtributos, carregarMeuVoto, recarregarDe, useAtributos, votar } from "./estado";
 
+/** Cor da barra pela nota: baixa (ardósia), média (ouro) e alta (vermelho). */
+const faixa = (v: number) => (v >= 7 ? "alto" : v >= 4 ? "medio" : "baixo");
+
 export function AtributosFicha({ f, eu }: { f: Friend; eu: boolean }) {
   const at = useAtributos((s) => s.todos?.[f.id]);
   const carregou = useAtributos((s) => s.todos !== null);
@@ -54,9 +57,9 @@ export function AtributosFicha({ f, eu }: { f: Friend; eu: boolean }) {
                     aria-valuemax={10}
                     aria-valuenow={m.media ?? undefined}
                   >
-                    <i className={valor >= 9 ? "max" : ""} style={{ width: `${valor * 10}%` }} />
+                    <i className={faixa(valor)} style={{ width: `${valor * 10}%` }} />
                   </span>
-                  <span className={"v" + (m.media === null ? " poucos" : "")}>{textoMedia(m)}</span>
+                  <span className={"v " + (m.media === null ? "poucos" : faixa(valor))}>{textoMedia(m)}</span>
                 </div>
               );
             })}

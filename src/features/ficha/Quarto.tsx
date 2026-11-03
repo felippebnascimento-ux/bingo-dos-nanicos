@@ -38,10 +38,18 @@ function desenhar(e: EquipQuarto): Poly[] {
   poly([p(0, 0, WH), p(N, 0, WH), p(N, 0, WH + 10), p(0, 0, WH + 10)], "topo2");
   poly([p(0, 0), p(0, N), p(0, N, 8), p(0, 0, 8)], "rodape1");
   poly([p(0, 0), p(N, 0), p(N, 0, 8), p(0, 0, 8)], "rodape2");
-  /* janela com o céu (parede da esquerda) e o pôster da cartela (parede da direita) */
+  /* sombra no canto, onde as paredes se encontram (duas faixas que vão clareando) */
+  for (const [a, c] of [[0.9, "sombra-leve"], [0.4, "sombra-leve"]] as const) {
+    poly([p(0, 0), p(0, a), p(0, a, WH), p(0, 0, WH)], c);
+    poly([p(0, 0), p(a, 0), p(a, 0, WH), p(0, 0, WH)], c);
+  }
+  /* janela com o céu (parede da esquerda): moldura, travessas, peitoril e o sol que entra no chão */
   poly([p(0, 1.2, 70), p(0, 3.2, 70), p(0, 3.2, 150), p(0, 1.2, 150)], "janela", true);
   poly([p(0, 1.35, 78), p(0, 3.05, 78), p(0, 3.05, 142), p(0, 1.35, 142)], "ceu");
+  poly([p(0, 1.35, 118), p(0, 3.05, 118), p(0, 3.05, 142), p(0, 1.35, 142)], "ceu-claro");
   poly([p(0, 2.2, 78), p(0, 2.25, 78), p(0, 2.25, 142), p(0, 2.2, 142)], "preto0");
+  poly([p(0, 1.35, 108), p(0, 3.05, 108), p(0, 3.05, 111), p(0, 1.35, 111)], "preto0");
+  box(0, 1.1, 0.22, 2.2, 4, "rodape2", "rodape1", "rodape1", 66);
   poly([p(1.3, 0, 80), p(3.3, 0, 80), p(3.3, 0, 160), p(1.3, 0, 160)], "poster", true);
   if (e.poster === "roxo") {
     /* o Barão: corpo roxo, olhos e chifres */
@@ -63,9 +71,18 @@ function desenhar(e: EquipQuarto): Poly[] {
         const i = 1.5 + a * 0.6, z = 92 + b * 22;
         poly([p(i, 0, z), p(i + 0.45, 0, z), p(i + 0.45, 0, z + 17), p(i, 0, z + 17)], (a + b) % 2 ? "cartela1" : "cartela0");
       }
-  /* piso em xadrez e o tapete */
+  /* prateleira acima da mesa, com livros e um troféuzinho */
+  box(3.25, 0, 2.2, 0.35, 4, "madeira0", "madeira1", "madeira2", 128);
+  [["cartela1", 0.14, 22], ["pelucia0", 0.12, 18], ["tapete0", 0.16, 25], ["planta1", 0.12, 20]].forEach(([c, w, h], k) =>
+    box(3.4 + k * 0.2, 0.05, w as number, 0.26, h as number, c as string, c as string, c as string, 132),
+  );
+  box(4.75, 0.08, 0.2, 0.2, 6, "ouro2", "ouro1", "ouro0", 132);
+  box(4.8, 0.13, 0.1, 0.1, 10, "ouro1", "ouro1", "ouro0", 138);
+  box(4.72, 0.05, 0.26, 0.26, 7, "ouro0", "ouro1", "ouro2", 148);
+  /* piso em xadrez, o sol da janela e o tapete */
   for (let i = 0; i < N; i++)
     for (let j = 0; j < N; j++) poly([p(i, j), p(i + 1, j), p(i + 1, j + 1), p(i, j + 1)], (i + j) % 2 ? "piso0" : "piso1");
+  poly([p(0, 1.35), p(0, 3.05), p(2.4, 2.75), p(2.4, 1.05)], "sol");
   const tap = e.tapete === "rift" || e.tapete === "pelucia" ? e.tapete : "tapete";
   poly([p(1.8, 2.4), p(4.8, 2.4), p(4.8, 5.4), p(1.8, 5.4)], tap + "0");
   poly([p(2.05, 2.65), p(4.55, 2.65), p(4.55, 5.15), p(2.05, 5.15)], tap + "1");
