@@ -54,6 +54,12 @@ export const MOVEIS: readonly Movel[] = [
   { id: "sofa-canto", i: 12.2, j: 7.0, w: 1.75, d: 3.0 },
   { id: "poltrona-1", i: 2.1, j: 9.7, w: 1.0, d: 1.1 },
   { id: "poltrona-2", i: 3.6, j: 9.7, w: 1.0, d: 1.1 },
+  /* os 4 banquinhos da mesa verde (fase 32), encostados na borda: frente (+j), direita (+i), fundo (−j), esquerda (−i).
+     São móveis de verdade só para bloquear o piso e entrar na ordem de desenho; quem senta neles é o truco. */
+  { id: "banco-truco-0", i: 3.2, j: 8.3, w: 0.6, d: 0.6 },
+  { id: "banco-truco-1", i: 4.5, j: 7.0, w: 0.6, d: 0.6 },
+  { id: "banco-truco-2", i: 3.2, j: 5.7, w: 0.6, d: 0.6 },
+  { id: "banco-truco-3", i: 1.9, j: 7.0, w: 0.6, d: 0.6 },
 ];
 
 /** Móveis que abrem alguma coisa, e o ponto (i, j, z) onde fica a placa com o nome. */
@@ -126,7 +132,32 @@ export const ASSENTOS: readonly Assento[] = [
  * só dele, por cima de quem está sentado. No sofá da parede o encosto fica atrás e vai junto com o estofado.
  */
 export const ENCOSTO_NA_FRENTE: ReadonlySet<string> = new Set(["sofa-canto", "poltrona-1", "poltrona-2"]);
-export const assentoDe = (id: unknown) => (typeof id === "string" ? (ASSENTOS.find((a) => a.id === id) ?? null) : null);
+/**
+ * As cadeiras do truco na mesa verde (fase 32), uma por lado, olhando para o centro (3,5; 7,3). Não estão em
+ * ASSENTOS: ninguém senta tocando; só quem está numa partida em jogo aparece nelas (trucoSala.ts). O `chegar` é um
+ * piso impossível, então a presença nunca guarda essas cadeiras (posHall recusa).
+ */
+export const CADEIRAS_TRUCO: readonly Assento[] = [
+  { id: "truco-0", movel: "banco-truco-0", i: 3.5, j: 8.6, chegar: { i: -1, j: -1 }, olha: "costas-direita" },
+  { id: "truco-1", movel: "banco-truco-1", i: 4.8, j: 7.3, chegar: { i: -1, j: -1 }, olha: "costas-esquerda" },
+  { id: "truco-2", movel: "banco-truco-2", i: 3.5, j: 6.0, chegar: { i: -1, j: -1 }, olha: "frente-esquerda" },
+  { id: "truco-3", movel: "banco-truco-3", i: 2.2, j: 7.3, chegar: { i: -1, j: -1 }, olha: "frente-direita" },
+];
+/** Cadeira de cada lugar da mesa de truco: no 1×1, só a da frente e a do fundo. */
+export const lugarNaMesaVerde = (modo: number, lugar: number) => (modo === 2 ? (lugar === 0 ? 0 : 2) : lugar);
+/** Pisos livres em volta da mesa verde, para quem chega para assistir (nenhum é de onde se senta num sofá). */
+export const PLATEIA_TRUCO: readonly Piso[] = [
+  { i: 5, j: 7 }, { i: 5, j: 6 }, { i: 4, j: 8 }, { i: 2, j: 8 }, { i: 4, j: 5 }, { i: 3, j: 5 }, { i: 2, j: 5 }, { i: 5, j: 8 },
+];
+/** O piso é da mesa verde (tocar nele é como tocar na placa do Truco)? */
+export const naMesaVerde = (p: Piso) => p.i >= 2 && p.i <= 4 && p.j >= 6 && p.j <= 7;
+/** O primeiro piso da plateia que ninguém está ocupando (ou o primeiro, se todos estiverem). */
+export function pisoDaPlateia(ocupados: readonly Piso[]): Piso {
+  return PLATEIA_TRUCO.find((p) => !ocupados.some((o) => o.i === p.i && o.j === p.j)) ?? PLATEIA_TRUCO[0];
+}
+
+export const assentoDe = (id: unknown) =>
+  typeof id === "string" ? (ASSENTOS.find((a) => a.id === id) ?? CADEIRAS_TRUCO.find((a) => a.id === id) ?? null) : null;
 
 /**
  * Pé do boneco na tela: o centro do piso ou, sentado, o centro do assento um pouco abaixo (o `.boneco.sentado`
@@ -333,6 +364,8 @@ export function camadasHall(bonecos: readonly { i: number; j: number; senta: str
     const lista = (sentados.get(m.id) ?? []).sort((x, y) => x.a.i + x.a.j - (y.a.i + y.a.j));
     for (const { k } of lista) z[MOVEIS.length + k] = prox++;
     if (ENCOSTO_NA_FRENTE.has(m.id)) encosto[m.id] = prox++;
+    /* as cartas no feltro da mesa verde vêm logo depois dela */
+    if (m.id === "mesa-jogos") encosto.feltro = prox++;
   }
   return { z, encosto };
 }
