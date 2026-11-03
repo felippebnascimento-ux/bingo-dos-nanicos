@@ -34,3 +34,16 @@
 .loja-ltd.fim b{background:var(--muted)}
 .quarto-vars,.loja-previa,.mochila-previa,.ficha-quarto{--quarto-plasma:#9B6BFF}
 .quarto .q-plasma{fill:var(--quarto-plasma);opacity:.85;filter:drop-shadow(0 0 6px var(--quarto-plasma))}
+
+/* mercado (seção 56) */
+.mercado{display:grid;gap:14px}
+.mercado .block h2{margin:0 0 8px;font:700 15px var(--display)}
+.mercado-lista{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.mercado-linha{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:var(--surface-2)}
+.mercado-item{flex:1;min-width:0;display:grid;gap:2px}
+.mercado-item b{font:700 14px var(--body)}
+.mercado-item small{display:flex;align-items:center;gap:6px;font:500 12px var(--body);color:var(--muted)}
+.mercado-campos{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.mercado-campos select,.mercado-campos input{padding:7px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:500 14px var(--body)}
+.mercado-campos input{width:110px;margin-left:6px}
+.mercado-campos label{font:600 13px var(--body)}

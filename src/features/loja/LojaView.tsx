@@ -20,6 +20,7 @@ import { desenhoDo } from "@/features/quarto/Moveis";
 import { abrirArrumar, iniciarQuartos, useQuartos } from "@/features/quarto/quartoDados";
 import { diferenca, podeComprarQuarto } from "@/features/quarto/quarto";
 import { comprar, equipar, useLoja, useMinhaMochila, usar, useRaros } from "./lojaDados";
+import { MercadoAba } from "./MercadoAba";
 
 const FOCO: Partial<Record<ItemLoja["espaco"], "parede" | "chao" | "mesa" | "poster" | "cadeira" | "planta">> = {
   parede: "parede",
@@ -275,7 +276,7 @@ export function LojaView({ hidden }: { hidden: boolean }) {
   const itens = useLoja((s) => s.itens);
   const saldo = useCarteira((s) => s.carteira?.saldo ?? null);
   const minhas = useMinhaMochila();
-  const [aba, setAba] = useState<"vitrine" | "mochila">("vitrine");
+  const [aba, setAba] = useState<"vitrine" | "mochila" | "mercado">("vitrine");
   const [filtro, setFiltro] = useState("tudo");
   const [detalhe, setDetalhe] = useState<string | null>(null);
   const qtd = (id: string) => minhas.find((l) => l.itemId === id)?.qtd ?? 0;
@@ -302,12 +303,15 @@ export function LojaView({ hidden }: { hidden: boolean }) {
           </span>
         )}
       </header>
-      <div className="seg loja-abas" role="radiogroup" aria-label="Loja ou mochila">
+      <div className="seg loja-abas" role="radiogroup" aria-label="Vitrine, mercado ou mochila">
         <button type="button" role="radio" aria-checked={aba === "vitrine"} className={aba === "vitrine" ? "on" : undefined} onClick={() => setAba("vitrine")}>
           Vitrine
         </button>
         <button type="button" role="radio" aria-checked={aba === "mochila"} className={aba === "mochila" ? "on" : undefined} onClick={() => setAba("mochila")}>
           Mochila{minhas.length > 0 && ` (${minhas.length})`}
+        </button>
+        <button type="button" role="radio" aria-checked={aba === "mercado"} className={aba === "mercado" ? "on" : undefined} onClick={() => setAba("mercado")}>
+          Mercado
         </button>
       </div>
       {!itens && <p className="hint">Abrindo a loja…</p>}
@@ -334,6 +338,7 @@ export function LojaView({ hidden }: { hidden: boolean }) {
             </section>
           ))}
       {aberto && <ItemDetalhe it={aberto} tenho={qtd(aberto.id)} equipado={eq(aberto.id)} saldo={saldo} fechar={() => setDetalhe(null)} />}
+      {itens && aba === "mercado" && <MercadoAba />}
       {itens && aba === "mochila" && (
         <section className="block">
           <MochilaLista />

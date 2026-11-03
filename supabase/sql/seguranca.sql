@@ -6624,6 +6624,120 @@ insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem,
 on conflict (id) do update set nome = excluded.nome, descricao = excluded.descricao, espaco = excluded.espaco,
   preco = excluded.preco, dados = excluded.dados, ordem = excluded.ordem, estoque = excluded.estoque, lancamento = excluded.lancamento;
 
+-- 56) mercado dos nanicos, como o Marketplace do Habbo (03/11/2026, pedido do João) --------------------------------------
+--   Um membro anuncia 1 item livre da mochila pelo preço que quiser (10 a 100.000): o item sai da mochila e fica
+--   guardado no anúncio. Quem compra paga o preço; o vendedor recebe o preço menos 5%, que vai para a Banca Nanica.
+--   Retirar devolve o item. Raro (seção 55) vai com o número guardado no anúncio. Moedas no extrato com 'mercado'.
+--   Todos os membros leem os anúncios (é uma vitrine); só as funções mexem. Até 10 anúncios abertos por pessoa.
+create table if not exists public.mercado (
+  id        bigint generated always as identity primary key,
+  vendedor  uuid not null references auth.users(id) on delete cascade,
+  item_id   text not null references public.loja_itens(id) on delete cascade,
+  numero    int,
+  preco     int not null check (preco between 10 and 100000),
+  estado    text not null default 'aberta' check (estado in ('aberta', 'vendida', 'retirada')),
+  comprador uuid references auth.users(id) on delete set null,
+  criada_em timestamptz not null default now(),
+  fim_em    timestamptz
+);
+create index if not exists mercado_abertas on public.mercado (estado, criada_em desc);
+alter table public.mercado enable row level security;
+revoke all on public.mercado from public, anon, authenticated;
+grant select on public.mercado to authenticated;
+drop policy if exists mercado_ler on public.mercado;
+create policy mercado_ler on public.mercado for select to authenticated using (public.eh_membro());
+do $$
+begin
+  begin alter publication supabase_realtime add table public.mercado; exception when duplicate_object then null; end;
+end $$;
+
+-- mercado_vender(item, preço): tira 1 da mochila e abre o anúncio
+create or replace function public.mercado_vender(p_item text, p_preco int) returns bigint
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+  v_num int;
+  v_id  bigint;
+begin
+  if v_uid is null or not public.eh_membro() then raise exception 'Só os membros vendem no mercado.' using errcode = 'P0001'; end if;
+  if p_preco is null or p_preco not between 10 and 100000 then raise exception 'O preço vai de 10 a 100.000 moedas.' using errcode = 'P0001'; end if;
+  perform public.limitar('mercado', 20, interval '1 hour', 'Calma: muitos anúncios seguidos.');
+  if (select count(*) from public.mercado where vendedor = v_uid and estado = 'aberta') >= 10 then
+    raise exception 'Você já tem 10 anúncios abertos. Retire algum antes.' using errcode = 'P0001';
+  end if;
+  perform 1 from public.mochila where user_id = v_uid and item_id = p_item for update;
+  if public.troca_livre(v_uid, p_item) < 1 then
+    raise exception 'Você não tem esse item livre (guarde do quarto antes, se estiver colocado).' using errcode = 'P0001';
+  end if;
+  -- raro: o anúncio guarda o maior número que a pessoa tem
+  select max(numero) into v_num from public.raros_numeros where item_id = p_item and user_id = v_uid;
+  perform set_config('nanicos.troca', '1', true);
+  update public.mochila set qtd = qtd - 1 where user_id = v_uid and item_id = p_item;
+  delete from public.mochila where user_id = v_uid and item_id = p_item and qtd <= 0;
+  perform set_config('nanicos.troca', '', true);
+  if v_num is not null then update public.raros_numeros set user_id = null where item_id = p_item and numero = v_num; end if;
+  insert into public.mercado (vendedor, item_id, numero, preco) values (v_uid, p_item, v_num, p_preco) returning id into v_id;
+  return v_id;
+end $$;
+revoke all on function public.mercado_vender(text, int) from public, anon;
+grant execute on function public.mercado_vender(text, int) to authenticated;
+
+-- devolve ou entrega o item de um anúncio (interna)
+create or replace function public.mercado_entregar(p_uid uuid, p_item text, p_numero int) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if coalesce((select qtd from public.mochila where user_id = p_uid and item_id = p_item), 0) + 1 > public.item_maximo(p_item) then
+    raise exception '% já tem o máximo desse item.', coalesce((select name from public.friends where user_id = p_uid), 'Quem recebe') using errcode = 'P0001';
+  end if;
+  perform set_config('nanicos.troca', '1', true);
+  insert into public.mochila (user_id, item_id, qtd) values (p_uid, p_item, 1)
+    on conflict (user_id, item_id) do update set qtd = public.mochila.qtd + 1;
+  perform set_config('nanicos.troca', '', true);
+  if p_numero is not null then update public.raros_numeros set user_id = p_uid where item_id = p_item and numero = p_numero; end if;
+end $$;
+revoke all on function public.mercado_entregar(uuid, text, int) from public, anon, authenticated;
+
+-- mercado_comprar(anúncio): paga, o vendedor recebe 95% e a banca 5%, e o item vem para a mochila
+create or replace function public.mercado_comprar(p_id bigint) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid  uuid := auth.uid();
+  o      public.mercado;
+  v_taxa int;
+begin
+  if v_uid is null or not public.eh_membro() then raise exception 'Só os membros compram no mercado.' using errcode = 'P0001'; end if;
+  select * into o from public.mercado where id = p_id for update;
+  if not found or o.estado <> 'aberta' then raise exception 'Esse anúncio não está mais à venda.' using errcode = 'P0001'; end if;
+  if o.vendedor = v_uid then raise exception 'Esse anúncio é seu: retire em vez de comprar.' using errcode = 'P0001'; end if;
+  perform public.limitar('mercado_compra', 30, interval '1 minute', 'Calma: muitas compras seguidas.');
+  if o.preco > coalesce((select saldo from public.carteiras where user_id = v_uid), 0) then
+    raise exception 'Faltam moedas para comprar.' using errcode = 'P0001';
+  end if;
+  v_taxa := ceil(o.preco * 0.05)::int;
+  perform public.creditar(v_uid, -o.preco, 'mercado', p_id::text);
+  perform public.creditar(o.vendedor, o.preco - v_taxa, 'mercado', p_id::text);
+  update public.banca set valor = valor + v_taxa, atualizada = now() where id = 1;
+  perform public.mercado_entregar(v_uid, o.item_id, o.numero);
+  update public.mercado set estado = 'vendida', comprador = v_uid, fim_em = now() where id = p_id;
+end $$;
+revoke all on function public.mercado_comprar(bigint) from public, anon;
+grant execute on function public.mercado_comprar(bigint) to authenticated;
+
+-- mercado_retirar(anúncio): o vendedor desiste e o item volta
+create or replace function public.mercado_retirar(p_id bigint) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  o public.mercado;
+begin
+  select * into o from public.mercado where id = p_id for update;
+  if not found or o.vendedor <> auth.uid() then raise exception 'Anúncio não encontrado.' using errcode = 'P0001'; end if;
+  if o.estado <> 'aberta' then raise exception 'Esse anúncio já acabou.' using errcode = 'P0001'; end if;
+  perform public.mercado_entregar(o.vendedor, o.item_id, o.numero);
+  update public.mercado set estado = 'retirada', fim_em = now() where id = p_id;
+end $$;
+revoke all on function public.mercado_retirar(bigint) from public, anon;
+grant execute on function public.mercado_retirar(bigint) to authenticated;
+
 -- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo e as 2 tabelas e 3 funções do quarto próprio e as 2 tabelas e 3 funções do blackjack e as 4 tabelas e 6 funções do pôquer
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')

@@ -694,6 +694,13 @@ export const CHANGELOG: EntradaLog[] = [
       "Cada raro tem o seu número, que aparece na loja (seu nº 3), e o número vai junto numa troca. Esgotou, acabou",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Mercado dos nanicos, na Loja: anuncie um item da mochila pelo preço que quiser e compre o que os outros anunciaram",
+      "O item fica guardado no anúncio até alguém comprar ou você retirar; quem vende recebe o preço menos 5%, que vão para a Banca Nanica. Raro vai com o número",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
