@@ -623,6 +623,15 @@ export const CHANGELOG: EntradaLog[] = [
       "Quem vence o duelo leva o dobro da aposta, sem taxa da casa",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Acabou a borda escura em volta do seu boneco ao passar o mouse",
+      "O cartão de quem você toca no K-FOFO mostra o corpo inteiro do nanico e os emblemas em quadradinhos, como no Habbo",
+      "Aperte Z no K-FOFO, na rua, no corredor ou num quarto para ver o histórico do chat",
+      "A porta do banheiro abre: pixe a parede com o que quiser, e a pixação fica lá para sempre",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

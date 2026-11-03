@@ -1,8 +1,8 @@
 "use client";
 /*
- * Cartão do perfil no canto de baixo à direita do Sítio, aberto ao tocar num boneco (inclusive o meu):
- * rosto, nome e título, respeitos recebidos (e o botão de dar respeito), o efeito do consumível que está
- * fazendo e os emblemas conquistados. "Ver ficha" abre a ficha inteira.
+ * Cartão do perfil no canto de baixo à direita do Sítio, aberto ao tocar num boneco (inclusive o meu), no jeito do
+ * Habbo: o corpo inteiro do nanico (a mesma arte da aba Nanicos) à esquerda e os emblemas numa grade de quadradinhos
+ * à direita; embaixo, os respeitos (e o botão de dar respeito) e o efeito do consumível. "Ver ficha" abre a ficha.
  */
 import { useEffect, useRef } from "react";
 import { Avatar } from "@/components/ui/Avatar";
@@ -10,6 +10,7 @@ import { IcFechar } from "@/components/ui/icones";
 import { Emblema } from "@/features/emblemas/Emblema";
 import { carregarEmblemas, darRespeito, useEmblemas } from "@/features/emblemas/emblemasDados";
 import { DesenhoItem, TituloNanico, useEfeitoDe } from "@/features/loja/Itens";
+import { artOf } from "@/lib/dados/nanicos";
 import { friendOf, setApp, useApp } from "@/lib/store";
 import type { Boneco } from "./bonecos";
 import { abrirMenu } from "./zoeiraSala";
@@ -34,11 +35,14 @@ export function PerfilCartao({ b }: { b: Boneco }) {
     return () => document.removeEventListener("keydown", esc);
   }, []);
   if (!fid || !f) return null;
+  const arte = artOf(f);
+  /* a grade sempre cheia de quadradinhos (os vazios ficam apagados), de 4 em 4, no mínimo 8 */
+  const n = emblemas?.length ?? 0;
+  const vazios = Math.max(8, Math.ceil(n / 4) * 4) - n;
 
   return (
     <aside className="hall-canto perfil-cartao" aria-label={`Perfil de ${f.name}`} onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
       <header>
-        <Avatar f={f} size="lg" />
         <span className="perfil-nome">
           <b>{f.name}</b>
           <TituloNanico userId={f.user_id} />
@@ -72,15 +76,28 @@ export function PerfilCartao({ b }: { b: Boneco }) {
         </p>
       )}
 
-      <div className="perfil-emblemas" aria-label="Emblemas">
-        {emblemas === undefined ? (
-          <small>Carregando os emblemas…</small>
-        ) : emblemas.length ? (
-          emblemas.map((e) => <Emblema key={e.id} e={e} />)
-        ) : (
-          <small>Nenhum emblema ainda.</small>
-        )}
+      <div className="perfil-vitrine">
+        <figure className="perfil-corpo">
+          {arte ? <img src={arte.full} alt={`${f.name} de corpo inteiro`} width={arte.w} height={arte.h} /> : <Avatar f={f} size="lg" />}
+        </figure>
+        <div className="perfil-emblemas perfil-grade" aria-label="Emblemas">
+          {emblemas === undefined ? (
+            <small>Carregando os emblemas…</small>
+          ) : (
+            <>
+              {emblemas.map((e) => (
+                <span key={e.id} className="perfil-slot">
+                  <Emblema e={e} tam={34} />
+                </span>
+              ))}
+              {Array.from({ length: vazios }, (_, k) => (
+                <span key={"v" + k} className="perfil-slot vazio" aria-hidden="true" />
+              ))}
+            </>
+          )}
+        </div>
       </div>
+      {emblemas?.length === 0 && <small className="perfil-sem">Nenhum emblema ainda.</small>}
 
       <button
         type="button"

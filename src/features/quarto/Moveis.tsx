@@ -138,6 +138,18 @@ const DESENHO_QUARTO: Record<string, Desenho> = {
   "carro-branco": (k, r, giro) => carro(k, r, giro, "branco"),
   "carro-preto": (k, r, giro) => carro(k, r, giro, "preto"),
   "carro-amarelo": (k, r, giro) => carro(k, r, giro, "amarelo"),
+  /* o banheiro: vaso sanitário (com a caixa encostada atrás) e a pia com o espelho em cima */
+  vaso: (k, r, giro) => {
+    const ci = r.i + r.w / 2, cj = r.j + r.d / 2;
+    k.box(ci - 0.2, cj - 0.22, 0.4, 0.44, 16, "louca0", "louca1", "louca2");
+    k.box(ci - 0.24, cj - 0.26, 0.48, 0.52, 3, "louca0", "louca1", "louca2", 16);
+    const c = atras(r, giro, 0.2);
+    k.box(c.i + (giro ? 0.05 : 0.2), c.j + (giro ? 0.2 : 0.05), giro ? 0.2 : 0.6, giro ? 0.6 : 0.2, 30, "louca0", "louca1", "louca2", 10);
+  },
+  pia: (k, r) => {
+    k.box(r.i + 0.4, r.j + 0.15, 0.2, 0.2, 30, "louca1", "louca1", "louca2");
+    k.box(r.i + 0.1, r.j + 0.05, 0.8, 0.5, 8, "louca0", "louca1", "louca2", 30);
+  },
   gol: (k, r) => {
     /* as traves na linha de fundo (i = fim do retângulo) e a rede caindo para trás */
     const i = r.i + r.w - 0.15;

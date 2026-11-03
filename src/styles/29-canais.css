@@ -49,9 +49,10 @@
 .side-base{display:grid;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
 .side-base .side-foot{margin-top:2px}
 .eu-painel{display:flex;align-items:center;gap:6px;min-width:0}
-.eu{flex:1;min-width:0;display:flex;align-items:center;gap:10px;border:0;background:none;padding:5px 6px;border-radius:var(--r-sm);color:var(--ink);text-align:left;cursor:pointer;font:inherit}
-.eu:hover,.eu.on{background:var(--surface-2)}
-.eu .av{width:34px;height:34px}
+/* só o botão "eu" do menu: um ".eu" solto pintava também o meu boneco no K-FOFO (o quadrado escuro ao passar o mouse) */
+button.eu{flex:1;min-width:0;display:flex;align-items:center;gap:10px;border:0;background:none;padding:5px 6px;border-radius:var(--r-sm);color:var(--ink);text-align:left;cursor:pointer;font:inherit}
+button.eu:hover,button.eu.on{background:var(--surface-2)}
+button.eu .av{width:34px;height:34px}
 .eu-txt{display:grid;min-width:0}
 .eu-txt b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .eu-txt small{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -154,7 +155,7 @@ body.sem-membros .membros{display:none}
   body.side-min .voz-botoes .btn{padding:8px 6px;font-size:12px}
   body.side-min .side-base{justify-items:center}
   body.side-min .eu-painel{flex-direction:column}
-  body.side-min .eu{flex:none;padding:0}
+  body.side-min button.eu{flex:none;padding:0}
   body.side-min .eu-txt{display:none}
 }
 @media (hover:none) and (min-width:861px){.membros-toggle{opacity:1}}

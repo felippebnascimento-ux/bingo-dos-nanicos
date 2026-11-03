@@ -6071,6 +6071,50 @@ begin
   begin alter publication supabase_realtime add table public.mural_recados; exception when duplicate_object then null; end;
 end $$;
 
+-- 51) banheiro do K-FOFO (03/11/2026, pedido do João): a porta do banheiro abre uma cena onde os nanicos pixam a parede
+--     com o que quiserem (até 60 letras, numa cor de spray). A pixação fica para sempre: ninguém apaga nem edita pelo site
+--     (só o admin, no painel). O lugar na parede vem do site (sorteado) e o banco confere os limites. 5 por hora.
+create table if not exists public.banheiro_pixacoes (
+  id      bigint generated always as identity primary key,
+  user_id uuid default auth.uid() references auth.users(id) on delete set null,
+  texto   text not null check (char_length(texto) between 1 and 60),
+  cor     text not null default 'preto' check (cor in ('preto', 'vermelho', 'azul', 'verde', 'rosa', 'amarelo')),
+  parede  text not null check (parede in ('esq', 'dir')),
+  a       numeric not null check (a between 0.2 and 4.8),
+  z       int not null check (z between 10 and 140),
+  rot     int not null default 0 check (rot between -15 and 15),
+  em      timestamptz not null default now()
+);
+alter table public.banheiro_pixacoes enable row level security;
+revoke all on public.banheiro_pixacoes from public, anon, authenticated;
+grant select on public.banheiro_pixacoes to authenticated;
+grant insert (texto, cor, parede, a, z, rot) on public.banheiro_pixacoes to authenticated;
+drop policy if exists banheiro_pixacoes_ler on public.banheiro_pixacoes;
+create policy banheiro_pixacoes_ler on public.banheiro_pixacoes for select to authenticated using (public.eh_membro());
+drop policy if exists banheiro_pixacoes_pixar on public.banheiro_pixacoes;
+create policy banheiro_pixacoes_pixar on public.banheiro_pixacoes for insert to authenticated
+  with check (public.eh_membro() and user_id = auth.uid());
+
+-- o autor é sempre quem está logado, o texto sai limpo (uma linha só) e são 5 por hora
+create or replace function public.banheiro_pixacao_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.user_id := auth.uid();
+  new.em := now();
+  new.texto := btrim(regexp_replace(coalesce(new.texto, ''), '[\x00-\x1F\x7F]', ' ', 'g'));
+  if new.texto = '' then raise exception 'Escreva alguma coisa para pixar.' using errcode = 'P0001'; end if;
+  perform public.limitar('pixar', 5, interval '1 hour', 'Calma: no máximo 5 pixações por hora. A tinta acabou.');
+  return new;
+end $$;
+revoke all on function public.banheiro_pixacao_protecao() from public, anon, authenticated;
+drop trigger if exists banheiro_pixacao_protecao on public.banheiro_pixacoes;
+create trigger banheiro_pixacao_protecao before insert on public.banheiro_pixacoes for each row execute function public.banheiro_pixacao_protecao();
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.banheiro_pixacoes; exception when duplicate_object then null; end;
+end $$;
+
 -- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo e as 2 tabelas e 3 funções do quarto próprio e as 2 tabelas e 3 funções do blackjack e as 4 tabelas e 6 funções do pôquer
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')

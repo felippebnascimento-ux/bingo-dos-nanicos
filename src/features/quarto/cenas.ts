@@ -7,12 +7,18 @@
 import type { Friend } from "@/lib/tipos";
 import { gradeDoQuarto, type Grade, type MovelGrade } from "./grade";
 
-export const CENAS = ["rua", "corredor"] as const;
+export const CENAS = ["rua", "corredor", "banheiro"] as const;
 export type CenaEspecial = (typeof CENAS)[number];
-export const ehCenaEspecial = (x: unknown): x is CenaEspecial => x === "rua" || x === "corredor";
+export const ehCenaEspecial = (x: unknown): x is CenaEspecial => CENAS.includes(x as CenaEspecial);
 
-export const TAM_CENA: Record<CenaEspecial, number> = { rua: 12, corredor: 9 };
-export const NOME_CENA: Record<CenaEspecial, string> = { rua: "A rua", corredor: "Corredor dos quartos" };
+export const TAM_CENA: Record<CenaEspecial, number> = { rua: 12, corredor: 9, banheiro: 5 };
+export const NOME_CENA: Record<CenaEspecial, string> = { rua: "A rua", corredor: "Corredor dos quartos", banheiro: "Banheiro do K-FOFO" };
+
+/** O banheiro (a porta do canto do K-FOFO): o vaso (dá para sentar) e a pia; as paredes são das pixações (seção 51). */
+export const MOVEIS_BANHEIRO: readonly MovelGrade[] = [
+  { id: -20, desenho: "vaso", ret: { i: 4, j: 1, w: 1, d: 1 }, giro: true },
+  { id: -21, desenho: "pia", ret: { i: 1, j: 4, w: 1, d: 1 }, giro: false },
+];
 
 /** A rua: a árvore no meio com 3 bancos, os 5 carros na grama e o gol do pênalti x1. */
 export const MOVEIS_RUA: readonly MovelGrade[] = [
@@ -31,7 +37,18 @@ export const MOVEIS_RUA: readonly MovelGrade[] = [
 export const GOL_RUA = -10;
 export const MARCA_PENALTI = { i: 8.5, j: 3.5 };
 
-export const moveisDaCena = (c: CenaEspecial): readonly MovelGrade[] => (c === "rua" ? MOVEIS_RUA : []);
+export const moveisDaCena = (c: CenaEspecial): readonly MovelGrade[] => (c === "rua" ? MOVEIS_RUA : c === "banheiro" ? MOVEIS_BANHEIRO : []);
+
+/* ---------- pixações do banheiro (seção 51): onde cada uma fica na parede ---------- */
+export const CORES_PIXO = ["preto", "vermelho", "azul", "verde", "rosa", "amarelo"] as const;
+export type CorPixo = (typeof CORES_PIXO)[number];
+export type LugarPixo = { parede: "esq" | "dir"; a: number; z: number; rot: number };
+/** Um lugar sorteado numa das duas paredes do banheiro (longe da porta do piso 0, 0 na parede da direita). */
+export function lugarDePixo(r: () => number = Math.random): LugarPixo {
+  const parede = r() < 0.5 ? "esq" : "dir";
+  const ini = parede === "dir" ? 1.3 : 0.3;
+  return { parede, a: Math.round((ini + r() * (4.7 - ini)) * 100) / 100, z: 18 + Math.floor(r() * 116), rot: Math.round(r() * 20 - 10) };
+}
 
 const grades = new Map<CenaEspecial, Grade>();
 /** A grade de andar de uma cena especial (sempre a mesma). */

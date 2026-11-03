@@ -121,3 +121,14 @@
 .gc-nivel .gc-sulco{fill:none;stroke:var(--gc-texto);stroke-width:2;opacity:.22}
 /* brasão oficial do elo (imagem do Community Dragon, 1280×720 com o brasão no meio): recorte por CSS */
 .brasao-elo{display:inline-block;flex:none;background:center 46% / 380% auto no-repeat}
+
+/* cartão no jeito do Habbo (pedido do João): o corpo inteiro à esquerda e os emblemas em quadradinhos à direita */
+.perfil-cartao{width:360px}
+.perfil-vitrine{display:grid;grid-template-columns:118px 1fr;gap:10px;align-items:stretch}
+.perfil-corpo{margin:0;display:grid;place-items:end center;min-height:170px;padding:8px 4px 4px;border-radius:12px;background:radial-gradient(ellipse at 50% 92%,color-mix(in srgb,var(--stamp-ink) 16%,transparent) 0 28%,transparent 29%),linear-gradient(180deg,color-mix(in srgb,var(--stamp-ink) 8%,transparent),color-mix(in srgb,var(--stamp-ink) 3%,transparent));border:1px solid rgb(255 255 255 / .08);overflow:hidden}
+.perfil-corpo img{display:block;width:auto;height:168px;max-width:100%;object-fit:contain;filter:drop-shadow(0 4px 6px var(--shadow))}
+.perfil-grade{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;align-content:start;padding:6px;border-radius:12px;background:color-mix(in srgb,var(--stamp-ink) 6%,transparent);border:1px solid rgb(255 255 255 / .08);min-height:0}
+.perfil-slot{display:grid;place-items:center;aspect-ratio:1;border-radius:8px;background:color-mix(in srgb,var(--accent-ink) 55%,transparent);box-shadow:inset 0 1px 3px rgb(0 0 0 / .45)}
+.perfil-slot.vazio{opacity:.45}
+.perfil-sem{color:color-mix(in srgb,var(--stamp-ink) 70%,transparent)}
+@media (max-width:760px){.perfil-cartao{width:auto}.perfil-vitrine{grid-template-columns:96px 1fr}.perfil-corpo img{height:140px}}

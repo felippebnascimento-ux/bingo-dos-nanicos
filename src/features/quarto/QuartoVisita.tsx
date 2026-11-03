@@ -4,7 +4,7 @@
  * andando e sentando (os bonecos de bonecos.ts, que já filtram pela cena). Tocar num piso livre anda; tocar num
  * móvel de sentar senta no lugar mais perto. As setas andam um piso. "Ir para o meu quarto" fica no canto do K-FOFO.
  */
-import { useMemo, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { andarAte, andarUmPiso, useHall } from "@/features/hall/bonecos";
 import { useEquipados, useLoja } from "@/features/loja/lojaDados";
 import { IcQuarto } from "@/components/ui/icones";
@@ -15,7 +15,8 @@ import { assentoDoQuarto, gradeDoQuarto } from "./grade";
 import { QuartoCena, type BonecoCena } from "./QuartoCena";
 import { moveisDe, useQuartos } from "./quartoDados";
 import { irParaQuarto, paraCena } from "./visita";
-import { ehCenaEspecial, gradeEspecial, GOL_RUA, moveisDaCena, NOME_CENA, portasDoCorredor, TAM_CENA } from "./cenas";
+import { CORES_PIXO, ehCenaEspecial, gradeEspecial, GOL_RUA, moveisDaCena, NOME_CENA, portasDoCorredor, TAM_CENA, type CorPixo } from "./cenas";
+import { iniciarPixacoes, pixar, usePixacoes } from "./pixacoes";
 import { abrirDuelo } from "@/features/cassino/dueloDados";
 import { soNanicos } from "@/lib/dados/nanicos";
 import { toast } from "@/lib/toast";
@@ -33,6 +34,10 @@ export function QuartoVisita({ dono }: { dono: string }) {
   const todos = useQuartos((s) => s.moveis);
   const itens = useLoja((s) => s.itens);
   const eq = useEquipados(f?.user_id);
+  const pixos = usePixacoes((s) => s.lista);
+  useEffect(() => {
+    if (especial === "banheiro") void iniciarPixacoes();
+  }, [especial]);
   const portas = useMemo(() => (especial === "corredor" ? portasDoCorredor(soNanicos(friends), (uid) => !!quartos[uid]) : undefined), [especial, friends, quartos]);
   const bonecos = useHall((s) => s.bonecos);
   const brilhos = useHall((s) => s.brilhos);
@@ -106,7 +111,9 @@ export function QuartoVisita({ dono }: { dono: string }) {
         portas={portas}
         aoTocarPorta={(fid) => (portas?.find((p) => p.fid === fid)?.aberta ? irParaQuarto(fid) : toast("Esse nanico ainda não comprou o quarto: a porta está fechada."))}
         aoTocarSaida={especial ? () => irParaQuarto(null) : undefined}
+        pixos={especial === "banheiro" ? pixos : undefined}
       />
+      {especial === "banheiro" && <PixarForm />}
     </div>
   );
 }
@@ -160,5 +167,40 @@ export function FichaQuarto({ fid, uid, eu }: { fid: string; uid: string | null 
         </button>
       )}
     </div>
+  );
+}
+
+const NOME_PIXO: Record<CorPixo, string> = { preto: "Preto", vermelho: "Vermelho", azul: "Azul", verde: "Verde", rosa: "Rosa", amarelo: "Amarelo" };
+
+/** No banheiro: escreva na parede (até 60 letras, numa cor de spray). Fica para sempre. */
+function PixarForm() {
+  const [texto, setTexto] = useState("");
+  const [cor, setCor] = useState<CorPixo>("preto");
+  const [indo, setIndo] = useState(false);
+  const ir = async () => {
+    if (indo || !texto.trim()) return;
+    setIndo(true);
+    if (await pixar(texto, cor)) setTexto("");
+    setIndo(false);
+  };
+  return (
+    <form
+      className="pixar-form"
+      onClick={(e) => e.stopPropagation()}
+      onSubmit={(e) => {
+        e.preventDefault();
+        void ir();
+      }}
+    >
+      <input value={texto} onChange={(e) => setTexto(e.target.value)} maxLength={60} placeholder="Pixe a parede (fica para sempre)…" aria-label="O que pixar na parede do banheiro" autoComplete="off" />
+      <div className="seg" role="radiogroup" aria-label="Cor do spray">
+        {CORES_PIXO.map((c) => (
+          <button key={c} type="button" role="radio" aria-checked={cor === c} aria-label={NOME_PIXO[c]} className={"pixar-cor p-" + c + (cor === c ? " on" : "")} onClick={() => setCor(c)} />
+        ))}
+      </div>
+      <button type="submit" className="btn sm" disabled={indo || !texto.trim()}>
+        Pixar
+      </button>
+    </form>
   );
 }
