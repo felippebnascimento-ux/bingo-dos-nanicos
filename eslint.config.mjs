@@ -10,6 +10,8 @@ const eslintConfig = defineConfig([
     // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
+    /* cópias de trabalho de outras sessões (git worktree) */
+    ".claude/**",
     "build/**",
     "next-env.d.ts",
     // função da Riot roda no Deno (Supabase), não no Next; legacy é só referência

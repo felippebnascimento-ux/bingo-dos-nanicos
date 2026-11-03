@@ -40,3 +40,14 @@ export function somDaVoz(tipo: "entrou" | "saiu", volumeGeral: number) {
   tom(c, a, 0, 0.16, vol);
   tom(c, b, 0.09, 0.22, vol);
 }
+
+/** Campainha de quando alguém abre o site e chega no K-FOFO (Chegadas.tsx): três notas subindo, mais suave que a da voz. */
+export function somDeChegada(volumeGeral: number) {
+  if (getApp().vozSurdo || volumeGeral <= 0) return;
+  const c = contexto();
+  if (!c) return;
+  const vol = 0.09 * volumeGeral;
+  tom(c, 659.25, 0, 0.18, vol);
+  tom(c, 783.99, 0.12, 0.18, vol);
+  tom(c, 1046.5, 0.24, 0.32, vol);
+}

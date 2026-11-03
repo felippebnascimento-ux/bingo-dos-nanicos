@@ -3,10 +3,12 @@
  * "Fulano entrou!": no canto de cima, à esquerda do K-FOFO (embaixo do "Na sala agora"), quem acabou de abrir o
  * site. Vem da presença do lobby (todo mundo online, em qualquer aba), acompanhada fora do React por
  * `iniciarChegadas`. Não avisa a lista que chega ao entrar, nem a mim, nem quem só piscou (caiu e voltou em menos
- * de 2 min). Cada aviso some em 6 s; no máximo 3.
+ * de 2 min). Cada aviso some em 6 s; no máximo 3. Cada chegada toca a campainha (somDeChegada, em live/sonsVoz.ts).
  */
 import { create } from "zustand";
 import { Avatar } from "@/components/ui/Avatar";
+import { somDeChegada } from "@/features/live/sonsVoz";
+import { useAjustesVoz } from "@/features/live/voz";
 import { friendOf, getApp, useApp } from "@/lib/store";
 
 const MOSTRA_MS = 6000;
@@ -38,6 +40,8 @@ function conferir() {
   }
   antes = atuais;
   if (!novos.length) return;
+  /* o som avisa mesmo com o site em outra aba: entrou mais um nanico */
+  somDeChegada(useAjustesVoz.getState().geral);
   const itens = novos.map((fid) => ({ id: proxId++, fid }));
   useChegadas.setState((s) => ({ avisos: [...itens, ...s.avisos].slice(0, 3) }));
   setTimeout(() => useChegadas.setState((s) => ({ avisos: s.avisos.filter((x) => !itens.some((i) => i.id === x.id)) })), MOSTRA_MS);
