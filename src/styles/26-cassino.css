@@ -37,8 +37,10 @@
 .cassino-lista .perdeu{color:var(--muted);text-align:right;font-weight:500}
 
 /* seletor de jogo e os jogos novos (limbo, maior ou menor e caça-níquel) */
-.cassino-jogos{grid-template-columns:repeat(4,minmax(0,1fr));margin:0}
-@media (max-width:520px){.cassino-jogos{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* todos os jogos numa linha só, do mesmo tamanho (no celular, 3 por linha) */
+.cassino-jogos{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);margin:0}
+.cassino-jogos button{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:640px){.cassino-jogos{grid-auto-flow:row;grid-template-columns:repeat(3,minmax(0,1fr))}}
 .jogo{display:grid;gap:12px}
 .jogo .hint{margin:0}
 .jogo .seg{margin:0}

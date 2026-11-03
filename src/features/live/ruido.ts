@@ -21,6 +21,8 @@ export type MicFiltrado = {
   fonte: MediaStreamTrack | undefined;
   /** para tudo: o filtro e o microfone */
   parar: () => void;
+  /** acorda o filtro (o celular pausa o áudio quando a tela apaga ou chega uma ligação; ao desmutar, volta) */
+  retomar: () => void;
 };
 
 const semFiltro = (bruto: MediaStream): MicFiltrado => ({
@@ -28,6 +30,7 @@ const semFiltro = (bruto: MediaStream): MicFiltrado => ({
   filtrado: false,
   fonte: bruto.getAudioTracks()[0],
   parar: () => bruto.getTracks().forEach((t) => t.stop()),
+  retomar: () => {},
 });
 
 /**
@@ -56,6 +59,10 @@ export async function filtrarRuido(bruto: MediaStream): Promise<MicFiltrado> {
     fonte.connect(rnnoise).connect(saida);
     if (ctx.state === "suspended") await ctx.resume().catch(() => {});
     const c = ctx;
+    /* o iPhone suspende (ou "interrompe") o contexto sozinho: sem ele rodando, sai silêncio mesmo desmutado */
+    c.onstatechange = () => {
+      if (c.state !== "running" && c.state !== "closed") c.resume().catch(() => {});
+    };
     return {
       stream: saida.stream,
       filtrado: true,
@@ -66,8 +73,12 @@ export async function filtrarRuido(bruto: MediaStream): Promise<MicFiltrado> {
           rnnoise.disconnect();
           rnnoise.destroy();
         } catch {}
+        c.onstatechange = null;
         c.close().catch(() => {});
         bruto.getTracks().forEach((t) => t.stop());
+      },
+      retomar: () => {
+        if (c.state !== "running" && c.state !== "closed") c.resume().catch(() => {});
       },
     };
   } catch (e) {

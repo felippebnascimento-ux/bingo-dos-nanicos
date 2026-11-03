@@ -4989,7 +4989,541 @@ end $$;
 revoke all on function public.bj_acao(text) from public, anon;
 grant execute on function public.bj_acao(text) to authenticated;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo e as 2 tabelas e 3 funções do quarto próprio e as 2 tabelas e 3 funções do blackjack
+-- 44) pôquer Texas Hold'em entre nanicos (03/11/2026): mesas como as do truco, até 6 lugares --------------------------
+--   Alguém abre uma mesa escolhendo os blinds (5/10, 10/20 ou 25/50). Cada um senta levando fichas da carteira (de 20 a
+--   100 big blinds) e, ao levantar, o que sobrou volta. Com 2 ou mais sentados, a mão começa sozinha: o botão anda, os
+--   blinds saem, 2 cartas para cada um, e as rodadas de aposta (pré-flop, flop, turn e river) com 20 s por jogada (acabou
+--   o tempo: passa se puder, senão desiste). All-in com potes paralelos; no showdown vence a melhor mão de 5 das 7 cartas.
+--   A casa leva 3% do pote, só se a mão chegou ao flop. O baralho é embaralhado pelo segredo da mão (carta k na posição
+--   de HMAC-SHA256(segredo, "pk:id:k")); o hash aparece no começo e o segredo no fim.
+--   Ninguém lê as tabelas direto: as cartas de cada um só saem para o dono (pk_estado) e, no showdown, as de quem chegou.
+--   Sem servidor: pk_estado (o site pergunta toda hora) e as jogadas fazem a mesa andar, com uma trava por mesa.
+create table if not exists public.pk_mesas (
+  id         bigint generated always as identity primary key,
+  criada_por uuid not null references auth.users(id) on delete cascade,
+  blind      int not null check (blind in (10, 20, 50)),
+  criada_em  timestamptz not null default clock_timestamp(),
+  fechada    boolean not null default false,
+  mao_atual  bigint
+);
+create table if not exists public.pk_lugares (
+  mesa_id  bigint not null references public.pk_mesas(id) on delete cascade,
+  lugar    int not null check (lugar between 1 and 6),
+  user_id  uuid not null references auth.users(id) on delete cascade,
+  fichas   int not null check (fichas >= 0),
+  sair     boolean not null default false,
+  sentou_em timestamptz not null default clock_timestamp(),
+  primary key (mesa_id, lugar),
+  unique (mesa_id, user_id)
+);
+-- quantas vezes seguidas o tempo acabou na vez dele (2 = foi embora: levanta no fim da mão)
+alter table public.pk_lugares add column if not exists ausente int not null default 0;
+create table if not exists public.pk_maos (
+  id          bigint generated always as identity primary key,
+  mesa_id     bigint not null references public.pk_mesas(id) on delete cascade,
+  segredo     bytea not null,
+  hash        text not null,
+  baralho     text[] not null,
+  pos         int not null default 0,
+  fase        text not null default 'preflop' check (fase in ('preflop', 'flop', 'turn', 'river', 'fim')),
+  mesa_cartas text[] not null default '{}',
+  pote        int not null default 0,
+  aposta      int not null default 0,
+  min_aumento int not null,
+  vez         int,
+  vez_ate     timestamptz,
+  botao       int not null,
+  sb          int not null,
+  bb          int not null,
+  inicio      timestamptz not null default clock_timestamp(),
+  fim_em      timestamptz,
+  rake        int not null default 0,
+  resultado   jsonb
+);
+create index if not exists pk_maos_mesa on public.pk_maos (mesa_id, id desc);
+create table if not exists public.pk_jog (
+  mao_id    bigint not null references public.pk_maos(id) on delete cascade,
+  lugar     int not null,
+  user_id   uuid not null references auth.users(id) on delete cascade,
+  cartas    text[] not null default '{}',
+  estado    text not null default 'ativo' check (estado in ('ativo', 'desistiu', 'allin')),
+  na_rodada int not null default 0,
+  total     int not null default 0,
+  agiu      boolean not null default false,
+  ganhou    int not null default 0,
+  primary key (mao_id, lugar)
+);
+alter table public.pk_mesas   enable row level security;
+alter table public.pk_lugares enable row level security;
+alter table public.pk_maos    enable row level security;
+alter table public.pk_jog     enable row level security;
+revoke all on public.pk_mesas, public.pk_lugares, public.pk_maos, public.pk_jog from public, anon, authenticated;
+
+-- valor da carta para o pôquer (2 a 14)
+create or replace function public.pk_rank(p_carta text) returns int
+language sql immutable as $$
+  select case left(p_carta, length(p_carta) - 1) when 'A' then 14 when 'K' then 13 when 'Q' then 12 when 'J' then 11 else left(p_carta, length(p_carta) - 1)::int end;
+$$;
+
+-- força de 5 cartas: categoria (0 carta alta … 8 straight flush) e os desempates, num número só (maior = melhor)
+create or replace function public.pk_valor5(p_c text[]) returns bigint
+language plpgsql immutable as $$
+declare
+  r int[]; g int[]; n int[]; v_flush boolean; v_seq int := 0; v_cat int; v_t int[]; v_val bigint := 0; i int; k int;
+begin
+  select array_agg(public.pk_rank(c) order by public.pk_rank(c) desc) into r from unnest(p_c) c;
+  v_flush := (select count(distinct right(c, 1)) from unnest(p_c) c) = 1;
+  -- grupos: por quantidade (desc) e valor (desc)
+  select array_agg(x.rk order by x.qt desc, x.rk desc), array_agg(x.qt order by x.qt desc, x.rk desc) into g, n
+    from (select rk, count(*) qt from unnest(r) rk group by rk) x;
+  if array_length(g, 1) = 5 then
+    if r[1] - r[5] = 4 then v_seq := r[1];
+    elsif r[1] = 14 and r[2] = 5 and r[5] = 2 then v_seq := 5; end if;
+  end if;
+  if v_seq > 0 and v_flush then v_cat := 8; v_t := array[v_seq];
+  elsif n[1] = 4 then v_cat := 7; v_t := g;
+  elsif n[1] = 3 and n[2] = 2 then v_cat := 6; v_t := g;
+  elsif v_flush then v_cat := 5; v_t := r;
+  elsif v_seq > 0 then v_cat := 4; v_t := array[v_seq];
+  elsif n[1] = 3 then v_cat := 3; v_t := g;
+  elsif n[1] = 2 and n[2] = 2 then v_cat := 2; v_t := g;
+  elsif n[1] = 2 then v_cat := 1; v_t := g;
+  else v_cat := 0; v_t := r; end if;
+  v_val := v_cat;
+  for i in 1..5 loop
+    k := coalesce(v_t[i], 0);
+    v_val := v_val * 15 + k;
+  end loop;
+  return v_val;
+end $$;
+
+-- a melhor mão de 5 entre as cartas (5, 6 ou 7)
+create or replace function public.pk_melhor(p_c text[]) returns bigint
+language plpgsql immutable as $$
+declare
+  v_n int := coalesce(array_length(p_c, 1), 0); a int; b int; v_m bigint := -1; v_x bigint; v_5 text[]; i int;
+begin
+  if v_n < 5 then return -1; end if;
+  for a in 1..v_n loop
+    for b in a..v_n loop
+      -- tira as cartas a e b (com a = b, tira uma só: serve para 6 cartas)
+      if v_n = 7 and a = b then continue; end if;
+      if v_n = 6 and a <> b then continue; end if;
+      if v_n = 5 and not (a = 1 and b = 1) then continue; end if;
+      v_5 := '{}';
+      for i in 1..v_n loop
+        if v_n = 5 or (i <> a and i <> b) then v_5 := v_5 || p_c[i]; end if;
+      end loop;
+      v_x := public.pk_valor5(v_5);
+      if v_x > v_m then v_m := v_x; end if;
+    end loop;
+  end loop;
+  return v_m;
+end $$;
+
+-- o baralho da mão, embaralhado pelo segredo (a mesma conta que o site refaz para conferir)
+create or replace function public.pk_baralho(p_segredo bytea, p_id bigint) returns text[]
+language sql immutable set search_path = public, extensions as $$
+  select array_agg(c order by h)
+  from (
+    select (array['A','2','3','4','5','6','7','8','9','10','J','Q','K'])[k % 13 + 1] || (array['s','h','d','c'])[k / 13 + 1] as c,
+           extensions.hmac(convert_to('pk:' || p_id || ':' || k, 'UTF8'), p_segredo, 'sha256') as h
+    from generate_series(0, 51) k
+  ) x;
+$$;
+revoke all on function public.pk_baralho(bytea, bigint) from public, anon, authenticated;
+
+create or replace function public.pk_tirar(p_mao bigint) returns text
+language plpgsql security definer set search_path = public as $$
+declare v_c text;
+begin
+  update public.pk_maos set pos = pos + 1 where id = p_mao returning baralho[pos] into v_c;
+  return v_c;
+end $$;
+revoke all on function public.pk_tirar(bigint) from public, anon, authenticated;
+
+-- o próximo lugar (no sentido do relógio, depois de p_de) com alguém que ainda pode agir na mão
+create or replace function public.pk_proximo(p_mao bigint, p_de int) returns int
+language sql stable security definer set search_path = public as $$
+  select lugar from public.pk_jog where mao_id = p_mao and estado = 'ativo'
+  order by (lugar - p_de + 5) % 6 limit 1;
+$$;
+revoke all on function public.pk_proximo(bigint, int) from public, anon, authenticated;
+
+-- põe fichas do jogador no pote (o que ele tiver, no máximo)
+create or replace function public.pk_por(p_mao bigint, p_lugar int, p_valor int) returns int
+language plpgsql security definer set search_path = public as $$
+declare v_m public.pk_maos; v_f int; v_v int;
+begin
+  select * into v_m from public.pk_maos where id = p_mao;
+  select fichas into v_f from public.pk_lugares where mesa_id = v_m.mesa_id and lugar = p_lugar for update;
+  v_v := greatest(0, least(p_valor, v_f));
+  update public.pk_lugares set fichas = fichas - v_v where mesa_id = v_m.mesa_id and lugar = p_lugar;
+  update public.pk_jog set na_rodada = na_rodada + v_v, total = total + v_v,
+    estado = case when v_f - v_v = 0 then 'allin' else estado end where mao_id = p_mao and lugar = p_lugar;
+  update public.pk_maos set pote = pote + v_v where id = p_mao;
+  return v_v;
+end $$;
+revoke all on function public.pk_por(bigint, int, int) from public, anon, authenticated;
+
+-- paga a mão: potes paralelos pelo quanto cada um pôs; ganha a melhor mão entre quem não desistiu
+create or replace function public.pk_pagar(p_mao bigint) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  h public.pk_maos; v_niv int; v_ant int := 0; v_parte int; v_rake int; v_melhor bigint; v_gan int[]; v_cada int; v_resto int;
+  v_vivos int; v_flop boolean; v_tot_rake int := 0; v_pago int := 0; j record; v_l int;
+begin
+  select * into h from public.pk_maos where id = p_mao for update;
+  if h.fase = 'fim' then return; end if;
+  v_vivos := (select count(*) from public.pk_jog where mao_id = p_mao and estado <> 'desistiu');
+  v_flop := coalesce(array_length(h.mesa_cartas, 1), 0) >= 3;
+  for v_niv in select distinct total from public.pk_jog where mao_id = p_mao and estado <> 'desistiu' and total > 0 order by total loop
+    v_parte := (select coalesce(sum(least(total, v_niv) - least(total, v_ant)), 0) from public.pk_jog where mao_id = p_mao);
+    if v_parte > 0 then
+      -- a casa só leva do que foi disputado: aposta que ninguém pagou volta inteira
+      v_rake := case when v_flop and (select count(*) from public.pk_jog where mao_id = p_mao and total > v_ant) >= 2
+        then floor(v_parte * 0.03)::int else 0 end;
+      v_tot_rake := v_tot_rake + v_rake;
+      if v_vivos = 1 then
+        select array_agg(lugar) into v_gan from public.pk_jog where mao_id = p_mao and estado <> 'desistiu';
+      else
+        select max(public.pk_melhor(cartas || h.mesa_cartas)) into v_melhor from public.pk_jog
+          where mao_id = p_mao and estado <> 'desistiu' and total >= v_niv;
+        -- os vencedores, a partir de quem está depois do botão (o que sobra da divisão vai para o primeiro)
+        select array_agg(lugar order by (lugar - h.botao + 5) % 6) into v_gan from public.pk_jog
+          where mao_id = p_mao and estado <> 'desistiu' and total >= v_niv and public.pk_melhor(cartas || h.mesa_cartas) = v_melhor;
+      end if;
+      v_cada := (v_parte - v_rake) / array_length(v_gan, 1);
+      v_resto := (v_parte - v_rake) - v_cada * array_length(v_gan, 1);
+      foreach v_l in array v_gan loop
+        update public.pk_jog set ganhou = ganhou + v_cada + case when v_l = v_gan[1] then v_resto else 0 end where mao_id = p_mao and lugar = v_l;
+      end loop;
+      v_pago := v_pago + (v_parte - v_rake);
+    end if;
+    v_ant := v_niv;
+  end loop;
+  -- sobra (fichas de quem desistiu acima de todo mundo que ficou): vai para quem ganhou o último pote
+  if h.pote - v_tot_rake - v_pago > 0 and v_gan is not null then
+    update public.pk_jog set ganhou = ganhou + (h.pote - v_tot_rake - v_pago) where mao_id = p_mao and lugar = v_gan[1];
+  end if;
+  for j in select * from public.pk_jog where mao_id = p_mao and ganhou > 0 loop
+    update public.pk_lugares set fichas = fichas + j.ganhou where mesa_id = h.mesa_id and lugar = j.lugar;
+  end loop;
+  update public.pk_maos set fase = 'fim', vez = null, vez_ate = null, rake = v_tot_rake,
+    fim_em = clock_timestamp() + case when v_vivos > 1 then interval '7 seconds' else interval '3 seconds' end,
+    resultado = jsonb_build_object('showdown', v_vivos > 1, 'jogadores', (
+      select jsonb_agg(jsonb_build_object('lugar', lugar, 'ganhou', ganhou, 'total', total, 'estado', estado,
+        'cartas', case when v_vivos > 1 and estado <> 'desistiu' then to_jsonb(cartas) end,
+        'valor', case when v_vivos > 1 and estado <> 'desistiu' then public.pk_melhor(cartas || h.mesa_cartas) end) order by lugar)
+      from public.pk_jog where mao_id = p_mao))
+  where id = p_mao;
+end $$;
+revoke all on function public.pk_pagar(bigint) from public, anon, authenticated;
+
+-- terminou a rodada de apostas? então vem a próxima carta (ou o showdown). Se só sobrou um, ele leva.
+create or replace function public.pk_seguir(p_mao bigint) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  h public.pk_maos; v_vivos int; v_podem int; v_faltam int; v_blind int; v_c text; v_vez int;
+begin
+  loop
+    select * into h from public.pk_maos where id = p_mao for update;
+    if h.fase = 'fim' then return; end if;
+    v_vivos := (select count(*) from public.pk_jog where mao_id = p_mao and estado <> 'desistiu');
+    if v_vivos <= 1 then perform public.pk_pagar(p_mao); return; end if;
+    v_podem := (select count(*) from public.pk_jog where mao_id = p_mao and estado = 'ativo');
+    -- quem ainda pode agir e não agiu, ou está devendo
+    v_faltam := (select count(*) from public.pk_jog where mao_id = p_mao and estado = 'ativo' and (not agiu or na_rodada < h.aposta));
+    -- só um pode agir e já cobriu a aposta (os outros estão all-in): não tem com quem apostar
+    if v_faltam > 0 and not (v_podem = 1 and (select na_rodada from public.pk_jog where mao_id = p_mao and estado = 'ativo') >= h.aposta) then
+      return;
+    end if;
+    if h.fase = 'river' then perform public.pk_pagar(p_mao); return; end if;
+    select blind into v_blind from public.pk_mesas where id = h.mesa_id;
+    if h.fase = 'preflop' then
+      v_c := public.pk_tirar(p_mao); h.mesa_cartas := h.mesa_cartas || v_c;
+      v_c := public.pk_tirar(p_mao); h.mesa_cartas := h.mesa_cartas || v_c;
+      v_c := public.pk_tirar(p_mao); h.mesa_cartas := h.mesa_cartas || v_c;
+    else
+      v_c := public.pk_tirar(p_mao); h.mesa_cartas := h.mesa_cartas || v_c;
+    end if;
+    update public.pk_jog set na_rodada = 0, agiu = false where mao_id = p_mao;
+    v_vez := public.pk_proximo(p_mao, h.botao);
+    update public.pk_maos set mesa_cartas = h.mesa_cartas, aposta = 0, min_aumento = v_blind,
+      fase = case h.fase when 'preflop' then 'flop' when 'flop' then 'turn' else 'river' end,
+      vez = v_vez, vez_ate = clock_timestamp() + interval '20 seconds'
+    where id = p_mao;
+    -- com dois ou mais podendo agir, a rodada nova começa; senão (all-in) as cartas saem até o river
+    if v_podem >= 2 then return; end if;
+  end loop;
+end $$;
+revoke all on function public.pk_seguir(bigint) from public, anon, authenticated;
+
+-- a jogada de alguém (o banco já conferiu que é a vez dele): desistir, passar, pagar, aumentar (até p_valor na rodada) ou all-in
+create or replace function public.pk_fazer(p_mao bigint, p_acao text, p_valor int) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  h public.pk_maos; j public.pk_jog; v_f int; v_deve int; v_max int; v_alvo int; v_prox int; v_fase text;
+begin
+  select * into h from public.pk_maos where id = p_mao for update;
+  v_fase := h.fase;
+  select * into j from public.pk_jog where mao_id = p_mao and lugar = h.vez;
+  select fichas into v_f from public.pk_lugares where mesa_id = h.mesa_id and lugar = h.vez;
+  v_deve := greatest(0, h.aposta - j.na_rodada);
+  v_max := j.na_rodada + v_f;
+  if p_acao = 'desistir' then
+    update public.pk_jog set estado = 'desistiu', agiu = true where mao_id = p_mao and lugar = j.lugar;
+  elsif p_acao = 'passar' then
+    if v_deve > 0 then raise exception 'Não dá para passar: tem aposta para pagar.' using errcode = 'P0001'; end if;
+    update public.pk_jog set agiu = true where mao_id = p_mao and lugar = j.lugar;
+  elsif p_acao = 'pagar' then
+    if v_deve = 0 then raise exception 'Não tem aposta para pagar: é só passar.' using errcode = 'P0001'; end if;
+    perform public.pk_por(p_mao, j.lugar, v_deve);
+    update public.pk_jog set agiu = true where mao_id = p_mao and lugar = j.lugar;
+  else
+    v_alvo := case when p_acao = 'allin' then v_max else p_valor end;
+    if v_alvo is null or v_alvo <= h.aposta then
+      if p_acao = 'allin' then
+        -- all-in sem cobrir a aposta: é pagar com o que tem
+        perform public.pk_por(p_mao, j.lugar, v_f);
+        update public.pk_jog set agiu = true where mao_id = p_mao and lugar = j.lugar;
+        v_alvo := null;
+      else
+        raise exception 'O aumento tem que passar da aposta da mesa.' using errcode = 'P0001';
+      end if;
+    end if;
+    if v_alvo is not null then
+      if v_alvo > v_max then raise exception 'Você não tem tudo isso de fichas.' using errcode = 'P0001'; end if;
+      if v_alvo < v_max and v_alvo < h.aposta + h.min_aumento then
+        raise exception 'O aumento mínimo é para %.', h.aposta + h.min_aumento using errcode = 'P0001';
+      end if;
+      perform public.pk_por(p_mao, j.lugar, v_alvo - j.na_rodada);
+      -- aumentou: todo mundo que ainda pode agir precisa falar de novo
+      update public.pk_jog set agiu = false where mao_id = p_mao and estado = 'ativo' and lugar <> j.lugar;
+      update public.pk_jog set agiu = true where mao_id = p_mao and lugar = j.lugar;
+      update public.pk_maos set min_aumento = greatest(min_aumento, v_alvo - aposta), aposta = v_alvo where id = p_mao;
+    end if;
+  end if;
+  perform public.pk_seguir(p_mao);
+  select * into h from public.pk_maos where id = p_mao;
+  if h.fase = v_fase and h.vez = j.lugar then
+    -- a mesma rodada continua: passa a vez para o próximo
+    v_prox := public.pk_proximo(p_mao, j.lugar);
+    update public.pk_maos set vez = v_prox, vez_ate = clock_timestamp() + interval '20 seconds' where id = p_mao;
+  end if;
+end $$;
+revoke all on function public.pk_fazer(bigint, text, int) from public, anon, authenticated;
+
+-- começa uma mão nova na mesa, se tiver 2 ou mais com fichas
+create or replace function public.pk_iniciar(p_mesa bigint) returns void
+language plpgsql security definer set search_path = public, extensions as $$
+declare
+  m public.pk_mesas; v_ant int; v_lug int[]; v_n int; v_bt int; v_sb int; v_bb int; v_id bigint; v_s bytea; l int; i int; v_c text;
+begin
+  select * into m from public.pk_mesas where id = p_mesa;
+  select array_agg(lugar order by lugar) into v_lug from public.pk_lugares where mesa_id = p_mesa and fichas > 0 and not sair;
+  v_n := coalesce(array_length(v_lug, 1), 0);
+  if v_n < 2 then update public.pk_mesas set mao_atual = null where id = p_mesa; return; end if;
+  select botao into v_ant from public.pk_maos where mesa_id = p_mesa order by id desc limit 1;
+  -- o botão anda para o próximo lugar com gente
+  select x into v_bt from unnest(v_lug) x order by (x - coalesce(v_ant, 0) + 5) % 6 limit 1;
+  if v_n = 2 then
+    v_sb := v_bt;
+    select x into v_bb from unnest(v_lug) x where x <> v_bt limit 1;
+  else
+    select x into v_sb from unnest(v_lug) x order by (x - v_bt + 5) % 6 limit 1;
+    select x into v_bb from unnest(v_lug) x order by (x - v_sb + 5) % 6 limit 1;
+  end if;
+  v_s := extensions.gen_random_bytes(32);
+  insert into public.pk_maos (mesa_id, segredo, hash, baralho, min_aumento, botao, sb, bb)
+    values (p_mesa, v_s, encode(extensions.digest(v_s, 'sha256'), 'hex'), '{}', m.blind, v_bt, v_sb, v_bb) returning id into v_id;
+  update public.pk_maos set baralho = public.pk_baralho(v_s, v_id) where id = v_id;
+  update public.pk_mesas set mao_atual = v_id where id = p_mesa;
+  insert into public.pk_jog (mao_id, lugar, user_id)
+    select v_id, lugar, user_id from public.pk_lugares where mesa_id = p_mesa and lugar = any (v_lug);
+  -- duas voltas de uma carta, a partir de quem está depois do botão
+  for i in 1..2 loop
+    for l in select x from unnest(v_lug) x order by (x - v_bt + 5) % 6 loop
+      v_c := public.pk_tirar(v_id);
+      update public.pk_jog set cartas = cartas || v_c where mao_id = v_id and lugar = l;
+    end loop;
+  end loop;
+  perform public.pk_por(v_id, v_sb, m.blind / 2);
+  perform public.pk_por(v_id, v_bb, m.blind);
+  update public.pk_maos set aposta = m.blind, vez = public.pk_proximo(v_id, v_bb), vez_ate = clock_timestamp() + interval '20 seconds' where id = v_id;
+  -- se os blinds já deixaram todos all-in, as cartas saem sozinhas
+  perform public.pk_seguir(v_id);
+end $$;
+revoke all on function public.pk_iniciar(bigint) from public, anon, authenticated;
+
+-- faz a mesa andar: começa a mão, joga por quem estourou o tempo (ou levantou) e acerta quem saiu
+create or replace function public.pk_avancar(p_mesa bigint) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  m public.pk_mesas; h public.pk_maos; j public.pk_jog; v_sair boolean; l record;
+begin
+  perform pg_advisory_xact_lock(hashtext('poker:' || p_mesa));
+  select * into m from public.pk_mesas where id = p_mesa;
+  if not found or m.fechada then return; end if;
+  if m.mao_atual is not null then select * into h from public.pk_maos where id = m.mao_atual; end if;
+  if h.id is null or (h.fase = 'fim' and clock_timestamp() >= h.fim_em) then
+    -- entre uma mão e outra: quem pediu para sair (ou ficou sem fichas) levanta e leva o que tem
+    for l in select * from public.pk_lugares where mesa_id = p_mesa and (sair or fichas = 0) loop
+      if l.fichas > 0 then perform public.creditar(l.user_id, l.fichas, 'cassino', 'poker'); end if;
+      delete from public.pk_lugares where mesa_id = p_mesa and lugar = l.lugar;
+    end loop;
+    if not exists (select 1 from public.pk_lugares where mesa_id = p_mesa) then
+      update public.pk_mesas set fechada = true, mao_atual = null where id = p_mesa;
+      return;
+    end if;
+    perform public.pk_iniciar(p_mesa);
+    return;
+  end if;
+  if h.fase <> 'fim' and h.vez is not null then
+    select * into j from public.pk_jog where mao_id = h.id and lugar = h.vez;
+    select sair into v_sair from public.pk_lugares where mesa_id = p_mesa and lugar = h.vez;
+    if coalesce(v_sair, true) or clock_timestamp() > h.vez_ate then
+      -- tempo esgotado (ou levantou): passa se puder, senão desiste; duas vezes seguidas, levanta no fim da mão
+      if not coalesce(v_sair, true) then
+        update public.pk_lugares set ausente = ausente + 1, sair = (ausente + 1 >= 2) where mesa_id = p_mesa and lugar = h.vez;
+      end if;
+      perform public.pk_fazer(h.id, case when j.na_rodada >= h.aposta and not coalesce(v_sair, true) then 'passar' else 'desistir' end, null);
+    end if;
+  end if;
+end $$;
+revoke all on function public.pk_avancar(bigint) from public, anon, authenticated;
+
+-- o estado da mesa para a tela: as minhas cartas, as de todo mundo só no showdown
+create or replace function public.pk_estado(p_mesa bigint) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid(); m public.pk_mesas; h public.pk_maos;
+begin
+  if not public.eh_membro() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
+  perform public.pk_avancar(p_mesa);
+  select * into m from public.pk_mesas where id = p_mesa;
+  if not found then raise exception 'Essa mesa não existe mais.' using errcode = 'P0001'; end if;
+  if m.mao_atual is not null then select * into h from public.pk_maos where id = m.mao_atual; end if;
+  return jsonb_build_object(
+    'agora', clock_timestamp(),
+    'mesa', jsonb_build_object('id', m.id, 'blind', m.blind, 'criada_por', m.criada_por, 'fechada', m.fechada),
+    'lugares', coalesce((select jsonb_agg(jsonb_build_object('lugar', lugar, 'user_id', user_id, 'fichas', fichas, 'sair', sair) order by lugar)
+      from public.pk_lugares where mesa_id = p_mesa), '[]'::jsonb),
+    'mao', case when h.id is null then null else jsonb_build_object(
+      'id', h.id, 'fase', h.fase, 'mesa_cartas', to_jsonb(h.mesa_cartas), 'pote', h.pote, 'aposta', h.aposta, 'min_aumento', h.min_aumento,
+      'vez', h.vez, 'vez_ate', h.vez_ate, 'botao', h.botao, 'sb', h.sb, 'bb', h.bb, 'fim_em', h.fim_em, 'hash', h.hash, 'rake', h.rake,
+      'segredo', case when h.fase = 'fim' then encode(h.segredo, 'hex') end,
+      'resultado', h.resultado,
+      'jogadores', (select jsonb_agg(jsonb_build_object('lugar', lugar, 'user_id', user_id, 'estado', estado, 'na_rodada', na_rodada, 'total', total, 'ganhou', ganhou) order by lugar)
+        from public.pk_jog where mao_id = h.id),
+      'minhas', (select to_jsonb(cartas) from public.pk_jog where mao_id = h.id and user_id = v_uid)) end);
+end $$;
+revoke all on function public.pk_estado(bigint) from public, anon;
+grant execute on function public.pk_estado(bigint) to authenticated;
+
+-- as mesas abertas (salão)
+create or replace function public.pk_mesas_lista() returns jsonb
+language plpgsql security definer set search_path = public as $$
+begin
+  if not public.eh_membro() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
+  -- mesa aberta há 5 min sem ninguém sentado fecha sozinha
+  update public.pk_mesas m set fechada = true where not m.fechada and m.criada_em < clock_timestamp() - interval '5 minutes'
+    and not exists (select 1 from public.pk_lugares l where l.mesa_id = m.id);
+  return coalesce((select jsonb_agg(jsonb_build_object('id', m.id, 'blind', m.blind, 'criada_por', m.criada_por,
+      'em_jogo', m.mao_atual is not null,
+      'lugares', coalesce((select jsonb_agg(jsonb_build_object('lugar', l.lugar, 'user_id', l.user_id, 'fichas', l.fichas) order by l.lugar)
+        from public.pk_lugares l where l.mesa_id = m.id), '[]'::jsonb)) order by m.id)
+    from public.pk_mesas m where not m.fechada), '[]'::jsonb);
+end $$;
+revoke all on function public.pk_mesas_lista() from public, anon;
+grant execute on function public.pk_mesas_lista() to authenticated;
+
+-- abrir uma mesa (no máximo 4 abertas; cada um abre uma por vez)
+create or replace function public.pk_abrir(p_blind int) returns bigint
+language plpgsql security definer set search_path = public as $$
+declare v_id bigint;
+begin
+  if not public.eh_membro() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
+  if p_blind not in (10, 20, 50) then raise exception 'Os blinds são 5/10, 10/20 ou 25/50.' using errcode = 'P0001'; end if;
+  perform public.limitar('poker', 10, interval '1 minute', 'Calma: muitas mesas seguidas.');
+  if (select count(*) from public.pk_mesas where not fechada) >= 4 then raise exception 'Já tem 4 mesas abertas: sente numa delas.' using errcode = 'P0001'; end if;
+  update public.pk_mesas m set fechada = true where not m.fechada and m.criada_em < clock_timestamp() - interval '5 minutes'
+    and not exists (select 1 from public.pk_lugares l where l.mesa_id = m.id);
+  if exists (select 1 from public.pk_mesas where not fechada and criada_por = auth.uid()) then raise exception 'Você já tem uma mesa aberta.' using errcode = 'P0001'; end if;
+  insert into public.pk_mesas (criada_por, blind) values (auth.uid(), p_blind) returning id into v_id;
+  return v_id;
+end $$;
+revoke all on function public.pk_abrir(int) from public, anon;
+grant execute on function public.pk_abrir(int) to authenticated;
+
+-- sentar com fichas da carteira (de 20 a 100 big blinds)
+create or replace function public.pk_sentar(p_mesa bigint, p_lugar int, p_fichas int) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare v_uid uuid := auth.uid(); m public.pk_mesas;
+begin
+  if not public.eh_membro() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
+  perform pg_advisory_xact_lock(hashtext('poker:' || p_mesa));
+  select * into m from public.pk_mesas where id = p_mesa;
+  if not found or m.fechada then raise exception 'Essa mesa fechou.' using errcode = 'P0001'; end if;
+  if p_lugar not between 1 and 6 then raise exception 'Lugar inválido.' using errcode = 'P0001'; end if;
+  if p_fichas is null or p_fichas < m.blind * 20 or p_fichas > m.blind * 100 then
+    raise exception 'Nesta mesa se senta com % a % fichas.', m.blind * 20, m.blind * 100 using errcode = 'P0001';
+  end if;
+  if exists (select 1 from public.pk_lugares where mesa_id = p_mesa and user_id = v_uid) then raise exception 'Você já está nesta mesa.' using errcode = 'P0001'; end if;
+  if exists (select 1 from public.pk_lugares where mesa_id = p_mesa and lugar = p_lugar) then raise exception 'Esse lugar já tem gente.' using errcode = 'P0001'; end if;
+  perform public.creditar(v_uid, -p_fichas, 'cassino', 'poker');
+  insert into public.pk_lugares (mesa_id, lugar, user_id, fichas) values (p_mesa, p_lugar, v_uid, p_fichas);
+  return public.pk_estado(p_mesa);
+end $$;
+revoke all on function public.pk_sentar(bigint, int, int) from public, anon;
+grant execute on function public.pk_sentar(bigint, int, int) to authenticated;
+
+-- levantar: no meio de uma mão, desiste quando chegar a vez e sai no fim dela; fora da mão, sai na hora com as fichas
+create or replace function public.pk_levantar(p_mesa bigint) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare v_uid uuid := auth.uid(); m public.pk_mesas; l public.pk_lugares; v_na_mao boolean;
+begin
+  if not public.eh_membro() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
+  perform pg_advisory_xact_lock(hashtext('poker:' || p_mesa));
+  select * into m from public.pk_mesas where id = p_mesa;
+  select * into l from public.pk_lugares where mesa_id = p_mesa and user_id = v_uid;
+  if l.lugar is null then raise exception 'Você não está sentado aqui.' using errcode = 'P0001'; end if;
+  v_na_mao := exists (select 1 from public.pk_maos h join public.pk_jog j on j.mao_id = h.id
+    where h.id = m.mao_atual and h.fase <> 'fim' and j.user_id = v_uid and j.estado <> 'desistiu');
+  if v_na_mao then
+    update public.pk_lugares set sair = true where mesa_id = p_mesa and lugar = l.lugar;
+  else
+    if l.fichas > 0 then perform public.creditar(v_uid, l.fichas, 'cassino', 'poker'); end if;
+    delete from public.pk_lugares where mesa_id = p_mesa and lugar = l.lugar;
+  end if;
+  -- mesa vazia fecha sozinha
+  if not exists (select 1 from public.pk_lugares where mesa_id = p_mesa) then update public.pk_mesas set fechada = true where id = p_mesa; end if;
+  return public.pk_estado(p_mesa);
+end $$;
+revoke all on function public.pk_levantar(bigint) from public, anon;
+grant execute on function public.pk_levantar(bigint) to authenticated;
+
+-- jogar a vez
+create or replace function public.pk_acao(p_mesa bigint, p_acao text, p_valor int default null) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare v_uid uuid := auth.uid(); m public.pk_mesas; h public.pk_maos; v_u uuid;
+begin
+  if not public.eh_membro() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
+  if p_acao not in ('desistir', 'passar', 'pagar', 'aumentar', 'allin') then raise exception 'Jogada desconhecida.' using errcode = 'P0001'; end if;
+  perform public.pk_avancar(p_mesa);
+  select * into m from public.pk_mesas where id = p_mesa;
+  select * into h from public.pk_maos where id = m.mao_atual;
+  if h.id is null or h.fase = 'fim' then raise exception 'Não é hora de jogar.' using errcode = 'P0001'; end if;
+  select user_id into v_u from public.pk_jog where mao_id = h.id and lugar = h.vez;
+  if v_u is distinct from v_uid then raise exception 'Não é a sua vez.' using errcode = 'P0001'; end if;
+  update public.pk_lugares set ausente = 0 where mesa_id = p_mesa and lugar = h.vez;
+  perform public.pk_fazer(h.id, p_acao, p_valor);
+  return public.pk_estado(p_mesa);
+end $$;
+revoke all on function public.pk_acao(bigint, text, int) from public, anon;
+grant execute on function public.pk_acao(bigint, text, int) to authenticated;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo e as 2 tabelas e 3 funções do quarto próprio e as 2 tabelas e 3 funções do blackjack e as 4 tabelas e 6 funções do pôquer
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -5084,4 +5618,10 @@ select tablename::text, 'blackjack' from pg_tables
 union all
 select proname::text, 'blackjack' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('bj_estado', 'bj_apostar', 'bj_acao')
+union all
+select tablename::text, 'pôquer' from pg_tables
+ where schemaname = 'public' and tablename in ('pk_mesas', 'pk_lugares', 'pk_maos', 'pk_jog')
+union all
+select proname::text, 'pôquer' from pg_proc
+ where pronamespace = 'public'::regnamespace and proname in ('pk_estado', 'pk_mesas_lista', 'pk_abrir', 'pk_sentar', 'pk_levantar', 'pk_acao')
 order by 2, 1;
