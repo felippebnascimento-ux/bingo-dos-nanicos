@@ -15,6 +15,7 @@ import { iniciarQuartos, useQuartos } from "@/features/quarto/quartoDados";
 import { gradeDe } from "@/features/quarto/visita";
 import { iniciarLoja } from "@/features/loja/lojaDados";
 import { lerAcao, marcarAcao, pararAcao, type Acao } from "./acoes";
+import { marcarDigitando } from "./baloes";
 
 export type Boneco = {
   key: string;
@@ -333,6 +334,16 @@ export function fazerAcao(tipo: Acao) {
   enviar("hall", { acao: tipo, ...(q ? { q } : {}) });
 }
 
+/** Estou escrevendo na barra do chat: a cena mostra o "…" em cima de mim (no máximo um aviso a cada 2,5 s). */
+let ultimoDigita = 0;
+export function avisarDigitando() {
+  const agora = Date.now();
+  if (agora - ultimoDigita < 2500 || !B.has(MY_KEY)) return;
+  ultimoDigita = agora;
+  const q = cena();
+  enviar("hall", { digita: 1, ...(q ? { q } : {}) });
+}
+
 /** Setas do teclado: um piso a partir de onde o boneco vai parar. */
 export function andarUmPiso(di: number, dj: number) {
   const b = B.get(MY_KEY);
@@ -349,10 +360,13 @@ function onHall(m: Record<string, unknown>) {
   if (q === undefined || q !== cena()) return;
   /* uma ação (acenar, dançar, deitar) em vez de um destino */
   const acao = m.para === undefined ? lerAcao(m.acao) : null;
-  if (acao) {
+  const digita = m.para === undefined && m.digita === 1;
+  if (acao || digita) {
     if (typeof m.from !== "string" || m.from === MY_KEY || !estaNaSala(m.from) || !hallLimite(m.from)) return;
     const k = chaveDoBoneco.get(m.from) ?? m.from;
-    if (B.has(k)) marcarAcao(k, acao);
+    if (!B.has(k)) return;
+    if (acao) marcarAcao(k, acao);
+    else marcarDigitando(k);
     return;
   }
   const para = posCena(m.para);

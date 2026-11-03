@@ -592,3 +592,13 @@
 .habbo-acoes-menu{position:absolute;left:-12px;bottom:calc(100% + 10px);z-index:5;display:grid;gap:2px;min-width:140px;padding:6px;border-radius:12px;background:var(--stamp-ink);color:var(--accent-ink);box-shadow:0 8px 24px var(--shadow)}
 .habbo-acoes-menu button{display:flex;align-items:center;gap:8px;padding:8px 10px;border:0;border-radius:8px;background:none;color:inherit;font:600 14px var(--body);text-align:left;cursor:pointer}
 .habbo-acoes-menu button:hover,.habbo-acoes-menu button:focus-visible{background:color-mix(in srgb,var(--accent) 18%,transparent);outline:none}
+
+/* grito (balão grande e em negrito), sussurro (itálico, apagado) e o "…" de quem está escrevendo (seção 52) */
+.habbo-balao.grito{max-width:280px;padding:7px 13px;font:800 15px/1.25 var(--body);text-transform:uppercase;border:2px solid var(--accent-ink)}
+.habbo-balao.sussurro{font-style:italic;background:color-mix(in srgb,var(--stamp-ink) 82%,var(--accent));border-style:dashed}
+.habbo-balao.digitando{display:flex;gap:4px;padding:8px 12px;animation:none}
+.habbo-balao.digitando i{width:6px;height:6px;border-radius:50%;background:var(--accent-ink);opacity:.35;animation:habbo-pontinho 1s ease-in-out infinite}
+.habbo-balao.digitando i:nth-child(2){animation-delay:.15s}
+.habbo-balao.digitando i:nth-child(3){animation-delay:.3s}
+@keyframes habbo-pontinho{40%{opacity:1;translate:0 -2px}}
+@media (prefers-reduced-motion:reduce){.habbo-balao.digitando i{animation:none;opacity:.7}}

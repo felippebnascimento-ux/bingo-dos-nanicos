@@ -651,6 +651,14 @@ export const CHANGELOG: EntradaLog[] = [
     data: "03/11/2026",
     itens: ["Ações do boneco: acene, dance ou deite no K-FOFO, na rua e nos quartos pelo botão 👋 da barra do chat (ou escreva o/, :dançar ou :deitar). Andar acaba com a dança"],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Chat do K-FOFO como no Habbo: Shift+Enter (ou :g) grita, com o balão grande para todo mundo",
+      "Sussurro: escreva :s e o nome do nanico antes da mensagem, e só ele vê (o balão aparece para os dois, e quem recebe ganha um aviso)",
+      "Um balãozinho com três pontinhos aparece em cima de quem está escrevendo",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

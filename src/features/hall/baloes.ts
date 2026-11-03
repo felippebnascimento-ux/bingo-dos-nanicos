@@ -6,8 +6,12 @@
  */
 import { create } from "zustand";
 import { useChat } from "@/features/chat/chat";
+import { aoMudarTabela } from "@/lib/sala";
+import { getApp } from "@/lib/store";
+import { toast } from "@/lib/toast";
 
-export type Balao = { id: string; uid: string; texto: string; ate: number };
+/** `tipo`: grito (balão grande) ou sussurro (só quem mandou e quem recebeu veem; `para` = nome de quem recebe) */
+export type Balao = { id: string; uid: string; texto: string; ate: number; tipo?: "grito" | "sussurro"; para?: string };
 
 /** quanto tempo o balão fica na tela */
 export const BALAO_MS = 9000;
@@ -56,10 +60,41 @@ export function iniciarBaloes() {
       vistos.add(id);
       /* mensagem antiga que chegou agora (carregou o histórico): sem balão */
       if (Math.abs(agora - Date.parse(m.created_at)) > 300_000) continue;
-      novos.push({ id, uid: m.user_id, texto: m.text, ate: agora + BALAO_MS });
+      novos.push({ id, uid: m.user_id, texto: m.text, ate: agora + BALAO_MS, ...(m.grito ? { tipo: "grito" as const } : {}) });
     }
     if (!novos.length) return;
     useBaloes.setState({ lista: juntarBaloes(useBaloes.getState().lista, novos, agora) });
     podar();
   });
+  /* sussurros (seção 52): o RLS só entrega os meus, mandados ou recebidos */
+  aoMudarTabela("sussurros", (row, ev) => {
+    if (ev !== "INSERT" || !row) return;
+    const de = typeof row.de === "string" ? row.de : "", para = typeof row.para === "string" ? row.para : "";
+    const texto = typeof row.texto === "string" ? row.texto.slice(0, 200) : "";
+    if (!de || !texto) return;
+    const s = getApp();
+    const nome = (uid: string) => s.friends.find((f) => f.user_id === uid)?.name ?? "alguém";
+    const agora = Date.now();
+    const b: Balao = { id: "s" + String(row.id), uid: de, texto, ate: agora + BALAO_MS, tipo: "sussurro", para: nome(para) };
+    useBaloes.setState({ lista: juntarBaloes(useBaloes.getState().lista, [b], agora) });
+    podar();
+    if (para === s.myUid) toast(`${nome(de)} sussurrou: ${texto}`);
+  });
+}
+
+/* ---------- "digitando…": quem está escrevendo na barra (evento `hall` { digita }, só um aviso de momento) ---------- */
+export const DIGITA_MS = 3500;
+export const useDigitando = create<{ por: Record<string, number> }>()(() => ({ por: {} }));
+/** Alguém da cena está escrevendo: mostra o "…" em cima do boneco por alguns segundos. */
+export function marcarDigitando(key: string) {
+  const ate = Date.now() + DIGITA_MS;
+  useDigitando.setState((s) => ({ por: { ...s.por, [key]: ate } }));
+  setTimeout(() => {
+    if (useDigitando.getState().por[key] !== ate) return;
+    useDigitando.setState((s) => {
+      const por = { ...s.por };
+      delete por[key];
+      return { por };
+    });
+  }, DIGITA_MS + 20);
 }

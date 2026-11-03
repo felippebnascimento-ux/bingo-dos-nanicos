@@ -6,12 +6,13 @@
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { enviarChat, useChat } from "@/features/chat/chat";
 import { Avatar } from "@/components/ui/Avatar";
-import { errMsg } from "@/lib/supabase";
+import { errMsg, sb } from "@/lib/supabase";
 import { toast } from "@/lib/toast";
 import { useApp } from "@/lib/store";
-import { BALAO_MS, iniciarBaloes, useBaloes, type Balao } from "./baloes";
-import { fazerAcao, type Boneco } from "./bonecos";
-import { ACOES, comandoAcao } from "./acoes";
+import { BALAO_MS, iniciarBaloes, useBaloes, useDigitando, type Balao } from "./baloes";
+import { avisarDigitando, fazerAcao, type Boneco } from "./bonecos";
+import { ACOES } from "./acoes";
+import { lerComando } from "./comandos";
 import { ANCORA, assentoDe, tela, type Caixa2D } from "./hall";
 
 const pct = (v: number) => `${v * 100}%`;
@@ -21,20 +22,28 @@ export function ChatBarra() {
   const [texto, setTexto] = useState("");
   const [indo, setIndo] = useState(false);
   const [acoes, setAcoes] = useState(false);
+  const friends = useApp((s) => s.friends);
+  /* Shift+Enter grita (o Enter do formulário não diz se o Shift estava apertado) */
+  const gritar = useRef(false);
   useEffect(iniciarBaloes, []);
   const mandar = async (e: FormEvent) => {
     e.preventDefault();
     const t = texto.trim();
     if (!t || indo) return;
-    /* "o/", ":dançar" e ":deitar" fazem a ação em vez de mandar a mensagem */
-    const acao = comandoAcao(t);
-    if (acao) {
-      fazerAcao(acao);
+    /* comandos.ts: o/ :dançar :deitar (ação), :g (grito), :s Nome (sussurro) */
+    const c = lerComando(t, friends.filter((f) => f.user_id), gritar.current);
+    gritar.current = false;
+    if (c.tipo === "erro") return toast(c.msg);
+    if (c.tipo === "acao") {
+      fazerAcao(c.acao);
       return setTexto("");
     }
     setIndo(true);
     try {
-      await enviarChat(t, "geral");
+      if (c.tipo === "sussurro") {
+        const { error } = await sb().rpc("sussurrar", { p_para: c.para, p_texto: c.texto });
+        if (error) throw error;
+      } else await enviarChat(c.texto, "geral", c.grito);
       setTexto("");
     } catch (err) {
       toast(errMsg(err, "Não deu para mandar. Tente de novo."));
@@ -68,9 +77,15 @@ export function ChatBarra() {
       </span>
       <input
         value={texto}
-        onChange={(e) => setTexto(e.target.value)}
+        onChange={(e) => {
+          setTexto(e.target.value);
+          if (e.target.value.trim()) avisarDigitando();
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") gritar.current = e.shiftKey;
+        }}
         maxLength={300}
-        placeholder="Fale com quem está aqui… (o/ acena, Z abre o histórico)"
+        placeholder="Fale… (Shift+Enter grita, :s Nome sussurra, o/ acena, Z histórico)"
         aria-label="Mensagem para o #geral (aparece num balão em cima do seu boneco)"
         enterKeyHint="send"
         autoComplete="off"
@@ -83,14 +98,21 @@ export function ChatBarra() {
 }
 
 /** Os balões de uma pessoa, empilhados (o mais novo embaixo, perto da cabeça). */
-function Pilha({ nome, baloes }: { nome: string; baloes: readonly Balao[] }) {
+function Pilha({ nome, baloes, digita }: { nome: string; baloes: readonly Balao[]; digita?: boolean }) {
   return (
     <>
       {baloes.map((b) => (
-        <span key={b.id} className="habbo-balao" style={{ ["--vida" as string]: `${BALAO_MS}ms` } as CSSProperties}>
-          <b>{nome}:</b> {b.texto}
+        <span key={b.id} className={"habbo-balao" + (b.tipo ? " " + b.tipo : "")} style={{ ["--vida" as string]: `${BALAO_MS}ms` } as CSSProperties}>
+          <b>{nome}{b.tipo === "sussurro" ? ` sussurra para ${b.para}` : ""}:</b> {b.texto}
         </span>
       ))}
+      {digita && (
+        <span className="habbo-balao digitando" aria-label={`${nome} está escrevendo`}>
+          <i />
+          <i />
+          <i />
+        </span>
+      )}
     </>
   );
 }
@@ -98,19 +120,21 @@ function Pilha({ nome, baloes }: { nome: string; baloes: readonly Balao[] }) {
 /** Balões no K-FOFO: um grupo em cima da cabeça de cada boneco que falou. */
 export function BaloesHall({ bonecos, vb }: { bonecos: readonly Boneco[]; vb: Caixa2D }) {
   const lista = useBaloes((s) => s.lista);
+  const digitando = useDigitando((s) => s.por);
   const friends = useApp((s) => s.friends);
-  if (!lista.length) return null;
+  if (!lista.length && !Object.keys(digitando).length) return null;
   return (
     <>
       {bonecos.map((b) => {
         const uid = friends.find((f) => f.id === b.fid)?.user_id;
         const meus = uid ? lista.filter((x) => x.uid === uid) : [];
-        if (!meus.length) return null;
+        const digita = !!digitando[b.key] && !meus.length;
+        if (!meus.length && !digita) return null;
         const a = assentoDe(b.senta);
         const [x, y] = a ? tela(a.i, a.j) : tela(b.i + 0.5, b.j + 0.5);
         return (
           <div key={b.key} className="habbo-pilha" style={{ left: pct((x - vb.x) / vb.w), top: pct((y - ANCORA.y - vb.y) / vb.h) }}>
-            <Pilha nome={b.name} baloes={meus} />
+            <Pilha nome={b.name} baloes={meus} digita={digita} />
           </div>
         );
       })}
@@ -121,16 +145,18 @@ export function BaloesHall({ bonecos, vb }: { bonecos: readonly Boneco[]; vb: Ca
 /** Balões no quarto (dentro do SVG): `x`, `y` é o alto da cabeça, nas medidas do SVG. */
 export function BaloesSvg({ itens }: { itens: readonly { key: string; nome: string; uid?: string | null; x: number; y: number }[] }) {
   const lista = useBaloes((s) => s.lista);
-  if (!lista.length) return null;
+  const digitando = useDigitando((s) => s.por);
+  if (!lista.length && !Object.keys(digitando).length) return null;
   return (
     <>
       {itens.map((it) => {
         const meus = it.uid ? lista.filter((x) => x.uid === it.uid) : [];
-        if (!meus.length) return null;
+        const digita = !!digitando[it.key] && !meus.length;
+        if (!meus.length && !digita) return null;
         return (
           <foreignObject key={it.key} x={it.x - 160} y={it.y - 240} width={320} height={240} pointerEvents="none">
             <div className="habbo-pilha no-svg">
-              <Pilha nome={it.nome} baloes={meus} />
+              <Pilha nome={it.nome} baloes={meus} digita={digita} />
             </div>
           </foreignObject>
         );

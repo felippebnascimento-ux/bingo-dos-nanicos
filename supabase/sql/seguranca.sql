@@ -6237,6 +6237,56 @@ begin
   begin alter publication supabase_realtime add table public.duelo_mensagens; exception when duplicate_object then null; end;
 end $$;
 
+-- 52) chat do K-FOFO como no Habbo: gritar e sussurrar (03/11/2026, pedido do João) --------------------------------
+--   Grito: uma mensagem do chat marcada com `grito` (o balão sai maior para todo mundo). Vai para o #geral como as outras.
+--   Sussurro: uma mensagem só para uma pessoa, em `sussurros`. Só quem mandou e quem recebeu leem (o RLS vale também
+--   no tempo real, então ninguém mais recebe). Grava só por sussurrar(); some depois de 1 dia.
+alter table public.chat_messages add column if not exists grito boolean not null default false;
+grant insert (text, sala, grito) on public.chat_messages to authenticated;
+
+create table if not exists public.sussurros (
+  id    bigint generated always as identity primary key,
+  de    uuid not null references auth.users(id) on delete cascade,
+  para  uuid not null references auth.users(id) on delete cascade,
+  texto text not null check (char_length(texto) between 1 and 200),
+  em    timestamptz not null default now()
+);
+create index if not exists sussurros_em on public.sussurros (em);
+alter table public.sussurros enable row level security;
+revoke all on public.sussurros from public, anon, authenticated;
+grant select on public.sussurros to authenticated;
+drop policy if exists sussurros_ler on public.sussurros;
+create policy sussurros_ler on public.sussurros for select to authenticated
+  using (public.eh_membro() and (de = auth.uid() or para = auth.uid()));
+
+-- sussurrar(nanico, texto): para um membro (friend id) que não seja eu; 20 por minuto; limpa os de mais de 1 dia
+create or replace function public.sussurrar(p_para uuid, p_texto text) returns bigint
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid  uuid := auth.uid();
+  v_para uuid;
+  v_txt  text;
+  v_id   bigint;
+begin
+  if v_uid is null or not public.eh_membro() then raise exception 'Só os membros sussurram.' using errcode = 'P0001'; end if;
+  select user_id into v_para from public.friends where id = p_para and user_id is not null;
+  if v_para is null then raise exception 'Não achei quem vai receber o sussurro.' using errcode = 'P0001'; end if;
+  if v_para = v_uid then raise exception 'Sussurrar para você mesmo não vale.' using errcode = 'P0001'; end if;
+  v_txt := left(btrim(regexp_replace(coalesce(p_texto, ''), '[\x00-\x1F\x7F]', ' ', 'g')), 200);
+  if v_txt = '' then raise exception 'Escreva alguma coisa.' using errcode = 'P0001'; end if;
+  perform public.limitar('sussurro', 20, interval '1 minute', 'Calma: muitos sussurros seguidos.');
+  delete from public.sussurros where em < now() - interval '1 day';
+  insert into public.sussurros (de, para, texto) values (v_uid, v_para, v_txt) returning id into v_id;
+  return v_id;
+end $$;
+revoke all on function public.sussurrar(uuid, text) from public, anon;
+grant execute on function public.sussurrar(uuid, text) to authenticated;
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.sussurros; exception when duplicate_object then null; end;
+end $$;
+
 -- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo e as 2 tabelas e 3 funções do quarto próprio e as 2 tabelas e 3 funções do blackjack e as 4 tabelas e 6 funções do pôquer
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')

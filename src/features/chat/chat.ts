@@ -7,7 +7,7 @@ import { aoMudarTabela } from "@/lib/sala";
 import { getApp, setApp, useApp } from "@/lib/store";
 import { q, sb } from "@/lib/supabase";
 
-export type MsgChat = { id: string | number; user_id: string; text: string; created_at: string; sala: string };
+export type MsgChat = { id: string | number; user_id: string; text: string; created_at: string; sala: string; grito?: boolean };
 
 /**
  * `msgs` = o chat de onde eu estou (a minha sala, ou o geral no lobby); `geral` = o chat do lobby,
@@ -23,7 +23,7 @@ export const useChat = create<{
 }>()(() => ({ msgs: [], geral: [], porCanal: {}, naoLidas: {}, ok: true }));
 
 const comSalas = () => getApp().salas.length > 0;
-const COLUNAS = () => (comSalas() ? "id,user_id,text,created_at,sala" : "id,user_id,text,created_at");
+const COLUNAS = () => (comSalas() ? "id,user_id,text,created_at,sala,grito" : "id,user_id,text,created_at");
 /** Chave do chat de onde eu estou. */
 export const chatAtual = () => getApp().minhaSala ?? "geral";
 
@@ -34,7 +34,7 @@ function limpa(r: unknown): MsgChat | null {
   if (typeof o.id !== "string" && typeof o.id !== "number") return null;
   if (typeof o.user_id !== "string" || typeof o.text !== "string" || typeof o.created_at !== "string") return null;
   const sala = typeof o.sala === "string" && /^[a-z0-9-]{2,20}$/.test(o.sala) ? o.sala : "geral";
-  return { id: o.id, user_id: o.user_id, text: o.text, created_at: o.created_at, sala };
+  return { id: o.id, user_id: o.user_id, text: o.text, created_at: o.created_at, sala, ...(o.grito === true ? { grito: true } : {}) };
 }
 
 /* mensagens guardadas por chat ("geral" ou o id da sala) */
@@ -124,8 +124,9 @@ export function abrirCanalTexto(canal: string) {
 }
 
 /** Envia uma mensagem (até 300 letras) para o chat de onde eu estou, ou para `sala`. Lança o erro do banco se não der. */
-export async function enviarChat(texto: string, sala = chatAtual()) {
-  const linha = comSalas() ? { text: texto.slice(0, 300), sala } : { text: texto.slice(0, 300) };
+/** Manda uma mensagem; `grito` (K-FOFO, seção 52) faz o balão sair grande. */
+export async function enviarChat(texto: string, sala = chatAtual(), grito = false) {
+  const linha = comSalas() ? { text: texto.slice(0, 300), sala, ...(grito ? { grito: true } : {}) } : { text: texto.slice(0, 300) };
   const rows = await q<unknown[]>(sb().from("chat_messages").insert(linha).select(COLUNAS()));
   (rows || []).forEach(addChat);
 }
