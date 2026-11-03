@@ -11,6 +11,7 @@ import { ANCORA, caixaDoBoneco, CEL_H, CEL_W, ordemZ, quadroSprite, type Caixa, 
 import { BaloesSvg } from "@/features/hall/ChatHabbo";
 import { iconeAcao, type Acao } from "@/features/hall/acoes";
 import { EstadoNoMovel, TintaQuarto } from "./EstadoMovel";
+import { useEquipados } from "@/features/loja/lojaDados";
 import { corDoQuarto, ehInterativo, type EstadoMovel } from "./interativo";
 import { desenharMovel, Poligonos, type Poly, type Pt } from "./Moveis";
 import { camadasQuarto, type Retangulo } from "./quarto";
@@ -341,6 +342,8 @@ export const QuartoCena = memo(function QuartoCena({
 /** O boneco no quarto: o quadro da folha (espelhado nos lados esquerdos), ou um pino com as iniciais, e o nome. */
 const ESCALA_VISITA = 1.15;
 function BonecoNoQuarto({ b, p }: { b: BonecoCena; p: (i: number, j: number, z?: number) => Pt }) {
+  /* efeito comprado na loja (seção 61) */
+  const efeito = useEquipados(b.uid).efeito?.dados.cor;
   const [x, y0] = b.sentado ? p(b.sentado.i, b.sentado.j) : p(b.i + 0.5, b.j + 0.5);
   /* sentado, o quadril desce para o estofado (como o .boneco.sentado do hall) */
   const y = y0 + (b.sentado ? CEL_H * ESCALA_VISITA * 0.19 : 0);
@@ -350,7 +353,7 @@ function BonecoNoQuarto({ b, p }: { b: BonecoCena; p: (i: number, j: number, z?:
   /* sentado, as pernas somem dentro do estofado (como no K-FOFO): a janela do quadro corta o terço de baixo */
   const corte = b.sentado ? 0.68 : 1;
   return (
-    <g className={"quarto-boneco" + (b.eu ? " eu" : "") + (b.acao ? " acao-" + b.acao : "")} pointerEvents="none">
+    <g className={"quarto-boneco" + (b.eu ? " eu" : "") + (b.acao ? " acao-" + b.acao : "") + (efeito ? " efeito-" + efeito : "")} pointerEvents="none">
       <g className="quarto-corpo">
       {b.folha ? (
         <svg x={x - ANCORA.x * ESCALA_VISITA} y={y - ANCORA.y * ESCALA_VISITA} width={w} height={h * corte} viewBox={`${vx} ${vy} ${CEL_W} ${CEL_H * corte}`}>

@@ -88,3 +88,29 @@
 .quarto-nota{font:800 22px var(--display);fill:var(--accent);animation:boneco-icone 1s ease-in-out infinite}
 .radio-mudo{position:absolute;left:12px;bottom:12px;z-index:5}
 @media (prefers-reduced-motion:reduce){.quarto-nota{animation:none}}
+
+/* efeitos no boneco (seção 61): brilho, fogo, fantasma e arco-íris (--efeito-*), no K-FOFO, nos quartos e na prévia da loja */
+.boneco,.quarto-boneco,.loja-efeito-previa{--efeito-ouro:#FFD24A; --efeito-fogo:#FF7A1A; --efeito-fogo2:#FFD24A}
+.boneco.efeito-brilho > .boneco-toque,.quarto-boneco.efeito-brilho .quarto-corpo,.loja-efeito-previa.efeito-brilho .av{animation:efeito-brilho 1.6s ease-in-out infinite}
+@keyframes efeito-brilho{0%,100%{filter:drop-shadow(0 0 4px var(--efeito-ouro))}50%{filter:drop-shadow(0 0 12px var(--efeito-ouro))}}
+.boneco.efeito-fogo::after{content:"";position:absolute;left:22%;right:22%;bottom:0;height:16%;border-radius:50%;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 100%,var(--efeito-fogo2),var(--efeito-fogo) 45%,transparent 70%);filter:blur(1px);animation:efeito-fogo .35s ease-in-out infinite alternate}
+.quarto-boneco.efeito-fogo .quarto-corpo,.loja-efeito-previa.efeito-fogo .av{filter:drop-shadow(0 4px 6px var(--efeito-fogo))}
+@keyframes efeito-fogo{to{transform:scaleY(1.35) translateY(-4%);opacity:.8}}
+.boneco.efeito-fantasma > .boneco-toque,.quarto-boneco.efeito-fantasma .quarto-corpo,.loja-efeito-previa.efeito-fantasma .av{opacity:.55;animation:efeito-flutua 2.4s ease-in-out infinite}
+@keyframes efeito-flutua{50%{translate:0 -4px}}
+.boneco.efeito-arco > .boneco-toque,.quarto-boneco.efeito-arco .quarto-corpo,.loja-efeito-previa.efeito-arco .av{animation:efeito-arco 3s linear infinite}
+@keyframes efeito-arco{from{filter:hue-rotate(0deg) saturate(1.5)}to{filter:hue-rotate(360deg) saturate(1.5)}}
+.quarto-boneco[class*="efeito-"] .quarto-corpo{transform-box:fill-box;transform-origin:50% 100%}
+.loja-efeito-previa{display:grid;place-items:center;width:100%;height:100%}
+@media (prefers-reduced-motion:reduce){.boneco[class*="efeito-"] > *,.boneco.efeito-fogo::after,.quarto-boneco[class*="efeito-"] .quarto-corpo,.loja-efeito-previa .av{animation:none}}
+/* grupos (seção 61): o selo no perfil e as cores (--grupo-*) */
+.grupo-selo,.grupo-simbolo,.grupo-cor{--grupo-ouro:#B08D57; --grupo-oliva:#4A4E44; --grupo-ardosia:#3E4C59; --grupo-vermelho:#B4442F; --grupo-azul:#2563EB; --grupo-roxo:#7C3AED}
+.grupo-selo{display:inline-flex;align-items:center;gap:4px;margin-left:6px;padding:1px 8px;border-radius:99px;font:700 11px var(--body);color:var(--stamp-ink);background:var(--g)}
+.grupo-simbolo{width:32px;height:32px;flex:none;display:grid;place-items:center;border-radius:10px;font-size:18px;background:var(--g)}
+.grupo-cor{width:28px;height:28px;padding:0;border-radius:50%;background:var(--g)}
+.grupo-cor.on{outline:3px solid var(--ink);outline-offset:2px}
+.g-ouro{--g:var(--grupo-ouro)}.g-oliva{--g:var(--grupo-oliva)}.g-ardosia{--g:var(--grupo-ardosia)}.g-vermelho{--g:var(--grupo-vermelho)}.g-azul{--g:var(--grupo-azul)}.g-roxo{--g:var(--grupo-roxo)}
+.grupo-meu{margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px;font:600 14px var(--body)}
+.grupo-criar{display:grid;gap:8px;padding:12px;border-radius:12px;background:var(--surface-2)}
+.grupo-criar input{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:500 14px var(--body)}

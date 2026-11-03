@@ -2,7 +2,7 @@
  * Loja e mochila (puro e testado): os espaços, a vitrine agrupada, o que cada um tem equipado e se dá
  * para comprar. Só serve para MOSTRAR: quem confere preço, saldo e repetição é o banco (comprar(), seção 15).
  */
-export type Espaco = "cadeira" | "mesa" | "tapete" | "poster" | "planta" | "parede" | "luz" | "titulo" | "moldura" | "escudo" | "consumivel" | "celular" | "cabeca" | "quarto" | "movel";
+export type Espaco = "cadeira" | "mesa" | "tapete" | "poster" | "planta" | "parede" | "luz" | "titulo" | "moldura" | "escudo" | "consumivel" | "celular" | "cabeca" | "quarto" | "movel" | "efeito";
 export type Anim = "fumar" | "charuto" | "beber" | "tremer" | "tonto";
 export type ItemLoja = { id: string; nome: string; descricao: string; espaco: Espaco; preco: number; dados: { cor?: string; texto?: string; anim?: Anim; w?: number; d?: number; desenho?: string; tamanho?: number }; ordem: number; estoque?: number; lancamento?: number };
 export type LinhaMochila = { userId: string; itemId: string; qtd: number; equipado: boolean };
@@ -13,7 +13,7 @@ export const GRUPOS: readonly { id: string; nome: string; curto: string; espacos
   { id: "quarto-proprio", nome: "Quarto próprio", curto: "Quarto próprio", espacos: ["quarto"] },
   { id: "celular", nome: "A meta grande", curto: "Celular", espacos: ["celular"] },
   { id: "consumivel", nome: "Para usar no K-FOFO", curto: "Consumíveis", espacos: ["consumivel"] },
-  { id: "boneco", nome: "Para o boneco", curto: "Boneco", espacos: ["cabeca"] },
+  { id: "boneco", nome: "Para o boneco", curto: "Boneco", espacos: ["cabeca", "efeito"] },
   { id: "quarto", nome: "Para o quarto", curto: "Quarto", espacos: ["cadeira", "mesa", "tapete", "poster", "planta", "parede", "luz"] },
   { id: "moveis", nome: "Móveis do quarto", curto: "Móveis", espacos: ["movel"] },
   { id: "visual", nome: "Títulos e molduras", curto: "Visual", espacos: ["titulo", "moldura"] },
@@ -41,6 +41,7 @@ export const NOME_ESPACO: Readonly<Record<Espaco, string>> = {
   cabeca: "Cabeça",
   quarto: "Quarto",
   movel: "Móvel",
+  efeito: "Efeito",
 };
 
 /** Escudo e consumíveis acumulam; o resto só se compra uma vez e se equipa (menos o celular, que se abre). */

@@ -29,7 +29,10 @@ export const Boneco = memo(function Boneco({
   /* acessório da loja (boné, óculos…): o enfeite dos troféus tem prioridade no alto da cabeça */
   /* acenar, dançar ou deitar (acoes.ts) */
   const acao = useAcaoDe(b.key);
-  const cabeca = tipoAcessorio(useEquipados(f.user_id).cabeca?.dados.cor);
+  const equip = useEquipados(f.user_id);
+  const cabeca = tipoAcessorio(equip.cabeca?.dados.cor);
+  /* efeito comprado na loja (seção 61): brilho, fogo, fantasma ou arco-íris */
+  const efeito = equip.efeito?.dados.cor;
   const acess = folha && cabeca && !(enfeite && noAlto(cabeca)) ? cabeca : null;
   /* a célula do boneco, em % do hall, com o pé (âncora) no centro do piso */
   const caixa: CSSProperties = {
@@ -51,7 +54,7 @@ export const Boneco = memo(function Boneco({
     </span>
   );
   return (
-    <div className={"boneco" + (eu ? " eu" : "") + (a ? " sentado" : "") + (rot ? " balanca" : "") + (enfeite ? " chapeu-" + enfeite : "") + (acess ? " acess-" + acess : "") + (acao ? " acao-" + acao : "")} style={caixa}>
+    <div className={"boneco" + (eu ? " eu" : "") + (a ? " sentado" : "") + (rot ? " balanca" : "") + (enfeite ? " chapeu-" + enfeite : "") + (acess ? " acess-" + acess : "") + (acao ? " acao-" + acao : "") + (efeito ? " efeito-" + efeito : "")} style={caixa}>
       <span className="boneco-nome">{b.name}</span>
       {acao && (
         <span className="boneco-acao" aria-hidden="true">

@@ -2409,7 +2409,7 @@ end $$;
 -- Imagem da postagem vai para o bucket "midias", na pasta rede/<uid>/. Postar e curtir não dão moedas.
 alter table public.loja_itens drop constraint if exists loja_itens_espaco_check;
 alter table public.loja_itens add constraint loja_itens_espaco_check
-  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca', 'quarto', 'movel'));
+  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca', 'quarto', 'movel', 'efeito'));
 insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem) values
   ('celular', 'Celular', 'Abre a rede social nanica: poste, curta e comente com o grupo.', 'celular', 3000, '{}', 0)
 on conflict (id) do update set nome = excluded.nome, descricao = excluded.descricao, espaco = excluded.espaco,
@@ -3932,7 +3932,7 @@ grant execute on function public.emblemas_de(uuid) to authenticated;
 --     sobre o que vai no alto da cabeça (só os óculos ficam junto).
 alter table public.loja_itens drop constraint if exists loja_itens_espaco_check;
 alter table public.loja_itens add constraint loja_itens_espaco_check
-  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca', 'quarto', 'movel'));
+  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca', 'quarto', 'movel', 'efeito'));
 
 insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem) values
   ('bone',     'Boné de aba reta',   'O boné de quem joga de top.',               'cabeca', 300,  '{"cor":"bone"}', 120),
@@ -4458,7 +4458,7 @@ alter table public.loja_itens drop constraint if exists loja_itens_preco_check;
 alter table public.loja_itens add constraint loja_itens_preco_check check (preco between 10 and 10000);
 alter table public.loja_itens drop constraint if exists loja_itens_espaco_check;
 alter table public.loja_itens add constraint loja_itens_espaco_check
-  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca', 'quarto', 'movel'));
+  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca', 'quarto', 'movel', 'efeito'));
 
 insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem) values
   ('quarto-pequeno',     'Quarto pequeno',      'Um quarto só seu, 6×6. Arrume do seu jeito.',          'quarto', 1000, '{"tamanho":6}', 190),
@@ -6984,6 +6984,96 @@ begin
 end $$;
 revoke all on function public.usar_movel(bigint, text) from public, anon;
 grant execute on function public.usar_movel(bigint, text) to authenticated;
+
+-- 61) grupos e efeitos no boneco, como no Habbo (03/11/2026, pedido do João) --------------------------------------------
+--   Efeitos: itens do espaço 'efeito' (brilho, fogo nos pés, fantasma, arco-íris), comprados e equipados como os
+--   acessórios (o equipar de sempre desliga o outro efeito). Grupos: cada membro cria um (500 moedas, com nome, cor e
+--   símbolo) ou entra no de alguém; um grupo por pessoa. Todos leem grupos e membros (o grupo aparece no perfil).
+alter table public.loja_itens drop constraint if exists loja_itens_espaco_check;
+alter table public.loja_itens add constraint loja_itens_espaco_check
+  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca', 'quarto', 'movel', 'efeito'));
+
+insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem) values
+  ('efeito-brilho',   'Brilho dourado', 'O seu boneco brilha como quem ganhou o jackpot.', 'efeito', 800,  '{"cor":"brilho"}', 300),
+  ('efeito-fogo',     'Fogo nos pés',   'Chamas nos pés por onde você anda.',             'efeito', 1200, '{"cor":"fogo"}', 301),
+  ('efeito-fantasma', 'Fantasma',       'Meio transparente, flutuando de leve.',          'efeito', 1000, '{"cor":"fantasma"}', 302),
+  ('efeito-arco',     'Arco-íris',      'As cores do boneco vão mudando sem parar.',      'efeito', 1500, '{"cor":"arco"}', 303)
+on conflict (id) do update set nome = excluded.nome, descricao = excluded.descricao, espaco = excluded.espaco,
+  preco = excluded.preco, dados = excluded.dados, ordem = excluded.ordem;
+
+create table if not exists public.grupos (
+  id        bigint generated always as identity primary key,
+  nome      text not null check (char_length(nome) between 2 and 24),
+  cor       text not null check (cor in ('ouro', 'oliva', 'ardosia', 'vermelho', 'azul', 'roxo')),
+  simbolo   text not null check (simbolo in ('estrela', 'coroa', 'raio', 'caveira', 'coracao', 'fogo', 'trevo', 'espada')),
+  dono      uuid not null references auth.users(id) on delete cascade,
+  criado_em timestamptz not null default now()
+);
+create unique index if not exists grupos_nome on public.grupos (lower(nome));
+create table if not exists public.grupo_membros (
+  user_id  uuid primary key references auth.users(id) on delete cascade,
+  grupo_id bigint not null references public.grupos(id) on delete cascade,
+  desde    timestamptz not null default now()
+);
+alter table public.grupos enable row level security;
+alter table public.grupo_membros enable row level security;
+revoke all on public.grupos, public.grupo_membros from public, anon, authenticated;
+grant select on public.grupos, public.grupo_membros to authenticated;
+drop policy if exists grupos_ler on public.grupos;
+create policy grupos_ler on public.grupos for select to authenticated using (public.eh_membro());
+drop policy if exists grupo_membros_ler on public.grupo_membros;
+create policy grupo_membros_ler on public.grupo_membros for select to authenticated using (public.eh_membro());
+do $$
+begin
+  begin alter publication supabase_realtime add table public.grupos; exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.grupo_membros; exception when duplicate_object then null; end;
+end $$;
+
+-- grupo_criar(nome, cor, símbolo): 500 moedas (motivo 'loja'); quem já está num grupo sai antes
+create or replace function public.grupo_criar(p_nome text, p_cor text, p_simbolo text) returns bigint
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid  uuid := auth.uid();
+  v_nome text := left(btrim(regexp_replace(coalesce(p_nome, ''), '[\x00-\x1F\x7F]', ' ', 'g')), 24);
+  v_id   bigint;
+begin
+  if v_uid is null or not public.eh_membro() then raise exception 'Só os membros criam grupos.' using errcode = 'P0001'; end if;
+  if char_length(v_nome) < 2 then raise exception 'O nome precisa de pelo menos 2 letras.' using errcode = 'P0001'; end if;
+  if exists (select 1 from public.grupo_membros where user_id = v_uid) then raise exception 'Saia do seu grupo antes de criar outro.' using errcode = 'P0001'; end if;
+  if exists (select 1 from public.grupos where lower(nome) = lower(v_nome)) then raise exception 'Já existe um grupo com esse nome.' using errcode = 'P0001'; end if;
+  perform public.limitar('grupo', 5, interval '1 hour', 'Calma: muitos grupos seguidos.');
+  perform public.creditar(v_uid, -500, 'loja', 'grupo');
+  insert into public.grupos (nome, cor, simbolo, dono) values (v_nome, p_cor, p_simbolo, v_uid) returning id into v_id;
+  insert into public.grupo_membros (user_id, grupo_id) values (v_uid, v_id);
+  return v_id;
+end $$;
+revoke all on function public.grupo_criar(text, text, text) from public, anon;
+grant execute on function public.grupo_criar(text, text, text) to authenticated;
+
+-- grupo_entrar(grupo): um grupo por pessoa
+create or replace function public.grupo_entrar(p_id bigint) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+begin
+  if v_uid is null or not public.eh_membro() then raise exception 'Só os membros entram em grupos.' using errcode = 'P0001'; end if;
+  if not exists (select 1 from public.grupos where id = p_id) then raise exception 'Esse grupo não existe mais.' using errcode = 'P0001'; end if;
+  if exists (select 1 from public.grupo_membros where user_id = v_uid) then raise exception 'Saia do seu grupo antes de entrar em outro.' using errcode = 'P0001'; end if;
+  perform public.limitar('grupo_entrar', 20, interval '1 hour', 'Calma: muitas trocas de grupo.');
+  insert into public.grupo_membros (user_id, grupo_id) values (v_uid, p_id);
+end $$;
+revoke all on function public.grupo_entrar(bigint) from public, anon;
+grant execute on function public.grupo_entrar(bigint) to authenticated;
+
+-- grupo_sair(): sai; se for o dono, o grupo acaba (todo mundo sai junto)
+create or replace function public.grupo_sair() returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  delete from public.grupos where dono = auth.uid();
+  delete from public.grupo_membros where user_id = auth.uid();
+end $$;
+revoke all on function public.grupo_sair() from public, anon;
+grant execute on function public.grupo_sair() to authenticated;
 
 -- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo e as 2 tabelas e 3 funções do quarto próprio e as 2 tabelas e 3 funções do blackjack e as 4 tabelas e 6 funções do pôquer
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger

@@ -45,6 +45,13 @@ export function Previa({ it }: { it: ItemLoja }) {
   const foco = FOCO[it.espaco];
   if (foco) return <QuartoPrevia equip={{ [it.espaco]: it.dados.cor } as EquipQuarto} foco={foco} />;
   if (it.espaco === "titulo") return <span className="loja-titulo-previa">{it.dados.texto}</span>;
+  /* efeito no boneco (seção 61): o rosto com o efeito */
+  if (it.espaco === "efeito")
+    return (
+      <span className={"loja-efeito-previa efeito-" + it.dados.cor}>
+        <Avatar f={eu ?? { name: "?" }} size="lg" />
+      </span>
+    );
   if (it.espaco === "moldura")
     return (
       <span className={"loja-moldura-previa mold-" + it.dados.cor}>

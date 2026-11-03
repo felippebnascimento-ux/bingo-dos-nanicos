@@ -13,6 +13,7 @@ import { ConfigJanela } from "@/features/config/ConfigView";
 import { FichaNanico } from "@/features/ficha/Ficha";
 import { TrocaJanela } from "@/features/troca/Troca";
 import { NavegadorJanela } from "@/features/quarto/NavegadorQuartos";
+import { GruposJanela } from "@/features/grupos/GruposJanela";
 import { PainelCarteira } from "@/features/moedas/Ranking";
 import { PainelMochila } from "@/features/loja/MochilaPainel";
 import { ArrumarQuarto } from "@/features/quarto/ArrumarQuarto";
@@ -85,6 +86,7 @@ export default function App() {
       <FichaNanico />
       <TrocaJanela />
       <NavegadorJanela />
+      <GruposJanela />
       <SalasJanela />
       <ConfigJanela />
 

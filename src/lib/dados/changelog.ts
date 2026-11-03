@@ -726,6 +726,13 @@ export const CHANGELOG: EntradaLog[] = [
       "Caixa de som na Loja: no seu quarto, escolha a estação (lo-fi, eletrônica ou samba) e quem estiver lá ouve junto. Cada um pode tirar o som só para si",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Grupos: pelo botão no K-FOFO, crie o seu (500 moedas, com nome, cor e símbolo) ou entre no de alguém. O grupo aparece no cartão do perfil",
+      "Efeitos para o boneco na Loja: Brilho dourado, Fogo nos pés, Fantasma e Arco-íris. Equipado, aparece no K-FOFO e nos quartos",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

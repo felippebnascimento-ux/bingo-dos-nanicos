@@ -15,6 +15,7 @@ import { friendOf, setApp, useApp } from "@/lib/store";
 import type { Boneco } from "./bonecos";
 import { abrirMenu } from "./zoeiraSala";
 import { seguir } from "./seguir";
+import { SeloGrupo } from "@/features/grupos/GruposJanela";
 import { abrirTroca } from "@/features/troca/trocas";
 
 export function PerfilCartao({ b }: { b: Boneco }) {
@@ -48,6 +49,7 @@ export function PerfilCartao({ b }: { b: Boneco }) {
         <span className="perfil-nome">
           <b>{f.name}</b>
           <TituloNanico userId={f.user_id} />
+          <SeloGrupo uid={f.user_id} />
         </span>
         <button ref={fechar} type="button" className="perfil-fechar" aria-label="Fechar o perfil" onClick={() => abrirMenu(null)}>
           <IcFechar />
