@@ -156,22 +156,31 @@ function EuPainel() {
   const temSalas = useApp((s) => s.salas.length > 0);
   const naAba = useApp((s) => s.aba === "perfil");
   const naConfig = useApp((s) => s.configAberto);
+  const naVoz = useApp((s) => !!s.myVozSid);
   if (!myName) return null;
+  /* na voz a linha "eu" fica como a do Discord (rosto, microfone, fone, engrenagem) e as moedas descem uma linha */
   return (
-    <div className="eu-painel">
-      <button type="button" className={"eu" + (naAba ? " on" : "")} aria-current={naAba ? "page" : undefined} title="Abrir o meu perfil" onClick={() => setApp({ aba: "perfil" })}>
-        {eu ? <Avatar f={eu} /> : <span className="av">{myName[0]}</span>}
-        <span className="eu-txt">
-          <b>{eu?.name ?? myName}</b>
-          {temSalas && <small>{sala ?? "No lobby"}</small>}
-        </span>
-      </button>
-      <BotoesVozEu />
-      <CarteiraChip />
-      <button type="button" className={"eu-cfg" + (naConfig ? " on" : "")} aria-label="Configurações" title="Configurações" aria-expanded={naConfig} onClick={() => setApp({ configAberto: true })}>
-        <IcAjustes />
-      </button>
-    </div>
+    <>
+      <div className="eu-painel">
+        <button type="button" className={"eu" + (naAba ? " on" : "")} aria-current={naAba ? "page" : undefined} title="Abrir o meu perfil" onClick={() => setApp({ aba: "perfil" })}>
+          {eu ? <Avatar f={eu} /> : <span className="av">{myName[0]}</span>}
+          <span className="eu-txt">
+            <b>{eu?.name ?? myName}</b>
+            {temSalas && <small>{sala ?? "No lobby"}</small>}
+          </span>
+        </button>
+        <BotoesVozEu />
+        {!naVoz && <CarteiraChip />}
+        <button type="button" className={"eu-cfg" + (naConfig ? " on" : "")} aria-label="Configurações" title="Configurações" aria-expanded={naConfig} onClick={() => setApp({ configAberto: true })}>
+          <IcAjustes />
+        </button>
+      </div>
+      {naVoz && (
+        <div className="eu-moedas">
+          <CarteiraChip />
+        </div>
+      )}
+    </>
   );
 }
 

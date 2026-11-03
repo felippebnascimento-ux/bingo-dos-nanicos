@@ -9,16 +9,16 @@
 .vz{display:grid;gap:9px;padding:10px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface-2)}
 .vz-topo{display:flex;align-items:center;gap:4px;min-width:0}
 .vz-info{flex:1;display:grid;min-width:0;padding-left:2px}
-.vz-info b{font-size:13px;color:var(--accent-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vz-info b{font-size:13px;line-height:1.15;color:var(--accent-text);overflow-wrap:anywhere}
 .vz-info b.fora{color:var(--muted)}
 .vz-info small{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.vz-sinal{flex:none;display:grid;place-items:center;width:30px;height:30px;border:0;border-radius:9px;background:var(--accent-soft);color:var(--accent);cursor:pointer}
+.vz-sinal{flex:none;display:grid;place-items:center;width:26px;height:26px;border:0;border-radius:9px;background:var(--accent-soft);color:var(--accent);cursor:pointer}
 .vz-sinal.medio{color:var(--sun)}.vz-sinal.ruim{color:var(--live)}
-.vz-ib{flex:none;display:grid;place-items:center;width:28px;height:30px;border:0;border-radius:9px;background:none;color:var(--muted);cursor:pointer}
+.vz-ib{flex:none;display:grid;place-items:center;width:26px;height:30px;border:0;border-radius:9px;background:none;color:var(--muted);cursor:pointer}
 .vz-ib:hover{background:var(--surface);color:var(--ink)}
 .vz-ib.on{color:var(--accent)}
 .vz-ib.sair{color:var(--live)}
-.vz-acoes{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.vz-acoes{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px}
 .vz-acao{height:36px;display:grid;place-items:center;border:0;border-radius:9px;background:var(--surface);color:var(--ink);cursor:pointer;transition:background .15s,color .15s}
 .vz-acao:hover:not(:disabled),.vz-acao.aberta{background:color-mix(in srgb,var(--accent) 22%,var(--surface))}
 .vz-acao.on{background:var(--accent);color:var(--accent-ink)}
@@ -32,11 +32,11 @@
 .vz-previa video{width:100%;height:100%;object-fit:contain;display:block}
 .vz-previa .live-pill{position:absolute;left:7px;top:7px;border-radius:4px}
 .vz-olhos,.qd-olhos{position:absolute;right:7px;top:7px;display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:99px;background:color-mix(in srgb,var(--accent-ink) 70%,transparent);color:var(--stamp-ink);font:600 11.5px var(--body)}
-.vz-live-linha{display:flex;align-items:center;gap:6px;min-width:0}
-.vz-live-txt{flex:1;display:grid;min-width:0}
-.vz-live-txt b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vz-live-linha{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
+.vz-live-txt{flex:1 1 100%;display:grid;min-width:0}
+.vz-live-txt b{font-size:13px;line-height:1.2;overflow-wrap:anywhere}
 .vz-live-txt small{font-size:11.5px;color:var(--muted)}
-.vz-parar{flex:none;border:0;border-radius:9px;padding:8px 12px;background:var(--live);color:var(--stamp-ink);font:700 12.5px var(--body);cursor:pointer}
+.vz-parar{flex:1;border:0;border-radius:9px;padding:8px 12px;background:var(--live);color:var(--stamp-ink);font:700 12.5px var(--body);cursor:pointer}
 
 /* microfone e fone na linha "eu" */
 .vz-eu{flex:none;display:flex;align-items:center}
@@ -105,7 +105,7 @@
   body.side-min .vz-info,body.side-min .vz-live-txt,body.side-min .vz-previa{display:none}
   body.side-min .vz{padding:8px 4px}
   body.side-min .vz-topo{flex-direction:column}
-  body.side-min .vz-acoes{grid-template-columns:1fr}
+  body.side-min .vz-acoes{grid-auto-flow:row}
   body.side-min .vz-live{padding:6px 4px}
   body.side-min .vz-live-linha{flex-direction:column}
   body.side-min .vz-parar{padding:6px 8px;font-size:11px}
@@ -197,11 +197,11 @@
 .cb .fs-out{display:none}
 :fullscreen .cb .fs-in{display:none}
 :fullscreen .cb .fs-out{display:inline}
-.vz-semsom{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.vz-semsom details{flex:1;min-width:0;font-size:12px;color:var(--live)}
+.vz-semsom{display:grid;gap:6px}
+.vz-semsom details{min-width:0;font-size:12px;color:var(--live)}
 .vz-semsom summary{cursor:pointer;font-weight:600}
 .vz-semsom p{margin:6px 0 0;line-height:1.45;color:var(--muted)}
-.vz-semsom .btn{padding:6px 10px;font-size:12px}
+.vz-semsom .btn{width:100%;padding:7px 10px;font-size:12px}
 .vz-ajuda{font-size:12.5px;color:var(--muted)}
 .vz-ajuda summary{cursor:pointer;font-weight:600;color:var(--ink)}
 .vz-ajuda ol{margin:8px 0 0;padding-left:18px;display:grid;gap:6px;line-height:1.45}
@@ -215,3 +215,33 @@
   .qd-assistir .btn,.qd-minha .btn{padding:6px 10px;font-size:12px}
 }
 @container (max-width:180px){.qd-minha .btn,.qd-olhos{display:none}}
+
+/* na voz, as moedas ficam numa linha própria embaixo do "eu" (como o Discord, a linha do eu fica só com os botões) */
+.eu-moedas{display:flex;align-items:center;gap:8px;min-width:0}
+.eu-moedas .moedas-chip{width:auto;flex:none;padding:5px 10px}
+.eu-painel .vz-eu{margin-left:auto}
+
+/* ---------- em destaque: a tela ou o quadro clicado ocupa o palco ---------- */
+.qd-tocar:hover{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--accent) 70%,transparent);border-radius:12px}
+.cv-destaque{display:grid;justify-items:center}
+.cv-destaque .qd{width:min(100%,calc((100vh - 280px) * 16 / 9));border-radius:var(--r-lg)}
+.qd.grande .qd-nome{left:14px;bottom:14px;padding:6px 12px;font-size:14px}
+.qd.grande .qd-rosto{width:clamp(80px,18%,160px)}
+.qd.grande .qd-pill{left:14px;top:14px;font-size:11px}
+.qd.grande .qd-mais{right:12px;bottom:12px;opacity:1}
+/* a tela de alguém no Palco, no foco: o maior possível sem passar da altura da tela */
+.palco-foco{justify-items:center}
+.palco-foco .stage{width:min(100%,calc((100vh - 280px) * 16 / 9))}
+.live-grid:fullscreen .palco-foco .stage,.live-grid:fullscreen .cv-destaque .qd{width:min(100%,calc((100vh - 170px) * 16 / 9))}
+@media (max-width:860px){
+  .cv-destaque .qd,.palco-foco .stage{width:100%}
+  .cv-topo{flex-wrap:wrap}
+}
+/* linha "eu" na voz: botões mais justos para o nome caber */
+.eu-painel:has(.vz-eu){gap:2px}
+.eu-painel:has(.vz-eu) .eu{gap:8px;padding:4px}
+.eu-painel:has(.vz-eu) .eu .av{width:32px;height:32px}
+.eu-painel:has(.vz-eu) .eu-cfg{width:28px}
+.vz-dupla .vz-ib{width:24px}
+.vz-seta{width:13px}
+.cv-faixa .qd{flex:1 0 150px;max-width:260px}

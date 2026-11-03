@@ -7,7 +7,7 @@
  * Clique direito (ou o botão ⋯) abre o menu do quadrado: destaque, janela flutuante, tela cheia, volumes e silenciar.
  * Só a tela principal toca som (o Palco continua montado, escondido na grade); as outras abertas vão sem som.
  */
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import {
   IcCamera,
@@ -32,6 +32,7 @@ import type { Friend } from "@/lib/tipos";
 import { camStreamOf, openCamPip } from "./camera";
 import { setLive, useLive } from "./estado";
 import { Balao, botaoCamera, botaoTela, BotaoReacoes, Chave, lugarDe, type Lugar } from "./PainelVoz";
+import { canShare } from "./rtc";
 import { LIVE, unwatch, watch } from "./tela";
 import { VideoMudo } from "./Video";
 import { ajustarVoz, alternarMudo, entrarVoz, silenciarNanico, useAjustesVoz, useVoz } from "./voz";
@@ -98,13 +99,18 @@ async function janelaDe(v: HTMLVideoElement | null | undefined) {
 
 /* no foco sem nenhuma tela aberta (quem eu via parou de transmitir): volta para a grade */
 useLive.subscribe((s) => {
-  if (s.modo === "foco" && !LIVE.main) setLive({ modo: "grade" });
+  if (s.modo === "foco" && !s.destaque && !LIVE.main) setLive({ modo: "grade" });
 });
 
 /** Abrir uma tela grande (com som) no modo foco. */
 function destacar(key: string) {
   watch(key, true);
-  setLive({ modo: "foco" });
+  setLive({ modo: "foco", destaque: null });
+}
+/** Clicou num quadro: a tela de alguém vai para o Palco; a minha tela ou uma pessoa ficam grandes como estão. */
+function destacarQuadro(q: Quadro) {
+  if (q.tipo === "tela" && !q.eu) return destacar(q.key);
+  setLive({ modo: "foco", destaque: q.id });
 }
 
 /* ---------- menu do quadrado ---------- */
@@ -234,7 +240,7 @@ function ativarSom() {
     .catch(() => {});
 }
 
-function QuadroCanal({ q, pequeno }: { q: Quadro; pequeno?: boolean }) {
+function QuadroCanal({ q, pequeno, grande }: { q: Quadro; pequeno?: boolean; grande?: boolean }) {
   useLive((s) => s.v);
   const espelho = useLive((s) => s.espelho);
   const unmute = useLive((s) => s.unmute);
@@ -270,10 +276,11 @@ function QuadroCanal({ q, pequeno }: { q: Quadro; pequeno?: boolean }) {
   if (q.tipo === "tela") {
     const w = q.eu ? null : LIVE.watching.get(q.key);
     const principal = !q.eu && LIVE.main === q.key;
-    const st = q.eu ? (previa ? LIVE.myStream : null) : (w?.stream ?? null);
+    /* em destaque (a pessoa pediu), a minha tela aparece mesmo */
+    const st = q.eu ? (previa || grande ? LIVE.myStream : null) : (w?.stream ?? null);
     const n = q.eu ? [...LIVE.viewers.values()].filter((v) => v.pc.connectionState === "connected").length : null;
     return (
-      <div ref={el} className={"qd tela" + (pequeno ? " peq" : "") + (principal ? " principal" : "")} {...comMenu}>
+      <div ref={el} className={"qd tela" + (pequeno ? " peq" : "") + (grande ? " grande" : "") + (principal ? " principal" : "")} {...comMenu}>
         {st && <VideoMudo stream={st} onEl={setVideo} />}
         {!q.eu && !w && (
           <div className="qd-assistir">
@@ -291,7 +298,10 @@ function QuadroCanal({ q, pequeno }: { q: Quadro; pequeno?: boolean }) {
             </button>
           </div>
         )}
-        {q.eu && !previa && (
+        {q.eu && !previa && !grande && (
+          <button type="button" className="qd-tocar" aria-label="Ver a sua transmissão em destaque" onClick={() => destacarQuadro(q)} />
+        )}
+        {q.eu && !previa && !grande && (
           <div className="qd-minha">
             <IcTela tam={28} />
             <b>Você está transmitindo</b>
@@ -300,7 +310,7 @@ function QuadroCanal({ q, pequeno }: { q: Quadro; pequeno?: boolean }) {
             </button>
           </div>
         )}
-        {q.eu && previa && (
+        {q.eu && previa && !grande && (
           <button type="button" className="btn soft sm qd-esconder" onClick={() => setPrevia(false)}>
             Esconder prévia
           </button>
@@ -338,7 +348,8 @@ function QuadroCanal({ q, pequeno }: { q: Quadro; pequeno?: boolean }) {
   const fid = q.p.fid;
   const silenciado = !q.eu && !!fid && silenciados.includes(fid);
   return (
-    <div ref={el} className={"qd pessoa " + fundoDe(q.id) + (q.fala ? " fala" : "") + (pequeno ? " peq" : "") + (q.cam ? " com-cam" : "")} {...comMenu}>
+    <div ref={el} className={"qd pessoa " + fundoDe(q.id) + (q.fala ? " fala" : "") + (pequeno ? " peq" : "") + (grande ? " grande" : "") + (q.cam ? " com-cam" : "")} {...comMenu}>
+      {!grande && <button type="button" className="qd-tocar" aria-label={`Ver ${q.nome} em destaque`} onClick={() => destacarQuadro(q)} />}
       {q.cam ? (
         <div className={q.eu && espelho ? "qd-cam espelho" : "qd-cam"}>
           <VideoMudo stream={q.cam} onEl={setVideo} />
@@ -374,9 +385,11 @@ function BarraCanal() {
           <button type="button" className={"cb" + (cam ? " on" : "")} aria-pressed={cam} aria-label={cam ? "Desligar a câmera" : "Ligar a câmera"} title={cam ? "Desligar a câmera" : "Ligar a câmera"} onClick={botaoCamera}>
             <IcCamera tam={20} />
           </button>
-          <button type="button" className={"cb" + (live ? " ao-vivo" : "")} aria-pressed={live} aria-label={live ? "Parar a transmissão" : "Transmitir a tela"} title={live ? "Parar a transmissão" : "Transmitir a tela"} onClick={botaoTela}>
-            <IcTela tam={20} />
-          </button>
+          {(canShare || live) && (
+            <button type="button" className={"cb" + (live ? " ao-vivo" : "")} aria-pressed={live} aria-label={live ? "Parar a transmissão" : "Transmitir a tela"} title={live ? "Parar a transmissão" : "Transmitir a tela"} onClick={botaoTela}>
+              <IcTela tam={20} />
+            </button>
+          )}
           <span className="cv-reacoes">
             <BotaoReacoes />
           </span>
@@ -409,7 +422,7 @@ export function TopoCanal() {
         {nVoz === 1 ? "1 na voz" : `${nVoz} na voz`}
         {nLive > 0 && ` · ${nLive} ao vivo`}
       </span>
-      <button type="button" className="btn soft sm" aria-pressed={!foco} onClick={() => setLive({ modo: foco ? "grade" : "foco" })} disabled={!foco && !LIVE.main}>
+      <button type="button" className="btn soft sm" aria-pressed={!foco} onClick={() => setLive({ modo: foco ? "grade" : "foco", destaque: null })} disabled={!foco && !LIVE.main}>
         <IcGrade tam={15} />
         {foco ? "Voltar à grade" : "Tela em destaque"}
       </button>
@@ -439,10 +452,28 @@ export function GradeCanal() {
   );
 }
 
+/** Foco num quadro que não vai para o Palco (a minha tela, uma câmera, alguém só com o rosto): ele grande. */
+export function DestaqueCanal() {
+  const dest = useLive((s) => s.destaque);
+  const q = useQuadros();
+  const alvo = dest ? q.find((x) => x.id === dest) : undefined;
+  /* o quadro sumiu (parou de transmitir, desligou a câmera, saiu da voz): volta para a grade */
+  useEffect(() => {
+    if (dest && !alvo) setLive({ modo: "grade", destaque: null });
+  }, [dest, alvo]);
+  if (!alvo) return null;
+  return (
+    <div className="cv-destaque">
+      <QuadroCanal key={alvo.id} q={alvo} grande />
+    </div>
+  );
+}
+
 /** Modo foco: o resto do canal numa faixa embaixo da tela grande. */
 export function FaixaFoco() {
   useLive((s) => s.v);
-  const q = useQuadros().filter((x) => !(x.tipo === "tela" && x.key === LIVE.main));
+  const dest = useLive((s) => s.destaque);
+  const q = useQuadros().filter((x) => (dest ? x.id !== dest : !(x.tipo === "tela" && x.key === LIVE.main)));
   return (
     <div className="cv-foco">
       {q.length > 0 && (

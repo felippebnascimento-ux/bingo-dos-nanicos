@@ -136,7 +136,8 @@ src/
                        minha transmissão; microfone e fone com a setinha na linha "eu"; as janelas de transmitir, com o
                        que mostrar, 720p/1080p/1440p, 30/60 fps e o som do PC, e a prévia da câmera, `JanelasVoz`) e
                        Grade.tsx (o canal no Ao vivo: todo mundo da voz em quadrados e uma tela para cada transmissão,
-                       "Assistir transmissão" para abrir, modo foco com o Palco grande e o resto numa faixa, `modo` no
+                       "Assistir transmissão" para abrir, modo foco com o Palco grande e o resto numa faixa (ou, com `destaque`,
+                       o quadro clicado grande: a minha tela, uma câmera), `modo` no
                        estado; menu do quadrado no clique direito; o Palco fica montado também na grade, escondido,
                        para a tela principal seguir com som)
     config/            janela de Configurações (engrenagem embaixo do menu; `configAberto` no store): midia.ts

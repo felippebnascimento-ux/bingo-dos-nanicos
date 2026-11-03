@@ -410,9 +410,11 @@ export function VozPainel() {
           <button type="button" className={"vz-acao" + (cam ? " on" : "")} aria-pressed={cam} aria-label={cam ? "Desligar a câmera" : "Ligar a câmera"} title={cam ? "Desligar a câmera" : "Ligar a câmera"} onClick={botaoCamera}>
             <IcCamera tam={20} />
           </button>
-          <button type="button" className={"vz-acao" + (live ? " ao-vivo" : "")} aria-pressed={live} aria-label={live ? "Parar a transmissão" : "Transmitir a tela"} title={live ? "Parar a transmissão" : "Transmitir a tela"} onClick={botaoTela}>
-            <IcTela tam={20} />
-          </button>
+          {(canShare || live) && (
+            <button type="button" className={"vz-acao" + (live ? " ao-vivo" : "")} aria-pressed={live} aria-label={live ? "Parar a transmissão" : "Transmitir a tela"} title={live ? "Parar a transmissão" : "Transmitir a tela"} onClick={botaoTela}>
+              <IcTela tam={20} />
+            </button>
+          )}
           <BotaoReacoes />
           <button
             type="button"

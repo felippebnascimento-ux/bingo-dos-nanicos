@@ -33,6 +33,8 @@ export type LiveUi = {
   mostrar: Mostrar;
   /** o Ao vivo como no Discord: todo mundo em quadrados ("grade") ou uma tela grande com o resto embaixo ("foco") */
   modo: "grade" | "foco";
+  /** no foco: o quadro grande (id do quadro) quando não é a tela de alguém no Palco (minha tela, uma câmera) */
+  destaque: string | null;
   /** janelas abertas: escolher a transmissão e a prévia da câmera */
   janelaTela: boolean;
   previaCam: boolean;
@@ -63,6 +65,7 @@ export const useLive = create<LiveUi>()(() => ({
   somPc: local.get("live-som") !== "0",
   mostrar: (["monitor", "window", "browser"] as const).find((m) => m === local.get("live-mostrar")) ?? "monitor",
   modo: "grade",
+  destaque: null,
   janelaTela: false,
   previaCam: false,
   espelho: local.get("cam-espelho") !== "0",
