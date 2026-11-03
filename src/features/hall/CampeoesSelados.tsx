@@ -35,6 +35,17 @@ export function CampeoesSelados({ dialogRef, friends }: { dialogRef: Ref<HTMLDia
   });
   const nanicos = soNanicos(friends).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   const selecionado = nanicos.find((nanico) => nanico.id === filtro);
+  function quebrar(registro: Registro) {
+    const proximos = registros.flatMap((r) => {
+      if (r !== registro) return [r];
+      return r.chaves > 1 ? [{ ...r, chaves: r.chaves - 1 }] : [];
+    });
+    try { localStorage.setItem(chave, JSON.stringify(proximos)); }
+    catch { setErro("Não foi possível salvar neste navegador."); return; }
+    setRegistros(proximos);
+    setErro("");
+  }
+
   function salvar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     const dados = new FormData(evento.currentTarget);
@@ -89,11 +100,12 @@ export function CampeoesSelados({ dialogRef, friends }: { dialogRef: Ref<HTMLDia
             <label>Motivo do selo <textarea name="motivo" maxLength={300} required /></label>
             <label>Chaves para abrir <input name="chaves" type="number" min={1} step={1} required /></label>
             <small>Prévia local · salva apenas neste navegador.</small>
-            {erro && <p role="alert">{erro}</p>}
+
             <button className={styles.acao} type="submit">Salvar selo</button>
           </form>
         )}
       </div>
+      {erro && <p className={styles.jogador} role="alert">{erro}</p>}
       {(selecionado ? [selecionado] : nanicos).map((nanico) => (
         <section key={nanico.id} className={styles.jogador} aria-label={nanico.name}>
           <h3 className={styles.perfil}><Avatar f={nanico} size="xs" />{nanico.name}</h3>
@@ -105,6 +117,9 @@ export function CampeoesSelados({ dialogRef, friends }: { dialogRef: Ref<HTMLDia
                   <h4>{r.campeao}</h4>
                   <p>{r.motivo}</p>
                   <span className={styles.chaves}>⚿ {r.chaves} {r.chaves === 1 ? "chave" : "chaves"}</span>
+                  <button className={styles.acao} type="button" aria-label={`Quebrar um selo de ${r.campeao} de ${nanico.name}`} onClick={() => quebrar(r)}>
+                    Quebrar selo
+                  </button>
                 </div>
               </article>
             ))}</div>
