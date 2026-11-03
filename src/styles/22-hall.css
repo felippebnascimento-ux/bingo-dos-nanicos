@@ -129,7 +129,7 @@
   --hall-churr0:#C4A582; --hall-churr1:#D2AF88; --hall-churr2:#E0C198; --hall-churr3:#C8A984; --hall-churr4:#D6B88F; --hall-boca:#141414;
   --hall-grelha:#555555; --hall-gel0:#F7F7F5; --hall-gel1:#E4E4E1; --hall-gel2:#F2F2F0; --hall-gell:#9A9A96; --hall-puxador:#B9B9B5;
   --hall-colch0:#4A68B8; --hall-colch1:#3A5598; --hall-colch2:#405DA6; --hall-colchl:#1F2F5C; --hall-perna0:#555555; --hall-perna1:#444444;
-  --hall-perna2:#666666; --hall-verde0:#5FA866; --hall-verde1:#4A8A50; --hall-verde2:#519858; --hall-carta:#FAF9F6; --hall-cartal:#999999;
+  --hall-perna2:#666666; --hall-verde0:#5FA866; --hall-verde1:#4A8A50; --hall-verde2:#519858; --hall-carta:#FAF9F6; --hall-cartal:#999999; --hall-carta-verso:#8E3B2E;
   --hall-bege0:#EFE3C8; --hall-bege1:#CDB78E; --hall-bege2:#E2C99C; --hall-ponto:#8A6A39; --hall-cad0:#FFFFFF; --hall-cad1:#D9D9D9;
   --hall-cad2:#EEEEEE; --hall-cad3:#DCDCDC; --hall-cadl:#9A9A9A;
   --hall-luz-happy:rgba(255,166,64,.14); --hall-brasa0:#3A1A0E; --hall-brasa1:#FF8A2A; --hall-brasa2:#FFC861; --hall-fumaca:#C9C3BA;
@@ -151,7 +151,7 @@
   --hall-churr0:#A58B6D; --hall-churr1:#B09372; --hall-churr2:#BCA280; --hall-churr3:#A88E6F; --hall-churr4:#B49B78; --hall-boca:#111111;
   --hall-grelha:#474747; --hall-gel0:#CFCFCE; --hall-gel1:#C0C0BD; --hall-gel2:#CBCBCA; --hall-gell:#81817E; --hall-puxador:#9B9B98;
   --hall-colch0:#3E579B; --hall-colch1:#314780; --hall-colch2:#364E8B; --hall-colchl:#1A274D; --hall-perna0:#474747; --hall-perna1:#393939;
-  --hall-perna2:#565656; --hall-verde0:#508D56; --hall-verde1:#3E7443; --hall-verde2:#44804A; --hall-carta:#D2D1CF; --hall-cartal:#818181;
+  --hall-perna2:#565656; --hall-verde0:#508D56; --hall-verde1:#3E7443; --hall-verde2:#44804A; --hall-carta:#D2D1CF; --hall-cartal:#818181; --hall-carta-verso:#6E2E24;
   --hall-bege0:#C9BFA8; --hall-bege1:#AC9A77; --hall-bege2:#BEA983; --hall-ponto:#745930; --hall-cad0:#D6D6D6; --hall-cad1:#B6B6B6;
   --hall-cad2:#C8C8C8; --hall-cad3:#B9B9B9; --hall-cadl:#818181;
   --hall-luz-happy:rgba(255,150,50,.12); --hall-brasa0:#2A130A; --hall-brasa1:#E8792A; --hall-brasa2:#E6B256; --hall-fumaca:#8D8780;
@@ -173,7 +173,7 @@
   --hall-churr0:#A58B6D; --hall-churr1:#B09372; --hall-churr2:#BCA280; --hall-churr3:#A88E6F; --hall-churr4:#B49B78; --hall-boca:#111111;
   --hall-grelha:#474747; --hall-gel0:#CFCFCE; --hall-gel1:#C0C0BD; --hall-gel2:#CBCBCA; --hall-gell:#81817E; --hall-puxador:#9B9B98;
   --hall-colch0:#3E579B; --hall-colch1:#314780; --hall-colch2:#364E8B; --hall-colchl:#1A274D; --hall-perna0:#474747; --hall-perna1:#393939;
-  --hall-perna2:#565656; --hall-verde0:#508D56; --hall-verde1:#3E7443; --hall-verde2:#44804A; --hall-carta:#D2D1CF; --hall-cartal:#818181;
+  --hall-perna2:#565656; --hall-verde0:#508D56; --hall-verde1:#3E7443; --hall-verde2:#44804A; --hall-carta:#D2D1CF; --hall-cartal:#818181; --hall-carta-verso:#6E2E24;
   --hall-bege0:#C9BFA8; --hall-bege1:#AC9A77; --hall-bege2:#BEA983; --hall-ponto:#745930; --hall-cad0:#D6D6D6; --hall-cad1:#B6B6B6;
   --hall-cad2:#C8C8C8; --hall-cad3:#B9B9B9; --hall-cadl:#818181;
   --hall-luz-happy:rgba(255,150,50,.12); --hall-brasa0:#2A130A; --hall-brasa1:#E8792A; --hall-brasa2:#E6B256; --hall-fumaca:#8D8780;
@@ -274,6 +274,7 @@
 .hall .f-verde1{fill:var(--hall-verde1)}
 .hall .f-verde2{fill:var(--hall-verde2)}
 .hall .f-carta{fill:var(--hall-carta)}
+.hall .f-cartaverso{fill:var(--hall-carta-verso)}
 .hall .f-cartal{fill:var(--hall-cartal)}
 .hall .f-bege0{fill:var(--hall-bege0)}
 .hall .f-bege1{fill:var(--hall-bege1)}
@@ -467,3 +468,23 @@
 /* sentado no sofá ou na poltrona: o boneco todo (nome e chapéu juntos) desce até o assento e as pernas somem */
 .boneco.sentado{transform:translateY(19%)}
 .boneco.sentado .boneco-img,.boneco.sentado .boneco-pino{clip-path:inset(0 0 30% 0)}
+
+/* ---------- truco na mesa verde (fase 32) ---------- */
+/* o leque de cartas na mão de quem joga (verso, sem a face) e o grito em balão em cima da cabeça */
+.boneco-cartas{position:absolute;left:50%;top:48%;width:34%;transform:translateX(-50%);pointer-events:none;overflow:visible}
+.boneco-cartas .cm-verso{fill:var(--hall-carta-verso);stroke:var(--hall-cartal);stroke-width:.8}
+.boneco-fala{position:absolute;left:50%;bottom:118%;transform:translateX(-50%);padding:3px 8px;border-radius:10px;background:var(--live);color:var(--stamp-ink);font:800 10px/1.2 var(--display);white-space:nowrap;box-shadow:0 4px 12px var(--shadow);animation:hall-entra .2s ease-out;pointer-events:none}
+.boneco-fala::after{content:"";position:absolute;left:50%;top:100%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--live)}
+@media (prefers-reduced-motion:reduce){.boneco-fala{animation:none}}
+/* a plaquinha do Truco com a partida em jogo: bolinha ao vivo e o placar */
+.hall-placa-dot{width:7px;height:7px;border-radius:50%;background:var(--live);box-shadow:0 0 0 3px color-mix(in srgb,var(--live) 30%,transparent)}
+.hall-placa-placar{display:block;max-width:260px;white-space:normal;text-align:center}
+.hall-placa-placar b{color:var(--accent)}
+/* janela "Assistindo": a mesa como quem assiste, por cima do K-FOFO; no celular, tela cheia */
+.assistindo-gate{z-index:58;overflow:auto;place-items:start center}
+.assistindo{width:min(980px,100%);margin:auto 0;display:grid;gap:10px;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:0 30px 80px -20px var(--shadow)}
+.assistindo-topo{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.assistindo-topo b{font:800 16px var(--display)}
+@media (max-width:760px){.assistindo-gate{padding:0}.assistindo{min-height:100%;border-radius:0;border:0}}
+.hall-placa:has(.hall-placa-placar){flex-wrap:wrap;justify-content:center;border-radius:14px}
+.hall-placa:has(.hall-placa-placar) .hall-placa-placar{flex-basis:100%}

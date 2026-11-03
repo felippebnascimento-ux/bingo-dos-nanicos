@@ -9,13 +9,16 @@ import type { Boneco as B } from "./bonecos";
 import { ANCORA, assentoDe, CEL_H, CEL_W, quadroSprite, tela, type Caixa2D } from "./hall";
 import { abrirMenu } from "./zoeiraSala";
 import { Chapeu } from "./Chapeu";
+import { CartasNaMao } from "./MesaVerde";
 import { Acessorio, noAlto, tipoAcessorio } from "@/features/loja/Acessorio";
 import { useEquipados } from "@/features/loja/lojaDados";
 import type { Enfeite } from "@/features/trofeus/trofeus";
 
 const pct = (v: number) => `${v * 100}%`;
 
-export const Boneco = memo(function Boneco({ b, f, eu, z, vb, rot = 0, enfeite }: { b: B; f: Rosto; eu: boolean; z: number; vb: Caixa2D; rot?: number; enfeite?: Enfeite }) {
+export const Boneco = memo(function Boneco({
+  b, f, eu, z, vb, rot = 0, enfeite, cartas, fala,
+}: { b: B; f: Rosto; eu: boolean; z: number; vb: Caixa2D; rot?: number; enfeite?: Enfeite; cartas?: number; fala?: string | null }) {
   /* sentado: o boneco vai para o centro do assento, em cima do móvel */
   const a = assentoDe(b.senta);
   const [x, y] = a ? tela(a.i, a.j) : tela(b.i + 0.5, b.j + 0.5);
@@ -48,6 +51,8 @@ export const Boneco = memo(function Boneco({ b, f, eu, z, vb, rot = 0, enfeite }
     <div className={"boneco" + (eu ? " eu" : "") + (a ? " sentado" : "") + (rot ? " balanca" : "") + (enfeite ? " chapeu-" + enfeite : "") + (acess ? " acess-" + acess : "")} style={caixa}>
       <span className="boneco-nome">{b.name}</span>
       {enfeite && <Chapeu tipo={enfeite} />}
+      {/* no truco da mesa verde: o leque de cartas na mão e o grito ("Truco!"), texto fixo do jogo */}
+      {fala && <span className="boneco-fala">{fala}</span>}
       {!f.id ? (
         corpo
       ) : (
@@ -73,6 +78,7 @@ export const Boneco = memo(function Boneco({ b, f, eu, z, vb, rot = 0, enfeite }
           {corpo}
         </span>
       )}
+      {!!cartas && <CartasNaMao n={cartas} />}
       {acess && <Acessorio tipo={acess} costas={olha.startsWith("costas")} />}
     </div>
   );

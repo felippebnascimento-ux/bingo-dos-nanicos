@@ -195,6 +195,14 @@ function sofa(L: Forma[], m: Movel, encosto: "i0" | "i1" | "j1", F: Forma[] = L)
   }
 }
 
+/** Banquinho da mesa verde: 4 pernas e o assento a 18 de altura. */
+function banco(L: Forma[], m: Movel) {
+  const { i, j, w, d } = m;
+  for (const [a, b] of [[i + 0.06, j + 0.06], [i + w - 0.14, j + 0.06], [i + 0.06, j + d - 0.14], [i + w - 0.14, j + d - 0.14]])
+    caixa(L, a, b, 0.08, 0.08, 15, "perna0", "perna1", "perna2");
+  caixa(L, i, j, w, d, 4, "bege1", "madeira", "madeira", 15);
+}
+
 /** Ponto de um círculo deitado no piso (centro ci, cj, raio r, altura z). */
 const roda = (ci: number, cj: number, r: number, z: number, n = 28): Pt[] =>
   Array.from({ length: n }, (_, k) => p(ci + r * Math.cos((2 * Math.PI * k) / n), cj + r * Math.sin((2 * Math.PI * k) / n), z));
@@ -240,13 +248,15 @@ const DESENHO: Record<string, (L: Forma[], m: Movel, F: Forma[]) => void> = {
     poly(L, roda(ci, cj, 0.55, 0), "perna1");
     poly(L, roda(ci, cj, r, 28), "verde1", "verde1");
     poly(L, roda(ci, cj, r, 32), "verde0", "verde1");
-    for (const [a, b, rot] of [[-0.3, -0.1, -14], [0.1, 0.2, 8], [0.35, -0.2, 22]]) {
-      const [x, y] = p(ci + a, cj + b, 32);
-      L.push({ t: "r", x: x - 6, y: y - 4, w: 12, h: 9, f: "carta", s: "cartal", rx: 1.5, rot });
-    }
+    /* as cartas no feltro ficam numa camada própria (FeltroTruco): as de enfeite ou as da partida em jogo */
     const [x, y] = p(ci - 0.4, cj + 0.45, 32);
     L.push({ t: "r", x: x - 3, y: y - 13, w: 6, h: 13, f: "grama2", rx: 2 });
   },
+  /* banquinhos da mesa verde (fase 32): assento de madeira em 4 pernas */
+  "banco-truco-0": banco,
+  "banco-truco-1": banco,
+  "banco-truco-2": banco,
+  "banco-truco-3": banco,
   "sofa-parede": (L, m) => sofa(L, m, "i0"),
   "sofa-canto": (L, m, F) => sofa(L, m, "i1", F),
   "poltrona-1": (L, m, F) => sofa(L, m, "j1", F),
@@ -382,3 +392,34 @@ export function emPorcento(vb: Caixa2D, i: number, j: number, z: number) {
   const [x, y] = p(i, j, z);
   return { left: ((x - vb.x) / vb.w) * 100, top: ((y - vb.y) / vb.h) * 100 };
 }
+
+/* ---------- cartas no feltro da mesa verde (fase 32) ---------- */
+const MESA_VERDE = MOVEIS.find((m) => m.id === "mesa-jogos")!;
+const CV = { i: MESA_VERDE.i + MESA_VERDE.w / 2, j: MESA_VERDE.j + MESA_VERDE.d / 2 };
+/** As 3 cartas de enfeite, quando não há partida. */
+const ENFEITE: readonly [number, number, number][] = [[-0.3, -0.1, -14], [0.1, 0.2, 8], [0.35, -0.2, 22]];
+
+/**
+ * As cartas em cima da mesa verde, na camada logo depois dela. Sem partida, as 3 de enfeite (de frente); com
+ * partida, as jogadas na mão, de verso, cada uma puxada para o lado de quem jogou (`cadeira` 0..3). Nunca a face.
+ */
+export const FeltroTruco = memo(function FeltroTruco({ z, vb, jogadas }: { z: number; vb: Caixa2D; jogadas: { cadeira: number; vaza: number }[] | null }) {
+  const L: Forma[] = [];
+  if (!jogadas)
+    for (const [a, b, rot] of ENFEITE) {
+      const [x, y] = p(CV.i + a, CV.j + b, 32);
+      L.push({ t: "r", x: x - 6, y: y - 4, w: 12, h: 9, f: "carta", s: "cartal", rx: 1.5, rot });
+    }
+  else
+    jogadas.forEach(({ cadeira, vaza }, k) => {
+      /* frente (+j), direita (+i), fundo (−j), esquerda (−i) */
+      const [di, dj] = [[0, 1], [1, 0], [0, -1], [-1, 0]][cadeira] ?? [0, 0];
+      const [x, y] = p(CV.i + di * 0.42 + vaza * 0.05, CV.j + dj * 0.42 - vaza * 0.05, 32 + vaza);
+      L.push({ t: "r", x: x - 6, y: y - 4, w: 12, h: 9, f: "cartaverso", s: "cartal", rx: 1.5, rot: (k * 37) % 30 - 15 });
+    });
+  return (
+    <svg className="hall-camada" viewBox={viewBox(vb)} aria-hidden="true" style={{ zIndex: z }}>
+      <Formas lista={L} />
+    </svg>
+  );
+});

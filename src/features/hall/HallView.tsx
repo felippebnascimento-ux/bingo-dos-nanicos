@@ -5,8 +5,10 @@
  * a mesa de jogos abre o Truco e a geladeira da cozinha é a Loja. Nos cantos: quem está na sala, os ganhos de
  * moedas de todo mundo e a sua carteira.
  */
-import { useEffect, useMemo, useState, useSyncExternalStore, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
-import { useTruco } from "@/features/truco/mesa";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
+import { useTruco, verMesa } from "@/features/truco/mesa";
+import { iniciarMesaVerde, useMesaVerde } from "./trucoSala";
+import { AssistindoJanela, PlacarMesaVerde } from "./MesaVerde";
 import { friendDaPresenca, getApp, MY_KEY, setApp, useApp } from "@/lib/store";
 import { assistirLive } from "@/components/shell/People";
 import { andarAte, andarUmPiso, iniciarHall, useHall } from "./bonecos";
@@ -30,8 +32,8 @@ import { ChurrascoCamada, FaixaEvento, LuzHappy, PlacaChurrasco } from "./Evento
 import { useRanking } from "@/features/moedas/Ranking";
 import { enfeites } from "@/features/trofeus/trofeus";
 import { useTrofeus } from "@/features/trofeus/trofeusDados";
-import { assentoNaTela, camadasHall, CLICAVEIS, livre, MOVEIS, pisoLivreNaTela, pisoNaTela, VB_ESTREITO, VB_LARGO, type Caixa2D, type Clicavel, type Piso } from "./hall";
-import { Destaque, emPorcento, Fundo, MovelCamada, tvCaixa } from "./Sala";
+import { assentoNaTela, CADEIRAS_TRUCO, camadasHall, CLICAVEIS, livre, MOVEIS, naMesaVerde, pisoDaPlateia, pisoLivreNaTela, pisoNaTela, VB_ESTREITO, VB_LARGO, type Caixa2D, type Clicavel, type Piso } from "./hall";
+import { Destaque, emPorcento, FeltroTruco, Fundo, MovelCamada, tvCaixa } from "./Sala";
 
 /** Setas → um piso: direita/esquerda seguem a parede da direita, cima/baixo a da esquerda. */
 const SETAS: Record<string, [number, number]> = {
@@ -94,16 +96,28 @@ export function HallView({ hidden }: { hidden: boolean }) {
     iniciarEventos();
     iniciarConsumo();
     iniciarChegadas();
+    iniciarMesaVerde();
   }, []);
 
+  /* truco na mesa verde (fase 32): quem joga aparece sentado na cadeira do seu lugar, sem mudar a presença */
+  const mv = useMesaVerde();
+  const vistos = useMemo(
+    () => bonecos.map((b) => (b.fid && mv.sentados[b.fid] ? { ...b, senta: CADEIRAS_TRUCO[mv.sentados[b.fid].cadeira].id } : b)),
+    [bonecos, mv.sentados],
+  );
+  const [assistindo, setAssistindo] = useState<string | null>(null);
+  const fecharAssistindo = useCallback(() => setAssistindo(null), []);
+
   /* z-index de cada móvel, encosto e boneco, do fundo para a frente (quem senta fica por cima do estofado) */
-  const { z, encosto } = useMemo(() => camadasHall(bonecos), [bonecos]);
+  const { z, encosto } = useMemo(() => camadasHall(vistos), [vistos]);
 
   /* tocar no chão anda; tocar num sofá ou poltrona leva o boneco até lá e senta */
   const tocar = (e: MouseEvent<HTMLDivElement>) => {
     const [x, y] = noSvg(e, vb);
     const piso = pisoNaTela(x, y);
     if (piso && livre(piso.i, piso.j)) return andarAte(piso);
+    /* tocar na mesa verde é como tocar na placa do Truco */
+    if (piso && naMesaVerde(piso)) return abrir("truco");
     const assento = assentoNaTela(x, y);
     if (assento) andarAte(assento.chegar, assento.id);
   };
@@ -137,7 +151,16 @@ export function HallView({ hidden }: { hidden: boolean }) {
       if (p) assistirLive(p.key, p.sala);
       else setApp({ aba: "live" });
     }
-    else if (c === "truco") setApp({ aba: "truco" });
+    else if (c === "truco") {
+      /* com partida na mesa verde, o meu boneco chega perto para assistir e abre a janela; sem partida, a aba Truco */
+      const m = useMesaVerde.getState().mesa;
+      if (m && m.fase === "jogo") {
+        const outros = bonecos.filter((b) => b.key !== MY_KEY).map((b) => ({ i: Math.round(b.i), j: Math.round(b.j) }));
+        andarAte(pisoDaPlateia(outros));
+        verMesa(m.id);
+        setAssistindo(m.id);
+      } else setApp({ aba: "truco" });
+    }
     else if (c === "trofeus") setApp({ aba: "trofeus" });
     else setApp({ aba: "loja" });
   };
@@ -168,10 +191,13 @@ export function HallView({ hidden }: { hidden: boolean }) {
           {MOVEIS.map((m, k) => (
             <MovelCamada key={m.id} id={m.id} z={z[k]} vb={vb} />
           ))}
-          {Object.entries(encosto).map(([id, ze]) => (
-            <MovelCamada key={"encosto-" + id} id={id} z={ze} vb={vb} encosto />
-          ))}
-          {bonecos.map((b, k) => (
+          {Object.entries(encosto)
+            .filter(([id]) => id !== "feltro")
+            .map(([id, ze]) => (
+              <MovelCamada key={"encosto-" + id} id={id} z={ze} vb={vb} encosto />
+            ))}
+          <FeltroTruco z={encosto.feltro} vb={vb} jogadas={mv.jogadas} />
+          {vistos.map((b, k) => (
             <Boneco
               key={b.key}
               b={b}
@@ -186,11 +212,13 @@ export function HallView({ hidden }: { hidden: boolean }) {
                 return c ? balanco(c.anim, agoraC - c.inicio) : 0;
               })()}
               enfeite={b.fid ? enfeite[b.fid] : undefined}
+              cartas={b.fid ? mv.sentados[b.fid]?.cartas : undefined}
+              fala={b.fid ? mv.sentados[b.fid]?.fala : undefined}
             />
           ))}
           <ChurrascoCamada vb={vb} z={z[CHURRASQUEIRA]} />
           <ZoeiraCamada bonecos={bonecos} vb={vb} />
-          <ConsumoCamada bonecos={bonecos} vb={vb} />
+          <ConsumoCamada bonecos={vistos} vb={vb} />
           <LuzHappy />
           <button
             type="button"
@@ -207,7 +235,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
           <PlacaChurrasco vb={vb} />
           {CLICAVEIS.filter((c) => (c.id !== "salas" || temSalas) && (c.id !== "trofeus" || temTrofeus)).map((c) => {
             const pos = emPorcento(vb, c.rotulo.i, c.rotulo.j, c.rotulo.z);
-            const rotulo = c.id === "tv" ? "Ao vivo" : c.id === "truco" ? "Truco" : c.id === "salas" ? "Salas" : c.id === "trofeus" ? "Troféus" : "Loja";
+            const rotulo = c.id === "tv" ? "Ao vivo" : c.id === "truco" ? (mv.mesa ? "Truco · ao vivo" : "Truco") : c.id === "salas" ? "Salas" : c.id === "trofeus" ? "Troféus" : "Loja";
             return (
               <button
                 key={c.id}
@@ -222,7 +250,9 @@ export function HallView({ hidden }: { hidden: boolean }) {
               >
                 {rotulo}
                 {c.id === "tv" && aoVivo && <span className="live-pill">AO VIVO</span>}
-                {c.id === "truco" && naMesa > 0 && <small>{naMesa} na mesa</small>}
+                {c.id === "truco" && mv.mesa && <span className="hall-placa-dot" aria-hidden="true" />}
+                {c.id === "truco" && mv.mesa && <PlacarMesaVerde />}
+                {c.id === "truco" && !mv.mesa && naMesa > 0 && <small>{naMesa} na mesa</small>}
               </button>
             );
           })}
@@ -254,6 +284,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
       <p className="hall-aviso" aria-live="polite">
         {aviso}
       </p>
+      {assistindo && <AssistindoJanela id={assistindo} fechar={fecharAssistindo} />}
     </section>
   );
 }

@@ -3,6 +3,10 @@ import { describe, expect, it } from "vitest";
 import { BONECO_ARQ } from "@/lib/dados/nanicos";
 import {
   ASSENTOS,
+  CADEIRAS_TRUCO,
+  PLATEIA_TRUCO,
+  pisoDaPlateia,
+  lugarNaMesaVerde,
   camadasHall,
   assentoNaTela,
   posHall,
@@ -190,5 +194,27 @@ describe("assentos", () => {
     const [a, , c] = ASSENTOS;
     const { z } = camadasHall([{ i: c.chegar.i, j: c.chegar.j, senta: c.id }, { i: a.chegar.i, j: a.chegar.j, senta: a.id }]);
     expect(z[MOVEIS.length]).toBeGreaterThan(z[MOVEIS.length + 1]);
+  });
+});
+
+describe("truco na mesa verde", () => {
+  it("as cadeiras ficam em pisos ocupados e olham para a mesa", () => {
+    for (const c of CADEIRAS_TRUCO) {
+      expect(livre(Math.floor(c.i), Math.floor(c.j)), c.id).toBe(false);
+      expect(Math.hypot(c.i - 3.5, c.j - 7.3), c.id).toBeGreaterThan(1);
+      expect(posHall({ i: 3, j: 9, s: c.id }), c.id).toEqual({ i: 3, j: 9 });
+    }
+  });
+  it("a plateia está em pisos livres, alcançáveis e que não são de sentar", () => {
+    for (const p of PLATEIA_TRUCO) {
+      expect(livre(p.i, p.j), `${p.i},${p.j}`).toBe(true);
+      expect(ASSENTOS.some((a) => a.chegar.i === p.i && a.chegar.j === p.j)).toBe(false);
+      expect(caminho({ i: 7, j: 9 }, p).length, `${p.i},${p.j}`).toBeGreaterThan(0);
+    }
+    expect(pisoDaPlateia([PLATEIA_TRUCO[0]])).toEqual(PLATEIA_TRUCO[1]);
+  });
+  it("no 1×1 usa a cadeira da frente e a do fundo", () => {
+    expect([0, 1].map((l) => lugarNaMesaVerde(2, l))).toEqual([0, 2]);
+    expect([0, 1, 2, 3].map((l) => lugarNaMesaVerde(4, l))).toEqual([0, 1, 2, 3]);
   });
 });

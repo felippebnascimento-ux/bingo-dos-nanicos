@@ -480,6 +480,13 @@ export const CHANGELOG: EntradaLog[] = [
       "Mesa fechada no meio do jogo devolve as entradas e as apostas; a mesa grátis continua com o +15",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Truco no K-FOFO: quem está jogando aparece sentado na mesa verde, e dá para chegar perto, assistir e apostar",
+      "Na mesa verde, cada um tem as cartas na mão, as jogadas ficam viradas no feltro e a placa mostra o placar e quem ganhou",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
