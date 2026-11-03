@@ -6113,6 +6113,89 @@ create trigger banheiro_pixacao_protecao before insert on public.banheiro_pixaco
 do $$
 begin
   begin alter publication supabase_realtime add table public.banheiro_pixacoes; exception when duplicate_object then null; end;
+-- 50) pênalti x1: ranking e chat (03/11/2026, pedido do João) ---------------------------------------------------------
+--   Ranking: duelo_ranking() junta os duelos terminados com vencedor (estado 'fim'; o empate da morte súbita e os
+--   cancelados ficam de fora) e devolve, por pessoa, vitórias, derrotas, o saldo (+aposta por vitória, -aposta por
+--   derrota) e o maior prêmio (2× a aposta). Ordem: mais vitórias, depois o maior saldo.
+--   Chat: duelo_mensagens, as mensagens de cada duelo (até 200 letras). Todo membro lê as de qualquer duelo (a plateia
+--   acompanha); só os dois jogadores escrevem, e só com o duelo aberto ou em jogo. Apaga sozinho com 7 dias.
+create or replace function public.duelo_ranking() returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.eh_membro() then raise exception 'Só os membros veem o ranking.' using errcode = 'P0001'; end if;
+  return coalesce((
+    select jsonb_agg(jsonb_build_object('user_id', r.uid, 'vitorias', r.v, 'derrotas', r.d, 'saldo', r.s, 'maior_premio', r.m)
+                     order by r.v desc, r.s desc, r.uid)
+      from (
+        select p.uid,
+               (count(*) filter (where p.uid = p.vencedor))::int  as v,
+               (count(*) filter (where p.uid <> p.vencedor))::int as d,
+               coalesce(sum(case when p.uid = p.vencedor then p.aposta else -p.aposta end), 0)::bigint as s,
+               coalesce(max(2 * p.aposta) filter (where p.uid = p.vencedor), 0)::bigint as m
+          from (
+            select x.criador as uid, x.vencedor, x.aposta::bigint as aposta
+              from public.duelos x
+             where x.estado = 'fim' and x.vencedor is not null and x.desafiante is not null
+            union all
+            select x.desafiante, x.vencedor, x.aposta::bigint
+              from public.duelos x
+             where x.estado = 'fim' and x.vencedor is not null and x.desafiante is not null
+          ) p
+         group by p.uid
+      ) r
+  ), '[]'::jsonb);
+end $$;
+revoke all on function public.duelo_ranking() from public, anon;
+grant execute on function public.duelo_ranking() to authenticated;
+
+create table if not exists public.duelo_mensagens (
+  id       bigint generated always as identity primary key,
+  duelo_id bigint not null references public.duelos(id) on delete cascade,
+  user_id  uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  texto    text not null check (char_length(texto) between 1 and 200),
+  em       timestamptz not null default now()
+);
+create index if not exists duelo_mensagens_duelo on public.duelo_mensagens (duelo_id, id);
+create index if not exists duelo_mensagens_em on public.duelo_mensagens (em);
+alter table public.duelo_mensagens enable row level security;
+revoke all on public.duelo_mensagens from public, anon, authenticated;
+grant select on public.duelo_mensagens to authenticated;
+grant insert (duelo_id, texto) on public.duelo_mensagens to authenticated;
+drop policy if exists duelo_mensagens_ler on public.duelo_mensagens;
+create policy duelo_mensagens_ler on public.duelo_mensagens for select to authenticated using (public.eh_membro());
+drop policy if exists duelo_mensagens_mandar on public.duelo_mensagens;
+create policy duelo_mensagens_mandar on public.duelo_mensagens for insert to authenticated
+  with check (public.eh_membro() and user_id = auth.uid());
+
+-- o autor é sempre quem está logado, o texto sai limpo, só os dois jogadores com o duelo aberto ou em jogo,
+-- 20 mensagens por minuto; e o que tem mais de 7 dias some
+create or replace function public.duelo_mensagem_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  d public.duelos;
+begin
+  new.user_id := auth.uid();
+  new.em := now();
+  if new.user_id is null or not public.eh_membro() then raise exception 'Só os membros conversam aqui.' using errcode = 'P0001'; end if;
+  new.texto := left(btrim(regexp_replace(coalesce(new.texto, ''), '[\x00-\x1F\x7F]', ' ', 'g')), 200);
+  if new.texto = '' then raise exception 'Escreva alguma coisa.' using errcode = 'P0001'; end if;
+  select * into d from public.duelos where id = new.duelo_id;
+  if not found then raise exception 'Esse duelo não existe.' using errcode = 'P0001'; end if;
+  if new.user_id is distinct from d.criador and new.user_id is distinct from d.desafiante then
+    raise exception 'Só os dois jogadores escrevem no chat do duelo.' using errcode = 'P0001';
+  end if;
+  if d.estado not in ('aberto', 'jogando') then raise exception 'O duelo já acabou.' using errcode = 'P0001'; end if;
+  perform public.limitar('duelo_chat', 20, interval '1 minute', 'Calma: muitas mensagens seguidas.');
+  delete from public.duelo_mensagens where em < now() - interval '7 days';
+  return new;
+end $$;
+revoke all on function public.duelo_mensagem_protecao() from public, anon, authenticated;
+drop trigger if exists duelo_mensagem_protecao on public.duelo_mensagens;
+create trigger duelo_mensagem_protecao before insert on public.duelo_mensagens for each row execute function public.duelo_mensagem_protecao();
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.duelo_mensagens; exception when duplicate_object then null; end;
 end $$;
 
 -- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo e as 2 tabelas e 3 funções do quarto próprio e as 2 tabelas e 3 funções do blackjack e as 4 tabelas e 6 funções do pôquer

@@ -630,6 +630,8 @@ export const CHANGELOG: EntradaLog[] = [
       "O cartão de quem você toca no K-FOFO mostra o corpo inteiro do nanico e os emblemas em quadradinhos, como no Habbo",
       "Aperte Z no K-FOFO, na rua, no corredor ou num quarto para ver o histórico do chat",
       "A porta do banheiro abre: pixe a parede com o que quiser, e a pixação fica lá para sempre",
+      "Pênalti x1: ranking de quem mais venceu, com vitórias, derrotas e o saldo de moedas nos duelos",
+      "Pênalti x1: chat dentro do duelo, com reações rápidas ⚽ 🧤 😂 🔥; quem assiste acompanha a conversa",
     ],
   },
 ];

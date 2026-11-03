@@ -17,11 +17,15 @@ import {
   atalhosDo,
   bolinhas,
   colunaDaZona,
+  comSinal,
   meuLado,
   meuPapel,
   momento,
   NOME_ZONA,
   nomeCobranca,
+  MSG_MAX,
+  posicoesRanking,
+  REACOES_DUELO,
   REVELA_MS,
   tempoRestante,
   zonaAlta,
@@ -30,7 +34,7 @@ import {
   type Lado,
   type Zona,
 } from "./dueloRegras";
-import { useDuelo } from "./dueloDados";
+import { abrirChatDuelo, mandarMsgDuelo, useChatDuelo, useDuelo, useRankingDuelo } from "./dueloDados";
 import { Bola, Goleiro } from "./Penalti";
 
 type Rede = ReturnType<typeof useDuelo>;
@@ -52,8 +56,138 @@ function useNome() {
   return (uid: string | null | undefined) => friends.find((f) => f.user_id === uid);
 }
 
+/* ---------- o ranking (seção 50): os 10 primeiros e, se estiver mais embaixo, a minha linha ---------- */
+const RANKING_TOPO = 10;
+function Ranking({ ativa }: { ativa: boolean }) {
+  const linhas = useRankingDuelo(ativa);
+  const eu = useApp((s) => s.myUid);
+  const quem = useNome();
+  if (!linhas?.length) return null;
+  const pos = posicoesRanking(linhas);
+  const mostrar = linhas.map((l, i) => ({ l, p: pos[i] })).filter((x, i) => i < RANKING_TOPO || x.l.userId === eu);
+  return (
+    <>
+      <p className="rm-rotulo">Ranking do Pênalti x1</p>
+      <table className="dl-ranking">
+        <thead>
+          <tr>
+            <th scope="col" aria-label="Posição">#</th>
+            <th scope="col">Quem</th>
+            <th scope="col" title="Vitórias">V</th>
+            <th scope="col" title="Derrotas">D</th>
+            <th scope="col">Saldo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {mostrar.map(({ l, p }) => {
+            const f = quem(l.userId);
+            const meu = l.userId === eu;
+            return (
+              <tr key={l.userId} className={meu ? "eu" : undefined} title={l.maiorPremio ? `Maior prêmio: ${formatarMoedas(l.maiorPremio)}` : undefined}>
+                <td className="dl-pos">{p}º</td>
+                <td className="dl-quem">
+                  <div className="dl-quem-in">
+                    <Avatar f={f ?? null} size="xs" />
+                    <span>
+                      {f?.name ?? "Alguém"}
+                      {meu ? <small> (você)</small> : null}
+                    </span>
+                  </div>
+                </td>
+                <td>{l.vitorias}</td>
+                <td>{l.derrotas}</td>
+                <td className={"dl-saldo" + (l.saldo > 0 ? " mais" : l.saldo < 0 ? " menos" : "")}>{comSinal(l.saldo)}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </>
+  );
+}
+
+/* ---------- o chat do duelo (seção 50): só os dois escrevem; a plateia lê ---------- */
+const SEM_MSGS: never[] = [];
+function ChatDuelo({ d, eu }: { d: DueloT; eu: string | null }) {
+  const quem = useNome();
+  const msgs = useChatDuelo((s) => (s.id === d.id ? s.msgs : SEM_MSGS));
+  const ok = useChatDuelo((s) => s.ok);
+  const [texto, setTexto] = useState("");
+  const [mandando, setMandando] = useState(false);
+  const lista = useRef<HTMLOListElement>(null);
+  const jogador = !!meuLado(d, eu);
+  const pode = jogador && (d.estado === "aberto" || d.estado === "jogando");
+
+  useEffect(() => {
+    void abrirChatDuelo(d.id);
+  }, [d.id]);
+  /* a mensagem nova aparece embaixo: a lista desce sozinha */
+  useEffect(() => {
+    const el = lista.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [msgs.length]);
+
+  if (ok === false) return null;
+  const mandar = async (t: string) => {
+    if (mandando || !t.trim()) return;
+    setMandando(true);
+    const foi = await mandarMsgDuelo(d.id, t);
+    setMandando(false);
+    if (foi && t === texto) setTexto("");
+  };
+
+  return (
+    <section className="dl-chat" aria-label="Chat do duelo">
+      <p className="rm-rotulo">Chat do duelo</p>
+      {msgs.length > 0 ? (
+        <ol className="dl-chat-lista" ref={lista} aria-live="polite">
+          {msgs.map((m) => (
+            <li key={m.id} className={m.userId === eu ? "eu" : undefined}>
+              <b>{m.userId === eu ? "Você" : quem(m.userId)?.name ?? "Alguém"}</b> <span>{m.texto}</span>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="hint dl-chat-vazio">{pode ? "Mande a primeira provocação." : "Ninguém falou nada ainda."}</p>
+      )}
+      {pode ? (
+        <>
+          <div className="dl-chat-reacoes" role="group" aria-label="Reações rápidas">
+            {REACOES_DUELO.map((e) => (
+              <button key={e} type="button" disabled={mandando} aria-label={`Mandar ${e}`} onClick={() => void mandar(e)}>
+                {e}
+              </button>
+            ))}
+          </div>
+          <form
+            className="dl-chat-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void mandar(texto);
+            }}
+          >
+            <input
+              type="text"
+              value={texto}
+              maxLength={MSG_MAX}
+              placeholder="Escreva para o adversário"
+              aria-label="Mensagem para o chat do duelo"
+              onChange={(e) => setTexto(e.target.value)}
+            />
+            <button type="submit" className="btn sm" disabled={mandando || !texto.trim()}>
+              Mandar
+            </button>
+          </form>
+        </>
+      ) : (
+        <p className="hint dl-chat-vazio">{jogador ? "O duelo acabou: o chat fechou." : "Só os dois jogadores escrevem aqui."}</p>
+      )}
+    </section>
+  );
+}
+
 /* ---------- o saguão ---------- */
-function Saguao({ r }: { r: Rede }) {
+function Saguao({ r, ativa }: { r: Rede; ativa: boolean }) {
   const saldo = useCarteira((s) => s.carteira?.saldo);
   const eu = useApp((s) => s.myUid);
   const quem = useNome();
@@ -176,6 +310,8 @@ function Saguao({ r }: { r: Rede }) {
         </button>
         <p className="hint">Quem entrar paga o mesmo valor. Ninguém em 10 minutos? O duelo some e a aposta volta.</p>
       </form>
+
+      <Ranking ativa={ativa} />
     </div>
   );
 }
@@ -380,6 +516,8 @@ function Partida({ r }: { r: Rede }) {
         </p>
       )}
 
+      {(d.estado === "jogando" || d.estado === "fim") && <ChatDuelo d={d} eu={eu} />}
+
       {(m === "fim" || m === "cancelado") && <Resultado d={d} eu={eu} />}
 
       {(m === "fim" || m === "cancelado" || !lado) && (
@@ -426,5 +564,5 @@ function Resultado({ d, eu }: { d: DueloT; eu: string | null }) {
 export function Duelo({ ativa = true }: { ativa?: boolean }) {
   const r = useDuelo(ativa);
   if (r.ligado === false) return <p className="hint">O Pênalti x1 ainda não foi ligado no banco (seção 48 do seguranca.sql).</p>;
-  return <div className="rm penalti duelo">{r.id ? <Partida r={r} /> : <Saguao r={r} />}</div>;
+  return <div className="rm penalti duelo">{r.id ? <Partida r={r} /> : <Saguao r={r} ativa={ativa} />}</div>;
 }

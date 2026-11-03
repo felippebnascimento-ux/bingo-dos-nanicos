@@ -1,5 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { acabou, apostaValida, atalhosDo, bolinhas, colunaDaZona, decidido, lerDuelo, lerListaDuelo, meuPapel, momento, nomeCobranca, quemBate, tempoRestante } from "./dueloRegras";
+import {
+  acabou,
+  apostaValida,
+  atalhosDo,
+  bolinhas,
+  colunaDaZona,
+  comSinal,
+  decidido,
+  juntarMsgs,
+  lerDuelo,
+  lerListaDuelo,
+  lerMsgDuelo,
+  lerRankingDuelo,
+  meuPapel,
+  momento,
+  nomeCobranca,
+  posicoesRanking,
+  quemBate,
+  tempoRestante,
+} from "./dueloRegras";
 
 const A = "aaaaaaaa-0000-0000-0000-000000000001";
 const B = "bbbbbbbb-0000-0000-0000-000000000002";
@@ -102,5 +121,47 @@ describe("pênalti x1", () => {
     expect(nomeCobranca(10)).toBe("5ª cobrança de 5");
     expect(nomeCobranca(11)).toBe("Morte súbita · 1º par");
     expect(nomeCobranca(14)).toBe("Morte súbita · 2º par");
+  });
+});
+
+describe("pênalti x1: ranking e chat", () => {
+  it("lê o ranking e ignora linhas estranhas", () => {
+    const l = lerRankingDuelo([
+      { user_id: A, vitorias: 3, derrotas: 1, saldo: 250, maior_premio: 400 },
+      { user_id: 5, vitorias: 9 },
+      null,
+      { user_id: B, vitorias: "1", derrotas: 2, saldo: -120, maior_premio: 20 },
+    ]);
+    expect(l).toEqual([
+      { userId: A, vitorias: 3, derrotas: 1, saldo: 250, maiorPremio: 400 },
+      { userId: B, vitorias: 1, derrotas: 2, saldo: -120, maiorPremio: 20 },
+    ]);
+    expect(lerRankingDuelo(null)).toEqual([]);
+  });
+
+  it("posições: empate em vitórias e saldo divide o lugar", () => {
+    const l = [
+      { vitorias: 4, saldo: 100 },
+      { vitorias: 2, saldo: 50 },
+      { vitorias: 2, saldo: 50 },
+      { vitorias: 2, saldo: 10 },
+    ];
+    expect(posicoesRanking(l)).toEqual([1, 2, 2, 4]);
+  });
+
+  it("saldo com sinal", () => {
+    expect(comSinal(1250)).toBe("+1.250");
+    expect(comSinal(-300)).toBe("−300");
+    expect(comSinal(0)).toBe("0");
+  });
+
+  it("lê e junta as mensagens do chat", () => {
+    const m = (id: number) => lerMsgDuelo({ id, duelo_id: 7, user_id: A, texto: "boa", em: iso(t0 + id) })!;
+    expect(m(1)).toEqual({ id: 1, dueloId: 7, userId: A, texto: "boa", em: t0 + 1 });
+    expect(lerMsgDuelo({ id: 1, duelo_id: 7, user_id: A, texto: "  ", em: iso(t0) })).toBeNull();
+    expect(lerMsgDuelo({ id: 1, duelo_id: 7, user_id: A, texto: "x" })).toBeNull();
+    expect(lerMsgDuelo({ id: 1, duelo_id: 7, user_id: A, texto: "x".repeat(500), em: iso(t0) })!.texto).toHaveLength(200);
+    expect(juntarMsgs([m(1), m(3)], [m(2), m(3)]).map((x) => x.id)).toEqual([1, 2, 3]);
+    expect(juntarMsgs([m(1), m(2), m(3)], [], 2).map((x) => x.id)).toEqual([2, 3]);
   });
 });

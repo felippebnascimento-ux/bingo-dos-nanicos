@@ -78,6 +78,7 @@ export function PerfilCartao({ b }: { b: Boneco }) {
 
       <div className="perfil-vitrine">
         <figure className="perfil-corpo">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           {arte ? <img src={arte.full} alt={`${f.name} de corpo inteiro`} width={arte.w} height={arte.h} /> : <Avatar f={f} size="lg" />}
         </figure>
         <div className="perfil-emblemas perfil-grade" aria-label="Emblemas">
