@@ -29,7 +29,7 @@ import { ChurrascoCamada, FaixaEvento, LuzHappy, PlacaChurrasco } from "./Evento
 import { useRanking } from "@/features/moedas/Ranking";
 import { enfeites } from "@/features/trofeus/trofeus";
 import { useTrofeus } from "@/features/trofeus/trofeusDados";
-import { assentoDe, assentoNaTela, caixaDoBoneco, caixaDoMovel, CLICAVEIS, livre, MOVEIS, ordemZ, pisoLivreNaTela, pisoNaTela, VB_ESTREITO, VB_LARGO, type Caixa2D, type Clicavel, type Piso } from "./hall";
+import { assentoNaTela, camadasHall, CLICAVEIS, livre, MOVEIS, pisoLivreNaTela, pisoNaTela, VB_ESTREITO, VB_LARGO, type Caixa2D, type Clicavel, type Piso } from "./hall";
 import { Destaque, emPorcento, Fundo, MovelCamada, tvCaixa } from "./Sala";
 
 /** Setas → um piso: direita/esquerda seguem a parede da direita, cima/baixo a da esquerda. */
@@ -94,17 +94,8 @@ export function HallView({ hidden }: { hidden: boolean }) {
     iniciarConsumo();
   }, []);
 
-  /* z-index de cada móvel e boneco, do fundo para a frente */
-  const z = useMemo(() => {
-    const caixas = [...MOVEIS.map(caixaDoMovel), ...bonecos.map((b) => {
-        /* sentado: a pegada é a do assento (fica por cima do sofá) */
-        const s = assentoDe(b.senta);
-        return s ? caixaDoBoneco(s.i - 0.5, s.j - 0.5) : caixaDoBoneco(b.i, b.j);
-      })];
-    const out: number[] = [];
-    ordemZ(caixas).forEach((k, pos) => (out[k] = pos + 2));
-    return out;
-  }, [bonecos]);
+  /* z-index de cada móvel, encosto e boneco, do fundo para a frente (quem senta fica por cima do estofado) */
+  const { z, encosto } = useMemo(() => camadasHall(bonecos), [bonecos]);
 
   /* tocar no chão anda; tocar num sofá ou poltrona leva o boneco até lá e senta */
   const tocar = (e: MouseEvent<HTMLDivElement>) => {
@@ -174,6 +165,9 @@ export function HallView({ hidden }: { hidden: boolean }) {
           <Destaque piso={destaque} vb={vb} pisca={pisca} />
           {MOVEIS.map((m, k) => (
             <MovelCamada key={m.id} id={m.id} z={z[k]} vb={vb} />
+          ))}
+          {Object.entries(encosto).map(([id, ze]) => (
+            <MovelCamada key={"encosto-" + id} id={id} z={ze} vb={vb} encosto />
           ))}
           {bonecos.map((b, k) => (
             <Boneco

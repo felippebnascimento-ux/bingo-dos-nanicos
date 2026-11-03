@@ -421,6 +421,13 @@ export const CHANGELOG: EntradaLog[] = [
       "Passe o mouse (ou toque) num emblema para ver o nome, o nível e quanto falta para o próximo",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "No K-FOFO, quem senta no sofá ou na poltrona fica em cima do estofado, e não mais dentro ou atrás dele; nas poltronas e no sofá do canto, o encosto aparece na frente das costas",
+      "O cigarrinho e a latinha acompanham quem está sentado",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

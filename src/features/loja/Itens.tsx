@@ -5,7 +5,7 @@
  * As cores são as variáveis --loja-* do 30-loja.css (com tema escuro).
  */
 import type { Boneco } from "@/features/hall/bonecos";
-import { tela, type Caixa2D } from "@/features/hall/hall";
+import { peNaTela, type Caixa2D } from "@/features/hall/hall";
 import { useApp } from "@/lib/store";
 import type { ItemLoja } from "./loja";
 import { DURA_ANIM, restanteEfeito } from "./loja";
@@ -92,7 +92,7 @@ export function ConsumoCamada({ bonecos, vb }: { bonecos: Boneco[]; vb: Caixa2D 
         const b = bonecos.find((x) => x.fid === c.fid);
         if (!b) return null;
         /* a boca do boneco: um pouco à direita do meio, perto do topo da cabeça */
-        const [x, y] = tela(b.i + 0.5, b.j + 0.5);
+        const [x, y] = peNaTela(b);
         const fumaca = c.anim === "fumar" || c.anim === "charuto";
         const it: ItemLoja | undefined = itens?.find((i) => i.id === c.item);
         return (
