@@ -22,7 +22,8 @@ import type { Friend } from "@/lib/tipos";
 import { AtributosFicha } from "./AtributosFicha";
 import { NoSitio } from "./NoSitio";
 import { carregarFicha, useFicha } from "./estado";
-import { csTexto } from "./numeros";
+import { csTexto, eloDaFicha, textoElo } from "./numeros";
+import { BrasaoElo, NivelGc } from "@/features/emblemas/brasao";
 import { EmblemasFicha } from "@/features/emblemas/EmblemasFicha";
 import { Quarto, type EquipQuarto } from "./Quarto";
 
@@ -41,19 +42,33 @@ export function DicaSteamPrivada() {
 
 /** "No jogo": só os links (op.gg, o do smurf, Steam e os outros do perfil), sem números. */
 function Links({ f }: { f: Friend }) {
-  const cs = csTexto(useFicha((s) => s.porNanico[f.id]?.cs?.dados));
+  const csDados = useFicha((s) => s.porNanico[f.id]?.cs?.dados);
+  const cs = csTexto(csDados);
+  /* o elo do LoL (o mais alto entre solo e flex, fase 33); KDA, main e vitórias continuam de fora */
+  const elo = eloDaFicha(useFicha((s) => s.porNanico[f.id]?.lol?.dados));
   const opgg = opggOf(f);
   const smurf = opggSmurfOf(f);
   const steam = steamOf(f);
-  /* Premier e GC vêm da função ficha-jogos (Leetify), guardados por 6 h */
+  /* elo, Premier e GC vêm da função ficha-jogos (Riot e Leetify), guardados por 6 h */
   useEffect(() => {
-    if (steam) void carregarFicha(f.id);
-  }, [f.id, steam]);
+    if (steam || opgg) void carregarFicha(f.id);
+  }, [f.id, steam, opgg]);
   const extras = linksDe(useMidias((s) => s.links), f.id);
   return (
     <section className="ficha-sec">
       <h3>No jogo</h3>
-      {cs && <p className="ficha-cs"><b>CS2</b> {cs}</p>}
+      {elo && (
+        <p className="ficha-cs ficha-lol">
+          <BrasaoElo tier={elo.elo.tier} tam={26} />
+          <b>LoL</b> {textoElo(elo.elo, elo.fila)}
+        </p>
+      )}
+      {cs && (
+        <p className="ficha-cs">
+          {csDados?.gc ? <NivelGc n={csDados.gc} tam={22} /> : null}
+          <b>CS2</b> {cs}
+        </p>
+      )}
       {!opgg && !smurf && !steam && !extras.length && <p className="hint">{f.name} ainda não colocou o op.gg no Perfil.</p>}
       {(opgg || smurf || steam || extras.length > 0) && (
         <div className="ficha-links">

@@ -3,10 +3,16 @@
  * Regra pura, sem React.
  */
 
+/** O elo de uma fila ranqueada (solo/duo ou flex). */
+export type EloFila = { tier: string; rank: string; lp: number };
 export type StatsLol = {
   tier: string | null;
   rank: string | null;
   lp: number | null;
+  /** de qual fila é o elo de cima (o mais alto das duas) */
+  fila: "solo" | "flex" | null;
+  solo: EloFila | null;
+  flex: EloFila | null;
   vitorias: number;
   derrotas: number;
   kda: number | null;
@@ -22,12 +28,24 @@ export type NumerosFicha = { lol: Fonte<StatsLol> | null; steam: Fonte<StatsStea
 const n = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
 const s = (v: unknown, max = 40) => (typeof v === "string" && v ? v.slice(0, max) : null);
 
+/** Confere o elo de uma fila vindo do banco: só os 10 tiers conhecidos. */
+export function lerElo(v: unknown): EloFila | null {
+  if (!v || typeof v !== "object") return null;
+  const o = v as Record<string, unknown>;
+  const tier = typeof o.tier === "string" ? o.tier : "";
+  if (!TIERS.includes(tier)) return null;
+  return { tier, rank: typeof o.rank === "string" && DIVISOES.includes(o.rank) ? o.rank : "", lp: Math.max(0, n(o.lp) ?? 0) };
+}
+
 function lerLol(d: Record<string, unknown>): StatsLol | null {
   if (!Object.keys(d).length) return null;
   return {
     tier: s(d.tier, 20),
     rank: s(d.rank, 4),
     lp: n(d.lp),
+    fila: d.fila === "solo" || d.fila === "flex" ? d.fila : null,
+    solo: lerElo(d.solo),
+    flex: lerElo(d.flex),
     vitorias: Math.max(0, n(d.vitorias) ?? 0),
     derrotas: Math.max(0, n(d.derrotas) ?? 0),
     kda: n(d.kda),
@@ -65,6 +83,18 @@ export function lerNumeros(resp: unknown): NumerosFicha {
   return out;
 }
 
+/** Os tiers do LoL, do mais baixo ao mais alto, e as divisões, da mais baixa à mais alta. */
+export const TIERS = ["IRON", "BRONZE", "SILVER", "GOLD", "PLATINUM", "EMERALD", "DIAMOND", "MASTER", "GRANDMASTER", "CHALLENGER"];
+const DIVISOES = ["IV", "III", "II", "I"];
+const pesoElo = (e: EloFila) => TIERS.indexOf(e.tier) * 10000 + Math.max(0, DIVISOES.indexOf(e.rank)) * 1000 + Math.min(999, e.lp);
+
+/** O elo mais alto entre a solo/duo e a flex (tier, depois divisão, depois PDL; no empate, a solo). A mesma conta da ficha-jogos. */
+export function eloMaisAlto(solo: EloFila | null, flex: EloFila | null): { elo: EloFila; fila: "solo" | "flex" } | null {
+  if (!solo && !flex) return null;
+  if (!flex || (solo && pesoElo(solo) >= pesoElo(flex))) return { elo: solo!, fila: "solo" };
+  return { elo: flex, fila: "flex" };
+}
+
 const TIER: Record<string, string> = {
   IRON: "Ferro", BRONZE: "Bronze", SILVER: "Prata", GOLD: "Ouro", PLATINUM: "Platina", EMERALD: "Esmeralda",
   DIAMOND: "Diamante", MASTER: "Mestre", GRANDMASTER: "Grão-Mestre", CHALLENGER: "Desafiante",
@@ -77,6 +107,22 @@ export function eloTexto(l: Pick<StatsLol, "tier" | "rank">): string {
   if (!l.tier) return "Sem elo";
   const nome = TIER[l.tier] ?? l.tier;
   return SEM_DIVISAO.has(l.tier) || !l.rank ? nome : `${nome} ${l.rank}`;
+}
+
+/** Nome do tier em português ("PLATINUM" → "Platina"). */
+export const nomeTier = (tier: string) => TIER[tier] ?? tier;
+
+/** "Platina IV · 42 PDL · Flex"; do Mestre para cima, sem divisão: "Mestre · 230 PDL · Solo/Duo". */
+export function textoElo(e: EloFila, fila: "solo" | "flex" | null): string {
+  return [eloTexto(e), `${e.lp} PDL`, fila === "flex" ? "Flex" : fila === "solo" ? "Solo/Duo" : ""].filter(Boolean).join(" · ");
+}
+
+/** O elo da ficha: o mais alto das duas filas; sem elas (dados antigos), o de cima. Null sem ranqueada. */
+export function eloDaFicha(l: StatsLol | null | undefined): { elo: EloFila; fila: "solo" | "flex" | null } | null {
+  if (!l) return null;
+  const top = eloMaisAlto(l.solo, l.flex);
+  if (top) return top;
+  return l.tier && TIERS.includes(l.tier) ? { elo: { tier: l.tier, rank: l.rank ?? "", lp: l.lp ?? 0 }, fila: l.fila } : null;
 }
 
 /** Porcentagem de vitórias (arredondada), ou null sem partidas. */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { csTexto, eloTexto, haQuanto, horasTexto, kdaTexto, lerNumeros, taxaVitoria } from "./numeros";
+import { csTexto, eloDaFicha, eloMaisAlto, eloTexto, haQuanto, horasTexto, kdaTexto, lerElo, lerNumeros, taxaVitoria, textoElo } from "./numeros";
 
 describe("lerNumeros", () => {
   it("separa LoL e Steam e confere os campos", () => {
@@ -11,7 +11,7 @@ describe("lerNumeros", () => {
       ],
       avisos: ["Falta a chave da Steam", 42],
     });
-    expect(r.lol?.dados).toEqual({ tier: "GOLD", rank: "II", lp: 40, vitorias: 30, derrotas: 26, kda: 3.14, main: "Yasuo", partidas: 20 });
+    expect(r.lol?.dados).toEqual({ tier: "GOLD", rank: "II", lp: 40, fila: null, solo: null, flex: null, vitorias: 30, derrotas: 26, kda: 3.14, main: "Yasuo", partidas: 20 });
     expect(r.steam?.dados).toEqual({ cs2Horas: 1284, totalHoras: 2000, privado: false });
     expect(r.lol?.atualizado).toBe(Date.parse("2026-11-01T20:00:00Z"));
     expect(r.avisos).toEqual(["Falta a chave da Steam"]);
@@ -25,7 +25,7 @@ describe("lerNumeros", () => {
   it("lixo não quebra", () => {
     for (const v of [null, "x", 1, {}, { linhas: "a" }, { linhas: [null, 1, "a"] }]) expect(lerNumeros(v)).toEqual({ lol: null, steam: null, cs: null, avisos: [] });
     expect(lerNumeros({ linhas: [{ fonte: "lol", dados: { tier: 5, vitorias: "9", kda: "3" } }] }).lol?.dados).toEqual({
-      tier: null, rank: null, lp: null, vitorias: 0, derrotas: 0, kda: null, main: null, partidas: 0,
+      tier: null, rank: null, lp: null, fila: null, solo: null, flex: null, vitorias: 0, derrotas: 0, kda: null, main: null, partidas: 0,
     });
   });
 });
@@ -65,5 +65,31 @@ describe("textos", () => {
     expect(haQuanto(agora - 5 * 60_000, agora)).toBe("há 5 min");
     expect(haQuanto(agora - 3 * 3600_000, agora)).toBe("há 3 h");
     expect(haQuanto(agora - 50 * 3600_000, agora)).toBe("há 2 dias");
+  });
+});
+
+describe("elo mais alto entre solo e flex", () => {
+  const E = (tier: string, rank: string, lp: number) => ({ tier, rank, lp });
+  it("vale o tier, depois a divisão, depois o PDL; no empate, a solo", () => {
+    expect(eloMaisAlto(E("GOLD", "I", 90), E("PLATINUM", "IV", 0))?.fila).toBe("flex");
+    expect(eloMaisAlto(E("GOLD", "II", 10), E("GOLD", "III", 99))?.fila).toBe("solo");
+    expect(eloMaisAlto(E("GOLD", "II", 10), E("GOLD", "II", 40))?.fila).toBe("flex");
+    expect(eloMaisAlto(E("GOLD", "II", 10), E("GOLD", "II", 10))?.fila).toBe("solo");
+  });
+  it("só uma fila, ou nenhuma", () => {
+    expect(eloMaisAlto(null, E("SILVER", "I", 5))).toEqual({ elo: E("SILVER", "I", 5), fila: "flex" });
+    expect(eloMaisAlto(E("IRON", "IV", 0), null)?.fila).toBe("solo");
+    expect(eloMaisAlto(null, null)).toBeNull();
+  });
+  it("escreve o elo com a fila, sem divisão do Mestre para cima", () => {
+    expect(textoElo(E("PLATINUM", "IV", 42), "flex")).toBe("Platina IV · 42 PDL · Flex");
+    expect(textoElo(E("MASTER", "I", 230), "solo")).toBe("Mestre · 230 PDL · Solo/Duo");
+  });
+  it("confere o que vem do banco e cai no elo de cima nos dados antigos", () => {
+    expect(lerElo({ tier: "FOGUETE", rank: "I", lp: 3 })).toBeNull();
+    expect(lerElo({ tier: "GOLD", rank: "X", lp: -4 })).toEqual({ tier: "GOLD", rank: "", lp: 0 });
+    const antigo = { tier: "GOLD", rank: "II", lp: 30, fila: null, solo: null, flex: null, vitorias: 0, derrotas: 0, kda: null, main: null, partidas: 0 };
+    expect(eloDaFicha(antigo)?.elo.tier).toBe("GOLD");
+    expect(eloDaFicha({ ...antigo, tier: null })).toBeNull();
   });
 });

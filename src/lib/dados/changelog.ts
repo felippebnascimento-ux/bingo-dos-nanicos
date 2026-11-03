@@ -487,6 +487,10 @@ export const CHANGELOG: EntradaLog[] = [
       "Na mesa verde, cada um tem as cartas na mão, as jogadas ficam viradas no feltro e a placa mostra o placar e quem ganhou",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: ["Ficha: o elo do LoL voltou (o mais alto entre solo e flex), com o brasão do elo e o nível da GC como emblemas"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
