@@ -3646,7 +3646,107 @@ end $$;
 revoke all on function public.apostar_slot(int) from public, anon;
 grant execute on function public.apostar_slot(int) to authenticated;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo e as 4 do pênalti
+-- 34) InstaNanico: stories de 24 h na rede nanica (só quem tem o Celular), e postagem só com foto -------------------------
+--   Story: foto (na pasta rede/<uid>/ do bucket midias, como as postagens) ou só texto sobre uma cor de fundo, com uma
+--   legenda curta. Some sozinho depois de 24 h (o RLS só mostra aos outros as das últimas 24 h; o dono ainda vê as
+--   vencidas, para o site apagar a foto e a linha juntas quando ele posta o próximo story). Quem viu fica em rede_stories_vistos: cada um grava só o próprio "vi" e o dono do story lê quem viu.
+--   Postagem: agora pode ir só com a foto (legenda vazia); sem foto, o texto continua obrigatório.
+update public.loja_itens set descricao = 'Um iPhone com o InstaNanico: stories, fotos, curtidas e comentários com o grupo.' where id = 'celular';
+alter table public.rede_posts drop constraint if exists rede_posts_texto_check;
+alter table public.rede_posts add constraint rede_posts_texto_check check (char_length(texto) <= 500);
+alter table public.rede_posts alter column texto set default '';
+
+create table if not exists public.rede_stories (
+  id      bigint generated always as identity primary key,
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  midia   text check (midia ~ '^rede/[0-9a-f-]{36}/[a-z0-9-]{6,40}\.(webp|gif)$'),
+  texto   text not null default '' check (char_length(texto) <= 120),
+  fundo   text not null default 'roxo' check (fundo in ('roxo', 'laranja', 'verde', 'azul', 'preto')),
+  em      timestamptz not null default now(),
+  check (midia is not null or char_length(texto) > 0)
+);
+create index if not exists rede_stories_em on public.rede_stories (em desc);
+create table if not exists public.rede_stories_vistos (
+  story_id bigint not null references public.rede_stories(id) on delete cascade,
+  user_id  uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  em       timestamptz not null default now(),
+  primary key (story_id, user_id)
+);
+alter table public.rede_stories        enable row level security;
+alter table public.rede_stories_vistos enable row level security;
+revoke all on public.rede_stories, public.rede_stories_vistos from public, anon, authenticated;
+grant select, delete on public.rede_stories to authenticated;
+grant insert (midia, texto, fundo) on public.rede_stories to authenticated;
+grant select on public.rede_stories_vistos to authenticated;
+grant insert (story_id) on public.rede_stories_vistos to authenticated;
+
+drop policy if exists rede_stories_ler on public.rede_stories;
+create policy rede_stories_ler on public.rede_stories for select to authenticated
+  using (public.eh_nanico() and public.tem_item('celular') and (em > now() - interval '24 hours' or user_id = auth.uid()));
+drop policy if exists rede_stories_criar on public.rede_stories;
+create policy rede_stories_criar on public.rede_stories for insert to authenticated with check (user_id = auth.uid() and public.tem_item('celular'));
+drop policy if exists rede_stories_apagar on public.rede_stories;
+create policy rede_stories_apagar on public.rede_stories for delete to authenticated using (user_id = auth.uid());
+
+drop policy if exists rede_vistos_ler on public.rede_stories_vistos;
+create policy rede_vistos_ler on public.rede_stories_vistos for select to authenticated
+  using (user_id = auth.uid() or exists (select 1 from public.rede_stories s where s.id = story_id and s.user_id = auth.uid()));
+drop policy if exists rede_vistos_criar on public.rede_stories_vistos;
+create policy rede_vistos_criar on public.rede_stories_vistos for insert to authenticated
+  with check (user_id = auth.uid() and public.tem_item('celular'));
+
+-- a proteção da rede (seção 18) passa a cuidar dos stories e da postagem só com foto
+create or replace function public.rede_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.user_id := auth.uid();
+  new.em := now();
+  if tg_table_name = 'rede_curtidas' then
+    perform public.limitar('rede_curtida', 120, interval '1 hour', 'Calma: curtidas demais em pouco tempo.');
+    return new;
+  end if;
+  if tg_table_name = 'rede_stories_vistos' then
+    if not exists (select 1 from public.rede_stories where id = new.story_id and em > now() - interval '24 hours') then
+      raise exception 'Esse story já sumiu.' using errcode = 'P0001';
+    end if;
+    return new;
+  end if;
+  new.texto := btrim(regexp_replace(coalesce(new.texto, ''), '[\x00-\x09\x0B-\x1F\x7F]', ' ', 'g'));
+  if tg_table_name in ('rede_posts', 'rede_stories') then
+    if char_length(new.texto) = 0 and new.midia is null then
+      raise exception '%', case when tg_table_name = 'rede_posts' then 'Escreva alguma coisa ou escolha uma foto.' else 'Escolha uma foto ou escreva o texto do story.' end using errcode = 'P0001';
+    end if;
+    if new.midia is not null then
+      if split_part(new.midia, '/', 2) <> new.user_id::text then
+        raise exception 'A imagem tem que estar na sua pasta.' using errcode = 'P0001';
+      end if;
+      if not exists (select 1 from storage.objects where bucket_id = 'midias' and name = new.midia) then
+        raise exception 'A imagem não chegou. Tente de novo.' using errcode = 'P0001';
+      end if;
+    end if;
+    if tg_table_name = 'rede_posts' then
+      perform public.limitar('rede_post', 10, interval '1 hour', 'Calma: no máximo 10 postagens por hora.');
+    else
+      perform public.limitar('rede_story', 20, interval '1 hour', 'Calma: no máximo 20 stories por hora.');
+    end if;
+  else
+    if char_length(new.texto) = 0 then raise exception 'Escreva alguma coisa.' using errcode = 'P0001'; end if;
+    perform public.limitar('rede_comentario', 40, interval '1 hour', 'Calma: no máximo 40 comentários por hora.');
+  end if;
+  return new;
+end $$;
+revoke all on function public.rede_protecao() from public, anon, authenticated;
+drop trigger if exists rede_protecao on public.rede_stories;
+create trigger rede_protecao before insert on public.rede_stories for each row execute function public.rede_protecao();
+drop trigger if exists rede_protecao on public.rede_stories_vistos;
+create trigger rede_protecao before insert on public.rede_stories_vistos for each row execute function public.rede_protecao();
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.rede_stories; exception when duplicate_object then null; end;
+end $$;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti e as 2 tabelas dos stories
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -3714,4 +3814,7 @@ select proname::text, 'mesas' from pg_proc
 union all
 select proname::text, 'penalti' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('penalti_comecar', 'penalti_chutar', 'penalti_sacar', 'penalti_estado')
+union all
+select tablename::text, 'stories' from pg_tables
+ where schemaname = 'public' and tablename in ('rede_stories', 'rede_stories_vistos')
 order by 2, 1;

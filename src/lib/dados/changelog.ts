@@ -316,6 +316,13 @@ export const CHANGELOG: EntradaLog[] = [
       "Roleta nova em laca preta com ouro, maior e com números mais fáceis de ler; a ficha de 5 ganhou listras azuis para não sumir",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Celular novo: um iPhone 17 Pro Max com Dynamic Island, que avisa quando sai post ou story e enquanto você publica",
+      "InstaNanico no lugar da rede nanica: igual ao Instagram, com stories de 24 h (foto ou texto colorido, com quem viu), feed com curtir em dois toques, comentários, explorar, notificações, perfil com grade e postagem só com foto",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

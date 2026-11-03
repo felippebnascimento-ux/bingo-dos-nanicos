@@ -3,6 +3,8 @@
  * (RLS com tem_item('celular')): sem o item, as consultas voltam vazias e o tempo real não chega.
  * Feed de 20 em 20, curtidas e comentários das postagens carregadas, imagem no bucket "midias" (pasta rede/<uid>/),
  * comprimida no navegador como as mídias. Postar e curtir não dão moedas.
+ * InstaNanico (seção 34): stories de 24 h (foto ou texto sobre cor), "já vi" no navegador e no banco (o dono vê quem
+ * viu), e a Dynamic Island do celular avisando post, story e envio.
  */
 import { create } from "zustand";
 import { avisarTexto } from "@/features/hall/ganhos";
@@ -12,6 +14,7 @@ import { errMsg, sb } from "@/lib/supabase";
 import { getApp } from "@/lib/store";
 import { toast } from "@/lib/toast";
 import { local, newId } from "@/lib/util";
+import { DIA_MS, FUNDOS, type Fundo, type Story } from "./insta";
 
 export type Post = { id: number; userId: string; texto: string; midia: string | null; em: number };
 export type Comentario = { id: number; postId: number; userId: string; texto: string; em: number };
@@ -28,10 +31,24 @@ type Estado = {
   carregando: boolean;
   enviando: boolean;
   naoLidas: number;
+  /* InstaNanico */
+  stories: Story[];
+  /** ids dos stories que eu já vi (guardados no navegador) */
+  vistos: number[];
+  /** quem viu cada story meu (userIds), lido quando abro o meu */
+  quemViu: Record<number, string[]>;
+  /** a Dynamic Island aberta com um aviso (some sozinha) */
+  ilha: { texto: string; userId: string | null; tipo: "post" | "story" | "envio" } | null;
 };
 export const useRede = create<Estado>()(() => ({
   aberto: false, posts: [], fim: false, curtidas: {}, comentarios: {}, perfil: null, carregando: false, enviando: false, naoLidas: 0,
+  stories: [], vistos: lerVistos(), quemViu: {}, ilha: null,
 }));
+
+function lerVistos(): number[] {
+  const v = local.json<unknown>("insta-vistos");
+  return Array.isArray(v) ? v.filter((x): x is number => typeof x === "number").slice(-400) : [];
+}
 
 const PAGINA = 20;
 const lerPost = (r: Record<string, unknown>): Post => ({
@@ -112,6 +129,118 @@ export async function maisPostagens() {
   await detalhes(novos.map((p) => p.id));
 }
 
+/* ---------- Dynamic Island ---------- */
+let ilhaTimer: ReturnType<typeof setTimeout> | undefined;
+/** Abre a ilha com um aviso por uns segundos (o envio fica aberto até terminar). */
+export function avisarIlha(texto: string, userId: string | null, tipo: "post" | "story" | "envio", ms = 3800) {
+  clearTimeout(ilhaTimer);
+  useRede.setState({ ilha: { texto, userId, tipo } });
+  if (ms > 0) ilhaTimer = setTimeout(() => useRede.setState({ ilha: null }), ms);
+}
+const fecharIlha = () => {
+  clearTimeout(ilhaTimer);
+  useRede.setState({ ilha: null });
+};
+
+/* ---------- stories ---------- */
+const lerStory = (r: Record<string, unknown>): Story => ({
+  id: Number(r.id),
+  userId: String(r.user_id),
+  midia: typeof r.midia === "string" && r.midia.startsWith("rede/") ? r.midia : null,
+  texto: String(r.texto ?? "").slice(0, 120),
+  fundo: FUNDOS.includes(r.fundo as Fundo) ? (r.fundo as Fundo) : "roxo",
+  em: Date.parse(String(r.em)) || 0,
+});
+
+/** Os stories das últimas 24 h (e os meus vencidos, que o banco ainda me mostra para eu apagar). */
+export async function carregarStories() {
+  if (!celularNaMochila) return;
+  const { data, error } = await sb().from("rede_stories").select("id,user_id,midia,texto,fundo,em").order("id");
+  if (error) return console.warn("stories indisponíveis (seção 34)", error.message);
+  useRede.setState({ stories: (data ?? []).map(lerStory) });
+}
+
+function onStory(row: Record<string, unknown> | null, ev: string) {
+  const id = Number(row?.id);
+  if (!id) return;
+  const st = useRede.getState();
+  if (ev === "DELETE") {
+    const s = st.stories.find((x) => x.id === id);
+    if (s?.midia) soltarImagem(s.midia);
+    return useRede.setState({ stories: st.stories.filter((x) => x.id !== id) });
+  }
+  if (ev !== "INSERT" || st.stories.some((x) => x.id === id)) return;
+  const s = lerStory(row!);
+  useRede.setState({ stories: [...st.stories, s] });
+  const app = getApp();
+  if (s.userId !== app.myUid && st.aberto) avisarIlha(`${app.friends.find((x) => x.user_id === s.userId)?.name ?? "Alguém"} postou um story`, s.userId, "story");
+}
+
+/** Marca um story como visto (no navegador e no banco, para o dono saber). */
+export function marcarVisto(s: Story) {
+  const st = useRede.getState();
+  if (st.vistos.includes(s.id)) return;
+  const vistos = [...st.vistos, s.id].slice(-400);
+  useRede.setState({ vistos });
+  local.setJson("insta-vistos", vistos);
+  if (s.userId !== getApp().myUid) void sb().from("rede_stories_vistos").insert({ story_id: s.id }).then(() => {});
+}
+
+/** Quem viu um story meu. */
+export async function lerQuemViu(s: Story) {
+  const { data } = await sb().from("rede_stories_vistos").select("user_id").eq("story_id", s.id).order("em");
+  useRede.setState({ quemViu: { ...useRede.getState().quemViu, [s.id]: (data ?? []).map((r) => String(r.user_id)) } });
+}
+
+/** Posta um story (foto ou texto sobre uma cor). Antes, apaga os meus vencidos (foto e linha). */
+export async function postarStory(arquivo: File | null, texto: string, fundo: Fundo): Promise<boolean> {
+  const uid = getApp().myUid;
+  if (!uid || useRede.getState().enviando) return false;
+  if (!arquivo && !texto.trim()) {
+    toast("Escolha uma foto ou escreva o texto do story.");
+    return false;
+  }
+  useRede.setState({ enviando: true });
+  avisarIlha("Postando o seu story…", uid, "envio", 0);
+  let midia: string | null = null;
+  try {
+    const vencidos = useRede.getState().stories.filter((s) => s.userId === uid && Date.now() - s.em >= DIA_MS);
+    if (vencidos.length) {
+      const fotos = vencidos.map((s) => s.midia).filter((m): m is string => !!m);
+      if (fotos.length) await sb().storage.from("midias").remove(fotos);
+      await sb().from("rede_stories").delete().in("id", vencidos.map((s) => s.id));
+    }
+    if (arquivo) {
+      const { blob, ext } = await comprimir(arquivo);
+      midia = `rede/${uid}/${newId().toLowerCase()}.${ext}`;
+      const up = await sb().storage.from("midias").upload(midia, blob, { contentType: ext === "gif" ? "image/gif" : "image/webp", upsert: false });
+      if (up.error) throw up.error;
+    }
+    const { error } = await sb().from("rede_stories").insert({ midia, texto: texto.trim().slice(0, 120), fundo });
+    if (error) throw error;
+    avisarIlha("Seu story foi publicado", uid, "story");
+    void carregarStories();
+    return true;
+  } catch (e) {
+    if (midia) void sb().storage.from("midias").remove([midia]);
+    fecharIlha();
+    toast(e instanceof Error && !("code" in e) ? e.message : motivo(e, "Não deu para postar o story. Confira a internet."));
+    return false;
+  } finally {
+    useRede.setState({ enviando: false });
+  }
+}
+
+export async function apagarStory(s: Story) {
+  if (s.midia) {
+    await sb().storage.from("midias").remove([s.midia]);
+    soltarImagem(s.midia);
+  }
+  const { error } = await sb().from("rede_stories").delete().eq("id", s.id);
+  if (error) return toast(motivo(error, "Não deu para apagar o story."));
+  useRede.setState({ stories: useRede.getState().stories.filter((x) => x.id !== s.id) });
+}
+
 /* ---------- tempo real ---------- */
 function onPost(row: Record<string, unknown> | null, ev: string) {
   const id = Number(row?.id);
@@ -129,7 +258,8 @@ function onPost(row: Record<string, unknown> | null, ev: string) {
   const s = getApp();
   if (p.userId !== s.myUid) {
     const f = s.friends.find((x) => x.user_id === p.userId);
-    avisarTexto(f?.id ?? null, `${f?.name ?? "Alguém"} postou na rede nanica`);
+    avisarTexto(f?.id ?? null, `${f?.name ?? "Alguém"} postou no InstaNanico`);
+    if (st.aberto) avisarIlha(`${f?.name ?? "Alguém"} publicou uma foto`, p.userId, "post");
   }
   if (!st.perfil || st.perfil === p.userId) {
     useRede.setState({ posts: [p, ...st.posts], curtidas: { ...st.curtidas, [p.id]: [] }, comentarios: { ...st.comentarios, [p.id]: [] } });
@@ -150,10 +280,14 @@ let ligado = false;
 export function iniciarRede(tenho: boolean) {
   const antes = celularNaMochila;
   celularNaMochila = tenho;
-  if (tenho && !antes) void carregarRede();
+  if (tenho && !antes) {
+    void carregarRede();
+    void carregarStories();
+  }
   if (ligado) return;
   ligado = true;
   aoMudarTabela("rede_posts", onPost);
+  aoMudarTabela("rede_stories", onStory);
   aoMudarTabela("rede_curtidas", onDetalhe);
   aoMudarTabela("rede_comentarios", onDetalhe);
 }
@@ -163,11 +297,13 @@ export function abrirCelular() {
   useRede.setState({ aberto: true });
   contarNaoLidas();
   if (!useRede.getState().posts.length) void carregarRede();
+  void carregarStories();
 }
 export function fecharCelular() {
   /* as imagens da rede saem da memória ao fechar */
   for (const p of useRede.getState().posts) if (p.midia) soltarImagem(p.midia);
-  useRede.setState({ aberto: false });
+  for (const s of useRede.getState().stories) if (s.midia) soltarImagem(s.midia);
+  useRede.setState({ aberto: false, ilha: null });
   contarNaoLidas();
 }
 export function verPerfil(userId: string | null) {
@@ -179,11 +315,12 @@ export function verPerfil(userId: string | null) {
 export async function postar(texto: string, arquivo: File | null): Promise<boolean> {
   const uid = getApp().myUid;
   if (!uid || useRede.getState().enviando) return false;
-  if (!texto.trim()) {
-    toast("Escreva alguma coisa.");
+  if (!texto.trim() && !arquivo) {
+    toast("Escolha uma foto ou escreva alguma coisa.");
     return false;
   }
   useRede.setState({ enviando: true });
+  avisarIlha("Publicando…", uid, "envio", 0);
   let midia: string | null = null;
   try {
     if (arquivo) {
@@ -192,11 +329,13 @@ export async function postar(texto: string, arquivo: File | null): Promise<boole
       const up = await sb().storage.from("midias").upload(midia, blob, { contentType: ext === "gif" ? "image/gif" : "image/webp", upsert: false });
       if (up.error) throw up.error;
     }
-    const { error } = await sb().from("rede_posts").insert({ texto: texto.slice(0, 500), midia });
+    const { error } = await sb().from("rede_posts").insert({ texto: texto.trim().slice(0, 500), midia });
     if (error) throw error;
+    avisarIlha("Publicado", uid, "post");
     return true;
   } catch (e) {
     if (midia) void sb().storage.from("midias").remove([midia]);
+    fecharIlha();
     toast(e instanceof Error && !("code" in e) ? e.message : motivo(e, "Não deu para postar. Confira a internet."));
     return false;
   } finally {
