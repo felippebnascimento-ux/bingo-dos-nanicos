@@ -41,7 +41,6 @@
 .vz-previa{position:relative;aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:var(--olive)}
 .vz-previa video{width:100%;height:100%;object-fit:contain;display:block}
 .vz-olhos,.qd-olhos{position:absolute;right:7px;top:7px;display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:99px;background:color-mix(in srgb,var(--accent-ink) 70%,transparent);color:var(--stamp-ink);font:600 11.5px var(--body)}
-.vz-link{border:0;padding:0;background:none;color:var(--accent-text);font:600 12px var(--body);text-decoration:underline;text-underline-offset:2px;cursor:pointer;justify-self:start}
 
 /* microfone e fone na linha "eu" */
 .vz-eu{flex:none;display:flex;align-items:center}
@@ -243,16 +242,10 @@
 .vz-dupla .vz-ib{width:24px}
 .vz-seta{width:13px}
 .cv-faixa .qd{flex:1 0 150px;max-width:260px}
-.vz-semsom{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.vz-semsom details{min-width:0;font-size:12px;color:var(--live)}
-.vz-semsom summary{display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-weight:600;list-style:none}
-.vz-semsom summary::-webkit-details-marker{display:none}
-.vz-semsom p{margin:6px 0 0;line-height:1.45;color:var(--muted)}
-.vz-semsom details[open]{flex-basis:100%}
 @media (prefers-reduced-motion:reduce){.vz-ponto{animation:none}}
 @media (min-width:861px){
   body.side-min .vz-live-cab{flex-direction:column}
-  body.side-min .vz-semsom{display:none}
+  body.side-min .vz-semsom span{display:none}
 }
 
 /* controles em cima da tela (como no Discord): aparecem com o mouse em cima */
@@ -266,3 +259,41 @@
 .qd.grande .qd-ctrl{right:12px;top:12px}
 .qd.grande .qd-vol{width:120px}
 @container (max-width:220px){.qd-vol{display:none}}
+
+/* ============ acabamento como o do Discord: botões quadrados iguais, fundo claro ao passar o mouse e dicas próprias ============ */
+.vz{--vz-btn:color-mix(in srgb,var(--ink) 7%,transparent);--vz-btn-on:color-mix(in srgb,var(--ink) 14%,transparent)}
+.vz-ib,.vz-sinal{width:28px;height:28px;border-radius:6px;transition:background .12s,color .12s}
+.vz-sinal{background:none}
+.vz-ib:hover,.vz-sinal:hover,.vz-dupla:hover{background:var(--vz-btn-on)}
+.vz-dupla:hover .vz-ib{background:none}
+.vz-ib.sair:hover{background:color-mix(in srgb,var(--live) 18%,transparent);color:var(--live)}
+.vz-acao{background:var(--vz-btn)}
+.vz-acao:hover:not(:disabled),.vz-acao.aberta{background:var(--vz-btn-on)}
+.vz-acao:disabled{opacity:.35}
+.eu-painel{--vz-btn-on:color-mix(in srgb,var(--ink) 12%,transparent)}
+.vz-info b{font-size:12.5px}
+
+/* dica: balãozinho escuro com setinha em cima do botão (o título do navegador saía cortado na borda do menu) */
+.vz [data-dica],.vz-eu [data-dica],.eu-cfg[data-dica]{position:relative}
+.vz [data-dica]::after,.vz-eu [data-dica]::after,.eu-cfg[data-dica]::after{content:attr(data-dica);position:absolute;z-index:40;bottom:calc(100% + 9px);left:50%;
+  padding:6px 9px;border-radius:6px;white-space:nowrap;background:var(--accent-ink);color:var(--stamp-ink);font:600 12px/1.2 var(--body);letter-spacing:0;text-transform:none;
+  box-shadow:0 8px 20px -6px rgb(0 0 0 / .5);opacity:0;pointer-events:none;transform:translate(-50%,4px);transition:opacity .12s,transform .12s}
+.vz [data-dica]::before,.vz-eu [data-dica]::before,.eu-cfg[data-dica]::before{content:"";position:absolute;z-index:40;bottom:calc(100% + 4px);left:50%;
+  border:5px solid transparent;border-bottom:0;border-top-color:var(--accent-ink);opacity:0;pointer-events:none;transform:translate(-50%,4px);transition:opacity .12s,transform .12s}
+.vz [data-dica]:hover::after,.vz [data-dica]:focus-visible::after,.vz-eu [data-dica]:hover::after,.vz-eu [data-dica]:focus-visible::after,.eu-cfg[data-dica]:hover::after,.eu-cfg[data-dica]:focus-visible::after,
+.vz [data-dica]:hover::before,.vz [data-dica]:focus-visible::before,.vz-eu [data-dica]:hover::before,.vz-eu [data-dica]:focus-visible::before,.eu-cfg[data-dica]:hover::before,.eu-cfg[data-dica]:focus-visible::before{
+  opacity:1;transform:translate(-50%,0);transition-delay:.3s}
+/* perto das bordas, o balão encosta no lado do botão (a setinha continua no meio dele) */
+.vz [data-dica-fim]::after,.vz-eu [data-dica-fim]::after,.eu-cfg[data-dica-fim]::after{left:auto;right:-2px;transform:translate(0,4px)}
+.vz [data-dica-ini]::after,.vz-eu [data-dica-ini]::after{left:-2px;transform:translate(0,4px)}
+.vz [data-dica-fim]:hover::after,.vz [data-dica-fim]:focus-visible::after,.vz-eu [data-dica-fim]:hover::after,.vz-eu [data-dica-fim]:focus-visible::after,.eu-cfg[data-dica-fim]:hover::after,.eu-cfg[data-dica-fim]:focus-visible::after,
+.vz [data-dica-ini]:hover::after,.vz [data-dica-ini]:focus-visible::after,.vz-eu [data-dica-ini]:hover::after,.vz-eu [data-dica-ini]:focus-visible::after{transform:translate(0,0)}
+@media (hover:none){.vz [data-dica]::after,.vz [data-dica]::before,.vz-eu [data-dica]::after,.vz-eu [data-dica]::before,.eu-cfg[data-dica]::after,.eu-cfg[data-dica]::before{display:none}}
+@media (prefers-reduced-motion:reduce){.vz [data-dica]::after,.vz [data-dica]::before{transition:none}}
+
+/* sem o som do PC: uma linha com o botão Corrigir */
+.vz-semsom{display:flex;align-items:center;gap:6px;padding:5px 5px 5px 8px;white-space:nowrap;border-radius:8px;background:color-mix(in srgb,var(--live) 12%,transparent);color:var(--live);font:600 12px var(--body)}
+.vz-semsom span{flex:1;min-width:0}
+.vz-corrigir{flex:none;padding:4px 10px;border:0;border-radius:6px;background:var(--live);color:var(--stamp-ink);font:700 11.5px var(--body);cursor:pointer}
+.vz-corrigir:hover{filter:brightness(1.08)}
+.vz-aviso-som{margin:0;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--live) 12%,transparent);color:var(--ink);font-size:12.5px;line-height:1.45}

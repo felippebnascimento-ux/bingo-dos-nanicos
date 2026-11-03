@@ -156,7 +156,7 @@ function Sinal() {
   const max = Math.max(150, ...hist);
   return (
     <>
-      <button type="button" className={"vz-sinal" + corDoPing(info.ping)} aria-label="Ver como está a conexão da voz" title="Conexão da voz" onClick={(e) => b.alternar(e, 240)}>
+      <button type="button" className={"vz-sinal" + corDoPing(info.ping)} aria-label="Ver como está a conexão da voz" data-dica="Conexão da voz" data-dica-ini="" onClick={(e) => b.alternar(e, 240)}>
         <IcSinal tam={18} />
       </button>
       {b.lugar && (
@@ -191,7 +191,7 @@ export function BotaoReacoes() {
   const vendo = !!LIVE.main;
   return (
     <>
-      <button type="button" className={"vz-acao" + (b.lugar ? " aberta" : "")} aria-label="Reações" title="Reações" onClick={(e) => b.alternar(e, 250)}>
+      <button type="button" className={"vz-acao" + (b.lugar ? " aberta" : "")} aria-label="Reações" data-dica="Reações" onClick={(e) => b.alternar(e, 250)}>
         <IcReagir tam={20} />
       </button>
       {b.lugar && (
@@ -302,7 +302,8 @@ function MinhaTransmissao() {
   if (!meu || !LIVE.myStream) return null;
   const n = [...LIVE.viewers.values()].filter((v) => v.pc.connectionState === "connected").length;
   const st = LIVE.myStream.getVideoTracks()[0]?.getSettings();
-  const qual = [st?.height ? `${st.height}p` : "", st?.frameRate ? `${Math.round(st.frameRate)} fps` : ""].filter(Boolean).join(" · ");
+  /* curto, como o Discord (1440p60) */
+  const qual = st?.height ? `${st.height}p${st.frameRate ? Math.round(st.frameRate) : ""}` : "";
   const semSom = somPc && !LIVE.hasAudio;
   /* como no Discord: uma linha com a miniatura, o que está indo e quem assiste; a prévia grande só se pedir */
   return (
@@ -314,13 +315,14 @@ function MinhaTransmissao() {
           className="vz-live-txt"
           aria-expanded={grande}
           aria-label={`Ao vivo, ${NOME_SUPERFICIE[LIVE.surface] ?? "tela"}, ${n} assistindo. ${grande ? "Esconder" : "Ver"} a prévia`}
-          title={grande ? "Esconder a prévia" : "Ver a prévia"}
+          data-dica={grande ? "Esconder a prévia" : "Ver a prévia"}
+          data-dica-ini=""
           onClick={() => setGrande((g) => !g)}
         >
           <b>
             <span className="vz-ponto" aria-hidden="true" />
             Ao vivo
-            <span className="vz-olhos-txt" title={n === 1 ? "1 pessoa assistindo" : `${n} pessoas assistindo`}>
+            <span className="vz-olhos-txt" aria-label={n === 1 ? "1 pessoa assistindo" : `${n} pessoas assistindo`}>
               <IcOlho tam={12} />
               {n}
             </span>
@@ -330,10 +332,10 @@ function MinhaTransmissao() {
             {qual && ` · ${qual}`}
           </small>
         </button>
-        <button type="button" className="vz-ib" aria-label="Trocar a qualidade da transmissão" title="Trocar a qualidade" onClick={() => setLive({ janelaTela: true })}>
+        <button type="button" className="vz-ib" aria-label="Trocar a qualidade da transmissão" data-dica="Qualidade" data-dica-fim="" onClick={() => setLive({ janelaTela: true })}>
           <IcAjustes tam={18} />
         </button>
-        <button type="button" className="vz-ib vz-parar-ic" aria-label="Parar a transmissão" title="Parar a transmissão" onClick={stopLive}>
+        <button type="button" className="vz-ib vz-parar-ic" aria-label="Parar a transmissão" data-dica="Parar a transmissão" data-dica-fim="" onClick={stopLive}>
           <IcTelaParar />
         </button>
       </div>
@@ -342,20 +344,13 @@ function MinhaTransmissao() {
           <VideoMudo stream={LIVE.myStream} />
         </div>
       )}
-      {/* pediu o som do PC e ele não veio: uma linha só, e o "por quê" abre ao tocar */}
+      {/* pediu o som do PC e ele não veio: uma linha, e "Corrigir" abre a janela (que explica o que fazer) */}
       {semSom && (
         <div className="vz-semsom">
-          <details>
-            <summary>
-              <IcSemSom tam={14} />
-              Sem o som do PC
-            </summary>
-            <p>
-              <SemSom />
-            </p>
-          </details>
-          <button type="button" className="vz-link" onClick={() => setLive({ janelaTela: true })}>
-            Tentar com som
+          <IcSemSom tam={15} />
+          <span>Sem som do PC</span>
+          <button type="button" className="vz-corrigir" onClick={() => setLive({ janelaTela: true })}>
+            Corrigir
           </button>
         </div>
       )}
@@ -400,7 +395,7 @@ export function VozPainel() {
   const nome = nomeDaSala(minhaSala, salas);
   if (!minhaSala || !nome) return null;
   const sair = (
-    <button type="button" className="vz-ib sair" aria-label={`Desligar e sair da ${nome}`} title="Desconectar" onClick={() => entrarSala(null)}>
+    <button type="button" className="vz-ib sair" aria-label={`Desligar e sair da ${nome}`} data-dica="Desconectar" data-dica-fim="" onClick={() => entrarSala(null)}>
       <IcDesligar tam={22} />
     </button>
   );
@@ -436,7 +431,8 @@ export function VozPainel() {
             className={"vz-ib" + (ruido ? " on" : "")}
             aria-pressed={ruido}
             aria-label={ruido ? "Desligar a supressão de ruído" : "Ligar a supressão de ruído"}
-            title={ruido ? "Supressão de ruído ligada" : "Supressão de ruído desligada"}
+            data-dica={ruido ? "Supressão de ruído: ligada" : "Supressão de ruído: desligada"}
+            data-dica-fim=""
             onClick={() => salvarMidia({ ruido: !ruido })}
           >
             <IcOndas tam={20} />
@@ -444,11 +440,11 @@ export function VozPainel() {
           {sair}
         </div>
         <div className="vz-acoes">
-          <button type="button" className={"vz-acao" + (cam ? " on" : "")} aria-pressed={cam} aria-label={cam ? "Desligar a câmera" : "Ligar a câmera"} title={cam ? "Desligar a câmera" : "Ligar a câmera"} onClick={botaoCamera}>
+          <button type="button" className={"vz-acao" + (cam ? " on" : "")} aria-pressed={cam} aria-label={cam ? "Desligar a câmera" : "Ligar a câmera"} data-dica={cam ? "Desligar a câmera" : "Ligar a câmera"} data-dica-ini="" onClick={botaoCamera}>
             <IcCamera tam={20} />
           </button>
           {(canShare || live) && (
-            <button type="button" className={"vz-acao" + (live ? " ao-vivo" : "")} aria-pressed={live} aria-label={live ? "Parar a transmissão" : "Transmitir a tela"} title={live ? "Parar a transmissão" : "Transmitir a tela"} onClick={botaoTela}>
+            <button type="button" className={"vz-acao" + (live ? " ao-vivo" : "")} aria-pressed={live} aria-label={live ? "Parar a transmissão" : "Transmitir a tela"} data-dica={live ? "Parar a transmissão" : "Transmitir a tela"} onClick={botaoTela}>
               <IcTela tam={20} />
             </button>
           )}
@@ -457,7 +453,8 @@ export function VozPainel() {
             type="button"
             className="vz-acao"
             aria-label="Abrir as câmeras numa janela flutuante"
-            title={nCams ? "Câmeras numa janela flutuante" : "Ninguém com a câmera ligada"}
+            data-dica={nCams ? "Câmeras numa janela" : "Ninguém com câmera"}
+            data-dica-fim=""
             disabled={!nCams}
             onClick={() => openCamPip(null)}
           >
@@ -503,7 +500,7 @@ function MenuMic({ lugar, ancora, fechar }: { lugar: Lugar; ancora: HTMLElement 
     <Balao lugar={lugar} ancora={ancora} fechar={fechar} rotulo="Opções do microfone">
       <h4>Microfone</h4>
       <ListaAparelhos rotulo="Microfone" lista={m.mics} valor={m.mic} onChange={(mic) => salvarMidia({ mic })} />
-      <div className="vz-medidor" title="Fale para testar">
+      <div className="vz-medidor" aria-label="Fale para testar o microfone">
         <span ref={barra} />
       </div>
       <div className="vz-sep" />
@@ -560,7 +557,7 @@ export function BotoesVozEu() {
   return (
     <span className="vz-eu">
       <span className={"vz-dupla" + (mudo ? " off" : "")}>
-        <button type="button" className="vz-ib" aria-pressed={mudo} aria-label={mudo ? "Ligar o microfone" : "Desligar o microfone"} title={mudo ? "Ligar o microfone" : "Desligar o microfone"} onClick={alternarMudo}>
+        <button type="button" className="vz-ib" aria-pressed={mudo} aria-label={mudo ? "Ligar o microfone" : "Desligar o microfone"} data-dica={mudo ? "Ligar o microfone" : "Silenciar"} onClick={alternarMudo}>
           {mudo ? <IcMicDesligado tam={19} /> : <IcMic tam={19} />}
         </button>
         <button type="button" className="vz-seta" aria-label="Opções do microfone" aria-expanded={!!mic.lugar} onClick={(e) => mic.alternar(e)}>
@@ -568,7 +565,7 @@ export function BotoesVozEu() {
         </button>
       </span>
       <span className={"vz-dupla" + (surdo ? " off" : "")}>
-        <button type="button" className="vz-ib" aria-pressed={surdo} aria-label={surdo ? "Voltar a ouvir" : "Parar de ouvir"} title={surdo ? "Voltar a ouvir" : "Parar de ouvir"} onClick={alternarSurdo}>
+        <button type="button" className="vz-ib" aria-pressed={surdo} aria-label={surdo ? "Voltar a ouvir" : "Parar de ouvir"} data-dica={surdo ? "Voltar a ouvir" : "Ensurdecer"} data-dica-fim="" onClick={alternarSurdo}>
           {surdo ? <IcFoneDesligado tam={19} /> : <IcFone tam={19} />}
         </button>
         <button type="button" className="vz-seta" aria-label="Opções do fone" aria-expanded={!!fone.lugar} onClick={(e) => fone.alternar(e)}>
@@ -605,6 +602,11 @@ function JanelaTransmitir() {
   };
   return (
     <Janela titulo={aoVivo ? "Trocar a transmissão" : "Transmitir tela"} fechar={fechar}>
+      {aoVivo && somPc && !LIVE.hasAudio && (
+        <p className="vz-aviso-som">
+          <SemSom />
+        </p>
+      )}
       <div>
         <div className="vz-rot">O que mostrar</div>
         <div className="vz-segs" role="radiogroup" aria-label="O que mostrar">
