@@ -1,43 +1,88 @@
 "use client";
-/* Desenho de um emblema (SVG próprio), em relevo: o aro da cor do nível (bronze, prata, ouro) com luz de cima à
-   esquerda, um sulco por dentro, a face com brilho e o símbolo gravado (sombra embaixo, luz em cima).
-   As cores são as variáveis --emblema-* de 34-perfil.css. Passar o mouse (ou focar, ou tocar no celular) mostra
-   uma dica com o nome, o nível e quanto falta para o próximo; ela vai para o body para não sair cortada. */
+/* Desenho de um emblema (SVG próprio, viewBox 64): cada emblema tem a silhueta, as cores e a ilustração dele
+   (desenhos.tsx). O nível aparece no aro de metal (bronze, prata, ouro, com luz de cima à esquerda) e nos enfeites:
+   a prata ganha os louros e o ouro, louros, a fita com três estrelas e o brilho. Elo e GC usam o brasão oficial e o
+   círculo da GC. As cores são as variáveis --emblema-* e --em-* de 34-perfil.css. Passar o mouse (ou focar, ou tocar
+   no celular) mostra uma dica com o nome, o nível e quanto falta para o próximo; ela vai para o body para não sair
+   cortada. */
 import { useId, useState } from "react";
 import { createPortal } from "react-dom";
 import { TIERS } from "@/features/ficha/numeros";
 import { BrasaoElo, NivelGc } from "./brasao";
-import { descreverEmblema, EMBLEMAS, NIVEL, progressoEmblema, type Emblema as TEmblema, type IdEmblema } from "./emblemas";
-
-const SIMBOLO: Record<IdEmblema, React.ReactNode> = {
-  online: <path d="M6 12.5 12 7l6 5.5M8 11.5V17h8v-5.5M11 17v-3h2v3" />,
-  sequencia: <path d="M12 6c.8 2.6 3.8 4.1 3.8 7.4a3.8 3.8 0 0 1-7.6 0c0-1.5.8-2.6 1.5-3.4 0 1.5.8 2.2 1.5 2.2 0-2.2-.8-3.7.8-6.2z" />,
-  tela: <path d="M6.5 8h11v7.5h-11zM10 18h4M12 15.5V18" />,
-  coroa: <path d="M6.5 16.5 7.5 9l3 2.7L12 7.5l1.5 4.2 3-2.7 1 7.5z" />,
-  respeito: <path d="M12 17.2s-5.2-3.1-5.2-6.6a2.8 2.8 0 0 1 5.2-1.5 2.8 2.8 0 0 1 5.2 1.5c0 3.5-5.2 6.6-5.2 6.6z" />,
-  elo: <path d="M8.5 7.5h7l2.5 3-6 7-6-7zM6 10.5h12M10.5 7.5 12 17.5l1.5-10" />,
-  cs: <path d="M12 6.5v3M12 14.5v3M6.5 12h3M14.5 12h3M12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6z" />,
-  trofeu: <path d="M9 7h6v3.5a3 3 0 0 1-6 0zM9 8.5H7.2a2 2 0 0 0 2 2.6M15 8.5h1.8a2 2 0 0 1-2 2.6M12 13.5V16M9.5 17.5h5" />,
-  truco: <path d="M9 6.5h6.5v11H9zM12.2 9.5l1 2.2-1 2.2-1-2.2z" />,
-  bingo: <path d="M12 6.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11zM11 9.8h1.6a1 1 0 0 1 0 2H11zm0 2h1.9a1.1 1.1 0 0 1 0 2.2H11z" />,
-  cassino: <path d="M12 6.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11zM12 9.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6zM12 6.5v2.7M12 14.8v2.7M6.5 12h2.7M14.8 12h2.7" />,
-  cronista: <path d="M6.5 8h11v6.5h-6l-3 2.5v-2.5h-2z" />,
-  missao: <path d="M8.5 7h7v10.5h-7zM10.5 7V6h3v1M10.2 12.4l1.3 1.3 2.4-2.6" />,
-  perfeito: <path d="M12 6.6l1.6 3.3 3.6.5-2.6 2.5.6 3.6L12 14.8l-3.2 1.7.6-3.6-2.6-2.5 3.6-.5z" />,
-  mao: <path d="M7.5 7.5h9v9h-9zM10 10h.01M14 14h.01M12 12h.01M14 10h.01M10 14h.01" />,
-  tubarao: <path d="M6.5 15.5h11M8.5 15.5c1-3.5 3.4-6.6 7-8.2-.9 3-.9 5.6 0 8.2" />,
-  aviao: <path d="M6.5 13.6l11-4.6-2.6 6.4-3-1.7-2 2.1v-3.3zM10 12.4l7.5-3.4" />,
-  artilheiro: <path d="M12 6.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11zM12 9.6l2 1.5-.8 2.4h-2.4l-.8-2.4z" />,
-  coruja: <path d="M14.6 6.9a5.2 5.2 0 1 0 2.6 7.6 4.2 4.2 0 0 1-2.6-7.6z" />,
-  churrasco: <path d="M6.8 17.2 17.2 6.8M8.8 12.6l2.6 2.6M10.9 10.5l2.6 2.6M13 8.4l2.6 2.6" />,
-  fenix: <path d="M12 17.2V8M8.6 11.4 12 8l3.4 3.4M7 13.5c1.3 0 2.2-.7 2.7-1.8M17 13.5c-1.3 0-2.2-.7-2.7-1.8" />,
-  colecao: <path d="M10 8.3V8a2 2 0 0 1 4 0v.3M7.6 10a1.6 1.6 0 0 1 1.6-1.7h5.6a1.6 1.6 0 0 1 1.6 1.7v7H7.6zM10 12.5h4" />,
-  /* a GC é desenhada pelo NivelGc; o símbolo fica só como reserva */
-  gc: <path d="M8 12a4 4 0 1 0 8 0 4 4 0 0 0-8 0z" />,
-};
+import { CAULE, DESENHOS, ESTRELA_FITA, faisca, FOLHAS } from "./desenhos";
+import { descreverEmblema, EMBLEMAS, NIVEL, progressoEmblema, type Emblema as TEmblema } from "./emblemas";
 
 /** Largura da dica (igual à do CSS), para não sair da tela. */
 const DICA_L = 230;
+
+/** O desenho de um emblema comum (todos menos elo e GC). `id` deixa os gradientes únicos: as abas ficam montadas. */
+function Desenho({ e, tam, id }: { e: TEmblema; tam: number; id: string }) {
+  if (e.id === "elo" || e.id === "gc") return null;
+  const d = DESENHOS[e.id];
+  const f = d.forma;
+  const u = (s: string) => `url(#${id}${s})`;
+  const [cx, cy] = f.c ?? [32, 29];
+  const encolher = `translate(${cx} ${cy}) scale(${f.k ?? 0.8}) translate(${-cx} ${-cy})`;
+  const face = f.dentro ? <path d={f.dentro} /> : <path d={f.fora} transform={encolher} />;
+  return (
+    <svg viewBox="0 0 64 64" width={tam} height={tam} aria-hidden="true">
+      <defs>
+        {/* metal: claro em cima à esquerda, escuro embaixo à direita; o sulco em volta da face é o contrário */}
+        <linearGradient id={id + "m"} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" className="em-c-claro" />
+          <stop offset=".45" className="em-c-meio" />
+          <stop offset="1" className="em-c-escuro" />
+        </linearGradient>
+        <linearGradient id={id + "s"} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" className="em-c-escuro" />
+          <stop offset="1" className="em-c-claro" />
+        </linearGradient>
+        <radialGradient id={id + "f"} cx=".38" cy=".3" r=".8">
+          <stop offset="0" className="em-fa" />
+          <stop offset="1" className="em-fb" />
+        </radialGradient>
+        <clipPath id={id + "k"}>{face}</clipPath>
+        <path id={id + "p"} d={f.fora} fillRule={f.furo ? "evenodd" : undefined} />
+      </defs>
+      {e.nivel >= 2 && (
+        <g className="em-louro">
+          {[0, 1].map((lado) => (
+            <g key={lado} transform={lado ? "matrix(-1 0 0 1 64 0)" : undefined}>
+              <path d={CAULE} fill="none" stroke={u("m")} strokeWidth="1.6" strokeLinecap="round" />
+              {FOLHAS.map((l, i) => (
+                <ellipse key={i} cx={l.x} cy={l.y} rx="4.3" ry="1.9" fill={u("m")} transform={`rotate(${l.r} ${l.x} ${l.y})`} />
+              ))}
+            </g>
+          ))}
+        </g>
+      )}
+      <use href={`#${id}p`} className="em-chao" transform="translate(0 1.6)" />
+      {d.atras?.(u("m"))}
+      <use href={`#${id}p`} fill={u("m")} stroke={u("m")} strokeWidth="2" strokeLinejoin="round" />
+      <g fill={u("f")} stroke={u("s")} strokeWidth="1.6" strokeLinejoin="round">
+        {face}
+      </g>
+      {/* a ilustração duas vezes: uma escura deslocada (o relevo) e a de verdade por cima */}
+      <g className="em-sombra" transform="translate(.6 1)">
+        {d.arte(u("k"))}
+      </g>
+      {d.arte(u("k"))}
+      <ellipse cx="23" cy="16" rx="15" ry="7.5" className="em-gloss" transform="rotate(-28 23 16)" clipPath={u("k")} />
+      {d.frente}
+      {e.nivel === 3 && (
+        <>
+          <path d="M7 53.5h9v7.5H7l2.6-3.75zM57 53.5h-9v7.5h9l-2.6-3.75z" className="em-fita-ponta" />
+          <path d="M14 52h36v9H14z" className="em-fita" />
+          {[24, 32, 40].map((x) => (
+            <path key={x} d={ESTRELA_FITA(x)} className="em-astro" />
+          ))}
+          <path d={faisca(51, 9, 5)} className="em-faisca" />
+          <path d={faisca(13.5, 14, 3)} className="em-faisca" />
+        </>
+      )}
+    </svg>
+  );
+}
 
 /** `detalhe`: o texto da dica no lugar do padrão (o elo com divisão e fila, "Platina IV na flex"). */
 export function Emblema({ e, tam = 36, detalhe }: { e: TEmblema; tam?: number; detalhe?: string }) {
@@ -52,10 +97,11 @@ export function Emblema({ e, tam = 36, detalhe }: { e: TEmblema; tam?: number; d
     setDica({ x, y: acima ? r.top - 8 : r.bottom + 8, acima });
   };
   const esconder = () => setDica(null);
-  const id = useId();
+  /* o useId tem caracteres que não servem num url(#…) */
+  const id = "em" + useId().replace(/[^a-zA-Z0-9]/g, "");
   return (
     <span
-      className={"emblema " + (imagem ? "em-imagem" : "em-" + NIVEL[e.nivel])}
+      className={"emblema " + (imagem ? "em-imagem" : `em-${NIVEL[e.nivel]} em-d-${e.id}`)}
       role="img"
       aria-label={titulo}
       tabIndex={0}
@@ -69,33 +115,7 @@ export function Emblema({ e, tam = 36, detalhe }: { e: TEmblema; tam?: number; d
       ) : e.id === "gc" ? (
         <NivelGc n={e.valor} tam={tam} />
       ) : (
-        <svg viewBox="0 0 48 48" width={tam} height={tam} aria-hidden="true">
-          <defs>
-            {/* aro: claro em cima à esquerda, escuro embaixo à direita; o sulco é o contrário (parece afundado) */}
-            <linearGradient id={id + "a"} x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" className="em-c-claro" />
-              <stop offset=".45" className="em-c-meio" />
-              <stop offset="1" className="em-c-escuro" />
-            </linearGradient>
-            <linearGradient id={id + "s"} x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" className="em-c-escuro" />
-              <stop offset="1" className="em-c-claro" />
-            </linearGradient>
-            <radialGradient id={id + "f"} cx=".38" cy=".32" r=".75">
-              <stop offset="0" className="em-f-claro" />
-              <stop offset="1" className="em-f-escuro" />
-            </radialGradient>
-          </defs>
-          <circle cx="24" cy="24.8" r="22.6" className="em-chao" />
-          <circle cx="24" cy="24" r="22.6" fill={`url(#${id}a)`} />
-          <circle cx="24" cy="24" r="18.8" fill={`url(#${id}s)`} />
-          <circle cx="24" cy="24" r="17.2" fill={`url(#${id}f)`} />
-          <g transform="scale(2)">
-            <g className="em-gravado" transform="translate(.35 .5)">{SIMBOLO[e.id]}</g>
-            <g className="em-simbolo">{SIMBOLO[e.id]}</g>
-          </g>
-          <path d="M9.5 18.5a15.5 15.5 0 0 1 22-11.2" className="em-brilho" />
-        </svg>
+        <Desenho e={e} tam={tam} id={id} />
       )}
       {dica && createPortal(<DicaEmblema e={e} detalhe={detalhe} {...dica} />, document.body)}
     </span>
