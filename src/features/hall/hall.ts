@@ -107,21 +107,37 @@ export function posValida(v: unknown): v is Piso {
  * Um lugar para sentar: o centro do assento (i, j, fracionários, em cima do móvel), o piso livre de onde
  * a pessoa senta (`chegar`, que é o `pos` dela) e para onde o boneco olha sentado.
  */
-export type Assento = { id: string; i: number; j: number; chegar: Piso; olha: Sentido };
+export type Assento = { id: string; movel: string; i: number; j: number; chegar: Piso; olha: Sentido };
 export const ASSENTOS: readonly Assento[] = [
   /* sofá na parede da esquerda: encosto na parede, olha para a sala */
-  { id: "sofa-a", i: 0.62, j: 7.0, chegar: { i: 1, j: 7 }, olha: "frente-direita" },
-  { id: "sofa-b", i: 0.62, j: 8.0, chegar: { i: 1, j: 8 }, olha: "frente-direita" },
-  { id: "sofa-c", i: 0.62, j: 9.0, chegar: { i: 1, j: 9 }, olha: "frente-direita" },
+  { id: "sofa-a", movel: "sofa-parede", i: 0.62, j: 7.0, chegar: { i: 1, j: 7 }, olha: "frente-direita" },
+  { id: "sofa-b", movel: "sofa-parede", i: 0.62, j: 8.0, chegar: { i: 1, j: 8 }, olha: "frente-direita" },
+  { id: "sofa-c", movel: "sofa-parede", i: 0.62, j: 9.0, chegar: { i: 1, j: 9 }, olha: "frente-direita" },
   /* sofá do canto: encosto do lado da cozinha */
-  { id: "canto-a", i: 12.95, j: 7.7, chegar: { i: 11, j: 7 }, olha: "costas-esquerda" },
-  { id: "canto-b", i: 12.95, j: 8.6, chegar: { i: 11, j: 8 }, olha: "costas-esquerda" },
-  { id: "canto-c", i: 12.95, j: 9.5, chegar: { i: 11, j: 9 }, olha: "costas-esquerda" },
+  { id: "canto-a", movel: "sofa-canto", i: 12.95, j: 7.7, chegar: { i: 11, j: 7 }, olha: "costas-esquerda" },
+  { id: "canto-b", movel: "sofa-canto", i: 12.95, j: 8.6, chegar: { i: 11, j: 8 }, olha: "costas-esquerda" },
+  { id: "canto-c", movel: "sofa-canto", i: 12.95, j: 9.5, chegar: { i: 11, j: 9 }, olha: "costas-esquerda" },
   /* as duas poltronas da frente */
-  { id: "poltrona-1", i: 2.6, j: 10.15, chegar: { i: 2, j: 9 }, olha: "costas-direita" },
-  { id: "poltrona-2", i: 4.1, j: 10.15, chegar: { i: 4, j: 9 }, olha: "costas-direita" },
+  { id: "poltrona-1", movel: "poltrona-1", i: 2.6, j: 10.15, chegar: { i: 2, j: 9 }, olha: "costas-direita" },
+  { id: "poltrona-2", movel: "poltrona-2", i: 4.1, j: 10.15, chegar: { i: 4, j: 9 }, olha: "costas-direita" },
 ];
+/**
+ * Móveis com o encosto entre a câmera e quem senta (o sofá do canto e as poltronas): o encosto vai numa camada
+ * só dele, por cima de quem está sentado. No sofá da parede o encosto fica atrás e vai junto com o estofado.
+ */
+export const ENCOSTO_NA_FRENTE: ReadonlySet<string> = new Set(["sofa-canto", "poltrona-1", "poltrona-2"]);
 export const assentoDe = (id: unknown) => (typeof id === "string" ? (ASSENTOS.find((a) => a.id === id) ?? null) : null);
+
+/**
+ * Pé do boneco na tela: o centro do piso ou, sentado, o centro do assento um pouco abaixo (o `.boneco.sentado`
+ * desce 19% da célula, em 22-hall.css, para o quadril cair no estofado). Serve para pôr algo na mão dele.
+ */
+export function peNaTela(b: { i: number; j: number; senta?: string | null }): [number, number] {
+  const a = assentoDe(b.senta);
+  if (!a) return tela(b.i + 0.5, b.j + 0.5);
+  const [x, y] = tela(a.i, a.j);
+  return [x, y + CEL_H * 0.19];
+}
 
 /** Posição no hall: o piso e, se estiver sentado, o assento (só vale um assento que sai daquele piso). */
 export type PosHall = Piso & { s?: string };
@@ -287,4 +303,36 @@ export function ordemZ(caixas: readonly Caixa[]): number[] {
     out.push(esc);
   }
   return out;
+}
+
+/**
+ * z-index do cômodo (a partir de 2): `z` tem os MOVEIS e depois os bonecos, na mesma ordem; `encosto` tem o dos
+ * móveis de ENCOSTO_NA_FRENTE. Quem está em pé entra na `ordemZ`. Quem está sentado não: a pegada do assento fica
+ * dentro da do móvel e a conta erra; ele vai logo depois do móvel (por cima do estofado), do fundo para a frente,
+ * e o encosto da frente vem depois de todos os sentados naquele móvel.
+ */
+export function camadasHall(bonecos: readonly { i: number; j: number; senta: string | null }[]) {
+  const sentados = new Map<string, { k: number; a: Assento }[]>();
+  const emPe: number[] = [];
+  bonecos.forEach((b, k) => {
+    const a = assentoDe(b.senta);
+    if (a) sentados.set(a.movel, [...(sentados.get(a.movel) ?? []), { k, a }]);
+    else emPe.push(k);
+  });
+  const caixas = [...MOVEIS.map(caixaDoMovel), ...emPe.map((k) => caixaDoBoneco(bonecos[k].i, bonecos[k].j))];
+  const z: number[] = [];
+  const encosto: Record<string, number> = {};
+  let prox = 2;
+  for (const c of ordemZ(caixas)) {
+    if (c >= MOVEIS.length) {
+      z[MOVEIS.length + emPe[c - MOVEIS.length]] = prox++;
+      continue;
+    }
+    const m = MOVEIS[c];
+    z[c] = prox++;
+    const lista = (sentados.get(m.id) ?? []).sort((x, y) => x.a.i + x.a.j - (y.a.i + y.a.j));
+    for (const { k } of lista) z[MOVEIS.length + k] = prox++;
+    if (ENCOSTO_NA_FRENTE.has(m.id)) encosto[m.id] = prox++;
+  }
+  return { z, encosto };
 }

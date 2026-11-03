@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { BONECO_ARQ } from "@/lib/dados/nanicos";
 import {
   ASSENTOS,
+  camadasHall,
   assentoNaTela,
   posHall,
   BLOQUEADOS,
@@ -173,5 +174,21 @@ describe("assentos", () => {
     expect(assentoNaTela(x, y)?.id).toBe(a.id);
     const [x2, y2] = tela(7, 5);
     expect(assentoNaTela(x2, y2)).toBeNull();
+  });
+  it("quem senta fica por cima do estofado e atrás do encosto da frente", () => {
+    const zMovel = (id: string, z: number[]) => z[MOVEIS.findIndex((m) => m.id === id)];
+    for (const a of ASSENTOS) {
+      const bonecos = [{ i: a.chegar.i, j: a.chegar.j, senta: a.id }, { i: 7, j: 5, senta: null }];
+      const { z, encosto } = camadasHall(bonecos);
+      const zb = z[MOVEIS.length];
+      expect(zb, a.id).toBeGreaterThan(zMovel(a.movel, z));
+      if (encosto[a.movel] !== undefined) expect(zb, a.id).toBeLessThan(encosto[a.movel]);
+      expect(new Set([...z, ...Object.values(encosto)]).size, a.id).toBe(z.length + Object.keys(encosto).length);
+    }
+  });
+  it("dois no mesmo sofá: o da frente fica por cima", () => {
+    const [a, , c] = ASSENTOS;
+    const { z } = camadasHall([{ i: c.chegar.i, j: c.chegar.j, senta: c.id }, { i: a.chegar.i, j: a.chegar.j, senta: a.id }]);
+    expect(z[MOVEIS.length]).toBeGreaterThan(z[MOVEIS.length + 1]);
   });
 });

@@ -172,23 +172,26 @@ function mesa(L: Forma[], m: Movel, h: number, toalha: string, borda: string, bo
   caixa(L, i, j, w, d, 4, toalha, borda, borda2, h - 4);
 }
 
-/** Sofá ou poltrona de tecido azul: assento, encosto do lado `encosto` e braços nas outras pontas. */
-function sofa(L: Forma[], m: Movel, encosto: "i0" | "i1" | "j1") {
+/**
+ * Sofá ou poltrona de tecido azul: assento, encosto do lado `encosto` e braços nas outras pontas.
+ * O encosto virado para a câmera (i1, j1) vai em `F`, a camada da frente, por cima de quem está sentado.
+ */
+function sofa(L: Forma[], m: Movel, encosto: "i0" | "i1" | "j1", F: Forma[] = L) {
   const { i, j, w, d } = m;
   const E = 0.3, B = 0.22;
-  const cx = (a: number, b: number, ww: number, dd: number, h: number, z = 0) => caixa(L, a, b, ww, dd, h, "colch0", "colch1", "colch2", z, "colchl");
+  const cx = (a: number, b: number, ww: number, dd: number, h: number, z = 0, lista = L) => caixa(lista, a, b, ww, dd, h, "colch0", "colch1", "colch2", z, "colchl");
   if (encosto === "j1") {
-    cx(i, j + d - E, w, E, 36);
     cx(i, j, B, d - E, 24);
     cx(i + B, j, w - 2 * B, d - E, 15);
     cx(i + w - B, j, B, d - E, 24);
+    cx(i, j + d - E, w, E, 36, 0, F);
   } else {
     const a0 = encosto === "i0" ? i + E : i;
     if (encosto === "i0") cx(i, j, E, d, 36);
     cx(a0, j, w - E, B, 24);
     cx(a0, j + B, w - E, d - 2 * B, 15);
     cx(a0, j + d - B, w - E, B, 24);
-    if (encosto === "i1") cx(i + w - E, j, E, d, 36);
+    if (encosto === "i1") cx(i + w - E, j, E, d, 36, 0, F);
   }
 }
 
@@ -196,7 +199,7 @@ function sofa(L: Forma[], m: Movel, encosto: "i0" | "i1" | "j1") {
 const roda = (ci: number, cj: number, r: number, z: number, n = 28): Pt[] =>
   Array.from({ length: n }, (_, k) => p(ci + r * Math.cos((2 * Math.PI * k) / n), cj + r * Math.sin((2 * Math.PI * k) / n), z));
 
-const DESENHO: Record<string, (L: Forma[], m: Movel) => void> = {
+const DESENHO: Record<string, (L: Forma[], m: Movel, F: Forma[]) => void> = {
   churrasqueira: (L, m) => {
     const { i, j, w, d } = m;
     caixa(L, i, j, w, d, 88, "churr0", "churr1", "churr2");
@@ -245,18 +248,20 @@ const DESENHO: Record<string, (L: Forma[], m: Movel) => void> = {
     L.push({ t: "r", x: x - 3, y: y - 13, w: 6, h: 13, f: "grama2", rx: 2 });
   },
   "sofa-parede": (L, m) => sofa(L, m, "i0"),
-  "sofa-canto": (L, m) => sofa(L, m, "i1"),
-  "poltrona-1": (L, m) => sofa(L, m, "j1"),
-  "poltrona-2": (L, m) => sofa(L, m, "j1"),
+  "sofa-canto": (L, m, F) => sofa(L, m, "i1", F),
+  "poltrona-1": (L, m, F) => sofa(L, m, "j1", F),
+  "poltrona-2": (L, m, F) => sofa(L, m, "j1", F),
 };
 
-const MOVEL_FORMAS: Record<string, Forma[]> = Object.fromEntries(
-  MOVEIS.map((m) => {
-    const L: Forma[] = [];
-    DESENHO[m.id]?.(L, m);
-    return [m.id, L];
-  }),
-);
+/* cada móvel desenhado uma vez: o corpo e, nos de ENCOSTO_NA_FRENTE, o encosto à parte */
+const MOVEL_FORMAS: Record<string, Forma[]> = {};
+const ENCOSTO_FORMAS: Record<string, Forma[]> = {};
+for (const m of MOVEIS) {
+  const L: Forma[] = [], F: Forma[] = [];
+  DESENHO[m.id]?.(L, m, F);
+  MOVEL_FORMAS[m.id] = L;
+  if (F.length) ENCOSTO_FORMAS[m.id] = F;
+}
 
 /* ---------- desenho ---------- */
 /* "url-ceu" = o degradê do céu (definido no <defs> do Fundo) */
@@ -349,9 +354,9 @@ export const Destaque = memo(function Destaque({ piso, vb, pisca }: { piso: Piso
   );
 });
 
-/** Um móvel na sua camada; `z` vem da ordem de desenho (`ordemZ`). */
-export const MovelCamada = memo(function MovelCamada({ id, z, vb }: { id: string; z: number; vb: Caixa2D }) {
-  const formas = MOVEL_FORMAS[id];
+/** Um móvel na sua camada (ou, com `encosto`, só o encosto da frente); `z` vem de `camadasHall`. */
+export const MovelCamada = memo(function MovelCamada({ id, z, vb, encosto = false }: { id: string; z: number; vb: Caixa2D; encosto?: boolean }) {
+  const formas = (encosto ? ENCOSTO_FORMAS : MOVEL_FORMAS)[id];
   if (!formas?.length) return null;
   return (
     <svg className="hall-camada" viewBox={viewBox(vb)} aria-hidden="true" style={{ zIndex: z }}>
