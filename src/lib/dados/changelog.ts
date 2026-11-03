@@ -630,6 +630,10 @@ export const CHANGELOG: EntradaLog[] = [
       "Roleta ao vivo: a lista de quem está na rodada voltou ao tamanho certo",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: ["Aviãozinho: quem apostou no último voo volta a ter o botão de apostar com a mesa parada (antes ficava preso até outra pessoa abrir um voo)"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
