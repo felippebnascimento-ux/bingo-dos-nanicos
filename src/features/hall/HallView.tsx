@@ -34,7 +34,7 @@ import { useTrofeus } from "@/features/trofeus/trofeusDados";
 import { assentoNaTela, CADEIRAS_TRUCO, camadasHall, CLICAVEIS, livre, MOVEIS, naMesaVerde, pisoDaPlateia, pisoLivreNaTela, pisoNaTela, VB_ESTREITO, VB_LARGO, type Caixa2D, type Clicavel, type Piso } from "./hall";
 import { Destaque, emPorcento, FeltroTruco, Fundo, MovelCamada, tvCaixa } from "./Sala";
 import { BotaoMeuQuarto, QuartoVisita, TopoQuarto } from "@/features/quarto/QuartoVisita";
-import { BaloesHall, ChatBarra } from "./ChatHabbo";
+import { BaloesHall, ChatBarra, HistoricoChat } from "./ChatHabbo";
 import { BotaoMural, MuralJanela, QuadroMural } from "./Mural";
 import { abrirMural } from "./muralDados";
 import { Lupa, ZoomCaixa } from "./Lupa";
@@ -171,6 +171,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
       } else setApp({ aba: "truco" });
     }
     else if (c === "mural") abrirMural();
+    else if (c === "banheiro") irParaQuarto("banheiro");
     else setApp({ aba: "loja" });
   };
   const tv = tvCaixa(vb);
@@ -261,7 +262,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
           <PlacaChurrasco vb={vb} />
           {CLICAVEIS.map((c) => {
             const pos = emPorcento(vb, c.rotulo.i, c.rotulo.j, c.rotulo.z);
-            const rotulo = c.id === "tv" ? "Ao vivo" : c.id === "truco" ? (mv.mesa ? "Truco · ao vivo" : "Truco") : c.id === "salas" ? "Rua · Salas" : c.id === "mural" ? "Mural" : "Loja";
+            const rotulo = c.id === "tv" ? "Ao vivo" : c.id === "truco" ? (mv.mesa ? "Truco · ao vivo" : "Truco") : c.id === "salas" ? "Rua · Salas" : c.id === "mural" ? "Mural" : c.id === "banheiro" ? "Banheiro" : "Loja";
             return (
               <button
                 key={c.id}
@@ -336,6 +337,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
         {aviso}
       </p>
       <MuralJanela />
+      <HistoricoChat />
       {assistindo && <AssistindoJanela id={assistindo} fechar={fecharAssistindo} />}
     </section>
   );

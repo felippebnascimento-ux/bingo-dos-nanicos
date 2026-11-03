@@ -3,8 +3,9 @@
  * Chat estilo Habbo: a barra branca embaixo do K-FOFO (manda para o #geral) e os balões em cima dos bonecos
  * (baloes.ts). No K-FOFO os balões ficam numa camada por cima de tudo, em % do cômodo; no quarto, dentro do SVG.
  */
-import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
-import { enviarChat } from "@/features/chat/chat";
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import { enviarChat, useChat } from "@/features/chat/chat";
+import { Avatar } from "@/components/ui/Avatar";
 import { errMsg } from "@/lib/supabase";
 import { toast } from "@/lib/toast";
 import { useApp } from "@/lib/store";
@@ -39,7 +40,7 @@ export function ChatBarra() {
         value={texto}
         onChange={(e) => setTexto(e.target.value)}
         maxLength={300}
-        placeholder="Fale com quem está no K-FOFO…"
+        placeholder="Fale com quem está aqui… (Z abre o histórico)"
         aria-label="Mensagem para o #geral (aparece num balão em cima do seu boneco)"
         enterKeyHint="send"
         autoComplete="off"
@@ -105,5 +106,61 @@ export function BaloesSvg({ itens }: { itens: readonly { key: string; nome: stri
         );
       })}
     </>
+  );
+}
+
+/* ---------- histórico (tecla Z): as últimas mensagens do #geral, o chat do K-FOFO, da rua e do corredor ---------- */
+const digitando = (el: EventTarget | null) =>
+  el instanceof HTMLElement && (el.isContentEditable || el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT");
+
+/** Z (fora de um campo de texto) abre e fecha o histórico do chat; Esc fecha. Só com a aba do K-FOFO na tela. */
+export function HistoricoChat() {
+  const [aberto, setAberto] = useState(false);
+  const aba = useApp((s) => s.aba);
+  const msgs = useChat((s) => s.geral);
+  const friends = useApp((s) => s.friends);
+  const fim = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const tecla = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape") return setAberto(false);
+      if ((e.key !== "z" && e.key !== "Z") || e.ctrlKey || e.metaKey || e.altKey || digitando(e.target) || aba !== "hall") return;
+      e.preventDefault();
+      setAberto((v) => !v);
+    };
+    document.addEventListener("keydown", tecla);
+    return () => document.removeEventListener("keydown", tecla);
+  }, [aba]);
+  useEffect(() => {
+    if (aberto) fim.current?.scrollIntoView({ block: "end" });
+  }, [aberto, msgs.length]);
+  if (!aberto || aba !== "hall") return null;
+  return (
+    <div className="habbo-historico" role="dialog" aria-label="Histórico do chat (Z fecha)">
+      <header>
+        <b>Histórico do chat</b>
+        <small>Z ou Esc fecha</small>
+        <button type="button" className="perfil-fechar" aria-label="Fechar o histórico" onClick={() => setAberto(false)}>
+          ×
+        </button>
+      </header>
+      <div className="habbo-historico-lista">
+        {msgs.length === 0 && <p className="hint">Ninguém falou ainda.</p>}
+        {msgs.slice(-100).map((m) => {
+          const autor = friends.find((x) => x.user_id === m.user_id);
+          const hora = new Date(m.created_at);
+          return (
+            <p key={m.id} className="habbo-historico-msg">
+              {autor && <Avatar f={autor} size="xs" />}
+              <span>
+                <b>{autor?.name ?? "Nanico"}</b> <small>{isNaN(hora.getTime()) ? "" : hora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</small>
+                <br />
+                {m.text}
+              </span>
+            </p>
+          );
+        })}
+        <div ref={fim} />
+      </div>
+    </div>
   );
 }

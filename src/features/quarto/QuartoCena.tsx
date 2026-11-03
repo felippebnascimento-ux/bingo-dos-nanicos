@@ -12,6 +12,7 @@ import { BaloesSvg } from "@/features/hall/ChatHabbo";
 import { desenharMovel, Poligonos, type Poly, type Pt } from "./Moveis";
 import { camadasQuarto, type Retangulo } from "./quarto";
 import { MARCA_PENALTI, type PortaCorredor } from "./cenas";
+import type { Pixo } from "./pixacoes";
 
 const TW = 46, TH = 23, ZS = 1.3, WH = 150, MARGEM = 24;
 
@@ -54,6 +55,52 @@ function fundoRua(n: number, p: (i: number, j: number, z?: number) => Pt): Poly[
   poly([p(MARCA_PENALTI.i - 0.12, MARCA_PENALTI.j - 0.12), p(MARCA_PENALTI.i + 0.12, MARCA_PENALTI.j - 0.12), p(MARCA_PENALTI.i + 0.12, MARCA_PENALTI.j + 0.12), p(MARCA_PENALTI.i - 0.12, MARCA_PENALTI.j + 0.12)], "cal");
   poly([p(9.2, 1.4), p(n, 1.4), p(n, 5.6), p(9.2, 5.6)], "cal-area", true);
   return L;
+}
+
+/** O banheiro: azulejo nas duas paredes, piso de ladrilho e a saída para o K-FOFO no piso (0, 0). */
+function fundoBanheiro(n: number, p: (i: number, j: number, z?: number) => Pt): Poly[] {
+  const L: Poly[] = [];
+  const poly = (q: Pt[], c: string, linha = false) => L.push({ q, c, linha });
+  poly([p(0, 0), p(0, n), p(0, n, WH), p(0, 0, WH)], "azulejo1");
+  poly([p(0, 0), p(n, 0), p(n, 0, WH), p(0, 0, WH)], "azulejo2");
+  /* o rejunte do azulejo: linhas a cada meio piso e a cada 18 de altura */
+  for (let a = 0.5; a < n; a += 0.5) {
+    poly([p(0, a), p(0, a + 0.02), p(0, a + 0.02, WH), p(0, a, WH)], "rejunte-b");
+    poly([p(a, 0), p(a + 0.02, 0), p(a + 0.02, 0, WH), p(a, 0, WH)], "rejunte-b");
+  }
+  for (let z = 18; z < WH; z += 18) {
+    poly([p(0, 0, z), p(0, n, z), p(0, n, z + 1), p(0, 0, z + 1)], "rejunte-b");
+    poly([p(0, 0, z), p(n, 0, z), p(n, 0, z + 1), p(0, 0, z + 1)], "rejunte-b");
+  }
+  poly([p(0, 0, WH), p(0, n, WH), p(0, n, WH + 10), p(0, 0, WH + 10)], "topo1");
+  poly([p(0, 0, WH), p(n, 0, WH), p(n, 0, WH + 10), p(0, 0, WH + 10)], "topo2");
+  poly([p(0.12, 0), p(0.88, 0), p(0.88, 0, 104), p(0.12, 0, 104)], "porta", true);
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) poly([p(i, j), p(i + 1, j), p(i + 1, j + 1), p(i, j + 1)], (i + j) % 2 ? "ladrilho0" : "ladrilho1");
+  /* o espelho em cima da pia */
+  poly([p(0, 4.1, 70), p(0, 4.9, 70), p(0, 4.9, 118), p(0, 4.1, 118)], "espelho", true);
+  return L;
+}
+
+/** As pixações deitadas nas paredes do banheiro (texto livre de quem escreveu; o React escapa tudo). */
+function Pixos({ lista, p }: { lista: readonly Pixo[]; p: (i: number, j: number, z?: number) => Pt }) {
+  const L = Math.hypot(TW, TH);
+  return (
+    <g className="quarto-pixos" pointerEvents="none">
+      {lista.map((x) => {
+        const [ox, oy] = x.parede === "dir" ? p(x.a, 0, x.z) : p(0, x.a, x.z);
+        /* o papel reto entortado para o plano da parede: na da direita +i vai para a direita e desce; na da esquerda o
+           texto anda para −j (sobe para a direita) */
+        const m = x.parede === "dir" ? `matrix(${TW / L} ${TH / L} 0 1 ${ox} ${oy})` : `matrix(${TW / L} ${-TH / L} 0 1 ${ox} ${oy})`;
+        return (
+          <g key={x.id} transform={m}>
+            <text className={"quarto-pixo p-" + x.cor} transform={`rotate(${x.rot})`} textAnchor="middle">
+              {x.texto}
+            </text>
+          </g>
+        );
+      })}
+    </g>
+  );
 }
 
 /** O corredor: as duas paredes sem janela nem pôster, o carpete comprido e a saída para o K-FOFO no piso (0, 0). */
@@ -133,6 +180,7 @@ export const QuartoCena = memo(function QuartoCena({
   portas,
   aoTocarPorta,
   aoTocarSaida,
+  pixos,
 }: {
   tamanho: number;
   equip: Equip;
@@ -146,7 +194,9 @@ export const QuartoCena = memo(function QuartoCena({
   aoTocarMovel?: (id: number) => void;
   bonecos?: readonly BonecoCena[];
   brilhos?: readonly { id: string; i: number; j: number }[];
-  tipo?: "quarto" | "rua" | "corredor";
+  tipo?: "quarto" | "rua" | "corredor" | "banheiro";
+  /** as pixações do banheiro */
+  pixos?: readonly Pixo[];
   portas?: readonly PortaCorredor[];
   aoTocarPorta?: (fid: string) => void;
   /** a porta do piso (0, 0): na rua e no corredor, volta ao K-FOFO */
@@ -154,7 +204,7 @@ export const QuartoCena = memo(function QuartoCena({
 }) {
   const n = tamanho;
   const { p, largura, altura } = useMemo(() => projecao(n), [n]);
-  const fundo = useMemo(() => (tipo === "rua" ? fundoRua(n, p) : tipo === "corredor" ? fundoCorredor(n, p) : paredes(n, p, equip)), [n, p, equip, tipo]);
+  const fundo = useMemo(() => (tipo === "rua" ? fundoRua(n, p) : tipo === "corredor" ? fundoCorredor(n, p) : tipo === "banheiro" ? fundoBanheiro(n, p) : paredes(n, p, equip)), [n, p, equip, tipo]);
   const ordem = useMemo(() => camadasQuarto(moveis.map((m) => m.ret)), [moveis]);
   /* com bonecos: quem está em pé entra na ordem com os móveis; quem está sentado vem logo depois do móvel dele */
   const camadas = useMemo(() => {
@@ -189,6 +239,7 @@ export const QuartoCena = memo(function QuartoCena({
           <title>Voltar ao K-FOFO</title>
         </polygon>
       )}
+      {pixos && <Pixos lista={pixos} p={p} />}
       {portas?.map((d) => (
         <PortaNaParede key={d.fid} d={d} p={p} aoTocar={aoTocarPorta} />
       ))}

@@ -245,3 +245,62 @@ export function nomeCobranca(n: number): string {
   if (n > COBRANCAS * 2) return `Morte súbita · ${Math.ceil((n - COBRANCAS * 2) / 2)}º par`;
   return `${Math.ceil(n / 2)}ª cobrança de ${COBRANCAS}`;
 }
+
+/* ---------- ranking (duelo_ranking, seção 50) ---------- */
+export type LinhaRanking = { userId: string; vitorias: number; derrotas: number; saldo: number; maiorPremio: number };
+
+/** Lê o ranking do banco, na ordem dele (mais vitórias, depois o maior saldo); linhas estranhas ficam de fora. */
+export function lerRankingDuelo(d: unknown): LinhaRanking[] {
+  if (!Array.isArray(d)) return [];
+  const out: LinhaRanking[] = [];
+  for (const x of d.slice(0, 100)) {
+    const o = obj(x);
+    const uid = o && texto(o.user_id);
+    if (!o || !uid) continue;
+    out.push({
+      userId: uid,
+      vitorias: Math.max(0, inteiro(o.vitorias)),
+      derrotas: Math.max(0, inteiro(o.derrotas)),
+      saldo: inteiro(o.saldo),
+      maiorPremio: Math.max(0, inteiro(o.maior_premio)),
+    });
+  }
+  return out;
+}
+
+/** A posição de cada linha (1, 2, …): mesmas vitórias e mesmo saldo dividem a posição, e a seguinte pula. */
+export function posicoesRanking(l: readonly Pick<LinhaRanking, "vitorias" | "saldo">[]): number[] {
+  return l.map((x, i) => {
+    let p = i;
+    while (p > 0 && l[p - 1].vitorias === x.vitorias && l[p - 1].saldo === x.saldo) p--;
+    return p + 1;
+  });
+}
+
+/** Saldo com sinal: "+1.250", "−300" ou "0". */
+export const comSinal = (n: number) =>
+  (n > 0 ? "+" : n < 0 ? "−" : "") + String(Math.trunc(Math.abs(n))).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+/* ---------- chat do duelo (duelo_mensagens, seção 50) ---------- */
+export type MsgDuelo = { id: number; dueloId: number; userId: string; texto: string; em: number };
+export const MSG_MAX = 200;
+/** As reações rápidas: cada uma vai como uma mensagem. */
+export const REACOES_DUELO = ["⚽", "🧤", "😂", "🔥"] as const;
+
+/** Confere uma mensagem que veio do banco ou do tempo real. */
+export function lerMsgDuelo(r: unknown): MsgDuelo | null {
+  const o = obj(r);
+  if (!o) return null;
+  const uid = texto(o.user_id), em = hora(o.em);
+  const id = Number(o.id), dueloId = Number(o.duelo_id);
+  if (!uid || em === null || !Number.isSafeInteger(id) || !Number.isSafeInteger(dueloId)) return null;
+  if (typeof o.texto !== "string" || !o.texto.trim()) return null;
+  return { id, dueloId, userId: uid, texto: o.texto.slice(0, MSG_MAX), em };
+}
+
+/** Junta mensagens novas às que já estão na tela: sem repetir, em ordem, só as últimas `max`. */
+export function juntarMsgs(atuais: readonly MsgDuelo[], novas: readonly MsgDuelo[], max = 50): MsgDuelo[] {
+  const por = new Map<number, MsgDuelo>();
+  for (const m of [...atuais, ...novas]) por.set(m.id, m);
+  return [...por.values()].sort((a, b) => a.id - b.id).slice(-max);
+}
