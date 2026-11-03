@@ -20,7 +20,7 @@ export type RodadaBj = {
   dealerPontos: number;
   vez: number | null;
 };
-export type EstadoBj = { agora: number; rodada: RodadaBj | null; maos: MaoBj[] };
+export type EstadoBj = { agora: number; rodada: RodadaBj | null; maos: MaoBj[]; historico: { pontos: number; bj: boolean }[] };
 
 export const APOSTA_MIN = 5;
 export const APOSTA_MAX = 200;
@@ -114,7 +114,10 @@ export function lerEstado(d: unknown): EstadoBj | null {
         };
       })
     : [];
-  return { agora, rodada, maos };
+  const historico = Array.isArray(o.historico)
+    ? o.historico.map((x) => ({ pontos: Number((x as Record<string, unknown>).pontos) || 0, bj: (x as Record<string, unknown>).bj === true }))
+    : [];
+  return { agora, rodada, maos, historico };
 }
 
 /** Como a mão terminou, para o selo em cima dela. */

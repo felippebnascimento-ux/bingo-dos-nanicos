@@ -17,7 +17,10 @@ export const compraMin = (bb: number) => bb * 20;
 export const compraMax = (bb: number) => bb * 100;
 
 export type FasePk = "preflop" | "flop" | "turn" | "river" | "fim";
-export type JogadorPk = { lugar: number; userId: string; estado: "ativo" | "desistiu" | "allin"; naRodada: number; total: number; ganhou: number };
+/** a última jogada na rodada, como o banco guarda (pk_jog.acao) */
+export type AcaoFeita = "small" | "big" | "passou" | "pagou" | "apostou" | "aumentou" | "allin" | "desistiu";
+export type JogadorPk = { lugar: number; userId: string; estado: "ativo" | "desistiu" | "allin"; naRodada: number; total: number; ganhou: number; acao: AcaoFeita | null; acaoValor: number | null };
+export type MaoPassada = { id: number; showdown: boolean; ganhadores: { userId: string; ganhou: number; valor: number | null }[] };
 export type ShowPk = { lugar: number; cartas: string[] | null; valor: number | null; ganhou: number };
 export type MaoPk = {
   id: number;
@@ -41,7 +44,7 @@ export type MaoPk = {
   minhas: string[];
 };
 export type LugarPk = { lugar: number; userId: string; fichas: number; sair: boolean };
-export type EstadoPk = { agora: number; mesa: { id: number; blind: number; criadaPor: string; fechada: boolean }; lugares: LugarPk[]; mao: MaoPk | null };
+export type EstadoPk = { agora: number; mesa: { id: number; blind: number; criadaPor: string; fechada: boolean }; lugares: LugarPk[]; mao: MaoPk | null; historico: MaoPassada[] };
 export type MesaListaPk = { id: number; blind: number; criadaPor: string; emJogo: boolean; lugares: { lugar: number; userId: string; fichas: number }[] };
 
 const quando = (v: unknown) => (typeof v === "string" ? Date.parse(v) : null);
@@ -97,13 +100,30 @@ export function lerEstadoPk(d: unknown): EstadoPk | null {
               naRodada: Number(j.na_rodada) || 0,
               total: Number(j.total) || 0,
               ganhou: Number(j.ganhou) || 0,
+              acao: (["small", "big", "passou", "pagou", "apostou", "aumentou", "allin", "desistiu"] as const).find((a) => a === j.acao) ?? null,
+              acaoValor: j.acao_valor == null ? null : Number(j.acao_valor),
             };
           })
         : [],
       minhas: lista(h.minhas),
     };
   }
-  return { agora, mesa: { id: Number(m.id), blind: Number(m.blind) || 0, criadaPor: String(m.criada_por), fechada: !!m.fechada }, lugares, mao };
+  const historico: MaoPassada[] = Array.isArray(o.historico)
+    ? o.historico.map((x) => {
+        const h = x as Record<string, unknown>;
+        return {
+          id: Number(h.id),
+          showdown: h.showdown === true,
+          ganhadores: Array.isArray(h.ganhadores)
+            ? h.ganhadores.map((y) => {
+                const g = y as Record<string, unknown>;
+                return { userId: String(g.user_id), ganhou: Number(g.ganhou) || 0, valor: g.valor == null ? null : Number(g.valor) };
+              })
+            : [],
+        };
+      })
+    : [];
+  return { agora, mesa: { id: Number(m.id), blind: Number(m.blind) || 0, criadaPor: String(m.criada_por), fechada: !!m.fechada }, lugares, mao, historico };
 }
 
 export function lerListaPk(d: unknown): MesaListaPk[] {
@@ -209,6 +229,61 @@ export function nomeParcial(minhas: string[], mesa: string[]): string | null {
   const ok = minhas.filter((x) => carta(x));
   if (ok.length === 2 && rank(ok[0]) === rank(ok[1])) return `Par de ${NOME_RANK[rank(ok[0])][1]}`;
   return null;
+}
+
+/** Etiqueta da jogada embaixo do lugar: "PAGOU 40", "AUMENTOU 120"… */
+export function textoAcao(a: AcaoFeita | null, v: number | null): string | null {
+  if (!a) return null;
+  const n = v ? " " + v.toLocaleString("pt-BR") : "";
+  return { small: "SMALL" + n, big: "BIG" + n, passou: "PASSOU", pagou: "PAGOU" + n, apostou: "APOSTOU" + n, aumentou: "AUMENTOU" + n, allin: "ALL-IN" + n, desistiu: "DESISTIU" }[a];
+}
+
+/* ---------- chance de vencer (simulação: o resto do baralho sorteado várias vezes) ---------- */
+/** Sorteio com semente (o mesmo resultado para a mesma mão: o número não fica pulando na tela). */
+function sorteador(semente: number) {
+  let x = semente >>> 0 || 1;
+  return () => {
+    x ^= x << 13;
+    x ^= x >>> 17;
+    x ^= x << 5;
+    return (x >>> 0) / 4294967296;
+  };
+}
+const BARALHO = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"].flatMap((v) => ["s", "h", "d", "c"].map((n) => v + n));
+
+/**
+ * A chance de a minha mão ganhar (empate conta pela metade) contra `oponentes` mãos desconhecidas, completando a
+ * mesa até 5 cartas. Só usa o que eu vejo: as minhas 2 e as da mesa. De 0 a 1.
+ */
+export function chanceDeVencer(minhas: string[], mesa: string[], oponentes: number, vezes = 500): number | null {
+  if (minhas.length !== 2 || oponentes < 1) return null;
+  const vistas = new Set([...minhas, ...mesa]);
+  const resto = BARALHO.filter((c) => !vistas.has(c));
+  let semente = 7;
+  for (const c of [...minhas, ...mesa]) for (let i = 0; i < c.length; i++) semente = (semente * 31 + c.charCodeAt(i)) | 0;
+  const rnd = sorteador(semente + oponentes);
+  let pontos = 0;
+  const falta = 5 - mesa.length;
+  for (let t = 0; t < vezes; t++) {
+    /* embaralha só o começo que vai ser usado */
+    const precisa = falta + oponentes * 2;
+    const b = resto.slice();
+    for (let i = 0; i < precisa; i++) {
+      const j = i + Math.floor(rnd() * (b.length - i));
+      [b[i], b[j]] = [b[j], b[i]];
+    }
+    const mesaFim = [...mesa, ...b.slice(0, falta)];
+    const eu = melhor([...minhas, ...mesaFim])!.valor;
+    let melhorOutro = 0, empates = 0;
+    for (let o = 0; o < oponentes; o++) {
+      const v = melhor([b[falta + o * 2], b[falta + o * 2 + 1], ...mesaFim])!.valor;
+      if (v > melhorOutro) [melhorOutro, empates] = [v, 0];
+      if (v === eu) empates++;
+    }
+    if (eu > melhorOutro) pontos += 1;
+    else if (eu === melhorOutro) pontos += 1 / (empates + 1);
+  }
+  return pontos / vezes;
 }
 
 /** O que dá para fazer na vez (o banco confere de novo). */
