@@ -37,6 +37,8 @@ import { BotaoMeuQuarto, QuartoVisita, TopoQuarto } from "@/features/quarto/Quar
 import { BaloesHall, ChatBarra, HistoricoChat } from "./ChatHabbo";
 import { BotaoMural, MuralJanela, QuadroMural } from "./Mural";
 import { abrirMural } from "./muralDados";
+import { CampeoesSelados } from "./CampeoesSelados";
+import { useRef } from "react";
 import { Lupa, ZoomCaixa } from "./Lupa";
 import { irParaQuarto } from "@/features/quarto/visita";
 
@@ -152,6 +154,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
     andarUmPiso(d[0], d[1]);
   };
 
+  const bau = useRef<HTMLDialogElement>(null);
   const abrir = (c: Clicavel["id"]) => {
     if (c === "salas") setPorta((v) => !v);
     else if (c === "tv") {
@@ -172,12 +175,14 @@ export function HallView({ hidden }: { hidden: boolean }) {
     }
     else if (c === "mural") abrirMural();
     else if (c === "banheiro") irParaQuarto("banheiro");
+    else if (c === "bau") bau.current?.showModal();
     else setApp({ aba: "loja" });
   };
   const tv = tvCaixa(vb);
 
   return (
     <section id="view-hall" className="inner" hidden={hidden}>
+      <CampeoesSelados dialogRef={bau} friends={friends} />
       {quarto ? (
         <TopoQuarto dono={quarto} />
       ) : (
@@ -262,7 +267,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
           <PlacaChurrasco vb={vb} />
           {CLICAVEIS.map((c) => {
             const pos = emPorcento(vb, c.rotulo.i, c.rotulo.j, c.rotulo.z);
-            const rotulo = c.id === "tv" ? "Ao vivo" : c.id === "truco" ? (mv.mesa ? "Truco · ao vivo" : "Truco") : c.id === "salas" ? "Rua · Salas" : c.id === "mural" ? "Mural" : c.id === "banheiro" ? "Banheiro" : "Loja";
+            const rotulo = c.id === "bau" ? "Campeões Selados" : c.id === "tv" ? "Ao vivo" : c.id === "truco" ? (mv.mesa ? "Truco · ao vivo" : "Truco") : c.id === "salas" ? "Rua · Salas" : c.id === "mural" ? "Mural" : c.id === "banheiro" ? "Banheiro" : "Loja";
             return (
               <button
                 key={c.id}
