@@ -9,7 +9,7 @@
 /* o iPhone 17 Pro Max: moldura de titânio, botões laterais, tela com a Dynamic Island, barra de status e o indicador
    de início. Ilustração com cores próprias (--iph-* e, no app, --ig-* do modo escuro do Instagram), como o hall. */
 /* fundo escuro e desfocado em volta (o --ink fica claro no tema escuro, por isso não serve aqui) */
-.celular-fundo{position:fixed;inset:0;z-index:1900;display:grid;place-items:center;padding:16px;background:rgb(0 0 0 / .78);backdrop-filter:blur(10px) saturate(.8)}
+.celular-fundo{position:fixed;inset:0;z-index:1900;display:grid;place-items:center;padding:10px;background:rgb(0 0 0 / .78);backdrop-filter:blur(10px) saturate(.8)}
 .celular-fundo.anima .iphone{animation:iph-entra .45s cubic-bezier(.2,.9,.25,1.05) both}
 @keyframes iph-entra{from{transform:translateY(40px) scale(.94);opacity:0}}
 .iphone{
@@ -17,7 +17,7 @@
   --ig-bg:#000000; --ig-txt:#F5F5F5; --ig-cinza:#A8A8A8; --ig-linha:#262626; --ig-visto:#5B5B5B; --ig-campo:#262626; --ig-cartao:#1C1C1E; --ig-azul:#0095F6; --ig-vermelho:#FF3040;
   --ig-a1:#FEDA75; --ig-a2:#FA7E1E; --ig-a3:#D62976; --ig-a4:#962FBF; --ig-a5:#4F5BD5;
   --ig-roxo:#7B2FF7; --ig-laranja:#FF6A2B; --ig-verde:#13A85F; --ig-azul2:#1F6BFF; --ig-preto:#111111;
-  position:relative;height:min(860px,calc(100vh - 40px));aspect-ratio:440 / 956;border-radius:15.5% / 7.2%;padding:4px;
+  position:relative;height:min(1040px,calc(100vh - 20px));max-width:calc(100vw - 20px);aspect-ratio:440 / 956;border-radius:15.5% / 7.2%;padding:4px;
   background:linear-gradient(135deg,var(--iph-titanio2) 0%,var(--iph-titanio0) 18%,var(--iph-titanio1) 50%,var(--iph-titanio0) 82%,var(--iph-titanio2) 100%);
   box-shadow:inset 0 0 0 1px rgb(255 255 255 / .18),inset 0 0 0 3px rgb(0 0 0 / .5),0 30px 80px rgb(0 0 0 / .6),0 0 0 1px rgb(0 0 0 / .6)}
 /* botões laterais: ação, volume, liga/desliga e o controle da câmera */
@@ -32,17 +32,27 @@
 .iph-bateria{position:relative;width:25px;height:12px;border:1.5px solid color-mix(in srgb,var(--ig-txt) 55%,transparent);border-radius:4px;padding:1.5px}
 .iph-bateria::after{content:"";position:absolute;right:-4px;top:3px;width:2px;height:4px;border-radius:0 2px 2px 0;background:color-mix(in srgb,var(--ig-txt) 55%,transparent)}
 .iph-bateria i{display:block;width:78%;height:100%;border-radius:2px;background:var(--ig-txt)}
-/* Dynamic Island: a pílula preta que cresce com o aviso (post, story, envio) */
-.iph-ilha{position:absolute;left:50%;top:11px;width:126px;height:36px;transform:translateX(-50%);border-radius:20px;background:var(--iph-moldura);
-  display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;padding:0 10px;overflow:hidden;color:var(--iph-branco);
-  transition:width .5s cubic-bezier(.3,1.4,.4,1),height .5s cubic-bezier(.3,1.4,.4,1),border-radius .5s,top .5s;box-shadow:0 0 0 1px rgb(255 255 255 / .04)}
-.iph-ilha::after{content:"";position:absolute;right:16px;top:50%;width:11px;height:11px;margin-top:-5.5px;border-radius:50%;background:radial-gradient(circle at 40% 35%,var(--iph-lente0),var(--iph-lente1) 70%);opacity:1;transition:opacity .2s}
-.iph-ilha.aberta{width:calc(100% - 22px);height:58px;top:8px;border-radius:30px}
-.iph-ilha.aberta::after{opacity:0}
-.iph-ilha-rosto{width:34px !important;height:34px !important;flex:none}
-.iph-ilha-texto{font:600 13px/1.2 var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:iph-texto .4s .15s both}
-@keyframes iph-texto{from{opacity:0;transform:translateY(4px)}}
-.iph-ilha-ponto{width:9px;height:9px;border-radius:50%;background:var(--ig-a3)}.iph-ilha-ponto.post{background:var(--ig-azul)}
+/* Dynamic Island, como a do iPhone: a pílula cresce com mola, o conteúdo entra depois (desfocado → nítido); ao fechar,
+   o conteúdo sai primeiro e ela volta ao tamanho de antes. A lente só reaparece quando a pílula já encolheu. */
+.iph-ilha{--ilha-mola:cubic-bezier(.34,1.32,.5,1);position:absolute;left:50%;top:11px;z-index:8;width:126px;height:36px;transform:translateX(-50%);border:0;border-radius:20px;
+  padding:0;margin:0;overflow:hidden;background:var(--iph-moldura);color:var(--iph-branco);font:inherit;text-align:left;cursor:default;
+  box-shadow:0 0 0 1px rgb(255 255 255 / .04);-webkit-tap-highlight-color:transparent;
+  transition:width .55s var(--ilha-mola) .12s,height .55s var(--ilha-mola) .12s,top .55s var(--ilha-mola) .12s,border-radius .55s .12s,box-shadow .4s}
+.iph-ilha::after{content:"";position:absolute;right:16px;top:50%;width:11px;height:11px;margin-top:-5.5px;border-radius:50%;background:radial-gradient(circle at 40% 35%,var(--iph-lente0),var(--iph-lente1) 70%);
+  opacity:1;transition:opacity .2s .55s}
+.iph-ilha.aberta{width:calc(100% - 20px);height:68px;top:8px;border-radius:34px;box-shadow:0 10px 30px rgb(0 0 0 / .55);transition-delay:0s}
+.iph-ilha.aberta::after{opacity:0;transition:opacity .1s}
+.iph-ilha.toca{cursor:pointer}
+.iph-ilha.toca:active{scale:.97}
+.iph-ilha:focus-visible{outline:2px solid var(--ig-azul);outline-offset:2px}
+.iph-ilha-conteudo{position:absolute;inset:0;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:11px;padding:0 18px 0 14px;
+  opacity:0;filter:blur(6px);transform:scale(.9);transition:opacity .14s,filter .14s,transform .14s;pointer-events:none}
+.iph-ilha.aberta .iph-ilha-conteudo{opacity:1;filter:none;transform:none;transition:opacity .3s .2s,filter .3s .2s,transform .4s var(--ilha-mola) .2s}
+.iph-ilha-rosto{width:42px !important;height:42px !important;flex:none}
+.iph-ilha-texto{display:grid;gap:2px;min-width:0;font:600 13.5px/1.25 var(--body);white-space:nowrap}
+.iph-ilha-texto small{font:500 11px/1 var(--body);color:var(--ig-cinza)}
+.iph-ilha-texto{overflow:hidden;text-overflow:ellipsis}
+.iph-ilha-ponto{width:9px;height:9px;border-radius:50%;background:var(--ig-a3)}.iph-ilha-ponto.post{background:var(--ig-azul)}.iph-ilha-ponto.mensagem{background:var(--ig-azul)}
 .iph-ilha-gira{width:18px;height:18px;border-radius:50%;border:2.5px solid rgb(255 255 255 / .25);border-top-color:var(--iph-branco);animation:iph-gira .8s linear infinite}
 @keyframes iph-gira{to{transform:rotate(360deg)}}
 .iph-inicio{position:absolute;left:50%;bottom:7px;width:36%;height:5px;transform:translateX(-50%);padding:0;border:0;border-radius:3px;background:var(--ig-txt);opacity:.85;cursor:pointer;z-index:9}
@@ -83,10 +93,12 @@
 .ig-menu button{padding:13px 16px;border:0;border-top:1px solid var(--ig-linha);background:none;color:var(--ig-txt);font:500 14px var(--body);text-align:center;cursor:pointer}
 .ig-menu button:first-child{border-top:0}
 .ig-midia{position:relative;background:var(--ig-cartao);user-select:none}
-/* foto do post inteira, no tamanho dela (em pé ou deitada), sem cortar; enquanto carrega, um quadrado */
+/* foto do post como no Instagram: largura toda, altura entre 1,91:1 (deitada) e 4:5 (em pé); as novas já sobem cortadas
+   no formato escolhido, as antigas são aparadas pelo meio só fora desse intervalo. Enquanto carrega, um quadrado. */
+.ig-midia{container-type:inline-size}
 .ig-midia .midia-img{border-radius:0;aspect-ratio:auto;min-height:0;display:block}
 .ig-midia .midia-img:has(.status){aspect-ratio:1;display:grid;place-items:center}
-.ig-midia .midia-img img{display:block;width:100%;height:auto;max-height:none;object-fit:contain}
+.ig-midia .midia-img img{display:block;width:100%;height:auto;min-height:52.4cqw;max-height:125cqw;object-fit:cover}
 .ig-post-texto{display:grid;place-items:center;aspect-ratio:1;padding:28px;text-align:center;font:700 22px/1.25 var(--body);white-space:pre-wrap;overflow-wrap:anywhere;
   background:linear-gradient(135deg,var(--ig-a4),var(--ig-a3) 55%,var(--ig-a2))}
 .ig-coracao-grande{position:absolute;left:50%;top:50%;color:var(--iph-branco);filter:drop-shadow(0 4px 14px rgb(0 0 0 / .4));animation:ig-coracao .9s cubic-bezier(.2,1.6,.4,1) forwards;pointer-events:none}
@@ -146,6 +158,27 @@
 .ig-novo.story .ig-novo-previa{aspect-ratio:9 / 14}
 .ig-novo-previa img{width:100%;height:100%;object-fit:cover}
 .ig-novo-vazio{display:grid;justify-items:center;gap:8px;color:var(--ig-cinza)}
+/* editor de corte: a foto se arrasta e amplia dentro da moldura no formato escolhido, como no Instagram */
+.ig-corte{display:grid;gap:12px}
+.ig-corte-caixa{position:relative;width:100%;overflow:hidden;background:var(--ig-cartao);touch-action:none;cursor:grab;transition:aspect-ratio .25s}
+.ig-corte-caixa:active{cursor:grabbing}
+.ig-novo.story .ig-corte-caixa{width:64%;margin:0 auto;border-radius:12px}
+.ig-corte-caixa img{position:absolute;left:50%;top:50%;max-width:none;user-select:none;pointer-events:none}
+.ig-corte-grade{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .2s;
+  background:linear-gradient(90deg,transparent calc(33.33% - .5px),rgb(255 255 255 / .55) calc(33.33% - .5px) calc(33.33% + .5px),transparent calc(33.33% + .5px) calc(66.66% - .5px),rgb(255 255 255 / .55) calc(66.66% - .5px) calc(66.66% + .5px),transparent calc(66.66% + .5px)),
+    linear-gradient(180deg,transparent calc(33.33% - .5px),rgb(255 255 255 / .55) calc(33.33% - .5px) calc(33.33% + .5px),transparent calc(33.33% + .5px) calc(66.66% - .5px),rgb(255 255 255 / .55) calc(66.66% - .5px) calc(66.66% + .5px),transparent calc(66.66% + .5px));
+  box-shadow:inset 0 0 0 1px rgb(255 255 255 / .35)}
+.ig-corte-caixa:active .ig-corte-grade,.ig-corte:has(.ig-corte-zoom input:active) .ig-corte-grade{opacity:1}
+.ig-corte-ctrl{display:grid;gap:10px;padding:0 14px}
+.ig-corte-formatos{display:flex;gap:8px}
+.ig-corte-formatos button{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:8px 6px;border:1px solid var(--ig-linha);border-radius:10px;background:none;color:var(--ig-cinza);font:600 12.5px var(--body);cursor:pointer}
+.ig-corte-formatos button.on{border-color:var(--ig-txt);color:var(--ig-txt);background:var(--ig-cartao)}
+.ig-forma{display:inline-block;border:1.5px solid currentColor;border-radius:2px}
+.ig-forma.f11{width:13px;height:13px}.ig-forma.f45{width:12px;height:15px}.ig-forma.f1911{width:18px;height:9.5px}
+.ig-corte-zoom{display:flex;align-items:center;gap:10px;font:600 12.5px var(--body);color:var(--ig-cinza)}
+.ig-corte-zoom input{flex:1;accent-color:var(--ig-azul)}
+.ig-corte-ctrl small{font-size:12px}
+.ig-novo-trocar{display:flex;justify-content:center;gap:22px}
 .ig-novo-texto{margin:0 12px;padding:10px;border:1px solid var(--ig-linha);border-radius:10px;background:var(--ig-bg);color:var(--ig-txt);font:inherit;resize:none}
 .ig-fundos{display:flex;gap:10px;justify-content:center}
 .ig-fundo{width:30px;height:30px;padding:0;border:2px solid transparent;border-radius:50%;cursor:pointer}.ig-fundo.on{border-color:var(--ig-txt)}
@@ -221,8 +254,8 @@
 input.ig-responder{background:none;outline:none;font:inherit}
 input.ig-responder::placeholder{color:rgb(255 255 255 / .75)}
 @media (prefers-reduced-motion:reduce){
-  .celular-fundo.anima .iphone,.iph-ilha-texto,.iph-ilha-gira,.ig-coracao-grande,.ig-curtir.on,.ig-folha,.ig-folha-fundo,.ig-story-tela{animation:none}
-  .iph-ilha{transition:none}.ig-barras i{animation-duration:1ms !important}
+  .celular-fundo.anima .iphone,.iph-ilha-gira,.ig-coracao-grande,.ig-curtir.on,.ig-folha,.ig-folha-fundo,.ig-story-tela{animation:none}
+.iph-ilha,.iph-ilha::after,.iph-ilha-conteudo,.iph-ilha.aberta .iph-ilha-conteudo{transition-duration:1ms !important}.ig-barras i{animation-duration:1ms !important}
 }
 
 /* celular de verdade: o app ocupa a tela inteira, sem a moldura */
@@ -231,6 +264,9 @@ input.ig-responder::placeholder{color:rgb(255 255 255 / .75)}
   .iphone{height:100%;width:100%;aspect-ratio:auto;border-radius:0;padding:0;background:var(--iph-tela);box-shadow:none}
   .iph-botao{display:none}
   .iph-tela{border-radius:0;border:0}
-  .iph-ilha{display:none}
   .iph-status{display:none}
+  /* sem moldura, a ilha só aparece como aviso no alto da tela */
+  .iph-ilha{top:calc(env(safe-area-inset-top,0px) + 6px);opacity:0;pointer-events:none;transition-property:width,height,top,border-radius,box-shadow,opacity}
+  .iph-ilha::after{display:none}
+  .iph-ilha.aberta{opacity:1;pointer-events:auto;top:calc(env(safe-area-inset-top,0px) + 8px);max-width:460px}
 }

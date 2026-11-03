@@ -19,6 +19,9 @@ import { DIA_MS, FUNDOS, naoLidasDM, type Fundo, type Mensagem, type Story } fro
 export type Post = { id: number; userId: string; texto: string; midia: string | null; em: number };
 export type Comentario = { id: number; postId: number; userId: string; texto: string; em: number };
 
+export type TipoIlha = "post" | "story" | "envio" | "mensagem";
+export type AlvoIlha = { tipo: "post"; id: number } | { tipo: "story"; userId: string } | { tipo: "mensagem"; userId: string };
+
 type Estado = {
   aberto: boolean;
   posts: Post[];
@@ -37,8 +40,10 @@ type Estado = {
   vistos: number[];
   /** quem viu cada story meu (userIds), lido quando abro o meu */
   quemViu: Record<number, string[]>;
-  /** a Dynamic Island aberta com um aviso (some sozinha) */
-  ilha: { texto: string; userId: string | null; tipo: "post" | "story" | "envio" | "mensagem" } | null;
+  /** a Dynamic Island aberta com um aviso (some sozinha); `fechando` = encolhendo; `alvo` = para onde o toque leva */
+  ilha: { texto: string; userId: string | null; tipo: TipoIlha; alvo: AlvoIlha | null; fechando?: boolean } | null;
+  /** o app pediu para abrir um post, story ou conversa (toque na ilha); a tela atende e limpa */
+  pedido: AlvoIlha | null;
   /** Direct: as minhas mensagens (enviadas e recebidas) e com quem estou conversando agora */
   mensagens: Mensagem[];
   conversaAberta: string | null;
@@ -46,7 +51,7 @@ type Estado = {
 };
 export const useRede = create<Estado>()(() => ({
   aberto: false, posts: [], fim: false, curtidas: {}, comentarios: {}, perfil: null, carregando: false, enviando: false, naoLidas: 0,
-  stories: [], vistos: lerVistos(), quemViu: {}, ilha: null, mensagens: [], conversaAberta: null, naoLidasDM: 0,
+  stories: [], vistos: lerVistos(), quemViu: {}, ilha: null, pedido: null, mensagens: [], conversaAberta: null, naoLidasDM: 0,
 }));
 
 function lerVistos(): number[] {
@@ -135,16 +140,28 @@ export async function maisPostagens() {
 
 /* ---------- Dynamic Island ---------- */
 let ilhaTimer: ReturnType<typeof setTimeout> | undefined;
-/** Abre a ilha com um aviso por uns segundos (o envio fica aberto até terminar). */
-export function avisarIlha(texto: string, userId: string | null, tipo: "post" | "story" | "envio" | "mensagem", ms = 3800) {
+/**
+ * Abre a ilha com um aviso por uns segundos (o envio fica aberto até terminar). Como no iPhone: ela cresce, o conteúdo
+ * aparece depois, e no fim o conteúdo some primeiro e ela encolhe (`fechando`, ~0,65 s) antes de sair.
+ */
+export function avisarIlha(texto: string, userId: string | null, tipo: TipoIlha, ms = 4200, alvo: AlvoIlha | null = null) {
   clearTimeout(ilhaTimer);
-  useRede.setState({ ilha: { texto, userId, tipo } });
-  if (ms > 0) ilhaTimer = setTimeout(() => useRede.setState({ ilha: null }), ms);
+  useRede.setState({ ilha: { texto, userId, tipo, alvo } });
+  if (ms > 0) ilhaTimer = setTimeout(fecharIlha, ms);
 }
-const fecharIlha = () => {
+export function fecharIlha() {
   clearTimeout(ilhaTimer);
-  useRede.setState({ ilha: null });
-};
+  const atual = useRede.getState().ilha;
+  if (!atual || atual.fechando) return;
+  useRede.setState({ ilha: { ...atual, fechando: true } });
+  ilhaTimer = setTimeout(() => useRede.setState({ ilha: null }), 680);
+}
+/** Toque na ilha: fecha e pede para a tela abrir o post, o story ou a conversa. */
+export function tocarIlha() {
+  const alvo = useRede.getState().ilha?.alvo ?? null;
+  fecharIlha();
+  if (alvo) useRede.setState({ pedido: alvo });
+}
 
 /* ---------- stories ---------- */
 const lerStory = (r: Record<string, unknown>): Story => ({
@@ -177,7 +194,8 @@ function onStory(row: Record<string, unknown> | null, ev: string) {
   const s = lerStory(row!);
   useRede.setState({ stories: [...st.stories, s] });
   const app = getApp();
-  if (s.userId !== app.myUid && st.aberto) avisarIlha(`${app.friends.find((x) => x.user_id === s.userId)?.name ?? "Alguém"} postou um story`, s.userId, "story");
+  if (s.userId !== app.myUid && st.aberto)
+    avisarIlha(`${app.friends.find((x) => x.user_id === s.userId)?.name ?? "Alguém"} postou um story`, s.userId, "story", 4200, { tipo: "story", userId: s.userId });
 }
 
 /** Marca um story como visto (no navegador e no banco, para o dono saber). */
@@ -283,7 +301,7 @@ function onMensagem(row: Record<string, unknown> | null, ev: string) {
     if (st.aberto && st.conversaAberta === m.de) void marcarLidas(m.de);
     else if (st.aberto) {
       const nome = getApp().friends.find((x) => x.user_id === m.de)?.name ?? "Alguém";
-      avisarIlha(`${nome}: ${m.postId ? "enviou uma publicação" : m.texto}`, m.de, "mensagem");
+      avisarIlha(`${nome}: ${m.postId ? "enviou uma publicação" : m.texto}`, m.de, "mensagem", 4200, { tipo: "mensagem", userId: m.de });
     }
   }
   contarDM();
@@ -336,7 +354,7 @@ function onPost(row: Record<string, unknown> | null, ev: string) {
   if (p.userId !== s.myUid) {
     const f = s.friends.find((x) => x.user_id === p.userId);
     avisarTexto(f?.id ?? null, `${f?.name ?? "Alguém"} postou no InstaNanico`);
-    if (st.aberto) avisarIlha(`${f?.name ?? "Alguém"} publicou uma foto`, p.userId, "post");
+    if (st.aberto) avisarIlha(`${f?.name ?? "Alguém"} publicou uma foto`, p.userId, "post", 4200, { tipo: "post", id: p.id });
   }
   if (!st.perfil || st.perfil === p.userId) {
     useRede.setState({ posts: [p, ...st.posts], curtidas: { ...st.curtidas, [p.id]: [] }, comentarios: { ...st.comentarios, [p.id]: [] } });
@@ -383,7 +401,7 @@ export function fecharCelular() {
   /* as imagens da rede saem da memória ao fechar */
   for (const p of useRede.getState().posts) if (p.midia) soltarImagem(p.midia);
   for (const s of useRede.getState().stories) if (s.midia) soltarImagem(s.midia);
-  useRede.setState({ aberto: false, ilha: null, conversaAberta: null });
+  useRede.setState({ aberto: false, ilha: null, pedido: null, conversaAberta: null });
   contarNaoLidas();
 }
 export function verPerfil(userId: string | null) {

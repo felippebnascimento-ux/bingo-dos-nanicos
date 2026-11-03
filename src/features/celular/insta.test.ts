@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { agrupar, andar, conversas, daConversa, DIA_MS, inicioDoGrupo, naoLidasDM, resumo, tempoCurto, type Mensagem, type Story } from "./insta";
+import { agrupar, andar, conversas, daConversa, DIA_MS, formatoInicial, inicioDoGrupo, naoLidasDM, recorte, resumo, tempoCurto, type Mensagem, type Story } from "./insta";
 
 const H = 60 * 60 * 1000, AGORA = 100 * DIA_MS;
 const st = (id: number, userId: string, horasAtras: number): Story => ({ id, userId, midia: null, texto: "oi", fundo: "roxo", em: AGORA - horasAtras * H });
@@ -63,5 +63,31 @@ describe("Direct do InstaNanico", () => {
     expect(resumo(m(9, "eu", "ana", 1), "eu")).toBe("Você: oi 9");
     expect(resumo(m(9, "ana", "eu", 1, false, { postId: 3 }), "eu")).toBe("Enviou uma publicação");
     expect(resumo(m(9, "ana", "eu", 1, false, { storyId: 3, texto: "kkk" }), "eu")).toBe("Respondeu ao seu story: kkk");
+  });
+});
+
+describe("recorte da foto", () => {
+  it("escolhe o formato como o Instagram", () => {
+    expect(formatoInicial(1080, 1920)).toBe("4:5");
+    expect(formatoInicial(1920, 1080)).toBe("1.91:1");
+    expect(formatoInicial(1000, 1000)).toBe("1:1");
+  });
+
+  it("foto em pé num quadrado: corta o meio, de cima a baixo dá a largura inteira", () => {
+    const r = recorte({ w: 1000, h: 2000 }, { W: 300, H: 300 }, 1, 0, 0);
+    expect(r.x).toBeCloseTo(0);
+    expect(r.largura).toBeCloseTo(1000);
+    expect(r.altura).toBeCloseTo(1000);
+    expect(r.y).toBeCloseTo(500);
+  });
+
+  it("não deixa arrastar para fora (sem buraco) e o zoom corta menos da foto", () => {
+    const r = recorte({ w: 1000, h: 2000 }, { W: 300, H: 300 }, 1, 50, 9999);
+    expect(r.dx).toBe(0);
+    expect(r.dy).toBeCloseTo(150);
+    expect(r.y).toBeCloseTo(0);
+    const z = recorte({ w: 1000, h: 1000 }, { W: 300, H: 300 }, 2, 0, 0);
+    expect(z.largura).toBeCloseTo(500);
+    expect(z.x).toBeCloseTo(250);
   });
 });

@@ -7,7 +7,7 @@
  * O botão só aparece para quem tem o item; quem garante o acesso à rede é o banco (seções 18 e 34).
  * As cores são da ilustração (--ig-* e --iph-*, em 33-celular.css), como o modo escuro do Instagram.
  */
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useImperativeHandle, useMemo, useRef, useState, type ReactNode, type Ref } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { useSure } from "@/components/ui/useSure";
 import { useMinhaMochila } from "@/features/loja/lojaDados";
@@ -15,10 +15,13 @@ import { Imagem } from "@/features/midias/Imagem";
 import { setApp, useApp } from "@/lib/store";
 import { toast } from "@/lib/toast";
 import { reduzMovimento } from "@/lib/util";
-import { agrupar, andar, conversas, daConversa, FUNDOS, inicioDoGrupo, resumo, STORY_MS, tempoCurto, type Fundo, type Grupo, type Mensagem, type Story } from "./insta";
+import {
+  agrupar, andar, conversas, daConversa, formatoInicial, FUNDOS, inicioDoGrupo, PROPORCAO, recorte, resumo, STORY_MS, tempoCurto,
+  type Formato, type Fundo, type Grupo, type Mensagem, type Story,
+} from "./insta";
 import {
   abrirCelular, abrirConversa, apagarComentario, apagarPost, apagarStory, comentar, curtir, enviarMensagem, fecharCelular, iniciarRede,
-  lerQuemViu, marcarVisto, maisPostagens, postar, postarStory, useRede, verPerfil, type Comentario, type Post,
+  lerQuemViu, marcarVisto, maisPostagens, postar, postarStory, tocarIlha, useRede, verPerfil, type Comentario, type Post,
 } from "./rede";
 
 /** Tenho o celular na mochila? Também avisa a rede quando muda (comprou agora). */
@@ -119,19 +122,35 @@ type Nav = {
 };
 
 /* ---------- Dynamic Island ---------- */
+/* Como no iPhone: a pílula cresce, o conteúdo aparece depois; ao fechar, o conteúdo some e só então ela encolhe.
+   Sempre o mesmo botão (trocar de elemento cortaria a animação); tocar leva ao post, story ou conversa do aviso. */
 function Ilha() {
   const ilha = useRede((s) => s.ilha);
   const f = useNome(ilha?.userId);
+  const fase = !ilha ? "" : ilha.fechando ? " fechando" : " aberta";
+  const podeTocar = !!ilha?.alvo && !ilha.fechando;
   return (
-    <div className={"iph-ilha" + (ilha ? " aberta" : "")} aria-live="polite">
-      {ilha && (
-        <>
-          {ilha.userId ? <Avatar f={f ?? { name: "?" }} className="iph-ilha-rosto" /> : <span />}
-          <span className="iph-ilha-texto">{ilha.texto}</span>
-          {ilha.tipo === "envio" ? <span className="iph-ilha-gira" aria-hidden="true" /> : <span className={"iph-ilha-ponto " + ilha.tipo} aria-hidden="true" />}
-        </>
-      )}
-    </div>
+    <button
+      type="button"
+      className={"iph-ilha" + fase + (podeTocar ? " toca" : "")}
+      onClick={podeTocar ? tocarIlha : undefined}
+      tabIndex={podeTocar ? 0 : -1}
+      aria-label={podeTocar ? `${ilha?.texto}. Abrir` : undefined}
+      aria-hidden={!ilha || undefined}
+    >
+      <span className="iph-ilha-conteudo" aria-live="polite">
+        {ilha && (
+          <>
+            {ilha.userId ? <Avatar f={f ?? { name: "?" }} className="iph-ilha-rosto" /> : <span />}
+            <span className="iph-ilha-texto">
+              <small>{ilha.tipo === "mensagem" ? "Direct" : ilha.tipo === "envio" ? "Enviando" : "InstaNanico"}</small>
+              {ilha.texto}
+            </span>
+            {ilha.tipo === "envio" ? <span className="iph-ilha-gira" aria-hidden="true" /> : <span className={"iph-ilha-ponto " + ilha.tipo} aria-hidden="true" />}
+          </>
+        )}
+      </span>
+    </button>
   );
 }
 
@@ -521,21 +540,129 @@ function Perfil({ userId, nav }: { userId: string; nav: Nav }) {
   );
 }
 
+/* ---------- editor de corte (como no Instagram): arrasta, zoom e formato ---------- */
+type Corte = { cortar: () => Promise<File> };
+const FORMATOS_POST: Formato[] = ["1:1", "4:5", "1.91:1"];
+const NOME_FORMATO: Record<Formato, string> = { "1:1": "Quadrado", "4:5": "Em pé", "1.91:1": "Deitado", "9:16": "Story" };
+
+function Cortador({ arquivo, story, corte }: { arquivo: File; story: boolean; corte: Ref<Corte> }) {
+  /* o endereço da foto é solto quando ela carrega (o corte desenha do <img> já carregado) */
+  const url = useMemo(() => URL.createObjectURL(arquivo), [arquivo]);
+  const caixa = useRef<HTMLDivElement>(null);
+  const foto = useRef<HTMLImageElement>(null);
+  const [nat, setNat] = useState<{ w: number; h: number } | null>(null);
+  const [tam, setTam] = useState<{ W: number; H: number } | null>(null);
+  const [formato, setFormato] = useState<Formato>(story ? "9:16" : "1:1");
+  const [z, setZ] = useState(1);
+  const [pos, setPos] = useState({ dx: 0, dy: 0 });
+  const arraste = useRef<{ x: number; y: number; dx: number; dy: number } | null>(null);
+  const gif = arquivo.type === "image/gif";
+
+  /* o tamanho da moldura na tela (muda com o formato) */
+  useEffect(() => {
+    const el = caixa.current;
+    if (!el) return;
+    const ler = () => setTam({ W: el.clientWidth, H: el.clientHeight });
+    ler();
+    const ro = new ResizeObserver(ler);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [formato]);
+
+  const r = nat && tam ? recorte(nat, tam, z, pos.dx, pos.dy) : null;
+  /* o editor entrega o corte em 1080 px de largura, no formato escolhido (GIF vai inteiro, para não perder o movimento) */
+  useImperativeHandle(corte, () => ({
+      cortar: async () => {
+        const img = foto.current;
+        if (gif || !img || !nat || !tam) return arquivo;
+        const k = recorte(nat, tam, z, pos.dx, pos.dy);
+        const largura = Math.min(1080, Math.round(k.largura));
+        const altura = Math.round(largura / PROPORCAO[formato]);
+        const c = document.createElement("canvas");
+        c.width = largura;
+        c.height = altura;
+        c.getContext("2d")!.drawImage(img, k.x, k.y, k.largura, k.altura, 0, 0, largura, altura);
+        const blob = await new Promise<Blob | null>((ok) => c.toBlob(ok, "image/webp", 0.9));
+        return blob ? new File([blob], "foto.webp", { type: "image/webp" }) : arquivo;
+      },
+  }));
+
+  return (
+    <div className="ig-corte">
+      <div
+        ref={caixa}
+        className="ig-corte-caixa"
+        style={{ aspectRatio: String(PROPORCAO[formato]) }}
+        onPointerDown={(e) => {
+          if (!r) return;
+          try {
+            (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+          } catch {
+            /* sem captura, o arraste vale enquanto o dedo está na foto */
+          }
+          arraste.current = { x: e.clientX, y: e.clientY, dx: r.dx, dy: r.dy };
+        }}
+        onPointerMove={(e) => {
+          const a = arraste.current;
+          if (a) setPos({ dx: a.dx + e.clientX - a.x, dy: a.dy + e.clientY - a.y });
+        }}
+        onPointerUp={() => {
+          arraste.current = null;
+          if (r) setPos({ dx: r.dx, dy: r.dy });
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          ref={foto}
+          src={url}
+          alt="Foto escolhida"
+          draggable={false}
+          onLoad={(e) => {
+            const w = e.currentTarget.naturalWidth, h = e.currentTarget.naturalHeight;
+            setNat({ w, h });
+            URL.revokeObjectURL(url);
+            if (!story) setFormato(formatoInicial(w, h));
+          }}
+          style={r && nat ? { width: nat.w * r.escala, height: nat.h * r.escala, transform: `translate(calc(-50% + ${r.dx}px), calc(-50% + ${r.dy}px))` } : undefined}
+        />
+        <span className="ig-corte-grade" aria-hidden="true" />
+      </div>
+      {!gif && (
+        <div className="ig-corte-ctrl">
+          {!story && (
+            <div className="ig-corte-formatos" role="radiogroup" aria-label="Formato">
+              {FORMATOS_POST.map((f) => (
+                <button key={f} type="button" role="radio" aria-checked={formato === f} className={formato === f ? "on" : undefined} onClick={() => { setFormato(f); setPos({ dx: 0, dy: 0 }); }}>
+                  <i className={"ig-forma f" + f.replace(/[.:]/g, "")} aria-hidden="true" />
+                  {NOME_FORMATO[f]}
+                </button>
+              ))}
+            </div>
+          )}
+          <label className="ig-corte-zoom">
+            <span>Zoom</span>
+            <input type="range" min={1} max={3} step={0.01} value={z} onChange={(e) => setZ(Number(e.target.value))} aria-label="Zoom da foto" />
+          </label>
+          <small className="ig-cinza">Arraste a foto para escolher o pedaço que aparece.</small>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ---------- novo post ou story ---------- */
 function Novo({ nav, modoInicial }: { nav: Nav; modoInicial: "post" | "story" }) {
   const enviando = useRede((s) => s.enviando);
   const [modo, setModo] = useState<"post" | "story">(modoInicial);
   const [arquivo, setArquivo] = useState<File | null>(null);
-  /* a prévia da foto escolhida (o endereço sai da memória quando troca ou fecha) */
-  const previa = useMemo(() => (arquivo ? URL.createObjectURL(arquivo) : null), [arquivo]);
   const [texto, setTexto] = useState("");
   const [fundo, setFundo] = useState<Fundo>("roxo");
   const input = useRef<HTMLInputElement>(null);
-  useEffect(() => () => {
-    if (previa) URL.revokeObjectURL(previa);
-  }, [previa]);
+  const corte = useRef<Corte | null>(null);
   const publicar = async () => {
-    const ok = modo === "post" ? await postar(texto, arquivo) : await postarStory(arquivo, texto, fundo);
+    /* a foto sobe já cortada no formato escolhido */
+    const foto = arquivo && corte.current ? await corte.current.cortar() : arquivo;
+    const ok = modo === "post" ? await postar(texto, foto) : await postarStory(foto, texto, fundo);
     if (ok) nav.ir("inicio");
   };
   return (
@@ -551,19 +678,20 @@ function Novo({ nav, modoInicial }: { nav: Nav; modoInicial: "post" | "story" })
         </button>
       </header>
       <input ref={input} type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onChange={(e) => setArquivo(e.target.files?.[0] ?? null)} />
-      <div className={"ig-novo-previa" + (modo === "story" ? " story f-" + fundo : "")} onClick={() => input.current?.click()}>
-        {previa ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img src={previa} alt="Prévia" />
-        ) : modo === "story" && texto.trim() ? null : (
-          <span className="ig-novo-vazio">
-            <IcFoto />
-            Toque para escolher uma foto
-          </span>
-        )}
-        {modo === "story" && texto.trim() && <p className="ig-story-legenda">{texto}</p>}
-      </div>
-      {modo === "story" && !previa && (
+      {arquivo ? (
+        <Cortador key={arquivo.name + arquivo.size + modo} arquivo={arquivo} story={modo === "story"} corte={corte} />
+      ) : (
+        <div className={"ig-novo-previa" + (modo === "story" ? " story f-" + fundo : "")} onClick={() => input.current?.click()}>
+          {modo === "story" && texto.trim() ? null : (
+            <span className="ig-novo-vazio">
+              <IcFoto />
+              Toque para escolher uma foto
+            </span>
+          )}
+          {modo === "story" && texto.trim() && <p className="ig-story-legenda">{texto}</p>}
+        </div>
+      )}
+      {modo === "story" && !arquivo && (
         <div className="ig-fundos" role="radiogroup" aria-label="Cor de fundo">
           {FUNDOS.map((c) => (
             <button key={c} type="button" role="radio" aria-checked={fundo === c} aria-label={c} className={"ig-fundo f-" + c + (fundo === c ? " on" : "")} onClick={() => setFundo(c)} />
@@ -580,9 +708,14 @@ function Novo({ nav, modoInicial }: { nav: Nav; modoInicial: "post" | "story" })
         onChange={(e) => setTexto(e.target.value)}
       />
       {arquivo && (
-        <button type="button" className="ig-sem-botao ig-cinza ig-pequeno" onClick={() => setArquivo(null)}>
-          Tirar a foto
-        </button>
+        <div className="ig-novo-trocar">
+          <button type="button" className="ig-sem-botao ig-azul ig-pequeno" onClick={() => input.current?.click()}>
+            Trocar foto
+          </button>
+          <button type="button" className="ig-sem-botao ig-cinza ig-pequeno" onClick={() => setArquivo(null)}>
+            Tirar a foto
+          </button>
+        </div>
       )}
       <div className="ig-modos" role="radiogroup" aria-label="Publicar como">
         {(["post", "story"] as const).map((m) => (
@@ -1025,6 +1158,31 @@ function InstaNanico() {
     },
     compartilhar: (p) => setCompartilhando(p),
   };
+  /* toque na Dynamic Island: abre o que o aviso mostrava (a ref guarda o nav da última renderização) */
+  const navAtual = useRef(nav);
+  useEffect(() => {
+    navAtual.current = nav;
+  });
+  useEffect(
+    () =>
+      useRede.subscribe((st, antes) => {
+        const p = st.pedido;
+        if (!p || p === antes.pedido) return;
+        useRede.setState({ pedido: null });
+        setFolha(null);
+        setCompartilhando(null);
+        if (p.tipo === "mensagem") navAtual.current.conversa(p.userId);
+        else if (p.tipo === "story") navAtual.current.verStories(p.userId);
+        else {
+          const post = useRede.getState().posts.find((x) => x.id === p.id);
+          if (!post) return;
+          setVendo(null);
+          if (useRede.getState().conversaAberta) abrirConversa(null);
+          navAtual.current.abrirPost(post);
+        }
+      }),
+    [],
+  );
   const abrirCriador = () => {
     setModoNovo("story");
     setTela("novo");
@@ -1107,9 +1265,10 @@ export function Celular() {
         <span className="iph-botao power" aria-hidden="true" />
         <span className="iph-botao camera" aria-hidden="true" />
         <div className="iph-tela">
+          <Ilha />
           <div className="iph-status">
             <span className="iph-hora">{agora}</span>
-            <Ilha />
+            <span aria-hidden="true" />
             <span className="iph-icones" aria-hidden="true">
               <svg viewBox="0 0 18 12" width="18" height="12">
                 <rect x="0" y="8" width="3" height="4" rx="1" />
