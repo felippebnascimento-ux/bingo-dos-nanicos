@@ -92,3 +92,38 @@ export function resumo(m: Mensagem, eu: string | null) {
   const texto = m.postId ? (meu ? "Você enviou uma publicação" : "Enviou uma publicação") : m.storyId ? (meu ? `Você respondeu ao story: ${m.texto}` : `Respondeu ao seu story: ${m.texto}`) : meu ? `Você: ${m.texto}` : m.texto;
   return texto.length > 60 ? texto.slice(0, 59) + "…" : texto;
 }
+
+/* ---------- recorte da foto (como no Instagram) ---------- */
+export type Formato = "1:1" | "4:5" | "1.91:1" | "9:16";
+/** largura ÷ altura de cada formato */
+export const PROPORCAO: Record<Formato, number> = { "1:1": 1, "4:5": 4 / 5, "1.91:1": 1.91, "9:16": 9 / 16 };
+
+/** O formato que o Instagram escolheria para a foto: em pé vira 4:5, deitada vira 1,91:1, quase quadrada vira 1:1. */
+export function formatoInicial(w: number, h: number): Formato {
+  const r = w / h;
+  if (r < 0.9) return "4:5";
+  if (r > 1.25) return "1.91:1";
+  return "1:1";
+}
+
+/**
+ * A foto `foto` (w × h) dentro da moldura `caixa` (W × H, na tela), cobrindo tudo, com zoom `z` (≥ 1) e arrastada
+ * `dx`, `dy` (px da tela). Devolve o deslocamento já limitado (a foto nunca deixa buraco) e o pedaço da foto original
+ * que aparece na moldura (x, y, largura, altura em px da foto), que é o que vai ser cortado.
+ */
+export function recorte(foto: { w: number; h: number }, caixa: { W: number; H: number }, z: number, dx: number, dy: number) {
+  const base = Math.max(caixa.W / foto.w, caixa.H / foto.h);
+  const s = base * Math.max(1, z);
+  const iw = foto.w * s, ih = foto.h * s;
+  const mx = (iw - caixa.W) / 2, my = (ih - caixa.H) / 2;
+  const cx = Math.max(-mx, Math.min(mx, dx)), cy = Math.max(-my, Math.min(my, dy));
+  return {
+    dx: cx,
+    dy: cy,
+    escala: s,
+    x: (mx - cx) / s,
+    y: (my - cy) / s,
+    largura: caixa.W / s,
+    altura: caixa.H / s,
+  };
+}

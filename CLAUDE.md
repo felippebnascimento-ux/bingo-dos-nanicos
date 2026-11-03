@@ -138,8 +138,10 @@ src/
                        comprimida na pasta rede/<uid>/ do bucket midias, curtir, comentar, apagar, não lidas em `rede-visto`,
                        stories (`carregarStories`, `postarStory`, `marcarVisto`, `lerQuemViu`, `apagarStory`), o Direct
                        (`carregarMensagens`, `enviarMensagem`, `abrirConversa`, `marcarLidas`), a Dynamic Island
-                       (`avisarIlha`) e o tempo real; `iniciarRede`, `abrirCelular`), insta.ts (stories por pessoa, ordem
-                       da fileira, andar entre stories, tempo curto, conversas, não lidas e resumo; puro e testado) e Celular.tsx (BotaoCelular no menu
+                       (`avisarIlha` com `alvo`: cresce, mostra, some e encolhe em fases; `tocarIlha` grava `pedido` e o app abre a
+                       conversa, o post ou o story) e o tempo real; `iniciarRede`, `abrirCelular`), insta.ts (stories por pessoa, ordem
+                       da fileira, andar entre stories, tempo curto, conversas, não lidas e resumo, e o corte da foto ao postar: `formatoInicial`, `recorte` em
+                       1:1, 4:5, 1,91:1 ou 9:16 do story; puro e testado; o `Cortador` sobe a foto já cortada, até 1080 px) e Celular.tsx (BotaoCelular no menu
                        e no Sítio só para quem tem o item, `useTemCelular`, e o iPhone 17 Pro Max por cima de tudo, com a
                        Dynamic Island, rodando o InstaNanico: feed, stories, explorar, novo post ou story, notificações e
                        perfil; até 520 px vira tela inteira, sem moldura)

@@ -335,7 +335,15 @@ export const CHANGELOG: EntradaLog[] = [
     data: "03/11/2026",
     itens: [
       "InstaNanico Direct: mande mensagens para os nanicos, responda stories e envie publicações pelo aviãozinho; a Dynamic Island avisa quando chega mensagem",
-      "As fotos do feed aparecem inteiras, no formato delas, sem cortar",
+      { t: "As fotos do feed aparecem inteiras, no formato delas, sem cortar", off: "trocado pelo corte do Instagram na v1.90" },
+    ],
+  },
+  {
+    data: "03/11/2026",
+    itens: [
+      "InstaNanico: ao postar, ajuste a foto na hora (arraste e zoom) em quadrado, em pé (4:5) ou deitado, como no Instagram; o story vem em tela cheia",
+      "A Dynamic Island abre e fecha suave como a do iPhone e, tocando no aviso, leva direto à mensagem, ao post ou ao story",
+      "O celular ficou maior na tela do computador",
     ],
   },
 ];
