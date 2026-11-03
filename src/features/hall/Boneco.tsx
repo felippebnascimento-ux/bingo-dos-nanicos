@@ -13,6 +13,7 @@ import { CartasNaMao } from "./MesaVerde";
 import { Acessorio, noAlto, tipoAcessorio } from "@/features/loja/Acessorio";
 import { useEquipados } from "@/features/loja/lojaDados";
 import type { Enfeite } from "@/features/trofeus/trofeus";
+import { iconeAcao, useAcaoDe } from "./acoes";
 
 const pct = (v: number) => `${v * 100}%`;
 
@@ -26,6 +27,8 @@ export const Boneco = memo(function Boneco({
   const olha = a ? a.olha : b.sentido;
   const q = quadroSprite(olha, a ? 0 : b.quadro);
   /* acessório da loja (boné, óculos…): o enfeite dos troféus tem prioridade no alto da cabeça */
+  /* acenar, dançar ou deitar (acoes.ts) */
+  const acao = useAcaoDe(b.key);
   const cabeca = tipoAcessorio(useEquipados(f.user_id).cabeca?.dados.cor);
   const acess = folha && cabeca && !(enfeite && noAlto(cabeca)) ? cabeca : null;
   /* a célula do boneco, em % do hall, com o pé (âncora) no centro do piso */
@@ -48,8 +51,13 @@ export const Boneco = memo(function Boneco({
     </span>
   );
   return (
-    <div className={"boneco" + (eu ? " eu" : "") + (a ? " sentado" : "") + (rot ? " balanca" : "") + (enfeite ? " chapeu-" + enfeite : "") + (acess ? " acess-" + acess : "")} style={caixa}>
+    <div className={"boneco" + (eu ? " eu" : "") + (a ? " sentado" : "") + (rot ? " balanca" : "") + (enfeite ? " chapeu-" + enfeite : "") + (acess ? " acess-" + acess : "") + (acao ? " acao-" + acao : "")} style={caixa}>
       <span className="boneco-nome">{b.name}</span>
+      {acao && (
+        <span className="boneco-acao" aria-hidden="true">
+          {iconeAcao(acao)}
+        </span>
+      )}
       {enfeite && <Chapeu tipo={enfeite} />}
       {/* no truco da mesa verde: o leque de cartas na mão e o grito ("Truco!"), texto fixo do jogo */}
       {fala && <span className="boneco-fala">{fala}</span>}

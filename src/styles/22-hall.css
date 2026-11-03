@@ -569,3 +569,26 @@
 .habbo-historico-lista{overflow:auto;padding:8px 12px 12px;display:grid;gap:8px;align-content:start}
 .habbo-historico-msg{display:flex;gap:8px;margin:0;font-size:13.5px;overflow-wrap:anywhere}
 .habbo-historico-msg small{color:color-mix(in srgb,var(--accent-ink) 50%,transparent)}
+
+/* ações do boneco (acoes.ts): acenar balança, dançar pula e gira, deitar deita; o ícone fica em cima da cabeça.
+   rotate/translate soltos (e não transform) para não brigar com o espelho do quadro nem com o cambaleio */
+.boneco.acao-acena > .boneco-toque,.boneco.acao-acena > .boneco-img,.boneco.acao-acena > .boneco-pino{transform-origin:50% 100%;animation:boneco-acena .32s ease-in-out infinite alternate}
+.boneco.acao-danca > .boneco-toque,.boneco.acao-danca > .boneco-img,.boneco.acao-danca > .boneco-pino{transform-origin:50% 100%;animation:boneco-danca .7s ease-in-out infinite}
+.boneco.acao-deita > .boneco-toque,.boneco.acao-deita > .boneco-img,.boneco.acao-deita > .boneco-pino{transform-origin:50% 88%;rotate:-80deg;translate:14% 4%}
+@keyframes boneco-acena{from{rotate:-5deg}to{rotate:5deg}}
+@keyframes boneco-danca{0%,50%,100%{translate:0 0;rotate:0deg}25%{translate:0 -5%;rotate:-7deg}75%{translate:0 -5%;rotate:7deg}}
+.boneco-acao{position:absolute;right:2%;top:6%;font-size:clamp(12px,1.6vw,20px);line-height:1;pointer-events:none;animation:boneco-icone 1.2s ease-in-out infinite}
+@keyframes boneco-icone{50%{translate:0 -6px}}
+.quarto-boneco[class*="acao-"] .quarto-corpo{transform-box:fill-box;transform-origin:50% 100%}
+.quarto-boneco.acao-acena .quarto-corpo{animation:boneco-acena .32s ease-in-out infinite alternate}
+.quarto-boneco.acao-danca .quarto-corpo{animation:boneco-danca .7s ease-in-out infinite}
+.quarto-boneco.acao-deita .quarto-corpo{transform-origin:50% 88%;rotate:-80deg;translate:14% 4%}
+.quarto-acao{font-size:22px;animation:boneco-icone 1.2s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.boneco[class*="acao-"] > *,.quarto-boneco[class*="acao-"] .quarto-corpo,.boneco-acao,.quarto-acao{animation:none}}
+/* o botão de ações na barra do chat */
+.habbo-acoes{position:relative;flex:none;display:flex}
+.habbo-acoes-botao{width:32px;height:32px;margin-left:-12px;display:grid;place-items:center;padding:0;border:0;border-radius:50%;background:color-mix(in srgb,var(--accent) 18%,transparent);font-size:16px;cursor:pointer}
+.habbo-acoes-botao:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.habbo-acoes-menu{position:absolute;left:-12px;bottom:calc(100% + 10px);z-index:5;display:grid;gap:2px;min-width:140px;padding:6px;border-radius:12px;background:var(--stamp-ink);color:var(--accent-ink);box-shadow:0 8px 24px var(--shadow)}
+.habbo-acoes-menu button{display:flex;align-items:center;gap:8px;padding:8px 10px;border:0;border-radius:8px;background:none;color:inherit;font:600 14px var(--body);text-align:left;cursor:pointer}
+.habbo-acoes-menu button:hover,.habbo-acoes-menu button:focus-visible{background:color-mix(in srgb,var(--accent) 18%,transparent);outline:none}

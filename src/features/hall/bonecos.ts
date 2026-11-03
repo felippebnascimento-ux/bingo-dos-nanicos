@@ -14,6 +14,7 @@ import { PORTA } from "@/features/quarto/quarto";
 import { iniciarQuartos, useQuartos } from "@/features/quarto/quartoDados";
 import { gradeDe } from "@/features/quarto/visita";
 import { iniciarLoja } from "@/features/loja/lojaDados";
+import { lerAcao, marcarAcao, pararAcao, type Acao } from "./acoes";
 
 export type Boneco = {
   key: string;
@@ -140,8 +141,9 @@ function proximoPasso(b: Interno) {
 function rota(b: Interno, para: Piso, sentar: string | null = null): boolean {
   const c = caminho(b.alvo, para, livreCena());
   if (!c.length) return false;
-  /* levanta para andar (ou para trocar de assento no mesmo piso) */
+  /* levanta para andar (ou para trocar de assento no mesmo piso); andar acaba com a dança e o deitar */
   b.senta = null;
+  pararAcao(b.key);
   b.vaiSentar = sentar;
   b.fila = c.slice(1);
   if (!andando(b)) {
@@ -274,7 +276,11 @@ function sincronizar() {
     /* perdeu algum destino? a presença corrige, andando até o piso certo (e sentando, se ela estiver sentada) */
     if (dele && !andando(b) && (b.alvo.i !== dele.i || b.alvo.j !== dele.j || b.senta !== (dele.s ?? null))) rota(b, dele, dele.s ?? null);
   }
-  for (const k of [...B.keys()]) if (!ids.has(k)) B.delete(k);
+  for (const k of [...B.keys()])
+    if (!ids.has(k)) {
+      B.delete(k);
+      pararAcao(k);
+    }
   if (entraram.length && !primeiraLista) useHall.setState({ aviso: `${entraram.join(", ")} entrou no hall` });
   primeiraLista = false;
   publicar();
@@ -319,6 +325,14 @@ export function andarAte(para: Piso, sentar: string | null = null) {
   if (rota(b, p, p.s ?? null)) enviar("hall", { para: p.s ? { i: p.i, j: p.j, s: p.s } : { i: p.i, j: p.j }, ...(q ? { q } : {}) });
 }
 
+/** Acenar, dançar ou deitar (acoes.ts): o meu boneco faz na hora e a cena vê pelo evento `hall`. */
+export function fazerAcao(tipo: Acao) {
+  if (!B.has(MY_KEY)) return;
+  marcarAcao(MY_KEY, tipo);
+  const q = cena();
+  enviar("hall", { acao: tipo, ...(q ? { q } : {}) });
+}
+
 /** Setas do teclado: um piso a partir de onde o boneco vai parar. */
 export function andarUmPiso(di: number, dj: number) {
   const b = B.get(MY_KEY);
@@ -333,6 +347,14 @@ function onHall(m: Record<string, unknown>) {
   /* `q` = dono do quarto (sem ele, o K-FOFO): só anima quem está vendo a mesma cena, com a grade dela */
   const q = m.q === undefined || m.q === null ? null : typeof m.q === "string" && m.q.length <= 64 ? m.q : undefined;
   if (q === undefined || q !== cena()) return;
+  /* uma ação (acenar, dançar, deitar) em vez de um destino */
+  const acao = m.para === undefined ? lerAcao(m.acao) : null;
+  if (acao) {
+    if (typeof m.from !== "string" || m.from === MY_KEY || !estaNaSala(m.from) || !hallLimite(m.from)) return;
+    const k = chaveDoBoneco.get(m.from) ?? m.from;
+    if (B.has(k)) marcarAcao(k, acao);
+    return;
+  }
   const para = posCena(m.para);
   if (typeof m.from !== "string" || m.from === MY_KEY || !para) return;
   if (!estaNaSala(m.from) || !hallLimite(m.from)) return;

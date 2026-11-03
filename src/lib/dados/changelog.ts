@@ -647,6 +647,10 @@ export const CHANGELOG: EntradaLog[] = [
   },
   { data: "03/11/2026", itens: ["O baú do Sítio abre uma prévia dos Campeões Selados"] },
   { data: "03/11/2026", itens: ["A aba K-FOFO Teste foi retirada por enquanto; o K-FOFO continua no menu de Jogos"] },
+  {
+    data: "03/11/2026",
+    itens: ["Ações do boneco: acene, dance ou deite no K-FOFO, na rua e nos quartos pelo botão 👋 da barra do chat (ou escreva o/, :dançar ou :deitar). Andar acaba com a dança"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

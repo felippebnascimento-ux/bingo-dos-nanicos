@@ -9,6 +9,7 @@
 import { memo, useId, useMemo } from "react";
 import { ANCORA, caixaDoBoneco, CEL_H, CEL_W, ordemZ, quadroSprite, type Caixa, type Sentido } from "@/features/hall/hall";
 import { BaloesSvg } from "@/features/hall/ChatHabbo";
+import { iconeAcao, type Acao } from "@/features/hall/acoes";
 import { desenharMovel, Poligonos, type Poly, type Pt } from "./Moveis";
 import { camadasQuarto, type Retangulo } from "./quarto";
 import { MARCA_PENALTI, type PortaCorredor } from "./cenas";
@@ -31,6 +32,8 @@ export type BonecoCena = {
   eu: boolean;
   /** user_id, para os balões do chat (ChatHabbo) */
   uid?: string | null;
+  /** acenar, dançar ou deitar (hall/acoes.ts) */
+  acao?: Acao | null;
 };
 
 /** A projeção de um quarto de lado n: a origem fica no canto de cima, com folga para as paredes. */
@@ -334,7 +337,8 @@ function BonecoNoQuarto({ b, p }: { b: BonecoCena; p: (i: number, j: number, z?:
   /* sentado, as pernas somem dentro do estofado (como no K-FOFO): a janela do quadro corta o terço de baixo */
   const corte = b.sentado ? 0.68 : 1;
   return (
-    <g className={"quarto-boneco" + (b.eu ? " eu" : "")} pointerEvents="none">
+    <g className={"quarto-boneco" + (b.eu ? " eu" : "") + (b.acao ? " acao-" + b.acao : "")} pointerEvents="none">
+      <g className="quarto-corpo">
       {b.folha ? (
         <svg x={x - ANCORA.x * ESCALA_VISITA} y={y - ANCORA.y * ESCALA_VISITA} width={w} height={h * corte} viewBox={`${vx} ${vy} ${CEL_W} ${CEL_H * corte}`}>
           <g transform={q.espelha ? `translate(${2 * vx + CEL_W} 0) scale(-1 1)` : undefined}>
@@ -343,6 +347,12 @@ function BonecoNoQuarto({ b, p }: { b: BonecoCena; p: (i: number, j: number, z?:
         </svg>
       ) : (
         <circle className="quarto-pino" cx={x} cy={y - 40} r={16} />
+      )}
+      </g>
+      {b.acao && (
+        <text className="quarto-acao" x={x + w * 0.3} y={y - h * 0.8} textAnchor="middle" aria-hidden="true">
+          {iconeAcao(b.acao)}
+        </text>
       )}
       <text className="quarto-boneco-nome" x={x} y={y - h * 0.92} textAnchor="middle">
         {b.nome}

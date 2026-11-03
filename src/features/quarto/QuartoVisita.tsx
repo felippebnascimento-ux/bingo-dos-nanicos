@@ -6,6 +6,7 @@
  */
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { andarAte, andarUmPiso, useHall } from "@/features/hall/bonecos";
+import { useAcoes } from "@/features/hall/acoes";
 import { useEquipados, useLoja } from "@/features/loja/lojaDados";
 import { IcQuarto } from "@/components/ui/icones";
 import { bonecoOf } from "@/lib/dados/nanicos";
@@ -40,6 +41,7 @@ export function QuartoVisita({ dono }: { dono: string }) {
   }, [especial]);
   const portas = useMemo(() => (especial === "corredor" ? portasDoCorredor(soNanicos(friends), (uid) => !!quartos[uid]) : undefined), [especial, friends, quartos]);
   const bonecos = useHall((s) => s.bonecos);
+  const acoes = useAcoes((s) => s.por);
   const brilhos = useHall((s) => s.brilhos);
   const cena = useMemo(() => (especial ? [...moveisDaCena(especial)] : paraCena(moveisDe(todos, f?.user_id), itens)), [especial, todos, f?.user_id, itens]);
   const grade = useMemo(() => (especial ? gradeEspecial(especial) : tamanho ? gradeDoQuarto(tamanho, cena) : null), [especial, tamanho, cena]);
@@ -59,9 +61,10 @@ export function QuartoVisita({ dono }: { dono: string }) {
           sentado: a ? { i: a.i, j: a.j, movel: a.movel } : null,
           eu: b.key === MY_KEY,
           uid: friendDaPresenca(b, friends)?.user_id ?? null,
+          acao: acoes[b.key]?.tipo ?? null,
         };
       }),
-    [bonecos, grade, friends],
+    [bonecos, grade, friends, acoes],
   );
 
   if ((!especial && !f) || !tamanho || !grade) return <p className="hint quarto-visita-vazio">Abrindo o quarto…</p>;

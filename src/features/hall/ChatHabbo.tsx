@@ -10,7 +10,8 @@ import { errMsg } from "@/lib/supabase";
 import { toast } from "@/lib/toast";
 import { useApp } from "@/lib/store";
 import { BALAO_MS, iniciarBaloes, useBaloes, type Balao } from "./baloes";
-import type { Boneco } from "./bonecos";
+import { fazerAcao, type Boneco } from "./bonecos";
+import { ACOES, comandoAcao } from "./acoes";
 import { ANCORA, assentoDe, tela, type Caixa2D } from "./hall";
 
 const pct = (v: number) => `${v * 100}%`;
@@ -19,11 +20,18 @@ const pct = (v: number) => `${v * 100}%`;
 export function ChatBarra() {
   const [texto, setTexto] = useState("");
   const [indo, setIndo] = useState(false);
+  const [acoes, setAcoes] = useState(false);
   useEffect(iniciarBaloes, []);
   const mandar = async (e: FormEvent) => {
     e.preventDefault();
     const t = texto.trim();
     if (!t || indo) return;
+    /* "o/", ":dançar" e ":deitar" fazem a ação em vez de mandar a mensagem */
+    const acao = comandoAcao(t);
+    if (acao) {
+      fazerAcao(acao);
+      return setTexto("");
+    }
     setIndo(true);
     try {
       await enviarChat(t, "geral");
@@ -36,11 +44,33 @@ export function ChatBarra() {
   };
   return (
     <form className="habbo-barra" onSubmit={mandar}>
+      <span className="habbo-acoes">
+        <button type="button" className="habbo-acoes-botao" aria-expanded={acoes} aria-label="Ações do boneco: acenar, dançar, deitar" title="Acenar, dançar, deitar" onClick={() => setAcoes(!acoes)}>
+          👋
+        </button>
+        {acoes && (
+          <span className="habbo-acoes-menu" role="menu">
+            {ACOES.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  fazerAcao(a.id);
+                  setAcoes(false);
+                }}
+              >
+                <span aria-hidden="true">{a.icone}</span> {a.nome}
+              </button>
+            ))}
+          </span>
+        )}
+      </span>
       <input
         value={texto}
         onChange={(e) => setTexto(e.target.value)}
         maxLength={300}
-        placeholder="Fale com quem está aqui… (Z abre o histórico)"
+        placeholder="Fale com quem está aqui… (o/ acena, Z abre o histórico)"
         aria-label="Mensagem para o #geral (aparece num balão em cima do seu boneco)"
         enterKeyHint="send"
         autoComplete="off"
