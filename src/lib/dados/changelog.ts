@@ -318,6 +318,10 @@ export const CHANGELOG: EntradaLog[] = [
   },
   {
     data: "03/11/2026",
+    itens: ["A roleta ao vivo não toca mais som para quem está fora da tela da Roleta (em outra aba, outro jogo ou com o navegador escondido)"],
+  },
+  {
+    data: "03/11/2026",
     itens: [
       "Celular novo: um iPhone 17 Pro Max com Dynamic Island, que avisa quando sai post ou story e enquanto você publica",
       "InstaNanico no lugar da rede nanica: igual ao Instagram, com stories de 24 h (foto ou texto colorido, com quem viu), feed com curtir em dois toques, comentários, explorar, notificações, perfil com grade e postagem só com foto",
