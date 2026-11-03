@@ -65,7 +65,11 @@ export const MOTIVOS: Readonly<Record<string, string>> = {
   trofeu: "Troféu da semana",
   churrasco: "Espetinho do churrasco",
   missao: "Missão do dia",
+  bolsa: "Bolsa Cassino",
 };
+
+/** Bolsa Cassino (seção 36 do SQL): abaixo disto, o banco dá 5.000 uma vez por dia. Só para saber quando pedir. */
+export const BOLSA_ABAIXO_DE = 100;
 
 /* ---------- ranking ---------- */
 export type LinhaRanking = { fid: string; nome: string; userId: string | null; saldo: number | null; pos: number | null };

@@ -3,7 +3,7 @@
  * aqui só pedimos e mostramos. Se o SQL das moedas ainda não rodou, tudo fica escondido.
  */
 import { create } from "zustand";
-import { ranking, textoBonus } from "./moedas";
+import { BOLSA_ABAIXO_DE, ranking, textoBonus } from "./moedas";
 import { aoMudarTabela } from "./sala";
 import { getApp } from "./store";
 import { sb } from "./supabase";
@@ -65,6 +65,7 @@ export async function iniciarCarteira() {
     if (r.escudo_usado === true) toast("Escudo usado: sua sequência continua");
     if (ganhou) setTimeout(() => toast(textoBonus(ganhou, num(r.bonus_extra), num(r.seq))), r.escudo_usado === true ? 3500 : 0);
     carregarExtrato();
+    pedirBolsa();
   } catch (e) {
     const err = e as { code?: string; message?: string };
     if (semSql(err)) {
@@ -85,9 +86,23 @@ async function pulsar() {
     const c = lerCarteira(data as Record<string, unknown>);
     useCarteira.setState({ carteira: c });
     if (c && c.saldo !== antes) carregarExtrato();
+    pedirBolsa();
   } catch {
     /* sem internet ou pulsos demais (várias abas): o próximo minuto tenta de novo */
   }
+}
+
+/** Bolsa Cassino: com menos de 100 moedas, pede ao banco (que confere o saldo e paga uma vez por dia). */
+async function pedirBolsa() {
+  const c = useCarteira.getState().carteira;
+  if (!c || c.saldo >= BOLSA_ABAIXO_DE) return;
+  const { data, error } = await sb().rpc("pedir_bolsa");
+  if (error || !data || typeof data !== "object") return;
+  const r = data as Record<string, unknown>;
+  if (!num(r.ganhou)) return;
+  useCarteira.setState({ carteira: { ...c, saldo: num(r.saldo) } });
+  toast(`Bolsa Cassino: +${num(r.ganhou).toLocaleString("pt-BR")} moedas para voltar ao jogo`);
+  carregarExtrato();
 }
 
 /** O saldo mudou no banco (tempo real das carteiras): atualiza o meu sem pedir de novo. */

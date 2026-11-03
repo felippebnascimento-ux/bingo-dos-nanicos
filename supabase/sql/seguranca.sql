@@ -1188,7 +1188,7 @@ grant execute on function public.rodizio_desistir(text) to authenticated;
 --     tempo real da tabela, nunca por broadcast. O alvo não perde nada.
 alter table public.extrato drop constraint if exists extrato_motivo_check;
 alter table public.extrato add constraint extrato_motivo_check
-  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco', 'missao'));
+  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco', 'missao', 'bolsa'));
 
 create table if not exists public.zoeiras (
   id   bigint generated always as identity primary key,
@@ -1274,7 +1274,7 @@ grant execute on function public.placar_zoeira(uuid) to authenticated;
 --     (semana_vez) e o pagamento acontece uma vez só (trofeus_pagar confere o extrato).
 alter table public.extrato drop constraint if exists extrato_motivo_check;
 alter table public.extrato add constraint extrato_motivo_check
-  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco', 'missao'));
+  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco', 'missao', 'bolsa'));
 
 create table if not exists public.trofeus_semana (
   semana    date not null,
@@ -3815,7 +3815,38 @@ begin
   begin alter publication supabase_realtime add table public.rede_mensagens; exception when duplicate_object then null; end;
 end $$;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens
+-- 36) Bolsa Cassino: quem está com menos de 100 moedas ganha 5.000, uma vez por dia de Brasília --------------------------
+--     O site chama pedir_bolsa() ao entrar e depois de cada pulso com o saldo abaixo de 100; quem decide é o banco
+--     (saldo de agora e o extrato do dia). O ref é a data, então chamar de novo no mesmo dia não paga.
+alter table public.extrato drop constraint if exists extrato_motivo_check;
+alter table public.extrato add constraint extrato_motivo_check
+  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco', 'missao', 'bolsa'));
+
+-- a bolsa de 03/11/2026 do Abreutz foi paga à mão como 'admin' antes desta seção; vira 'bolsa' para contar como do dia
+update public.extrato set motivo = 'bolsa', ref = '2026-11-03' where motivo = 'admin' and ref = 'bolsa:2026-11-03';
+
+create or replace function public.pedir_bolsa() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid   uuid := auth.uid();
+  v_hoje  text := public.hoje_br()::text;
+  v_saldo int;
+begin
+  if not public.eh_nanico() then raise exception 'Só nanicos ganham a bolsa.' using errcode = 'P0001'; end if;
+  -- duas abas pedindo juntas: a segunda espera e já encontra a bolsa no extrato
+  perform pg_advisory_xact_lock(hashtext('bolsa:' || v_uid::text));
+  select saldo into v_saldo from public.carteiras where user_id = v_uid;
+  if v_saldo is null or v_saldo >= 100
+     or exists (select 1 from public.extrato where user_id = v_uid and motivo = 'bolsa' and ref = v_hoje) then
+    return jsonb_build_object('ganhou', 0, 'saldo', coalesce(v_saldo, 0));
+  end if;
+  v_saldo := public.creditar(v_uid, 5000, 'bolsa', v_hoje);
+  return jsonb_build_object('ganhou', 5000, 'saldo', v_saldo);
+end $$;
+revoke all on function public.pedir_bolsa() from public, anon;
+grant execute on function public.pedir_bolsa() to authenticated;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, e a bolsa
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -3886,4 +3917,7 @@ select proname::text, 'penalti' from pg_proc
 union all
 select tablename::text, 'stories' from pg_tables
  where schemaname = 'public' and tablename in ('rede_stories', 'rede_stories_vistos', 'rede_mensagens')
+union all
+select proname::text, 'bolsa' from pg_proc
+ where pronamespace = 'public'::regnamespace and proname in ('pedir_bolsa')
 order by 2, 1;
