@@ -407,6 +407,12 @@ export const CHANGELOG: EntradaLog[] = [
       "Os botões ligados (transmitir e câmera) continuam na cor deles ao passar o mouse, e todos os botões do painel da voz têm o mesmo fundo",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Bolsa Cassino: quem ficar com menos de 100 moedas ganha 5.000, uma vez por dia, e volta para o jogo",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
