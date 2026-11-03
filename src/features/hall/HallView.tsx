@@ -35,6 +35,7 @@ import { useTrofeus } from "@/features/trofeus/trofeusDados";
 import { assentoNaTela, CADEIRAS_TRUCO, camadasHall, CLICAVEIS, livre, MOVEIS, naMesaVerde, pisoDaPlateia, pisoLivreNaTela, pisoNaTela, VB_ESTREITO, VB_LARGO, type Caixa2D, type Clicavel, type Piso } from "./hall";
 import { Destaque, emPorcento, FeltroTruco, Fundo, MovelCamada, tvCaixa } from "./Sala";
 import { BotaoMeuQuarto, QuartoVisita, TopoQuarto } from "@/features/quarto/QuartoVisita";
+import { BaloesHall, ChatBarra } from "./ChatHabbo";
 
 /** Setas → um piso: direita/esquerda seguem a parede da direita, cima/baixo a da esquerda. */
 const SETAS: Record<string, [number, number]> = {
@@ -230,6 +231,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
           <ChurrascoCamada vb={vb} z={z[CHURRASQUEIRA]} />
           <ZoeiraCamada bonecos={bonecos} vb={vb} />
           <ConsumoCamada bonecos={vistos} vb={vb} />
+          <BaloesHall bonecos={vistos} vb={vb} />
           <LuzHappy />
           {/* o brilho do teletransporte de quem foi para um quarto ou voltou */}
           {brilhos.map((b) => {
@@ -300,6 +302,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
           return b ? <PerfilCartao key={b.key} b={b} /> : null;
         })()}
       </div>
+      <ChatBarra />
       <p className="hall-aviso" aria-live="polite">
         {aviso}
       </p>
