@@ -1,34 +1,12 @@
 "use client";
 import { Fragment, useEffect, useState } from "react";
-import { Avatar } from "@/components/ui/Avatar";
 import { useSure } from "@/components/ui/useSure";
 import { friendOf, useApp } from "@/lib/store";
 import { TR_ENV, TR_TEMPO_MS, TR_TRUCO, trOpcoes, trQuemDeve, trValido, type Carta as TCarta, type MesaPub } from "./engine";
 import { Carta, Costas } from "./Carta";
 import { fecharMesa, fimDaJogada, garantirTempo, levantar, meuLugar, revanche, trEnviar, trNaMesa, useTruco, voltarAoLobby } from "./mesa";
 import { ApostarTruco } from "./ApostarTruco";
-
-/** Os segundos que faltam para a jogada (20 s). Acabou, a carta sai sozinha. */
-function Relogio({ fim, eu }: { fim: number; eu: boolean }) {
-  const [agora, setAgora] = useState(() => Date.now());
-  useEffect(() => {
-    const t = setInterval(() => setAgora(Date.now()), 250);
-    return () => clearInterval(t);
-  }, [fim]);
-  const resta = Math.max(0, fim - agora);
-  const seg = Math.ceil(resta / 1000);
-  return (
-    <span
-      className={"tr-relogio" + (seg <= 5 ? " urgente" : "")}
-      style={{ ["--resta" as string]: String(resta / TR_TEMPO_MS) }}
-      role="timer"
-      aria-label={eu ? `Você tem ${seg} segundos` : `${seg} segundos para jogar`}
-      title={eu ? "Acabou o tempo, sai uma carta sorteada (ou aceita o pedido)" : undefined}
-    >
-      {seg} s
-    </span>
-  );
-}
+import { Lugar, Mesa, NaMesa } from "@/features/mesa/Pecas";
 
 /** As minhas cartas. A que eu cliquei sobe na hora ("indo") até o servidor devolver a mão nova; se ele recusar, desce. */
 function MinhaMao({ cartas, pode }: { cartas: TCarta[]; pode: boolean }) {
@@ -57,7 +35,23 @@ function MinhaMao({ cartas, pode }: { cartas: TCarta[]; pode: boolean }) {
   );
 }
 
-/** A mesa aberta: lugares em volta do pano, cartas no meio, minha mão e as ações embaixo. */
+/** Quanto falta do tempo da jogada (de 0 a 1), para o anel do lugar de quem está na vez. */
+function useFalta(fim: number | null) {
+  const [agora, setAgora] = useState(() => Date.now());
+  useEffect(() => {
+    if (fim === null) return;
+    const t = setInterval(() => setAgora(Date.now()), 250);
+    return () => clearInterval(t);
+  }, [fim]);
+  return fim === null ? null : Math.max(0, Math.min(1, (fim - agora) / TR_TEMPO_MS));
+}
+
+type Pos = "sul" | "leste" | "norte" | "oeste";
+/* onde fica cada lugar na mesa oval (em % da mesa) e para que lado a carta jogada vai, a partir do meio */
+const LUGAR_XY: Record<Pos, [number, number]> = { norte: [50, 12], oeste: [12, 46], leste: [88, 46], sul: [19, 84] };
+const JOGADA_XY: Record<Pos, [number, number, number]> = { norte: [50, 38, -4], oeste: [36, 48, -8], leste: [64, 48, 7], sul: [50, 60, 3] };
+
+/** A mesa aberta, no padrão das mesas de cartas: lugares em volta da mesa oval, cartas no meio, minha mão embaixo. */
 export function MesaTela({ m }: { m: MesaPub }) {
   const friends = useApp((s) => s.friends);
   const myUid = useApp((s) => s.myUid);
@@ -72,9 +66,9 @@ export function MesaTela({ m }: { m: MesaPub }) {
   const N = m.modo, h = m.h, souHost = minhaId === m.id;
   const eu = meuLugar(m, myUid), base = eu >= 0 ? eu : 0;
   /* eu sempre embaixo (sul); quem assiste vê do lugar 0 */
-  const pos = (i: number) => {
+  const pos = (i: number): Pos => {
     const r = (i - base + N) % N;
-    return N === 2 ? (r === 0 ? "sul" : "norte") : ["sul", "leste", "norte", "oeste"][r];
+    return N === 2 ? (r === 0 ? "sul" : "norte") : (["sul", "leste", "norte", "oeste"] as const)[r];
   };
   const meuTime = eu >= 0 ? eu % 2 : 0;
   const nome = (i: number) => m.lugares[i]?.nome || "?";
@@ -87,99 +81,100 @@ export function MesaTela({ m }: { m: MesaPub }) {
   /* o relógio de 20 s: de quem é a vez de agir e até quando */
   const fim = fimDaJogada(m);
   const deve = fim !== null ? trQuemDeve(m) : null;
+  const falta = useFalta(fim);
   useEffect(() => {
     if (fim !== null && eu >= 0) garantirTempo(m.id);
   }, [fim, eu, m.id]);
 
   const lugar = (i: number) => {
     const l = m.lugares[i], p = pos(i);
+    const [x, y] = LUGAR_XY[p];
     if (!l)
       return (
-        <div key={i} className={`tr-lugar ${p} vazio`}>
+        <NaMesa key={i} x={x} y={y}>
           {m.fase === "espera" && eu < 0 ? (
             <button className="btn sm" type="button" onClick={() => trEnviar("sentar", i)}>
               Sentar aqui
             </button>
           ) : (
-            <span className="status">Lugar livre</span>
+            <span className="mesa-aviso">Lugar livre</span>
           )}
-        </div>
+        </NaMesa>
       );
-    const vez = !!h && !h.fim && h.vez === i && !h.truco.pend && h.env.st !== "pend";
     const nc = h ? (h.nc[i] ?? 0) : 0;
     const sobra = h && h.fim && h.sobra && i !== eu ? (h.sobra[i] || []).filter(trValido) : [];
+    const naVez = fim !== null && deve === i;
+    const parceiro = N === 4 && eu >= 0 && i !== eu && i % 2 === meuTime;
+    const info = naVez ? `na vez · ${Math.ceil(((falta ?? 0) * TR_TEMPO_MS) / 1000)} s` : h && h.mano === i ? "mão" : parceiro ? "parceiro" : undefined;
     return (
-      <div key={i} className={`tr-lugar ${p}${vez ? " vez" : ""}${i === eu ? " eu" : ""}`}>
-        {falas[i] ? <span className="tr-fala">{falas[i]}</span> : null}
-        <div className="tr-id">
-          <Avatar f={friendOf(l.fid, friends) || { name: l.nome }} />
-          <span className="nm">{i === eu ? "Você" : l.nome}</span>
-          {h && h.mano === i ? (
-            <span className="tr-tag" title="Mão: começa a rodada e ganha os empates">
-              mão
-            </span>
-          ) : null}
-          {fim !== null && deve === i ? <Relogio fim={fim} eu={i === eu} /> : null}
-        </div>
+      <NaMesa key={i} x={x} y={y} className={"tr-lugar-mesa " + p}>
+        <Lugar f={friendOf(l.fid, friends) || { name: l.nome }} nome={i === eu ? "Você" : l.nome} info={info} vez={naVez ? falta : null} fala={falas[i] || undefined} eu={i === eu} />
         {i !== eu && h ? (
-          <div className="tr-costas">
-            {sobra.length ? sobra.map((c) => <Carta key={c} c={c} peq />) : <Costas n={nc} />}
-          </div>
+          <span className="mesa-leque pequeno">{sobra.length ? sobra.map((c) => <Carta key={c} c={c} peq />) : <Costas n={nc} />}</span>
         ) : null}
-      </div>
+      </NaMesa>
     );
   };
 
   const centro = () => {
     if (m.fase === "espera")
       return (
-        <div className="tr-msg">
-          <b>Esperando a turma</b>
-          <span>
-            {m.lugares.filter(Boolean).length} de {N} sentados
-          </span>
-          {souHost && m.lugares.every(Boolean) ? (
-            <button className="btn" type="button" id="trComecar" onClick={() => trEnviar("comecar")}>
-              Começar
-            </button>
-          ) : null}
-        </div>
+        <NaMesa x={50} y={47}>
+          <div className="tr-msg">
+            <b>Esperando a turma</b>
+            <span>
+              {m.lugares.filter(Boolean).length} de {N} sentados
+            </span>
+            {souHost && m.lugares.every(Boolean) ? (
+              <button className="btn" type="button" id="trComecar" onClick={() => trEnviar("comecar")}>
+                Começar
+              </button>
+            ) : null}
+          </div>
+        </NaMesa>
       );
     if (m.fase === "fim") {
       const v = m.vencedor ?? 0;
       return (
-        <div className="tr-msg fim">
-          <b>
-            {rotulo(v)} {eu >= 0 && v === meuTime ? "ganhamos!" : "ganharam."}
-          </b>
-          <span>
-            {m.placar[v]} a {m.placar[1 - v]}
-          </span>
-          {souHost ? (
-            <button className="btn" type="button" id="trRevanche" onClick={revanche}>
-              Jogar de novo
-            </button>
-          ) : (
-            <span className="status">O {m.lugares[0]?.nome || "anfitrião"} pode começar outra.</span>
-          )}
-        </div>
+        <NaMesa x={50} y={47}>
+          <div className="tr-msg fim">
+            <b>
+              {rotulo(v)} {eu >= 0 && v === meuTime ? "ganhamos!" : "ganharam."}
+            </b>
+            <span>
+              {m.placar[v]} a {m.placar[1 - v]}
+            </span>
+            {souHost ? (
+              <button className="btn" type="button" id="trRevanche" onClick={revanche}>
+                Jogar de novo
+              </button>
+            ) : (
+              <span className="status">O {m.lugares[0]?.nome || "anfitrião"} pode começar outra.</span>
+            )}
+          </div>
+        </NaMesa>
       );
     }
     if (!h || !naMesa) return null;
     return (
       <>
-        {naMesa.cartas.map((x) => (
-          <div key={`${h.n}:${x.c}`} className={`tr-jogada ${pos(x.s)}${novas.includes(x.c) ? " novo" : ""}`}>
-            <Carta c={x.c} ganha={naMesa.vence !== null && naMesa.por === x.s} />
-          </div>
-        ))}
+        {naMesa.cartas.map((x) => {
+          const [cx, cy, giro] = JOGADA_XY[pos(x.s)];
+          return (
+            <NaMesa key={`${h.n}:${x.c}`} x={cx} y={cy} className={"tr-jogada" + (novas.includes(x.c) ? " novo" : "")} style={{ rotate: `${giro}deg` }}>
+              <Carta c={x.c} ganha={naMesa.vence !== null && naMesa.por === x.s} />
+            </NaMesa>
+          );
+        })}
         {h.fim ? (
-          <div className="tr-msg mini">
-            <b>{h.fim.motivo}</b>
-            <span>
-              +{h.fim.pontos} para {rotulo(h.fim.team)}
-            </span>
-          </div>
+          <NaMesa x={50} y={47}>
+            <div className="tr-msg mini">
+              <b>{h.fim.motivo}</b>
+              <span>
+                +{h.fim.pontos} para {rotulo(h.fim.team)}
+              </span>
+            </div>
+          </NaMesa>
         ) : null}
       </>
     );
@@ -192,97 +187,70 @@ export function MesaTela({ m }: { m: MesaPub }) {
     const quem = ep ? h.env.por : (h.truco.pend?.por ?? null);
     const oque = ep ? h.env.apostas.map((k) => TR_ENV[k]).join(" + ") : TR_TRUCO[h.truco.pend?.nivel ?? 2];
     pergunta = (
-      <div className="tr-pergunta" role="alert">
-        <b>
-          {quem !== null ? m.lugares[quem]?.nome || "" : ""} pediu {oque}
-        </b>
-        <div className="tr-acoes">
-          <button className="btn" type="button" onClick={() => trEnviar("quero")}>
-            Quero
-          </button>
-          <button className="btn soft" type="button" onClick={() => trEnviar("naoquero")}>
-            Não quero
-          </button>
-          {op.truco && !ep ? (
-            <button className="btn tr-cant" type="button" onClick={() => trEnviar("truco")}>
-              {TR_TRUCO[op.truco]}!
-            </button>
-          ) : null}
-          {op.envido.map((k) => (
-            <button key={k} className="btn tr-cant" type="button" onClick={() => trEnviar("envido", k)}>
-              {TR_ENV[k]}!
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  const acoes =
-    op && !op.quero && op.jogar ? (
-      <div className="tr-acoes">
-        {op.truco ? (
-          <button className="btn tr-cant" type="button" onClick={() => trEnviar("truco")}>
+      <div className="mesa-acoes tr-pergunta" role="alert">
+        <span className="tr-pergunta-txt">
+          <b>{quem !== null ? m.lugares[quem]?.nome || "" : ""}</b> pediu <b>{oque}</b>
+        </span>
+        <button className="mesa-bt ouro" type="button" onClick={() => trEnviar("quero")}>
+          Quero
+        </button>
+        <button className="mesa-bt" type="button" onClick={() => trEnviar("naoquero")}>
+          Não quero
+        </button>
+        {op.truco && !ep ? (
+          <button className="mesa-bt verm" type="button" onClick={() => trEnviar("truco")}>
             {TR_TRUCO[op.truco]}!
           </button>
         ) : null}
         {op.envido.map((k) => (
-          <button key={k} className="btn soft" type="button" onClick={() => trEnviar("envido", k)}>
-            {TR_ENV[k]}
+          <button key={k} className="mesa-bt verm" type="button" onClick={() => trEnviar("envido", k)}>
+            {TR_ENV[k]}!
           </button>
         ))}
       </div>
-    ) : null;
+    );
+  }
 
   const esperando =
-    h && !h.fim && op && !op.jogar && !op.quero ? (
-      <span className="status">
-        {h.truco.pend || h.env.st === "pend" ? "Esperando a resposta…" : `Vez de ${m.lugares[h.vez]?.nome || ""}`}
-      </span>
-    ) : null;
+    h && !h.fim && op && !op.jogar && !op.quero ? (h.truco.pend || h.env.st === "pend" ? "Esperando a resposta…" : `Vez de ${m.lugares[h.vez]?.nome || ""}`) : null;
+  const meuSeg = fim !== null && deve === eu ? Math.ceil(((falta ?? 0) * TR_TEMPO_MS) / 1000) : null;
 
   const times = eu >= 0 && meuTime === 1 ? [1, 0] : [0, 1];
+  const vazas = h ? h.vazas.filter((v) => v.vence !== null) : [];
 
   return (
     <div className="tr-mesa">
-      <div className="tr-top">
-        <button className="btn soft sm" type="button" id="trVoltar" onClick={voltarAoLobby}>
-          Mesas
-        </button>
-        <div className="tr-placar">
+      <div className="mesa-topo">
+        <div className="mesa-topo-grupo">
+          <button className="btn soft sm" type="button" id="trVoltar" onClick={voltarAoLobby}>
+            Mesas
+          </button>
           {times.map((t, k) => (
             <Fragment key={t}>
               {k === 1 ? <span className="tr-alvo">até {m.alvo}</span> : null}
-              <div className={"tr-time" + (eu >= 0 && t === meuTime ? " nos" : "")}>
-                <span>{rotulo(t)}</span>
+              <div className={"mesa-time" + (eu >= 0 && t === meuTime ? " nos" : "")}>
                 <b>{m.placar[t]}</b>
+                <span>{rotulo(t)}</span>
               </div>
             </Fragment>
           ))}
         </div>
-        <div className="tr-top-d">
-          {valor > 0 ? <span className="tr-bolo" title={"Cada um pagou " + valor + " moedas; quem ganha leva o bolo"}>Bolo {valor * N}</span> : null}
-          {h && m.fase === "jogo" && h.truco.valor > 1 ? <span className="tr-valendo">Valendo {h.truco.valor}</span> : null}
-          <span className="tr-vazas">
-            {h
-              ? h.vazas
-                  .filter((v) => v.vence !== null)
-                  .map((v, k) => (
-                    <i
-                      key={k}
-                      className={`tr-pip ${v.vence === -1 ? "parda" : v.vence === meuTime ? "nos" : "eles"}`}
-                      title={v.vence === -1 ? "Parda" : rotulo(v.vence!)}
-                    />
-                  ))
-              : null}
-          </span>
+        <div className="mesa-topo-grupo">
+          {vazas.length > 0 && (
+            <span className="tr-vazas" aria-label="Vazas desta mão">
+              {vazas.map((v, k) => (
+                <i key={k} className={`tr-pip ${v.vence === -1 ? "parda" : v.vence === meuTime ? "nos" : "eles"}`} title={v.vence === -1 ? "Parda" : rotulo(v.vence!)} />
+              ))}
+            </span>
+          )}
+          {h && m.fase === "jogo" && h.truco.valor > 1 ? <span className="mesa-selo verm">Valendo {h.truco.valor}</span> : null}
+          {valor > 0 ? (
+            <span className="mesa-selo ouro" title={"Cada um pagou " + valor + " moedas; quem ganha leva o bolo"}>
+              Bolo {valor * N}
+            </span>
+          ) : null}
           {souHost ? (
-            <button
-              className={"btn soft sm" + (fechar.sure ? " sure" : "")}
-              type="button"
-              id="trFechar"
-              onClick={() => fechar.pedir() && fecharMesa()}
-            >
+            <button className={"btn soft sm" + (fechar.sure ? " sure" : "")} type="button" id="trFechar" onClick={() => fechar.pedir() && fecharMesa()}>
               {fechar.sure ? "Confirmar: fechar" : "Fechar mesa"}
             </button>
           ) : eu >= 0 && m.fase === "espera" ? (
@@ -292,35 +260,51 @@ export function MesaTela({ m }: { m: MesaPub }) {
           ) : null}
         </div>
       </div>
-      <div className={`tr-feltro n${N}`}>
+      <Mesa marca="Truco gaudério" className={`tr-mesa-oval n${N}`}>
         {m.lugares.map((_, i) => lugar(i))}
-        <div className="tr-centro">{centro()}</div>
-      </div>
+        {centro()}
+        {/* a minha mão, grande, na beira da mesa do meu lado */}
+        {eu >= 0 && h && m.fase === "jogo" ? (
+          <NaMesa x={50} y={86} className="tr-minha">
+            <div className={"tr-mao mesa-leque abre" + (pode ? " pode" : "")}>
+              {minhas.length ? (
+                <MinhaMao key={`${h.n}:${minhas.join()}`} cartas={minhas} pode={pode} />
+              ) : h.fim ? null : (
+                <span className="mesa-aviso">Carregando suas cartas…</span>
+              )}
+            </div>
+          </NaMesa>
+        ) : null}
+      </Mesa>
       {eu >= 0 && h && m.fase === "jogo" ? (
-        <div className="tr-eu">
-          {pergunta}
-          <div className={"tr-mao" + (pode ? " pode" : "")}>
-            {minhas.length ? (
-              <MinhaMao key={`${h.n}:${minhas.join()}`} cartas={minhas} pode={pode} />
-            ) : h.fim ? null : (
-              <span className="status">Carregando suas cartas…</span>
-            )}
-          </div>
-          <div className="tr-rodape">
-            {pode ? <span className="tr-sua">Sua vez</span> : esperando}
-            {fim !== null && deve === eu ? <Relogio fim={fim} eu /> : null}
-            {acoes}
+        pergunta ?? (
+          <div className="mesa-acoes">
+            {pode ? (
+              <span className="mesa-tempo">
+                <b>{meuSeg ?? "—"}</b>sua vez
+              </span>
+            ) : esperando ? (
+              <span className="mesa-tempo">{esperando}</span>
+            ) : null}
+            {op && !op.quero && op.jogar && op.truco ? (
+              <button className="mesa-bt verm" type="button" onClick={() => trEnviar("truco")}>
+                {TR_TRUCO[op.truco]}!
+              </button>
+            ) : null}
+            {op && !op.quero && op.jogar
+              ? op.envido.map((k) => (
+                  <button key={k} className="mesa-bt" type="button" onClick={() => trEnviar("envido", k)}>
+                    {TR_ENV[k]}
+                  </button>
+                ))
+              : null}
             {op?.mazo ? (
-              <button
-                className={"linkish" + (mazo.sure ? " sure" : "")}
-                type="button"
-                onClick={() => mazo.pedir() && trEnviar("mazo")}
-              >
-                {mazo.sure ? "Confirmar: ir ao mazo" : "Ir ao mazo"}
+              <button className={"mesa-bt" + (mazo.sure ? " sure" : "")} type="button" onClick={() => mazo.pedir() && trEnviar("mazo")}>
+                {mazo.sure ? "Confirmar" : "Ir ao mazo"}
               </button>
             ) : null}
           </div>
-        </div>
+        )
       ) : null}
       <ApostarTruco m={m} rotulo={nomeT} />
       <ol className="tr-log">

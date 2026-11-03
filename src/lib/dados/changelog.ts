@@ -509,6 +509,10 @@ export const CHANGELOG: EntradaLog[] = [
     data: "03/11/2026",
     itens: ["No celular de verdade, o InstaNanico volta a rolar (feed, explorar, perfil) e respeita o recorte da tela e a barrinha de baixo"],
   },
+  {
+    data: "03/11/2026",
+    itens: ["Truco repaginado: mesa oval de cassino com borda de couro e feltro, os nanicos sentados em volta com o anel do tempo, o grito em balão, as cartas jogadas viradas para quem jogou e a sua mão grande na beira da mesa"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
