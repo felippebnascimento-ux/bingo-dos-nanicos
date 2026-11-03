@@ -14,7 +14,9 @@ import { umPorNanico } from "@/lib/presenca";
 import { friendDaPresenca, MY_KEY, useApp } from "@/lib/store";
 import { assentoDoQuarto, gradeDoQuarto } from "./grade";
 import { QuartoCena, type BonecoCena } from "./QuartoCena";
-import { moveisDe, useQuartos } from "./quartoDados";
+import { moveisDe, usarMovel, useQuartos } from "./quartoDados";
+import { CORES_LUZ, ehInterativo, NOME_COR, soDono, type CorLuz } from "./interativo";
+import type { MovelCena } from "./QuartoCena";
 import { irParaQuarto, paraCena } from "./visita";
 import { CORES_PIXO, ehCenaEspecial, gradeEspecial, GOL_RUA, moveisDaCena, NOME_CENA, portasDoCorredor, TAM_CENA, type CorPixo } from "./cenas";
 import { iniciarPixacoes, pixar, usePixacoes } from "./pixacoes";
@@ -26,6 +28,9 @@ const SETAS: Record<string, [number, number]> = { ArrowRight: [1, 0], ArrowLeft:
 
 export function QuartoVisita({ dono }: { dono: string }) {
   const friends = useApp((s) => s.friends);
+  const myUid = useApp((s) => s.myUid);
+  /* o painel do regulador (cores) ou do quadro de recados (texto), aberto pelo dono */
+  const [painel, setPainel] = useState<MovelCena | null>(null);
   /* a rua e o corredor (cenas.ts) usam a mesma tela, com o desenho e a grade fixos deles */
   const especial = ehCenaEspecial(dono) ? dono : null;
   const f = especial ? undefined : friends.find((x) => x.id === dono);
@@ -81,10 +86,22 @@ export function QuartoVisita({ dono }: { dono: string }) {
     const perto = lugares.reduce((x, y) => (longe(y) < longe(x) ? y : x));
     andarAte(perto.chegar, perto.id);
   };
+  /* móvel que faz algo (seção 53): o dado rola para todo mundo; luz, regulador e recado só o dono mexe */
+  const tocarMovel = (id: number) => {
+    const m = cena.find((x) => x.id === id);
+    if (!m || especial || !ehInterativo(m.desenho)) return sentarNo(id);
+    const souDono = !!myUid && f?.user_id === myUid;
+    if (soDono(m.desenho) && !souDono) {
+      if (m.desenho === "recado") return toast(m.estado?.texto ? `Recado de ${f?.name}: ${m.estado.texto}` : "O quadro de recados está vazio.");
+      return toast("Só o dono do quarto mexe nisso.");
+    }
+    if (m.desenho === "regulador" || m.desenho === "recado") return setPainel(m);
+    void usarMovel(id);
+  };
   const tocarPiso = (i: number, j: number) => {
     if (grade.livre(i, j)) return andarAte({ i, j });
     const m = cena.find((x) => i >= x.ret.i && i < x.ret.i + x.ret.w && j >= x.ret.j && j < x.ret.j + x.ret.d);
-    if (m) sentarNo(m.id);
+    if (m) tocarMovel(m.id);
   };
   const tecla = (e: KeyboardEvent<HTMLDivElement>) => {
     const d = SETAS[e.key];
@@ -107,7 +124,7 @@ export function QuartoVisita({ dono }: { dono: string }) {
         moveis={cena}
         nome={especial ? undefined : f!.name}
         aoTocarPiso={tocarPiso}
-        aoTocarMovel={sentarNo}
+        aoTocarMovel={tocarMovel}
         bonecos={vistos}
         brilhos={brilhos}
         tipo={especial ?? "quarto"}
@@ -117,6 +134,7 @@ export function QuartoVisita({ dono }: { dono: string }) {
         pixos={especial === "banheiro" ? pixos : undefined}
       />
       {especial === "banheiro" && <PixarForm />}
+      {painel && <PainelMovel key={painel.id} m={painel} fechar={() => setPainel(null)} />}
     </div>
   );
 }
@@ -174,6 +192,48 @@ export function FichaQuarto({ fid, uid, eu }: { fid: string; uid: string | null 
 }
 
 const NOME_PIXO: Record<CorPixo, string> = { preto: "Preto", vermelho: "Vermelho", azul: "Azul", verde: "Verde", rosa: "Rosa", amarelo: "Amarelo" };
+
+/** O painel do dono: as cores do regulador de luz ou o bilhete do quadro de recados. */
+function PainelMovel({ m, fechar }: { m: MovelCena; fechar: () => void }) {
+  const [texto, setTexto] = useState(m.estado?.texto ?? "");
+  const [indo, setIndo] = useState(false);
+  const ir = async (arg: string) => {
+    setIndo(true);
+    if (await usarMovel(m.id, arg)) fechar();
+    setIndo(false);
+  };
+  return (
+    <div className="movel-painel" role="dialog" aria-label={m.desenho === "regulador" ? "Cor da luz do quarto" : "Quadro de recados"} onClick={(e) => e.stopPropagation()}>
+      <header>
+        <b>{m.desenho === "regulador" ? "Cor da luz do quarto" : "Quadro de recados"}</b>
+        <button type="button" className="perfil-fechar" aria-label="Fechar" onClick={fechar}>
+          ×
+        </button>
+      </header>
+      {m.desenho === "regulador" ? (
+        <div className="movel-cores" role="radiogroup" aria-label="Cor da luz">
+          {CORES_LUZ.map((c: CorLuz) => (
+            <button key={c} type="button" role="radio" aria-checked={(m.estado?.cor ?? "desligado") === c} className={"movel-cor t-" + c} disabled={indo} onClick={() => void ir(c)}>
+              {NOME_COR[c]}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void ir(texto);
+          }}
+        >
+          <textarea value={texto} onChange={(e) => setTexto(e.target.value)} maxLength={120} rows={3} placeholder="Escreva um recado para quem visitar (vazio apaga)" aria-label="Recado" />
+          <button type="submit" className="btn sm" disabled={indo}>
+            Salvar recado
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
 
 /** No banheiro: escreva na parede (até 60 letras, numa cor de spray). Fica para sempre. */
 function PixarForm() {

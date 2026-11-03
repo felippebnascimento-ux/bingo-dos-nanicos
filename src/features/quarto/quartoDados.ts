@@ -8,6 +8,7 @@ import { aoMudarTabela } from "@/lib/sala";
 import { sb } from "@/lib/supabase";
 import { toast } from "@/lib/toast";
 import type { MovelNoQuarto } from "./quarto";
+import { lerEstado } from "./interativo";
 
 type Estado = {
   /** user_id → tamanho do quarto (6, 9 ou 12) */
@@ -26,7 +27,8 @@ const int = (v: unknown) => (typeof v === "number" && Number.isInteger(v) ? v : 
 function lerMovel(r: Record<string, unknown> | null): MovelNoQuarto | null {
   const id = int(r?.id), i = int(r?.i), j = int(r?.j);
   if (!r || id === null || i === null || j === null || typeof r.user_id !== "string" || typeof r.item_id !== "string") return null;
-  return { id, userId: r.user_id, itemId: r.item_id.slice(0, 30), i, j, giro: r.giro === true };
+  const estado = lerEstado(r.estado);
+  return { id, userId: r.user_id, itemId: r.item_id.slice(0, 30), i, j, giro: r.giro === true, ...(Object.keys(estado).length ? { estado } : {}) };
 }
 
 let ligado = false;
@@ -55,7 +57,7 @@ export async function iniciarQuartos() {
   });
   const [q, m] = await Promise.all([
     sb().from("quartos").select("user_id,tamanho"),
-    sb().from("quarto_moveis").select("id,user_id,item_id,i,j,giro").limit(2000),
+    sb().from("quarto_moveis").select("id,user_id,item_id,i,j,giro,estado").limit(2000),
   ]);
   if (q.error || m.error) {
     /* SQL da seção 42 ainda não rodou: ninguém tem quarto próprio */
@@ -75,6 +77,13 @@ export async function iniciarQuartos() {
 /** Os móveis colocados no quarto de alguém. */
 export const moveisDe = (moveis: Record<number, MovelNoQuarto>, userId: string | null | undefined) =>
   userId ? Object.values(moveis).filter((m) => m.userId === userId) : [];
+
+/** Usa um móvel que faz algo (seção 53): o estado novo chega a todo mundo pelo tempo real de quarto_moveis. */
+export async function usarMovel(id: number, arg?: string) {
+  const { error } = await sb().rpc("usar_movel", { p_id: id, ...(arg !== undefined ? { p_arg: arg } : {}) });
+  if (error) toast(error.message || "Não deu. Tente de novo.");
+  return !error;
+}
 
 /** Chama uma RPC do quarto; a recusa do banco já diz o que fazer ("Não cabe aí."). */
 async function chamar(fn: string, args: Record<string, unknown>) {

@@ -10,6 +10,8 @@ import { memo, useId, useMemo } from "react";
 import { ANCORA, caixaDoBoneco, CEL_H, CEL_W, ordemZ, quadroSprite, type Caixa, type Sentido } from "@/features/hall/hall";
 import { BaloesSvg } from "@/features/hall/ChatHabbo";
 import { iconeAcao, type Acao } from "@/features/hall/acoes";
+import { EstadoNoMovel, TintaQuarto } from "./EstadoMovel";
+import { corDoQuarto, ehInterativo, type EstadoMovel } from "./interativo";
 import { desenharMovel, Poligonos, type Poly, type Pt } from "./Moveis";
 import { camadasQuarto, type Retangulo } from "./quarto";
 import { MARCA_PENALTI, type PortaCorredor } from "./cenas";
@@ -17,7 +19,7 @@ import type { Pixo } from "./pixacoes";
 
 const TW = 46, TH = 23, ZS = 1.3, WH = 150, MARGEM = 24;
 
-export type MovelCena = { id: number; desenho: string; ret: Retangulo; giro: boolean };
+export type MovelCena = { id: number; desenho: string; ret: Retangulo; giro: boolean; estado?: EstadoMovel };
 export type Equip = { parede?: string; luz?: string; poster?: string };
 /** Um boneco andando no quarto (visitas, fase 35): a posição em pisos e, sentado, o centro do assento e o móvel. */
 export type BonecoCena = {
@@ -297,13 +299,16 @@ export const QuartoCena = memo(function QuartoCena({
         return (
           <g
             key={m.id}
-            className={"quarto-movel" + (selecionado === m.id ? " sel" : "") + (aoTocarMovel ? " tocavel" : "")}
+            className={"quarto-movel" + (selecionado === m.id ? " sel" : "") + (aoTocarMovel ? " tocavel" : "") + (m.desenho === "luminaria" && m.estado?.liga === false ? " apagada" : "")}
             onClick={aoTocarMovel ? () => aoTocarMovel(m.id) : undefined}
           >
             <Poligonos lista={desenharMovel(p, m.desenho, m.ret, m.giro)} />
+            {ehInterativo(m.desenho) && <EstadoNoMovel m={m} p={p} />}
           </g>
         );
       })}
+      {/* o regulador de luz pinta o quarto inteiro */}
+      {tipo === "quarto" && <TintaQuarto cor={corDoQuarto(moveis)} largura={largura} altura={altura} />}
       {brilhos?.map((b) => {
         const [x, y] = p(b.i + 0.5, b.j + 0.5);
         return <circle key={b.id} className="quarto-brilho" cx={x} cy={y - 50} r={46} pointerEvents="none" />;

@@ -3,10 +3,11 @@
  * tamanho e os móveis de cada um. Regra pura, sem React: quem chama passa os móveis já com o piso (paraCena).
  */
 import { caminho, type Piso, type PosHall, type Sentido } from "@/features/hall/hall";
+import type { EstadoMovel } from "./interativo";
 import type { Retangulo } from "./quarto";
 
 /** Um móvel colocado, pronto para a grade (o mesmo formato do MovelCena). */
-export type MovelGrade = { id: number; desenho: string; ret: Retangulo; giro: boolean };
+export type MovelGrade = { id: number; desenho: string; ret: Retangulo; giro: boolean; estado?: EstadoMovel };
 /** Um lugar para sentar num móvel do quarto: o centro (fracionário), o piso de onde senta e para onde olha. */
 export type AssentoQuarto = { id: string; movel: number; i: number; j: number; chegar: Piso; olha: Sentido };
 export type Grade = { tam: number; livre: (i: number, j: number) => boolean; assentos: AssentoQuarto[] };

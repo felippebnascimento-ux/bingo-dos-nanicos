@@ -96,6 +96,21 @@ const DESENHO_QUARTO: Record<string, Desenho> = {
     if (giro) k.box(r.i + r.w - M - 0.01, r.j + n / 2 - 0.02, 0.02, 0.04, 90, "madeira2", "madeira2", "madeira2", 10);
     else k.box(r.i + n / 2 - 0.02, r.j + r.d - M - 0.01, 0.04, 0.02, 90, "madeira2", "madeira2", "madeira2", 10);
   },
+  /* móveis que fazem algo (seção 53): o número do dado, a luz e o bilhete vêm do estado (QuartoCena) */
+  dado: (k, r) => {
+    k.box(r.i + 0.28, r.j + 0.28, 0.44, 0.44, 26, "louca0", "louca1", "louca2");
+  },
+  regulador: (k, r) => {
+    k.box(r.i + 0.36, r.j + 0.36, 0.28, 0.28, 34, "preto0", "preto1", "preto2");
+    k.box(r.i + 0.4, r.j + 0.4, 0.2, 0.2, 6, "ouro0", "ouro1", "ouro2", 34);
+  },
+  recado: (k, r, giro) => {
+    const f = atras(r, giro, 0.12);
+    if (giro) k.box(f.i + 0.3, r.j + 0.12, 0.08, r.d - 0.24, 66, "madeira0", "madeira1", "madeira2");
+    else k.box(r.i + 0.12, f.j + 0.3, r.w - 0.24, 0.08, 66, "madeira0", "madeira1", "madeira2");
+    if (giro) k.box(f.i + 0.38, r.j + 0.3, 0.02, 0.4, 30, "ouro0", "ouro0", "ouro1", 26);
+    else k.box(r.i + 0.3, f.j + 0.38, 0.4, 0.02, 30, "ouro0", "ouro1", "ouro0", 26);
+  },
   /* os itens de piso que já existiam (fase 11) */
   "cadeira-gamer": (k, r, giro) => cadeira(k, r, giro, ["preto0", "preto1", "preto2"], 70),
   "cadeira-trono": (k, r, giro) => cadeira(k, r, giro, ["ouro0", "ouro1", "ouro2"], 90),

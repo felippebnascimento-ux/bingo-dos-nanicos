@@ -664,6 +664,13 @@ export const CHANGELOG: EntradaLog[] = [
     itens: ["Seguir amigo: na ficha de quem está no site e no cartão do perfil, o botão Ir até leva você para onde a pessoa está (K-FOFO, rua, corredor ou quarto) e para ao lado dela"],
   },
   { data: "03/11/2026", itens: ["Os Campeões Selados e as chaves restantes são compartilhados entre os Nanicos"] },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Móveis que fazem algo no quarto: o Dado gigante rola para todo mundo ver o número, a Luminária liga e desliga, o Regulador de luz pinta o quarto de âmbar, azul, rosa, verde ou roxo, e o Quadro de recados guarda um bilhete para quem visitar",
+      "Dado, Regulador e Quadro de recados já estão na Loja; a luminária que você já tem passa a ligar e desligar",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

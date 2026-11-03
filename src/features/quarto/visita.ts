@@ -21,7 +21,7 @@ export function paraCena(moveis: readonly MovelNoQuarto[], itens: readonly ItemL
     const it = itens.find((x) => x.id === m.itemId);
     if (!it || !it.dados.w || !it.dados.d) return [];
     const { w, d } = pisoDo(it.dados.w, it.dados.d, m.giro);
-    return [{ id: m.id, desenho: desenhoDo(it), ret: { i: m.i, j: m.j, w, d }, giro: m.giro }];
+    return [{ id: m.id, desenho: desenhoDo(it), ret: { i: m.i, j: m.j, w, d }, giro: m.giro, ...(m.estado ? { estado: m.estado } : {}) }];
   });
 }
 

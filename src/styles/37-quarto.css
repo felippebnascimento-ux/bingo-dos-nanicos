@@ -108,3 +108,27 @@
 .pixar-cor{width:22px;height:22px;padding:0;border-radius:50%;border:2px solid transparent;background:var(--spray);cursor:pointer}
 .pixar-cor.on{border-color:var(--accent-ink);box-shadow:0 0 0 2px var(--stamp-ink) inset}
 @media (max-width:760px){.pixar-form{position:static;transform:none;width:auto;margin:8px;border-radius:var(--r-md)}}
+
+/* móveis que fazem algo (seção 53): o número do dado, a luz da luminária, o bilhete e a cor do regulador (--quarto-luz-*) */
+.quarto-vars{--quarto-luz:#FFD27A; --quarto-luz-ambar:#FFB347; --quarto-luz-azul:#4F8BFF; --quarto-luz-rosa:#FF6FB5; --quarto-luz-verde:#4CD27A; --quarto-luz-roxo:#9B6BFF}
+.quarto-dado{font:800 22px var(--display);fill:var(--quarto-preto0,var(--accent-ink))}
+.quarto-dado.rolando{animation:quarto-dado .15s linear infinite}
+@keyframes quarto-dado{50%{translate:2px -3px;rotate:8deg}}
+.quarto-luz-chao{fill:var(--quarto-luz);opacity:.28;filter:blur(10px)}
+.quarto-luz-bulbo{fill:var(--quarto-luz);opacity:.55;filter:blur(8px)}
+.quarto-movel.apagada{filter:brightness(.6) saturate(.4)}
+.quarto-recado{font-size:20px}
+.quarto-tinta{mix-blend-mode:color;opacity:.32}
+.quarto-tinta.t-ambar{fill:var(--quarto-luz-ambar)}.quarto-tinta.t-azul{fill:var(--quarto-luz-azul)}.quarto-tinta.t-rosa{fill:var(--quarto-luz-rosa)}
+.quarto-tinta.t-verde{fill:var(--quarto-luz-verde)}.quarto-tinta.t-roxo{fill:var(--quarto-luz-roxo)}
+@media (prefers-reduced-motion:reduce){.quarto-dado.rolando{animation:none}}
+/* o painel do dono (regulador e recado) */
+.movel-painel{position:absolute;left:50%;bottom:16px;z-index:6;translate:-50% 0;width:min(320px,calc(100% - 24px));display:grid;gap:10px;padding:12px 14px;border-radius:14px;background:var(--surface);color:var(--ink);box-shadow:0 10px 30px var(--shadow)}
+.movel-painel header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.movel-painel textarea{width:100%;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font:500 14px var(--body);resize:none}
+.movel-painel form{display:grid;gap:8px}
+.movel-cores{display:flex;flex-wrap:wrap;gap:6px}
+.movel-cor{padding:7px 12px;border-radius:99px;border:2px solid transparent;background:var(--surface-2);color:var(--ink);font:700 13px var(--body);cursor:pointer}
+.movel-cor[aria-checked="true"]{border-color:var(--accent)}
+.movel-cor.t-ambar{box-shadow:inset 0 -4px 0 var(--quarto-luz-ambar)}.movel-cor.t-azul{box-shadow:inset 0 -4px 0 var(--quarto-luz-azul)}.movel-cor.t-rosa{box-shadow:inset 0 -4px 0 var(--quarto-luz-rosa)}
+.movel-cor.t-verde{box-shadow:inset 0 -4px 0 var(--quarto-luz-verde)}.movel-cor.t-roxo{box-shadow:inset 0 -4px 0 var(--quarto-luz-roxo)}

@@ -3,12 +3,14 @@
  * seguranca.sql), conferida pelos dois lados com quarto-cabe.fixture.json: dentro do quarto, fora da porta (piso 0,0)
  * e sem encostar em cima de outro móvel. Só serve para MOSTRAR (verde ou vermelho); quem decide é o banco.
  */
+import type { EstadoMovel } from "./interativo";
 import { ordemZ, type Caixa } from "@/features/hall/hall";
 
 /** Um retângulo no piso do quarto: canto (i, j), largura em i (w) e fundo em j (d). */
 export type Retangulo = { i: number; j: number; w: number; d: number };
 /** Um móvel colocado (quarto_moveis). */
-export type MovelNoQuarto = { id: number; userId: string; itemId: string; i: number; j: number; giro: boolean };
+/** `estado`: o do dado, da luminária, do regulador ou do recado (interativo.ts, seção 53) */
+export type MovelNoQuarto = { id: number; userId: string; itemId: string; i: number; j: number; giro: boolean; estado?: EstadoMovel };
 
 export const TAMANHOS = [6, 9, 12] as const;
 export type Tamanho = (typeof TAMANHOS)[number];
