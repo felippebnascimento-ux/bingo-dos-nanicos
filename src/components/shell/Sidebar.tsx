@@ -14,7 +14,8 @@ import type { Aba } from "@/lib/tipos";
 import { local } from "@/lib/util";
 import { nomeDaSala } from "@/features/salas/trocar";
 import { BotaoCelular } from "@/features/celular/Celular";
-import { Canais, VozPainel } from "./Canais";
+import { BotoesVozEu, JanelasVoz, VozPainel } from "@/features/live/PainelVoz";
+import { Canais } from "./Canais";
 
 /* `curto`: o nome na barra de baixo do celular, onde o espaço é pouco */
 type ItemMenu = { aba: Aba; t: string; curto?: string; Ic: ComponentType; soComputador?: boolean };
@@ -165,6 +166,7 @@ function EuPainel() {
           {temSalas && <small>{sala ?? "No lobby"}</small>}
         </span>
       </button>
+      <BotoesVozEu />
       <CarteiraChip />
       <button type="button" className={"eu-cfg" + (naConfig ? " on" : "")} aria-label="Configurações" title="Configurações" aria-expanded={naConfig} onClick={() => setApp({ configAberto: true })}>
         <IcAjustes />
@@ -179,7 +181,8 @@ export function Sidebar() {
   const conn = useApp((s) => s.conn);
   /* selo de novidade: o mesmo "já vi" do Log (conta, com o navegador de reserva) */
   const logNovo = useApp((s) => !s.logAberto && temNovidade(s.logVisto));
-  const mostraCam = useApp((s) => !!s.myVozSid || !!s.myCamSid || !s.salas.length);
+  /* na voz, a câmera fica nos botões do painel da voz; fora dela, o botão antigo só para desligar ou no modo sem salas */
+  const mostraCam = useApp((s) => !s.myVozSid && (!!s.myCamSid || !s.salas.length));
 
   useEffect(() => {
     document.body.classList.toggle("side-min", sideMin);
@@ -220,7 +223,7 @@ export function Sidebar() {
 
       <div className="side-base">
         <VozPainel />
-        {/* a câmera é da voz: o botão aparece na voz (ou com a câmera ligada, para dar para desligar) */}
+        {/* a câmera é da voz: fora dela, o botão aparece só com a câmera ligada (para desligar) */}
         {mostraCam && <CamBotoes />}
         <EuPainel />
         {/* trocar senha e sair ficam nas Configurações */}
@@ -240,6 +243,7 @@ export function Sidebar() {
           </div>
         </div>
       </div>
+      <JanelasVoz />
     </aside>
   );
 }

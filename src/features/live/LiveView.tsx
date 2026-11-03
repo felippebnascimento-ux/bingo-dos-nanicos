@@ -4,43 +4,12 @@ import { IcVoltar, IcVolume } from "@/components/ui/icones";
 import { nomeDaSala } from "@/features/salas/trocar";
 import { setApp, useApp } from "@/lib/store";
 import { local } from "@/lib/util";
-import { FaixaCameras, JanelaCameras } from "./Cameras";
+import { JanelaCameras } from "./Cameras";
+import { FaixaFoco, GradeCanal, TopoCanal } from "./Grade";
 import { useLive } from "./estado";
 import { iniciarLive } from "./live";
 import { Painel } from "./Painel";
 import { Palco } from "./Palco";
-import { LIVE, watch } from "./tela";
-import { Rosto } from "./Rosto";
-import { VideoMudo } from "./Video";
-
-/** Telas abertas sem som, embaixo da principal (tocar troca de lugar). */
-function Minis() {
-  useLive((s) => s.v);
-  const secs = [...LIVE.watching.values()]
-    .filter((w) => w.key !== LIVE.main)
-    .sort((a, b) => String(a.name).localeCompare(String(b.name), "pt-BR"));
-  return (
-    <div className="minis" id="minis">
-      {secs.map((w) => (
-        <button
-          key={w.key}
-          className="mini"
-          type="button"
-          aria-label={`Tornar ${w.name} a tela principal`}
-          onClick={() => watch(w.key, true)}
-        >
-          <VideoMudo stream={w.stream} />
-          {w.state !== "live" && <span className="wait">{w.state === "failed" ? "Não conectou" : "Conectando…"}</span>}
-          <span className="cap">
-            <Rosto p={w} />
-            {w.name}
-            <small>sem som</small>
-          </span>
-        </button>
-      ))}
-    </div>
-  );
-}
 
 /** Aba Ao vivo: transmissão de tela, câmeras, reações, desenho e o painel (telas, chat, cartela). */
 export function LiveView({ hidden }: { hidden: boolean }) {
@@ -62,6 +31,7 @@ export function LiveView({ hidden }: { hidden: boolean }) {
   /* dentro de uma sala, o título é o nome dela (o canal de voz onde estou) */
   const sala = useApp((s) => nomeDaSala(s.minhaSala, s.salas));
   const naVoz = useApp((s) => !!s.myVozSid);
+  const modo = useLive((s) => s.modo);
 
   return (
     <section id="view-live" className="inner" hidden={hidden}>
@@ -88,9 +58,13 @@ export function LiveView({ hidden }: { hidden: boolean }) {
       )}
       <div className={"live-grid" + (railMin ? " no-rail" : "")} id="liveWrap" hidden={noLobby}>
         <div className="stage-col">
-          <Palco />
-          <FaixaCameras />
-          <Minis />
+          {/* como no Discord: todo mundo em quadrados (grade) ou uma tela grande com o resto embaixo (foco).
+              O Palco fica montado também na grade (escondido), para a tela principal seguir com som */}
+          <TopoCanal />
+          <div className="palco-foco" hidden={modo === "grade"}>
+            <Palco />
+          </div>
+          {modo === "grade" ? <GradeCanal /> : <FaixaFoco />}
         </div>
         <Painel />
         <button

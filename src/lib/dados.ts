@@ -43,7 +43,8 @@ export function iniciarLocal() {
     logVisto: lerVisto(local.get("log-visto")),
   });
   const t = local.get("rail-tab");
-  if (t === "telas" || t === "chat" || t === "cartela") setApp({ railTab: t });
+  /* a aba "telas" saiu (as telas ficam na grade do canal): quem tinha ela salva volta para o chat */
+  if (t === "chat" || t === "cartela") setApp({ railTab: t });
 }
 
 /* ---------- carregar do banco ---------- */

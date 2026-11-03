@@ -9,7 +9,7 @@ import { create } from "zustand";
 import { aplicarSaida, useMidia } from "@/features/config/midia";
 import { toast } from "@/lib/toast";
 import { getApp, MY_KEY, setApp } from "@/lib/store";
-import { newId } from "@/lib/util";
+import { local, newId } from "@/lib/util";
 import { ajustarSender, canCam, novaConexao, sendRtc, type MsgRtc } from "./rtc";
 import { abrirMic, type MicFiltrado } from "./ruido";
 import { euOfereco, falandoAgora, LIMIAR_FALA, mesmaLista, volumeDe } from "./vozRegras";
@@ -41,6 +41,84 @@ const VOZ = {
 };
 
 export const naVoz = () => !!VOZ.sid;
+
+/* ---------- volume de cada um (só no meu aparelho, como no Discord) ---------- */
+type Ajustes = {
+  /** volume de toda a voz, de 0 a 1 */
+  geral: number;
+  /** volume de cada nanico (friend id), de 0 a 1 */
+  por: Record<string, number>;
+  /** nanicos que eu silenciei (só eu deixo de ouvir) */
+  silenciados: string[];
+};
+const ajSalvo = local.json<Partial<Ajustes>>("voz-ajustes") || {};
+const vol01 = (v: unknown, padrao = 1) => (typeof v === "number" && v >= 0 && v <= 1 ? v : padrao);
+export const useAjustesVoz = create<Ajustes>()(() => ({
+  geral: vol01(ajSalvo.geral),
+  por: Object.fromEntries(Object.entries(ajSalvo.por && typeof ajSalvo.por === "object" ? ajSalvo.por : {}).map(([k, v]) => [k, vol01(v)])),
+  silenciados: Array.isArray(ajSalvo.silenciados) ? ajSalvo.silenciados.filter((x): x is string => typeof x === "string") : [],
+}));
+export function ajustarVoz(p: Partial<Ajustes>) {
+  useAjustesVoz.setState(p);
+  local.setJson("voz-ajustes", useAjustesVoz.getState());
+}
+export const volumeDoNanico = (fid: string | null | undefined) => (fid ? (useAjustesVoz.getState().por[fid] ?? 1) : 1);
+export function silenciarNanico(fid: string, sim: boolean) {
+  const l = useAjustesVoz.getState().silenciados.filter((x) => x !== fid);
+  ajustarVoz({ silenciados: sim ? [...l, fid] : l });
+}
+
+/** O volume e o "silenciado" de um par, pelo nanico dele (a chave é da aba; o ajuste vale para o nanico). */
+function aplicarVolume(par: Par) {
+  const fid = getApp().onlineSala.find((x) => x.key === par.key)?.fid ?? null;
+  const a = useAjustesVoz.getState();
+  par.audio.volume = Math.min(1, Math.max(0, a.geral * volumeDoNanico(fid)));
+  par.audio.muted = getApp().vozSurdo || (!!fid && a.silenciados.includes(fid));
+}
+useAjustesVoz.subscribe(() => {
+  for (const par of VOZ.pares.values()) aplicarVolume(par);
+});
+
+/** Volume do meu microfone agora, de 0 a 1 (para a barrinha de teste). */
+export function nivelDoMeuMic(): number {
+  const m = medidores.get(MY_KEY);
+  if (!m) return 0;
+  m.an.getFloatTimeDomainData(m.buf);
+  return Math.min(1, volumeDe(m.buf) * 6);
+}
+
+/** Como está a conexão da voz: ping médio, pacotes perdidos e com quantos estou ligado. */
+export async function sinalDaVoz(): Promise<{ ping: number | null; perda: number | null; n: number }> {
+  let soma = 0,
+    medidas = 0,
+    perdidos = 0,
+    recebidos = 0,
+    n = 0;
+  for (const par of VOZ.pares.values()) {
+    if (par.pc.connectionState !== "connected") continue;
+    n++;
+    try {
+      const st = await par.pc.getStats();
+      st.forEach((r) => {
+        if (r.type === "candidate-pair" && r.nominated && typeof r.currentRoundTripTime === "number") {
+          soma += r.currentRoundTripTime * 1000;
+          medidas++;
+        }
+        if (r.type === "inbound-rtp" && r.kind === "audio") {
+          perdidos += r.packetsLost ?? 0;
+          recebidos += r.packetsReceived ?? 0;
+        }
+      });
+    } catch {
+      /* sem estatística */
+    }
+  }
+  return {
+    ping: medidas ? Math.round(soma / medidas) : null,
+    perda: recebidos + perdidos > 0 ? (perdidos / (recebidos + perdidos)) * 100 : null,
+    n,
+  };
+}
 
 /* ---------- entrar e sair ---------- */
 export async function entrarVoz() {
@@ -144,9 +222,9 @@ export function alternarSurdo() {
   const surdo = !s.vozSurdo;
   const mudo = surdo ? true : VOZ.mudoAntes;
   if (surdo) VOZ.mudoAntes = s.vozMudo;
-  for (const p of VOZ.pares.values()) p.audio.muted = surdo;
   VOZ.stream?.getAudioTracks().forEach((t) => (t.enabled = !mudo));
   setApp({ vozSurdo: surdo, vozMudo: mudo });
+  for (const p of VOZ.pares.values()) aplicarVolume(p);
 }
 
 /* ---------- conexões ---------- */
@@ -157,6 +235,7 @@ function novoPar(key: string, sid: string, ofereci: boolean, tries = 0): Par {
   audio.muted = getApp().vozSurdo;
   aplicarSaida(audio);
   const par: Par = { key, sid, pc, queue: [], audio, ofereci, tries };
+  aplicarVolume(par);
   pc.ontrack = (e) => {
     const st = (e.streams && e.streams[0]) || new MediaStream([e.track]);
     audio.srcObject = st;

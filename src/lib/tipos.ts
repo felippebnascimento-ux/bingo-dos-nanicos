@@ -71,4 +71,4 @@ export type Presence = {
 export type Sala = { id: string; nome: string; jogo: "lol" | "cs" | "outro"; discord: string | null; ordem: number };
 
 export type Aba = "chat" | "trofeus" | "loja" | "midias" | "hall" | "cassino" | "jogar" | "frases" | "nanicos" | "live" | "truco" | "perfil";
-export type RailTab = "telas" | "chat" | "cartela";
+export type RailTab = "chat" | "cartela";
