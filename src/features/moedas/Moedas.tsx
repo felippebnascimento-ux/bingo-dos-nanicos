@@ -4,15 +4,15 @@ import { useEffect } from "react";
 import { IcMoeda } from "@/components/ui/icones";
 import { carregarExtrato, useCarteira } from "@/lib/carteira";
 import { bonusDoDia, diasSeguidos, formatarMoedas, MOTIVOS, textoTempo } from "@/lib/moedas";
-import { setApp, useApp } from "@/lib/store";
+import { useApp } from "@/lib/store";
 
-/** Selinho do menu. Tocar abre o Perfil, onde fica o extrato. Some se as moedas estiverem desligadas. */
+/** Selinho do menu. Tocar abre o ranking e o extrato, como a carteira do K-FOFO. Some se as moedas estiverem desligadas. */
 export function CarteiraChip() {
   const c = useCarteira((s) => s.carteira);
   if (!c) return null;
-  const rotulo = `${formatarMoedas(c.saldo)} moedas` + (c.seq ? `, ${diasSeguidos(c.seq)}` : "") + ". Abrir o extrato no Perfil";
+  const rotulo = `${formatarMoedas(c.saldo)} moedas` + (c.seq ? `, ${diasSeguidos(c.seq)}` : "") + ". Abrir o ranking";
   return (
-    <button type="button" className="moedas-chip" aria-label={rotulo} title={rotulo} onClick={() => setApp({ aba: "perfil" })}>
+    <button type="button" className="moedas-chip" aria-label={rotulo} title={rotulo} onClick={() => useCarteira.setState({ painel: "ranking" })}>
       <IcMoeda tam={18} />
       <b>{formatarMoedas(c.saldo)}</b>
       {c.seq > 0 && <span className="seq">{c.seq === 1 ? "1 dia" : `${c.seq} dias`}</span>}

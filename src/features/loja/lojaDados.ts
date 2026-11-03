@@ -17,8 +17,10 @@ type EstadoLoja = {
   /** linhas de mochila que eu consigo ler: as minhas e as equipadas dos outros */
   linhas: LinhaMochila[];
   ocupado: string | null;
+  /** janela da mochila aberta (pelo botão do K-FOFO) */
+  mochilaAberta: boolean;
 };
-export const useLoja = create<EstadoLoja>()(() => ({ itens: null, linhas: [], ocupado: null }));
+export const useLoja = create<EstadoLoja>()(() => ({ itens: null, linhas: [], ocupado: null, mochilaAberta: false }));
 
 const lerLinha = (r: Record<string, unknown>): LinhaMochila | null =>
   typeof r.user_id === "string" && typeof r.item_id === "string" && typeof r.qtd === "number"
@@ -122,6 +124,7 @@ export async function usar(it: ItemLoja) {
     const { error } = await sb().rpc("usar_item", { p_item: it.id });
     if (error) throw error;
     setApp({ aba: "hall", fichaAberta: null });
+    useLoja.setState({ mochilaAberta: false });
     await carregarMochila();
   } catch (e) {
     erro(e, "Não deu para usar agora. Confira a internet.");

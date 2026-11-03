@@ -1,6 +1,10 @@
+"use client";
 /* Desenho de um emblema (SVG próprio): o aro da cor do nível (bronze, prata, ouro) e o símbolo do emblema.
-   As cores são as variáveis --emblema-* de 34-perfil.css. */
-import { descreverEmblema, NIVEL, type Emblema as TEmblema, type IdEmblema } from "./emblemas";
+   As cores são as variáveis --emblema-* de 34-perfil.css. Passar o mouse (ou focar, ou tocar no celular) mostra
+   uma dica com o nome, o nível e quanto falta para o próximo; ela vai para o body para não sair cortada. */
+import { useState } from "react";
+import { createPortal } from "react-dom";
+import { descreverEmblema, EMBLEMAS, NIVEL, progressoEmblema, type Emblema as TEmblema, type IdEmblema } from "./emblemas";
 
 const SIMBOLO: Record<IdEmblema, React.ReactNode> = {
   online: <path d="M6 12.5 12 7l6 5.5M8 11.5V17h8v-5.5M11 17v-3h2v3" />,
@@ -17,15 +21,60 @@ const SIMBOLO: Record<IdEmblema, React.ReactNode> = {
   cronista: <path d="M6.5 8h11v6.5h-6l-3 2.5v-2.5h-2z" />,
 };
 
+/** Largura da dica (igual à do CSS), para não sair da tela. */
+const DICA_L = 230;
+
 export function Emblema({ e, tam = 36 }: { e: TEmblema; tam?: number }) {
   const titulo = descreverEmblema(e);
+  const [dica, setDica] = useState<{ x: number; y: number; acima: boolean } | null>(null);
+  const mostrar = (el: HTMLElement) => {
+    const r = el.getBoundingClientRect();
+    const x = Math.min(Math.max(8, r.left + r.width / 2 - DICA_L / 2), window.innerWidth - DICA_L - 8);
+    const acima = r.top > 150;
+    setDica({ x, y: acima ? r.top - 8 : r.bottom + 8, acima });
+  };
+  const esconder = () => setDica(null);
   return (
-    <span className={"emblema em-" + NIVEL[e.nivel]} title={titulo} role="img" aria-label={titulo}>
+    <span
+      className={"emblema em-" + NIVEL[e.nivel]}
+      role="img"
+      aria-label={titulo}
+      tabIndex={0}
+      onMouseEnter={(ev) => mostrar(ev.currentTarget)}
+      onMouseLeave={esconder}
+      onFocus={(ev) => mostrar(ev.currentTarget)}
+      onBlur={esconder}
+    >
       <svg viewBox="0 0 24 24" width={tam} height={tam} aria-hidden="true">
         <circle cx="12" cy="12" r="11" className="em-aro" />
         <circle cx="12" cy="12" r="8.6" className="em-fundo" />
         <g className="em-simbolo">{SIMBOLO[e.id]}</g>
       </svg>
+      {dica && createPortal(<DicaEmblema e={e} {...dica} />, document.body)}
+    </span>
+  );
+}
+
+function DicaEmblema({ e, x, y, acima }: { e: TEmblema; x: number; y: number; acima: boolean }) {
+  const d = EMBLEMAS[e.id];
+  const p = progressoEmblema(e);
+  return (
+    <span className={"em-dica" + (acima ? " acima" : "")} style={{ left: x, top: y }} aria-hidden="true">
+      <b>{d.nome}</b>
+      <span className={"em-dica-nivel em-" + NIVEL[e.nivel]}>{NIVEL[e.nivel]}</span>
+      <span className="em-dica-tx">{d.texto(e.valor)}</span>
+      {p ? (
+        <>
+          <span className="missao-barra">
+            <i style={{ width: `${p.parte * 100}%` }} />
+          </span>
+          <small>
+            {p.prox} com {p.meta.toLocaleString("pt-BR")}
+          </small>
+        </>
+      ) : (
+        e.nivel === 3 && <small>nível máximo</small>
+      )}
     </span>
   );
 }

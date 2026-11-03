@@ -75,9 +75,17 @@
 @keyframes hall-entra{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.hall-ganho{animation:none}}
 .hall-moeda{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 35%,color-mix(in srgb,var(--accent) 60%,#fff),var(--accent) 60%,var(--accent-text));color:var(--accent-ink);font:800 11px var(--display)}
-.hall-carteira{left:16px;bottom:16px;display:flex;align-items:center;gap:10px;padding:8px 16px 8px 10px;border-radius:99px;font:inherit;cursor:pointer;text-align:left}
+/* carteira e mochila lado a lado no canto de baixo */
+.hall-bolso{position:absolute;z-index:120;left:16px;bottom:16px;display:flex;align-items:center;gap:8px}
+.hall-bolso .hall-canto{position:static}
+.hall-carteira{display:flex;align-items:center;gap:10px;padding:8px 16px 8px 10px;border-radius:99px;font:inherit;cursor:pointer;text-align:left}
 .hall-carteira b{display:block;font:800 16px/1.1 var(--display)}
 .hall-carteira small{display:block;font-size:11px;color:color-mix(in srgb,var(--stamp-ink) 70%,transparent)}
+.hall-mochila{display:flex;align-items:center;gap:8px;padding:8px 14px 8px 12px;border-radius:99px;font:inherit;cursor:pointer;text-align:left}
+.hall-mochila svg{flex:none;color:var(--accent)}
+.hall-mochila b{display:block;font:800 13px/1.1 var(--display)}
+.hall-mochila small{display:block;font-size:11px;color:color-mix(in srgb,var(--stamp-ink) 70%,transparent)}
+.hall-carteira:hover,.hall-mochila:hover{border-color:color-mix(in srgb,var(--accent) 60%,transparent)}
 .hall-dica{right:16px;bottom:16px;padding:8px 14px;border-radius:99px;font-size:12px;color:color-mix(in srgb,var(--stamp-ink) 80%,transparent)}
 
 /* celular: a lista vira uma fileira de rostos acima do hall; ganhos, carteira e dica vão para baixo */
@@ -90,7 +98,7 @@
   .hall-sala-nome{flex-direction:column;gap:2px;padding:3px 4px;font-size:10.5px}
   .hall-sala-nome .nm{max-width:64px}
   .hall-ganhos{width:auto}
-  .hall-carteira{align-self:flex-start}
+  .hall-bolso{position:static;align-self:flex-start;flex-wrap:wrap}
   .hall-dica{text-align:center;font-size:11px}
 }
 

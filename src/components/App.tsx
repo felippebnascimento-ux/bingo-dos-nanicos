@@ -12,6 +12,7 @@ import { ChatView } from "@/features/chat/ChatView";
 import { ConfigJanela } from "@/features/config/ConfigView";
 import { FichaNanico } from "@/features/ficha/Ficha";
 import { PainelCarteira } from "@/features/moedas/Ranking";
+import { PainelMochila } from "@/features/loja/MochilaPainel";
 import { SalasJanela } from "@/features/salas/Salas";
 import { HallView } from "@/features/hall/HallView";
 import { LojaView } from "@/features/loja/LojaView";
@@ -74,6 +75,7 @@ export default function App() {
       <PortaLog />
       <PortaTrocarSenha />
       <PainelCarteira />
+      <PainelMochila />
       <FichaNanico />
       <SalasJanela />
       <ConfigJanela />

@@ -130,7 +130,14 @@ export function MochilaLista() {
               Usar no K-FOFO
             </button>
           ) : it.espaco === "celular" ? (
-            <button type="button" className="btn sm" onClick={abrirCelular}>
+            <button
+              type="button"
+              className="btn sm"
+              onClick={() => {
+                useLoja.setState({ mochilaAberta: false });
+                abrirCelular();
+              }}
+            >
               Abrir
             </button>
           ) : it.espaco === "escudo" ? (

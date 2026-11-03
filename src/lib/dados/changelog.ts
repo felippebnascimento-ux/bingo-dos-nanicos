@@ -413,6 +413,14 @@ export const CHANGELOG: EntradaLog[] = [
       "Bolsa Cassino: quem ficar com menos de 100 moedas ganha 5.000, uma vez por dia, e volta para o jogo",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "As moedas embaixo do menu abrem o ranking e o extrato, como a carteira do K-FOFO",
+      "Mochila no K-FOFO: um botão ao lado da carteira abre o inventário para equipar, usar e abrir o Celular",
+      "Passe o mouse (ou toque) num emblema para ver o nome, o nível e quanto falta para o próximo",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

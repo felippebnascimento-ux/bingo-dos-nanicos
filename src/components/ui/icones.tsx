@@ -115,6 +115,11 @@ export const IcMidias = (p: P) => (
   </Base>
 );
 /** Moeda (carteira). */
+export const IcMochila = (p: P) => (
+  <Base {...p}>
+    <path d="M9 6V5a3 3 0 0 1 6 0v1M6 9a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3v10a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zM9 13h6v3H9z" />
+  </Base>
+);
 export const IcMoeda = (p: P) => (
   <Base {...p}>
     <circle cx="12" cy="12" r="8.5" />
