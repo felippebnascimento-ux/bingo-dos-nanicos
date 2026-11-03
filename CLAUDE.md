@@ -626,6 +626,7 @@ Mais de uma pessoa (e mais de uma IA) mexe no site. **Toda tarefa começa assim,
 - **`dados.ts` ↔ `features/jogar/riot.ts`:** um importa o outro. Funciona porque nenhum usa o outro ao carregar. Não chame nada do outro módulo no topo do arquivo.
 
 ### Para quem usa IA no projeto
+- **Desenvolvimento full stack.** Use a skill [nanicos-full-stack](.agents/skills/nanicos-full-stack/SKILL.md) para planejar e validar mudanças na interface, nos jogos, no Supabase ou na sala em tempo real.
 - **Antes de editar:** leia o arquivo que vai mudar e este CLAUDE.md. Não reescreva arquivos inteiros "do zero" para mudar um pedaço.
 - **Reaproveite:** use o que já existe (`Avatar`, `FriendPicker`, `toast`, `useSure`, `friendOf`, `enviar`/`aoReceber`, `trOpcoes` etc.) em vez de criar outro parecido.
 - **Não invente:** nada de dependências, CDNs ou fontes novas sem motivo forte (regra 8).
