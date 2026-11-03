@@ -329,7 +329,7 @@ export const CHANGELOG: EntradaLog[] = [
   },
   {
     data: "03/11/2026",
-    itens: ["Celular mais bonito: fundo escuro e desfocado em volta (no tema escuro ficava um quadro cinza enorme) e a moldura do iPhone mais fina"],
+    itens: ["Celular mais bonito: fundo escuro e desfocado em volta (no tema escuro ficava um quadro cinza enorme), a moldura do iPhone mais fina e as fotos do feed em pé (4:5), como no Instagram"],
   },
 ];
 
