@@ -663,6 +663,7 @@ export const CHANGELOG: EntradaLog[] = [
     data: "03/11/2026",
     itens: ["Seguir amigo: na ficha de quem está no site e no cartão do perfil, o botão Ir até leva você para onde a pessoa está (K-FOFO, rua, corredor ou quarto) e para ao lado dela"],
   },
+  { data: "03/11/2026", itens: ["Os Campeões Selados e as chaves restantes são compartilhados entre os Nanicos"] },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
