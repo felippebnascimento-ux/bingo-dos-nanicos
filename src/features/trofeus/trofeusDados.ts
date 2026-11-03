@@ -1,5 +1,5 @@
 /*
- * Troféus da semana: lê o pódio das últimas 8 semanas e o hall da fama, e pede à função riot-semana
+ * Hall da fama da semana (LoL e CS2): lê o pódio das últimas 8 semanas e o hall da fama, e pede à função riot-semana
  * para calcular a semana anterior quando ela ainda não está pronta (o banco garante que só uma pessoa
  * calcula; as outras esperam e leem de novo). Sem SQL ou sem ninguém com op.gg, tudo fica escondido.
  */
@@ -18,7 +18,8 @@ type Estado = {
 
 export const useTrofeus = create<Estado>()(() => ({ linhas: null, fama: {}, calculando: false }));
 
-const IDS = new Set(["feeder", "turista", "piano", "viciado", "sumido"]);
+/* só os troféus de agora (os antigos ficam no banco, fora da tela) */
+const IDS = new Set(["lol_vitorias", "lol_derrotas", "lol_kda", "cs_vitorias", "cs_derrotas", "cs_kda"]);
 const DIA = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Confere as linhas vindas do banco. */

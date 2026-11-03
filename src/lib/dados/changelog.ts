@@ -75,7 +75,7 @@ export const CHANGELOG: EntradaLog[] = [
   {
     data: "02/11/2026",
     itens: [
-      "Troféus da semana no Sítio: Feeder, Turista, Carregou o piano, Viciado e Sumido, com chapéu de burro e coroa",
+      { t: "Troféus da semana no Sítio: Feeder, Turista, Carregou o piano, Viciado e Sumido, com chapéu de burro e coroa", off: "trocado pelo Hall da Fama do LoL e do CS2 na v1.122" },
       "Coroa de moedas para o mais rico do Sítio",
       "Clique no quadro de troféus do Sítio para ver todas as categorias, as semanas anteriores e o hall da fama",
     ],
@@ -564,6 +564,14 @@ export const CHANGELOG: EntradaLog[] = [
     itens: [
       "Emblemas novos, em relevo: aro de metal com luz e sombra, e o símbolo gravado",
       "O número do nível da GC voltou a ser lido no cartão do perfil, e o cartão não deixa mais aparecer o que está atrás",
+    ],
+  },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Troféus viraram o Hall da Fama do LoL e do CS2: quem mais venceu, quem mais perdeu e o melhor KDA da semana em cada jogo",
+      "O LoL vem do op.gg e o CS2 do Leetify de cada um; o 1º em vitórias e em KDA ganha +100 moedas",
+      "Quem mais perdeu leva o chapéu de burro e o melhor KDA a coroa dourada",
     ],
   },
 ];
