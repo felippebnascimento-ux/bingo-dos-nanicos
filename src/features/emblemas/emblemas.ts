@@ -4,7 +4,9 @@
  * Cada emblema tem 3 níveis: bronze, prata e ouro.
  */
 
-export type IdEmblema = "online" | "sequencia" | "tela" | "coroa" | "respeito" | "elo" | "cs" | "trofeu" | "truco" | "bingo" | "cassino" | "cronista";
+export type IdEmblema =
+  | "online" | "sequencia" | "tela" | "coroa" | "respeito" | "elo" | "cs" | "trofeu" | "truco" | "bingo" | "cassino" | "cronista"
+  | "missao" | "perfeito" | "mao" | "tubarao" | "aviao" | "artilheiro" | "coruja" | "churrasco" | "fenix" | "colecao";
 export type Emblema = { id: IdEmblema; nivel: 1 | 2 | 3; valor: number };
 
 type Def = { nome: string; metas: [number, number, number]; texto: (n: number) => string };
@@ -21,6 +23,17 @@ export const EMBLEMAS: Readonly<Record<IdEmblema, Def>> = {
   bingo: { nome: "Bingo!", metas: [1, 10, 50], texto: (n) => `${n} ${n === 1 ? "bingo" : "bingos"}` },
   cassino: { nome: "Apostador", metas: [50, 500, 2000], texto: (n) => `${n} apostas no cassino` },
   cronista: { nome: "Cronista", metas: [5, 25, 100], texto: (n) => `${n} nanicadas cadastradas` },
+  /* seção 37: missões, cassino, eventos, Bolsa Cassino e coleção */
+  missao: { nome: "Missionário", metas: [10, 50, 200], texto: (n) => `${n} missões do dia feitas` },
+  perfeito: { nome: "Dia perfeito", metas: [3, 15, 60], texto: (n) => `${n} ${n === 1 ? "dia" : "dias"} com as 3 missões` },
+  mao: { nome: "Mão quente", metas: [25, 250, 1000], texto: (n) => `${n} apostas ganhas no cassino` },
+  tubarao: { nome: "Tubarão", metas: [500, 2500, 10000], texto: (n) => `maior prêmio numa aposta: ${n.toLocaleString("pt-BR")} moedas` },
+  aviao: { nome: "Pé no chão", metas: [10, 100, 500], texto: (n) => `${n} voos sacados no Aviãozinho` },
+  artilheiro: { nome: "Artilheiro", metas: [20, 150, 600], texto: (n) => `${n} gols no Pênalti` },
+  coruja: { nome: "Coruja", metas: [1, 10, 50], texto: (n) => `${n} h de happy hour` },
+  churrasco: { nome: "Churrasqueiro", metas: [1, 5, 20], texto: (n) => `${n} ${n === 1 ? "espetinho" : "espetinhos"} no churrasco` },
+  fenix: { nome: "Fênix", metas: [1, 5, 15], texto: (n) => `${n} ${n === 1 ? "Bolsa Cassino recebida" : "Bolsas Cassino recebidas"}` },
+  colecao: { nome: "Colecionador", metas: [5, 12, 20], texto: (n) => `${n} itens diferentes na mochila` },
 };
 export const NIVEL = ["", "bronze", "prata", "ouro"] as const;
 

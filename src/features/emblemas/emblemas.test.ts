@@ -1,5 +1,17 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { descreverEmblema, lerEmblemas, progressoEmblema } from "./emblemas";
+import { descreverEmblema, EMBLEMAS, lerEmblemas, progressoEmblema } from "./emblemas";
+
+describe("metas espelhadas do SQL", () => {
+  it("cada emblema da última emblemas_de tem as mesmas metas do site", () => {
+    const sql = readFileSync("supabase/sql/seguranca.sql", "utf8");
+    const ultima = sql.slice(sql.lastIndexOf("create or replace function public.emblemas_de"));
+    const corpo = ultima.slice(0, ultima.indexOf("end $$;"));
+    const doSql = Object.fromEntries([...corpo.matchAll(/\('(\w+)',[\s\S]*?, (\d+), (\d+), (\d+)\)/g)].map((m) => [m[1], [+m[2], +m[3], +m[4]]]));
+    expect(Object.keys(doSql).sort()).toEqual(Object.keys(EMBLEMAS).sort());
+    for (const [id, d] of Object.entries(EMBLEMAS)) expect(d.metas, id).toEqual(doSql[id]);
+  });
+});
 
 describe("emblemas", () => {
   it("lê só o que é conhecido e põe na ordem", () => {
