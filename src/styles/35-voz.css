@@ -297,3 +297,18 @@
 .vz-corrigir{flex:none;padding:4px 10px;border:0;border-radius:6px;background:var(--live);color:var(--stamp-ink);font:700 11.5px var(--body);cursor:pointer}
 .vz-corrigir:hover{filter:brightness(1.08)}
 .vz-aviso-som{margin:0;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--live) 12%,transparent);color:var(--ink);font-size:12.5px;line-height:1.45}
+
+/* ligado continua na cor dele ao passar o mouse (antes ficava cinza e parecia desligado): só clareia */
+.vz-acao.on,.vz-acao.on:hover:not(:disabled){background:var(--accent);color:var(--accent-ink)}
+.vz-acao.ao-vivo,.vz-acao.ao-vivo:hover:not(:disabled){background:var(--live);color:var(--stamp-ink)}
+.vz-acao.on:hover,.vz-acao.ao-vivo:hover,.cb.on:hover,.cb.ao-vivo:hover,.cb.sair:hover{filter:brightness(1.1)}
+.cb.on,.cb.on:hover{background:var(--accent);color:var(--accent-ink)}
+.cb.ao-vivo,.cb.ao-vivo:hover,.cb.sair,.cb.sair:hover{background:var(--live);color:var(--stamp-ink)}
+/* todos os botões de ícone do painel com o mesmo quadrado ao passar o mouse */
+.vz-topo .vz-ib,.vz-topo .vz-sinal,.vz-live-cab .vz-ib{display:grid;place-items:center;width:28px;height:28px;padding:0;border-radius:7px}
+.vz-live-txt small{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.vz-topo .vz-ib svg,.vz-topo .vz-sinal svg,.vz-live-cab .vz-ib svg{width:19px;height:19px}
+.vz-ib.on:hover{color:var(--accent)}
+.vz-ib.sair{color:var(--live)}
+.vz-ib.sair:hover,.vz-parar-ic:hover{background:color-mix(in srgb,var(--live) 22%,transparent);color:var(--live)}
+.vz-topo{gap:2px}
