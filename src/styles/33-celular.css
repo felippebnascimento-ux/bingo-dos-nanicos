@@ -17,14 +17,19 @@
   --ig-bg:#000000; --ig-txt:#F5F5F5; --ig-cinza:#A8A8A8; --ig-linha:#262626; --ig-visto:#5B5B5B; --ig-campo:#262626; --ig-cartao:#1C1C1E; --ig-azul:#0095F6; --ig-vermelho:#FF3040;
   --ig-a1:#FEDA75; --ig-a2:#FA7E1E; --ig-a3:#D62976; --ig-a4:#962FBF; --ig-a5:#4F5BD5;
   --ig-roxo:#7B2FF7; --ig-laranja:#FF6A2B; --ig-verde:#13A85F; --ig-azul2:#1F6BFF; --ig-preto:#111111;
-  position:relative;height:min(1040px,calc(100vh - 20px));max-width:calc(100vw - 20px);aspect-ratio:440 / 956;border-radius:15.5% / 7.2%;padding:4px;
+  /* tintas do editor de story (texto, desenho e figurinhas): branco, preto, vermelho, laranja, amarelo, verde, azul, roxo, rosa, marrom */
+  --ig-tinta-0:#FFFFFF; --ig-tinta-1:#000000; --ig-tinta-2:#FF3040; --ig-tinta-3:#FF8A00; --ig-tinta-4:#FFD600;
+  --ig-tinta-5:#26C281; --ig-tinta-6:#0095F6; --ig-tinta-7:#962FBF; --ig-tinta-8:#FF4FA3; --ig-tinta-9:#8B5E3C;
+  --iph-h:min(1040px,calc(100vh - 20px));box-sizing:border-box;position:relative;height:var(--iph-h);max-width:calc(100vw - 20px);/* o corpo do iPhone 17 Pro Max (78 × 163,4 mm) com a tela de 72,9 × 158,4 mm: a borda toda é 1,58% da altura,
+     quase toda preta (0,98%) e só um filete de metal (0,6%), e assim a tela de dentro fica em 440 × 956 */
+  aspect-ratio:780 / 1634;border-radius:15% / 7.2%;padding:calc(var(--iph-h) * .006);
   background:linear-gradient(135deg,var(--iph-titanio2) 0%,var(--iph-titanio0) 18%,var(--iph-titanio1) 50%,var(--iph-titanio0) 82%,var(--iph-titanio2) 100%);
   box-shadow:inset 0 0 0 1px rgb(255 255 255 / .18),inset 0 0 0 3px rgb(0 0 0 / .5),0 30px 80px rgb(0 0 0 / .6),0 0 0 1px rgb(0 0 0 / .6)}
 /* botões laterais: ação, volume, liga/desliga e o controle da câmera */
 .iph-botao{position:absolute;width:3px;border-radius:2px;background:linear-gradient(90deg,var(--iph-titanio1),var(--iph-titanio2))}
 .iph-botao.acao{left:-3px;top:17%;height:4%}.iph-botao.vol1{left:-3px;top:24%;height:7%}.iph-botao.vol2{left:-3px;top:33%;height:7%}
 .iph-botao.power{right:-3px;top:26%;height:11%}.iph-botao.camera{right:-2px;top:58%;height:7%;width:2px;opacity:.8}
-.iph-tela{position:relative;height:100%;display:flex;flex-direction:column;border-radius:14.6% / 6.8%;overflow:hidden;background:var(--iph-tela);border:5px solid var(--iph-moldura);color:var(--ig-txt)}
+.iph-tela{position:relative;height:100%;display:flex;flex-direction:column;border-radius:14.6% / 6.8%;overflow:hidden;background:var(--iph-tela);border:calc(var(--iph-h) * .0098) solid var(--iph-moldura);color:var(--ig-txt)}
 /* barra de status com a ilha no meio */
 .iph-status{position:relative;flex:none;height:54px;display:flex;align-items:center;justify-content:space-between;padding:6px 26px 0 34px;font:600 15px/1 var(--body);color:var(--ig-txt);z-index:5}
 .iph-hora{font-variant-numeric:tabular-nums;letter-spacing:.01em}
@@ -134,6 +139,16 @@
 .ig-quadrado{position:relative;aspect-ratio:1;padding:0;border:0;overflow:hidden;background:var(--ig-cartao);cursor:pointer}
 .ig-quadrado .midia-img{height:100%;border-radius:0;min-height:0;aspect-ratio:1}
 .ig-quadrado .midia-img img{width:100%;height:100%;object-fit:cover}
+/* carregando: cinza pulsando, sem texto (como o Instagram) */
+.ig-quadrado .midia-img .status,.ig-midia .midia-img .status{font-size:0;color:transparent}
+.ig-quadrado .midia-img:has(.status),.ig-midia .midia-img:has(.status){background:var(--ig-cartao);animation:ig-pulsa 1.2s ease-in-out infinite alternate}
+@keyframes ig-pulsa{from{opacity:.55}to{opacity:1}}
+/* explorar em mosaico: a cada 10, dois quadrados altos (um à direita, outro à esquerda) */
+.ig-grade.explorar{grid-auto-flow:dense}
+.ig-grade.explorar .ig-quadrado:nth-child(10n+3),.ig-grade.explorar .ig-quadrado:nth-child(10n+6){grid-row:span 2;aspect-ratio:auto}
+.ig-grade.explorar .ig-quadrado:nth-child(10n+3){grid-column:3}
+.ig-grade.explorar .ig-quadrado:nth-child(10n+6){grid-column:1}
+.ig-grade.explorar .ig-quadrado:nth-child(10n+3) .midia-img,.ig-grade.explorar .ig-quadrado:nth-child(10n+6) .midia-img{aspect-ratio:auto}
 .ig-quadrado-texto{display:grid;place-items:center;height:100%;padding:8px;font:700 11px/1.2 var(--body);color:var(--iph-branco);overflow:hidden;background:linear-gradient(135deg,var(--ig-a4),var(--ig-a3) 55%,var(--ig-a2))}
 .ig-lista-gente{margin:0;padding:6px 14px;list-style:none;display:grid;gap:12px}
 .ig-lista-gente li,.ig-lista-gente li>button{display:flex;align-items:center;gap:12px;text-align:left}
@@ -253,8 +268,107 @@
 .ig-botao-azul:disabled{opacity:.45;cursor:default}
 input.ig-responder{background:none;outline:none;font:inherit}
 input.ig-responder::placeholder{color:rgb(255 255 255 / .75)}
+/* ver stories: segurar pausa e esconde tudo; reações rápidas e o emoji que voa */
+.ig-story-tela .ig-barras,.ig-story-tela .ig-story-topo,.ig-story-tela .ig-story-pe{transition:opacity .2s}
+.ig-story-tela.segurando .ig-barras,.ig-story-tela.segurando .ig-story-topo,.ig-story-tela.segurando .ig-story-pe{opacity:0}
+.ig-story-pe{position:relative}
+.ig-story-reacoes{position:absolute;left:10px;right:10px;bottom:calc(100% + 6px);display:grid;grid-template-columns:repeat(8,1fr);gap:2px;padding:8px;border-radius:16px;background:rgb(0 0 0 / .55);backdrop-filter:blur(8px)}
+.ig-story-reacoes button{aspect-ratio:1;border:0;border-radius:10px;background:none;font-size:24px;cursor:pointer;transition:transform .12s}
+.ig-story-reacoes button:active{transform:scale(1.3)}
+.ig-story-voa{position:absolute;z-index:4;left:50%;bottom:10%;font-size:80px;pointer-events:none;animation:ig-voa 1.1s cubic-bezier(.2,.8,.3,1) forwards}
+@keyframes ig-voa{0%{transform:translate(-50%,0) scale(.4);opacity:0}25%{opacity:1;transform:translate(-50%,-40px) scale(1.2)}100%{transform:translate(-50%,-260px) scale(1);opacity:0}}
+
+/* ---------- editor de story (EditorStory.tsx), como o do Instagram ---------- */
+.se{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;gap:8px;padding:6px 6px 10px;background:var(--ig-bg);color:var(--iph-branco);user-select:none;-webkit-user-select:none}
+.se-area{flex:1;min-height:0;display:grid;place-items:center;container-type:size}
+.se-palco{position:relative;width:min(100cqw,calc(100cqh * 9 / 16));aspect-ratio:9/16;border-radius:14px;overflow:hidden;background-color:var(--ig-cartao);touch-action:none;cursor:default}
+.se-palco.desenhando{cursor:crosshair}
+.se-foto{position:absolute;left:50%;top:50%;max-width:none;pointer-events:none}
+.se-tela{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.se-item{position:absolute;transform-origin:center;cursor:grab;touch-action:none;will-change:transform}
+.se-item:active{cursor:grabbing}
+.se-texto{display:flex;flex-direction:column;white-space:pre;line-height:1.25}
+.se-texto span{display:inline-block;padding:0 .32em;border-radius:.22em;background:var(--caixa)}
+.se-texto.sem-caixa{text-shadow:0 0 .12em rgb(0 0 0 / .25)}
+.se-texto.neon,.se-campo.neon{color:color-mix(in srgb,var(--ig-tinta-0) 85%,var(--brilho)) !important;text-shadow:0 0 .22em var(--brilho),0 0 .45em var(--brilho)}
+.se-emoji{display:block;line-height:1}
+.se-adesivo{display:inline-block;padding:.32em .5em;border-radius:.4em;line-height:1.2;white-space:nowrap;font-weight:800;text-transform:uppercase;box-shadow:0 .1em .3em rgb(0 0 0 / .25);
+  background:linear-gradient(90deg,var(--ig-tinta-8),var(--ig-tinta-3)) text,var(--ig-tinta-0);-webkit-background-clip:text,padding-box;background-clip:text,padding-box;-webkit-text-fill-color:transparent;color:transparent}
+.se-adesivo.local{background:linear-gradient(90deg,var(--ig-tinta-7),var(--ig-tinta-6)) text,var(--ig-tinta-0);-webkit-background-clip:text,padding-box;background-clip:text,padding-box}
+.se-adesivo.hora{background:var(--ig-tinta-0);-webkit-text-fill-color:var(--ig-tinta-1);color:var(--ig-tinta-1);font-weight:700;text-transform:none}
+.se-guia{position:absolute;z-index:4;pointer-events:none;background:var(--ig-azul)}
+.se-guia.v{left:50%;top:0;bottom:0;width:1px}
+.se-guia.h{top:50%;left:0;right:0;height:1px}
+.se-lixo{position:absolute;z-index:5;left:50%;bottom:4%;width:46px;height:46px;margin-left:-23px;display:grid;place-items:center;border-radius:50%;border:2px solid var(--iph-branco);background:rgb(0 0 0 / .35);transition:transform .15s,background .15s;pointer-events:none}
+.se-lixo.on{transform:scale(1.25);background:var(--ig-vermelho);border-color:var(--ig-vermelho)}
+.se-topo{position:absolute;z-index:6;left:0;right:0;top:0;display:flex;align-items:flex-start;gap:8px;padding:10px;background:linear-gradient(rgb(0 0 0 / .35),transparent)}
+.se-espaco{flex:1}
+.se-redondo{flex:none;display:grid;place-items:center;min-width:40px;height:40px;padding:0 6px;border:0;border-radius:20px;background-color:rgb(0 0 0 / .3);color:var(--iph-branco);cursor:pointer;filter:drop-shadow(0 1px 2px rgb(0 0 0 / .4))}
+.se-redondo:disabled{opacity:.4;cursor:default}
+.se-aa{font:700 19px/1 var(--body)}
+.se-descartar{padding:0 8px;font:600 13px var(--body)}
+.se-ferramentas{display:flex;flex-direction:column;gap:10px}
+.se-cor-fundo{width:40px;border:2px solid var(--iph-branco)}
+.se-dica{position:absolute;z-index:3;left:0;right:0;top:50%;margin:0;text-align:center;font:600 18px var(--body);color:rgb(255 255 255 / .7);pointer-events:none;transform:translateY(-50%)}
+.se-camada-ui,.se-escrevendo{position:absolute;inset:0;z-index:7}
+.se-camada-ui{pointer-events:none}
+.se-camada-ui > *{pointer-events:auto}
+.se-escrevendo{display:flex;flex-direction:column;background:rgb(0 0 0 / .55)}
+.se-escrevendo .se-topo{position:relative;background:none}
+.se-concluir{flex:none;height:40px;padding:0 14px;border:0;border-radius:20px;background:none;color:var(--iph-branco);font:700 16px var(--body);cursor:pointer;text-shadow:0 1px 3px rgb(0 0 0 / .5)}
+.se-pinceis{display:flex;gap:6px}
+.se-pincel{display:grid;place-items:center;width:38px;height:38px;border:0;border-radius:50%;background:rgb(0 0 0 / .3);color:var(--iph-branco);cursor:pointer}
+.se-pincel[aria-checked="true"]{background:var(--iph-branco);color:var(--ig-bg)}
+.se-pincel i{display:block;width:12px;height:12px;border-radius:50%;background:currentColor}
+.se-pincel.marca i{width:8px;height:16px;border-radius:2px;transform:rotate(30deg)}
+.se-pincel.neon i{box-shadow:0 0 6px 2px currentColor}
+.se-pincel.borracha i{width:14px;height:14px;border-radius:3px;background:none;border:2px solid currentColor}
+/* tamanho: barra em pé na esquerda, como no Instagram */
+.se-tamanho{position:absolute;z-index:8;left:-48px;top:50%;width:140px;transform:translateY(-50%) rotate(-90deg)}
+.se-tamanho input{width:100%;accent-color:var(--iph-branco)}
+.se-paleta{position:absolute;z-index:8;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:8px;padding:0 10px;flex-wrap:wrap}
+.se-paleta button{width:26px;height:26px;padding:0;border:2px solid var(--iph-branco);border-radius:50%;cursor:pointer;box-shadow:0 1px 3px rgb(0 0 0 / .4)}
+.se-paleta button[aria-checked="true"]{transform:scale(1.25)}
+.se-campo-area{flex:1;min-height:0;display:grid;place-items:center;padding:0 8%}
+.se-campo{width:100%;max-height:100%;padding:0 .32em;border:0;border-radius:.22em;outline:none;resize:none;overflow:hidden;white-space:pre-wrap;caret-color:var(--ig-azul)}
+.se-campo::placeholder{color:rgb(255 255 255 / .6)}
+.se-texto-pe{position:relative;display:grid;gap:12px;padding-bottom:48px}
+.se-texto-pe .se-paleta{position:absolute;bottom:10px}
+.se-fontes{display:flex;gap:8px;overflow-x:auto;padding:0 12px;scrollbar-width:none}
+.se-fonte{flex:none;padding:7px 12px;border:1.5px solid rgb(255 255 255 / .6);border-radius:16px;background:rgb(0 0 0 / .35);color:var(--iph-branco);cursor:pointer}
+.se-fonte[aria-checked="true"]{background:var(--iph-branco);color:var(--ig-bg);border-color:var(--iph-branco)}
+.se-btn-caixa b{display:grid;place-items:center;width:24px;height:24px;border-radius:5px;font:800 15px var(--body)}
+.se-btn-caixa.cor b{background:var(--iph-branco);color:var(--ig-bg)}
+.se-btn-caixa.clara b{background:rgb(255 255 255 / .55);color:var(--ig-bg)}
+.se-btn-caixa.nada b{border:1.5px solid var(--iph-branco)}
+.se-pe{display:flex;align-items:center;gap:10px;padding:0 6px}
+.se-galeria{flex:none;width:42px;height:42px;display:grid;place-items:center;padding:0;border:2px solid var(--iph-branco);border-radius:10px;overflow:hidden;background:var(--ig-cartao);color:var(--iph-branco);cursor:pointer}
+.se-galeria img{width:100%;height:100%;object-fit:cover}
+.se-tirar-foto{border:0;background:none;color:var(--ig-cinza);font:600 13px var(--body);cursor:pointer}
+.se-publicar{display:flex;align-items:center;gap:8px;height:42px;padding:0 8px 0 5px;border:0;border-radius:21px;background:var(--iph-branco);color:var(--ig-bg);font:700 14px var(--body);cursor:pointer}
+.se-publicar:disabled{opacity:.6;cursor:default}
+.se-publicar-rosto{width:32px !important;height:32px !important;border-radius:50%}
+.se-modos{display:flex;justify-content:center;gap:22px;font:700 13px var(--body);letter-spacing:.04em}
+.se-modos button{border:0;background:none;color:var(--ig-cinza);cursor:pointer;padding:4px}
+.se-modos button.on{color:var(--iph-branco)}
+.se-folha-fundo{position:absolute;inset:0;z-index:30;display:flex;align-items:flex-end;background:rgb(0 0 0 / .5)}
+.se-folha{width:100%;max-height:72%;overflow:auto;padding:8px 14px 24px;border-radius:16px 16px 0 0;background:var(--ig-cartao);animation:ig-sobe .25s cubic-bezier(.2,.9,.25,1) both}
+.se-folha h3{margin:4px 0 12px;text-align:center;font:700 15px var(--body)}
+.se-alca{display:block;width:38px;height:4px;margin:0 auto 12px;border-radius:2px;background:var(--ig-visto)}
+.se-adesivos{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-bottom:16px}
+.se-adesivos .se-adesivo{border:0;font-size:15px;cursor:pointer}
+.se-emojis{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.se-emojis button{aspect-ratio:1;border:0;border-radius:10px;background:none;font-size:30px;cursor:pointer}
+.se-emojis button:hover{background:var(--ig-campo)}
+.se-gente{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.se-gente button{width:100%;display:flex;align-items:center;gap:12px;padding:8px;border:0;border-radius:10px;background:none;color:var(--ig-txt);font:600 14px var(--body);text-align:left;cursor:pointer}
+.se-gente button:hover{background:var(--ig-campo)}
+.se-gente-rosto{width:40px !important;height:40px !important;border-radius:50%}
+.se :focus-visible{outline:2px solid var(--ig-azul);outline-offset:2px}
+
 @media (prefers-reduced-motion:reduce){
-  .celular-fundo.anima .iphone,.iph-ilha-gira,.ig-coracao-grande,.ig-curtir.on,.ig-folha,.ig-folha-fundo,.ig-story-tela{animation:none}
+  .celular-fundo.anima .iphone,.iph-ilha-gira,.ig-coracao-grande,.ig-curtir.on,.ig-folha,.ig-folha-fundo,.ig-story-tela,.se-folha,.ig-quadrado .midia-img,.ig-midia .midia-img{animation:none}
+  .ig-story-voa{display:none}
 .iph-ilha,.iph-ilha::after,.iph-ilha-conteudo,.iph-ilha.aberta .iph-ilha-conteudo{transition-duration:1ms !important}.ig-barras i{animation-duration:1ms !important}
 }
 
@@ -270,3 +384,5 @@ input.ig-responder::placeholder{color:rgb(255 255 255 / .75)}
   .iph-ilha::after{display:none}
   .iph-ilha.aberta{opacity:1;pointer-events:auto;top:calc(env(safe-area-inset-top,0px) + 8px);max-width:460px}
 }
+/* o campo do texto do story não tem borda de foco (como no Instagram, o cursor já mostra onde está) */
+.se .se-campo:focus-visible{outline:none}

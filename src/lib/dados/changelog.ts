@@ -375,6 +375,17 @@ export const CHANGELOG: EntradaLog[] = [
       "No celular, o botão de transmitir só aparece onde dá para transmitir",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "InstaNanico: editor de story como o do Instagram, com textos em 5 estilos e 10 cores (com ou sem fundo na letra), que se arrastam, crescem e giram",
+      "No story dá para desenhar (caneta, marca-texto, neon e borracha) e pôr figurinhas: menção a um nanico, hora, local e emojis; arraste até a lixeira para apagar",
+      "Quem é mencionado no story fica sabendo pelo Direct",
+      "Ver stories: segure para pausar, toque no coração para curtir e mande reações rápidas; no computador, as setas passam e o Esc fecha",
+      "Explorar em mosaico, como no Instagram, e o perfil de outro nanico tem o botão Mensagem",
+      "O iPhone do InstaNanico tem as medidas do 17 Pro Max de verdade, com a borda fina",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

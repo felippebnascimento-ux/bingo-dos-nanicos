@@ -149,7 +149,9 @@ src/
                        stories (`carregarStories`, `postarStory`, `marcarVisto`, `lerQuemViu`, `apagarStory`), o Direct
                        (`carregarMensagens`, `enviarMensagem`, `abrirConversa`, `marcarLidas`), a Dynamic Island
                        (`avisarIlha` com `alvo`: cresce, mostra, some e encolhe em fases; `tocarIlha` grava `pedido` e o app abre a
-                       conversa, o post ou o story) e o tempo real; `iniciarRede`, `abrirCelular`), insta.ts (stories por pessoa, ordem
+                       conversa, o post ou o story) e o tempo real; `iniciarRede`, `abrirCelular`), EditorStory.tsx (o editor de story, como o do Instagram: texto, desenho,
+                       figurinhas, menção, lixeira; sai uma imagem 1080×1920 desenhada com as regras de storyEditor.ts, puro e
+                       testado; quem é mencionado recebe no Direct), insta.ts (stories por pessoa, ordem
                        da fileira, andar entre stories, tempo curto, conversas, não lidas e resumo, e o corte da foto ao postar: `formatoInicial`, `recorte` em
                        1:1, 4:5, 1,91:1 ou 9:16 do story; puro e testado; o `Cortador` sobe a foto já cortada, até 1080 px) e Celular.tsx (BotaoCelular no menu
                        e no Sítio só para quem tem o item, `useTemCelular`, e o iPhone 17 Pro Max por cima de tudo, com a
