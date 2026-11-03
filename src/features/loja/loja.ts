@@ -2,7 +2,7 @@
  * Loja e mochila (puro e testado): os espaços, a vitrine agrupada, o que cada um tem equipado e se dá
  * para comprar. Só serve para MOSTRAR: quem confere preço, saldo e repetição é o banco (comprar(), seção 15).
  */
-export type Espaco = "cadeira" | "mesa" | "tapete" | "poster" | "planta" | "parede" | "luz" | "titulo" | "moldura" | "escudo" | "consumivel" | "celular" | "cabeca" | "quarto" | "movel" | "efeito";
+export type Espaco = "cadeira" | "mesa" | "tapete" | "poster" | "planta" | "parede" | "luz" | "titulo" | "moldura" | "escudo" | "consumivel" | "celular" | "cabeca" | "quarto" | "movel" | "efeito" | "chave";
 export type Anim = "fumar" | "charuto" | "beber" | "tremer" | "tonto";
 export type ItemLoja = { id: string; nome: string; descricao: string; espaco: Espaco; preco: number; dados: { cor?: string; texto?: string; anim?: Anim; w?: number; d?: number; desenho?: string; tamanho?: number }; ordem: number; estoque?: number; lancamento?: number };
 export type LinhaMochila = { userId: string; itemId: string; qtd: number; equipado: boolean };
@@ -11,6 +11,8 @@ export type LinhaMochila = { userId: string; itemId: string; qtd: number; equipa
 export const GRUPOS: readonly { id: string; nome: string; curto: string; espacos: readonly Espaco[] }[] = [
   /* fase 34: o quarto próprio no topo, e os móveis logo depois das coisas do quarto fixo */
   { id: "quarto-proprio", nome: "Quarto próprio", curto: "Quarto próprio", espacos: ["quarto"] },
+  /* chaves das casas (seção 62): raros que abrem as cenas especiais, como a Pirapó 114 */
+  { id: "chaves", nome: "Chaves das casas", curto: "Chaves", espacos: ["chave"] },
   { id: "celular", nome: "A meta grande", curto: "Celular", espacos: ["celular"] },
   { id: "consumivel", nome: "Para usar no K-FOFO", curto: "Consumíveis", espacos: ["consumivel"] },
   { id: "boneco", nome: "Para o boneco", curto: "Boneco", espacos: ["cabeca", "efeito"] },
@@ -42,11 +44,12 @@ export const NOME_ESPACO: Readonly<Record<Espaco, string>> = {
   quarto: "Quarto",
   movel: "Móvel",
   efeito: "Efeito",
+  chave: "Chave",
 };
 
 /** Escudo e consumíveis acumulam; o resto só se compra uma vez e se equipa (menos o celular, que se abre). */
 export const acumula = (e: Espaco) => e === "escudo" || e === "consumivel";
-export const equipavel = (e: Espaco) => !acumula(e) && e !== "celular" && e !== "quarto" && e !== "movel";
+export const equipavel = (e: Espaco) => !acumula(e) && e !== "celular" && e !== "quarto" && e !== "movel" && e !== "chave";
 /** Vai no chão do quarto próprio (os móveis e os itens de piso antigos, que têm w e d); até 4 de cada. */
 export const posicionavel = (it: Pick<ItemLoja, "espaco" | "dados">) => it.espaco === "movel" || typeof it.dados.w === "number";
 export const MAX_MOVEL = 4;

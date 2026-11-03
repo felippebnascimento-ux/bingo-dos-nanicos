@@ -733,6 +733,13 @@ export const CHANGELOG: EntradaLog[] = [
       "Efeitos para o boneco na Loja: Brilho dourado, Fogo nos pés, Fantasma e Arco-íris. Equipado, aparece no K-FOFO e nos quartos",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Pirapó 114: o apartamento abriu, desenhado das fotos, com o corredor de granito, a cozinha de cadeiras vermelhas, a sala com sacada e o quarto gamer de taco. Entra pela porta do K-FOFO",
+      "Para entrar é preciso a Chave da Pirapó 114, um raro de 5.000 moedas na Loja (só 14 no mundo). As chaves da casa do Alemão, da casa do Gordão e da baia da Vó Lia chegam junto com as casas",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

@@ -114,3 +114,6 @@
 .grupo-meu{margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px;font:600 14px var(--body)}
 .grupo-criar{display:grid;gap:8px;padding:12px;border-radius:12px;background:var(--surface-2)}
 .grupo-criar input{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:500 14px var(--body)}
+
+/* chaves das casas (seção 62) */
+.loja-chave{display:grid;place-items:center;width:100%;height:100%;font-size:56px;filter:drop-shadow(0 4px 8px var(--shadow))}

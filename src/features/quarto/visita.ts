@@ -48,6 +48,9 @@ export function gradeDe(fid: string | null | undefined): Grade | null {
   return g;
 }
 
+/** as cenas que pedem chave e o item da chave (seção 62) */
+export const CHAVE_DA_CENA: Readonly<Record<string, string>> = { pirapo: "chave-pirapo" };
+
 /**
  * Vai para o quarto de alguém (friend id), para a rua ou o corredor dos quartos ("rua", "corredor"), ou volta ao
  * K-FOFO (null). O boneco aparece na porta (piso 0, 0) ou numa das entradas do K-FOFO; a presença leva o `quarto` e o
@@ -58,5 +61,9 @@ export function irParaQuarto(dono: string | null) {
   const s = getApp();
   if (dono === s.meuQuarto) return setApp({ aba: "hall", fichaAberta: null });
   if (dono && !ehCenaEspecial(dono) && !donoDoQuarto(dono)) return toast("Esse nanico ainda não tem quarto.");
+  /* casas com chave (seção 62): só entra quem tem a chave na mochila */
+  const chave = dono ? CHAVE_DA_CENA[dono] : undefined;
+  if (chave && !useLoja.getState().linhas.some((l) => l.userId === s.myUid && l.itemId === chave && l.qtd > 0))
+    return toast("A porta está trancada: compre a chave na Loja (Chaves das casas).");
   setApp({ aba: "hall", fichaAberta: null, meuQuarto: dono, hallPos: dono ? { ...PORTA } : entradaSorteada() });
 }

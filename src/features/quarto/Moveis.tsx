@@ -127,6 +127,93 @@ const DESENHO_QUARTO: Record<string, Desenho> = {
     k.box(r.i + 0.27, r.j + 0.27, 0.46, 0.46, 34, "plasma", "plasma", "plasma", 14);
     k.box(r.i + 0.45, r.j + 0.45, 0.1, 0.1, 22, "neon-ouro", "neon-ouro", "neon-ouro", 20);
   },
+  /* ---------- a Pirapó 114 (cenas.ts), desenhada das fotos do apartamento ---------- */
+  /* meia-parede entre os cômodos (como no Habbo): reboco bege, topo branco; a da sala tem a luz laranja da sanca */
+  "meia-parede": (k, r) => {
+    k.box(r.i, r.j, r.w, r.d, 34, "pp-branco0", "pp-parede1", "pp-parede2");
+    k.box(r.i, r.j, r.w, r.d, 4, "pp-branco0", "pp-branco1", "pp-branco2");
+  },
+  "meia-parede-sanca": (k, r) => {
+    k.box(r.i, r.j, r.w, r.d, 34, "pp-branco0", "pp-parede1", "pp-parede2");
+    k.box(r.i, r.j, r.w, r.d, 4, "pp-branco0", "pp-branco1", "pp-branco2");
+    k.box(r.i + 0.1, r.j + 0.1, r.w - 0.2, r.d - 0.2, 2, "pp-sanca", "pp-sanca", "pp-sanca", 34);
+  },
+  /* cozinha */
+  "mesa-branca": (k, r) => {
+    for (const [a, b] of [[0.12, 0.12], [r.w - 0.2, 0.12], [0.12, r.d - 0.2], [r.w - 0.2, r.d - 0.2]]) k.box(r.i + a, r.j + b, 0.08, 0.08, 26, "pp-branco1", "pp-branco1", "pp-branco2");
+    k.box(r.i + 0.06, r.j + 0.06, r.w - 0.12, r.d - 0.12, 3, "pp-branco0", "pp-branco1", "pp-branco2", 26);
+    /* o prato giratório de madeira no meio */
+    k.box(r.i + r.w / 2 - 0.22, r.j + r.d / 2 - 0.22, 0.44, 0.44, 2, "madeira0", "madeira1", "madeira2", 29);
+  },
+  "cadeira-vermelha": (k, r, giro) => {
+    for (const [a, b] of [[0.22, 0.22], [0.72, 0.22], [0.22, 0.72], [0.72, 0.72]]) k.box(r.i + a, r.j + b, 0.06, 0.06, 18, "pp-creme0", "pp-creme1", "pp-creme2");
+    k.box(r.i + 0.2, r.j + 0.2, 0.6, 0.6, 6, "pp-vermelho0", "pp-vermelho1", "pp-vermelho2", 18);
+    const a = atras({ i: r.i + 0.2, j: r.j + 0.2, w: 0.6, d: 0.6 }, giro, 0.1);
+    k.box(a.i, a.j, a.w, a.d, 30, "pp-vermelho0", "pp-vermelho1", "pp-vermelho2", 24);
+  },
+  balcao: (k, r) => {
+    k.box(r.i + 0.05, r.j, r.w - 0.1, r.d, 40, "pp-branco0", "pp-branco1", "pp-branco2");
+    k.box(r.i, r.j, r.w, r.d, 3, "pp-granito-claro", "pp-granito-claro", "pp-granito-claro", 40);
+  },
+  geladeira: (k, r) => {
+    k.box(r.i + 0.1, r.j + 0.1, r.w - 0.2, r.d - 0.2, 100, "pp-branco0", "pp-branco1", "pp-branco2");
+    k.box(r.i + 0.1, r.j + 0.1, r.w - 0.2, r.d - 0.2, 1.5, "pp-branco2", "pp-branco2", "pp-branco2", 66);
+  },
+  "armario-alto": (k, r) => {
+    k.box(r.i + 0.08, r.j + 0.05, r.w - 0.16, r.d - 0.1, 116, "pp-branco0", "pp-branco1", "pp-branco2");
+    k.box(r.i + 0.08, r.j + 0.05, r.w - 0.16, r.d - 0.1, 1.5, "pp-vidro", "pp-vidro", "pp-vidro", 84);
+  },
+  /* sacada: a mureta de madeira na frente, com a grade de ferro em cima das pontas */
+  mureta: (k, r) => {
+    k.box(r.i, r.j + 0.55, r.w, 0.3, 46, "pp-mureta0", "pp-mureta1", "pp-mureta2");
+    for (let x = 0; x <= r.w; x += 0.5) k.box(r.i + Math.min(x, r.w - 0.05), r.j + 0.6, 0.04, 0.04, 20, "preto0", "preto1", "preto2", 46);
+    k.box(r.i, r.j + 0.6, r.w, 0.04, 2, "preto0", "preto1", "preto2", 66);
+  },
+  /* quarto */
+  "cama-baixa": (k, r) => {
+    k.box(r.i + 0.05, r.j + 0.05, r.w - 0.1, r.d - 0.1, 6, "pp-cinza-azul", "pp-cinza-azul", "pp-cinza-azul");
+    k.box(r.i + 0.1, r.j + 0.1, r.w - 0.2, r.d - 0.2, 10, "lencol0", "lencol1", "lencol1", 6);
+    k.box(r.i + 0.15, r.j + 0.15, 0.6, r.d - 0.3, 6, "pp-almofada", "pp-almofada", "pp-almofada", 16);
+  },
+  "rack-tv": (k, r, giro) => {
+    k.box(r.i + 0.05, r.j + 0.05, r.w - 0.1, r.d - 0.1, 18, "pp-branco0", "pp-branco1", "pp-branco2");
+    const f = atras(r, giro, 0.12);
+    if (giro) {
+      k.box(f.i, r.j + 0.4, 0.1, r.d - 0.8, 64, "preto0", "preto1", "preto2", 18);
+      k.box(f.i + 0.1, r.j + 0.6, 0.04, r.d - 1.2, 36, "preto2", "ceu", "preto1", 30);
+    } else {
+      k.box(r.i + 0.4, f.j, r.w - 0.8, 0.1, 64, "preto0", "preto1", "preto2", 18);
+      k.box(r.i + 0.6, f.j + 0.1, r.w - 1.2, 0.04, 36, "preto2", "preto1", "ceu", 30);
+    }
+  },
+  guitarra: (k, r) => {
+    k.box(r.i + 0.35, r.j + 0.4, 0.3, 0.12, 30, "pp-guitarra", "pp-guitarra", "pp-guitarra2");
+    k.box(r.i + 0.44, r.j + 0.42, 0.12, 0.06, 14, "pp-branco0", "pp-branco0", "pp-branco1", 10);
+    k.box(r.i + 0.47, r.j + 0.43, 0.06, 0.06, 40, "madeira0", "madeira1", "madeira2", 30);
+  },
+  gaveteiro: (k, r) => {
+    k.box(r.i + 0.15, r.j + 0.15, r.w - 0.3, r.d - 0.3, 30, "pp-branco0", "pp-branco1", "pp-branco2");
+    k.box(r.i + 0.1, r.j + 0.1, r.w - 0.2, r.d - 0.2, 2, "pp-vidro", "pp-vidro", "pp-vidro", 32);
+  },
+  "cadeira-gamer-vermelha": (k, r, giro) => cadeira(k, r, giro, ["preto0", "pp-vermelho1", "preto2"], 72),
+  "guarda-roupa-creme": (k, r, giro) => {
+    k.box(r.i + M, r.j + M, r.w - 2 * M, r.d - 2 * M, 120, "pp-creme0", "pp-creme1", "pp-creme2");
+    /* as 4 portas e os puxadores na frente */
+    const n = giro ? r.d : r.w;
+    for (let x = 1; x < 4; x++) {
+      const a = M + ((n - 2 * M) * x) / 4;
+      if (giro) k.box(r.i + r.w - M - 0.01, r.j + a - 0.01, 0.02, 0.02, 116, "pp-creme2", "pp-creme2", "pp-creme2", 2);
+      else k.box(r.i + a - 0.01, r.j + r.d - M - 0.01, 0.02, 0.02, 116, "pp-creme2", "pp-creme2", "pp-creme2", 2);
+    }
+    k.box(r.i + M, r.j + M, r.w - 2 * M, r.d - 2 * M, 1.5, "pp-creme2", "pp-creme2", "pp-creme2", 84);
+  },
+  /* o fim do corredor: a estante branca com as letras e os enfeites */
+  "estante-branca": (k, r) => {
+    k.box(r.i + 0.08, r.j + 0.1, r.w - 0.16, r.d - 0.2, 118, "pp-branco0", "pp-branco1", "pp-branco2");
+    for (const z of [30, 58, 86]) k.box(r.i + 0.1, r.j + 0.12, r.w - 0.2, r.d - 0.24, 2, "pp-branco2", "pp-branco2", "pp-branco2", z);
+    k.box(r.i + 0.3, r.j + 0.3, 0.3, 0.3, 10, "pp-branco0", "pp-branco1", "pp-branco1", 88);
+    k.box(r.i + 0.35, r.j + 0.5, 0.2, 0.2, 8, "madeira1", "madeira1", "madeira2", 60);
+  },
   /* os itens de piso que já existiam (fase 11) */
   "cadeira-gamer": (k, r, giro) => cadeira(k, r, giro, ["preto0", "preto1", "preto2"], 70),
   "cadeira-trono": (k, r, giro) => cadeira(k, r, giro, ["ouro0", "ouro1", "ouro2"], 90),

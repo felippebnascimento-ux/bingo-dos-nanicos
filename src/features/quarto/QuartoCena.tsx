@@ -109,6 +109,68 @@ function Pixos({ lista, p }: { lista: readonly Pixo[]; p: (i: number, j: number,
   );
 }
 
+/**
+ * A Pirapó 114 (das fotos): paredes bege com rodapé branco; no corredor (fundo), o piso claro com a faixa de granito
+ * preto, as portas brancas de almofada, o quadro do gato e os armários espelhados; na cozinha, a parede de pastilha
+ * preta com a janela de cortina; o porcelanato brilhante da sala, a cerâmica da sacada e o taco em espinha do quarto.
+ */
+function fundoPirapo(n: number, p: (i: number, j: number, z?: number) => Pt): Poly[] {
+  const L: Poly[] = [];
+  const poly = (q: Pt[], c: string, linha = false) => L.push({ q, c, linha });
+  const ret = (i0: number, j0: number, i1: number, j1: number, c: string, linha = false) => poly([p(i0, j0), p(i1, j0), p(i1, j1), p(i0, j1)], c, linha);
+  const naDir = (i0: number, i1: number, z0: number, z1: number, c: string, linha = false) => poly([p(i0, 0, z0), p(i1, 0, z0), p(i1, 0, z1), p(i0, 0, z1)], c, linha);
+  const naEsq = (j0: number, j1: number, z0: number, z1: number, c: string, linha = false) => poly([p(0, j0, z0), p(0, j1, z0), p(0, j1, z1), p(0, j0, z1)], c, linha);
+  poly([p(0, 0), p(0, n), p(0, n, WH), p(0, 0, WH)], "pp-parede1");
+  poly([p(0, 0), p(n, 0), p(n, 0, WH), p(0, 0, WH)], "pp-parede2");
+  poly([p(0, 0, WH), p(0, n, WH), p(0, n, WH + 10), p(0, 0, WH + 10)], "pp-branco1");
+  poly([p(0, 0, WH), p(n, 0, WH), p(n, 0, WH + 10), p(0, 0, WH + 10)], "pp-branco2");
+  /* a moldura de gesso no alto e o rodapé branco */
+  naEsq(0, n, WH - 8, WH, "pp-branco0");
+  naDir(0, n, WH - 8, WH, "pp-branco0");
+  naEsq(0, n, 0, 9, "pp-branco1");
+  naDir(0, n, 0, 9, "pp-branco0");
+  /* a porta de entrada (piso 0, 0) e as portas brancas de almofada do corredor */
+  naDir(0.12, 0.88, 0, 104, "pp-branco0", true);
+  for (const i0 of [4.2, 10.2]) {
+    naDir(i0, i0 + 0.8, 0, 108, "pp-branco0", true);
+    naDir(i0 + 0.1, i0 + 0.7, 54, 98, "pp-branco1", true);
+    naDir(i0 + 0.1, i0 + 0.7, 10, 46, "pp-branco1", true);
+    naDir(i0 + 0.66, i0 + 0.72, 50, 54, "pp-macaneta");
+  }
+  /* o quadro do gato (moldura escura, gato bege e dourado) */
+  naDir(7.1, 8.3, 66, 128, "pp-moldura", true);
+  naDir(7.25, 8.15, 72, 122, "pp-branco0");
+  naDir(7.4, 8.0, 78, 116, "pp-gato0");
+  naDir(7.55, 7.85, 96, 110, "pp-gato1");
+  /* os armários espelhados na parede da esquerda do corredor */
+  naEsq(0.15, 1.85, 8, 128, "pp-branco1", true);
+  naEsq(0.25, 0.98, 14, 122, "pp-espelho", true);
+  naEsq(1.02, 1.75, 14, 122, "pp-espelho", true);
+  /* a cozinha: pastilha preta embaixo da janela de cortina branca */
+  naEsq(10, 13.6, 34, 104, "pp-pastilha");
+  for (let a = 10.2; a < 13.6; a += 0.2) naEsq(a, a + 0.015, 34, 104, "pp-rejunte");
+  for (let z = 40; z < 104; z += 7) naEsq(10, 13.6, z, z + 0.8, "pp-rejunte");
+  naEsq(10.6, 13, 60, 102, "pp-janela", true);
+  naEsq(10.6, 13, 88, 102, "pp-cortina");
+  /* pisos: corredor claro com a faixa de granito, cozinha clara, sala de porcelanato, sacada de cerâmica, quarto de taco */
+  for (let i = 0; i < n; i++)
+    for (let j = 0; j < n; j++) {
+      const sala = i >= 4 && i <= 8 && j >= 3 && j <= 10, sacada = i >= 4 && i <= 8 && j >= 12, quarto = i >= 10 && j >= 3;
+      if (quarto) {
+        /* taco em espinha de peixe: 4 réguas por piso, alternando o sentido */
+        for (let k = 0; k < 4; k++) {
+          const a = k / 4, b = (k + 1) / 4;
+          if ((i + j) % 2) ret(i + a, j, i + b, j + 1, k % 2 ? "pp-taco0" : "pp-taco1", true);
+          else ret(i, j + a, i + 1, j + b, k % 2 ? "pp-taco1" : "pp-taco0", true);
+        }
+      } else ret(i, j, i + 1, j + 1, sala ? ((i + j) % 2 ? "pp-porc0" : "pp-porc1") : sacada ? "pp-sacada" : (i + j) % 2 ? "pp-piso0" : "pp-piso1", true);
+    }
+  /* o brilho do porcelanato da sala e a faixa de granito do corredor */
+  poly([p(5, 4), p(5.6, 4), p(7.6, 9), p(7, 9)], "pp-reflexo");
+  ret(0.3, 0.7, n - 1, 1.3, "pp-granito");
+  return L;
+}
+
 /** O corredor: as duas paredes sem janela nem pôster, o carpete comprido e a saída para o K-FOFO no piso (0, 0). */
 function fundoCorredor(n: number, p: (i: number, j: number, z?: number) => Pt): Poly[] {
   const L: Poly[] = [];
@@ -201,7 +263,7 @@ export const QuartoCena = memo(function QuartoCena({
   aoTocarMovel?: (id: number) => void;
   bonecos?: readonly BonecoCena[];
   brilhos?: readonly { id: string; i: number; j: number }[];
-  tipo?: "quarto" | "rua" | "corredor" | "banheiro";
+  tipo?: "quarto" | "rua" | "corredor" | "banheiro" | "pirapo";
   /** as pixações do banheiro */
   pixos?: readonly Pixo[];
   /** a arena (seção 58): "i,j" → cor do time que pintou */
@@ -213,7 +275,10 @@ export const QuartoCena = memo(function QuartoCena({
 }) {
   const n = tamanho;
   const { p, largura, altura } = useMemo(() => projecao(n), [n]);
-  const fundo = useMemo(() => (tipo === "rua" ? fundoRua(n, p) : tipo === "corredor" ? fundoCorredor(n, p) : tipo === "banheiro" ? fundoBanheiro(n, p) : paredes(n, p, equip)), [n, p, equip, tipo]);
+  const fundo = useMemo(
+    () => (tipo === "rua" ? fundoRua(n, p) : tipo === "corredor" ? fundoCorredor(n, p) : tipo === "banheiro" ? fundoBanheiro(n, p) : tipo === "pirapo" ? fundoPirapo(n, p) : paredes(n, p, equip)),
+    [n, p, equip, tipo],
+  );
   const ordem = useMemo(() => camadasQuarto(moveis.map((m) => m.ret)), [moveis]);
   /* com bonecos: quem está em pé entra na ordem com os móveis; quem está sentado vem logo depois do móvel dele */
   const camadas = useMemo(() => {

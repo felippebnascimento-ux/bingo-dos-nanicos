@@ -2409,7 +2409,7 @@ end $$;
 -- Imagem da postagem vai para o bucket "midias", na pasta rede/<uid>/. Postar e curtir não dão moedas.
 alter table public.loja_itens drop constraint if exists loja_itens_espaco_check;
 alter table public.loja_itens add constraint loja_itens_espaco_check
-  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca', 'quarto', 'movel', 'efeito'));
+  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca', 'quarto', 'movel', 'efeito', 'chave'));
 insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem) values
   ('celular', 'Celular', 'Abre a rede social nanica: poste, curta e comente com o grupo.', 'celular', 3000, '{}', 0)
 on conflict (id) do update set nome = excluded.nome, descricao = excluded.descricao, espaco = excluded.espaco,
@@ -3932,7 +3932,7 @@ grant execute on function public.emblemas_de(uuid) to authenticated;
 --     sobre o que vai no alto da cabeça (só os óculos ficam junto).
 alter table public.loja_itens drop constraint if exists loja_itens_espaco_check;
 alter table public.loja_itens add constraint loja_itens_espaco_check
-  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca', 'quarto', 'movel', 'efeito'));
+  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca', 'quarto', 'movel', 'efeito', 'chave'));
 
 insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem) values
   ('bone',     'Boné de aba reta',   'O boné de quem joga de top.',               'cabeca', 300,  '{"cor":"bone"}', 120),
@@ -4458,7 +4458,7 @@ alter table public.loja_itens drop constraint if exists loja_itens_preco_check;
 alter table public.loja_itens add constraint loja_itens_preco_check check (preco between 10 and 10000);
 alter table public.loja_itens drop constraint if exists loja_itens_espaco_check;
 alter table public.loja_itens add constraint loja_itens_espaco_check
-  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca', 'quarto', 'movel', 'efeito'));
+  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca', 'quarto', 'movel', 'efeito', 'chave'));
 
 insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem) values
   ('quarto-pequeno',     'Quarto pequeno',      'Um quarto só seu, 6×6. Arrume do seu jeito.',          'quarto', 1000, '{"tamanho":6}', 190),
@@ -6991,7 +6991,7 @@ grant execute on function public.usar_movel(bigint, text) to authenticated;
 --   símbolo) ou entra no de alguém; um grupo por pessoa. Todos leem grupos e membros (o grupo aparece no perfil).
 alter table public.loja_itens drop constraint if exists loja_itens_espaco_check;
 alter table public.loja_itens add constraint loja_itens_espaco_check
-  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca', 'quarto', 'movel', 'efeito'));
+  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca', 'quarto', 'movel', 'efeito', 'chave'));
 
 insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem) values
   ('efeito-brilho',   'Brilho dourado', 'O seu boneco brilha como quem ganhou o jackpot.', 'efeito', 800,  '{"cor":"brilho"}', 300),
@@ -7074,6 +7074,22 @@ begin
 end $$;
 revoke all on function public.grupo_sair() from public, anon;
 grant execute on function public.grupo_sair() to authenticated;
+
+-- 62) chaves das casas (03/11/2026, pedido do João): para entrar na Pirapó 114 (cena especial, das fotos) é preciso ter a
+--   chave, um raro de 5.000 moedas (seção 55: numerado, 14 no mundo). As chaves da casa do Alemão, da casa do Gordão e
+--   da baia da Vó Lia ficam guardadas (ativo = false) até as cenas delas existirem. Espaço novo 'chave' (não se equipa;
+--   compra única). A porta da cena confere a chave na mochila de quem entra (a cena é só desenho: não há dado a proteger).
+alter table public.loja_itens drop constraint if exists loja_itens_espaco_check;
+alter table public.loja_itens add constraint loja_itens_espaco_check
+  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca', 'quarto', 'movel', 'efeito', 'chave'));
+
+insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem, estoque, ativo) values
+  ('chave-pirapo', 'Chave da Pirapó 114',   'Raro: abre a Pirapó 114. Só 14 cópias, cada uma com o seu número.', 'chave', 5000, '{"cena":"pirapo"}', 100, 14, true),
+  ('chave-alemao', 'Chave da casa do Alemão', 'Raro: abre a casa do Alemão.',  'chave', 5000, '{"cena":"alemao"}', 101, 14, false),
+  ('chave-gordao', 'Chave da casa do Gordão', 'Raro: abre a casa do Gordão.',  'chave', 5000, '{"cena":"gordao"}', 102, 14, false),
+  ('chave-vo-lia', 'Chave da baia da Vó Lia', 'Raro: abre a baia da Vó Lia.', 'chave', 5000, '{"cena":"volia"}', 103, 14, false)
+on conflict (id) do update set nome = excluded.nome, descricao = excluded.descricao, espaco = excluded.espaco,
+  preco = excluded.preco, dados = excluded.dados, ordem = excluded.ordem, estoque = excluded.estoque;
 
 -- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo e as 2 tabelas e 3 funções do quarto próprio e as 2 tabelas e 3 funções do blackjack e as 4 tabelas e 6 funções do pôquer
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger

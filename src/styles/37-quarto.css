@@ -132,3 +132,27 @@
 .movel-cor[aria-checked="true"]{border-color:var(--accent)}
 .movel-cor.t-ambar{box-shadow:inset 0 -4px 0 var(--quarto-luz-ambar)}.movel-cor.t-azul{box-shadow:inset 0 -4px 0 var(--quarto-luz-azul)}.movel-cor.t-rosa{box-shadow:inset 0 -4px 0 var(--quarto-luz-rosa)}
 .movel-cor.t-verde{box-shadow:inset 0 -4px 0 var(--quarto-luz-verde)}.movel-cor.t-roxo{box-shadow:inset 0 -4px 0 var(--quarto-luz-roxo)}
+
+/* a Pirapó 114 (cenas.ts, das fotos do apartamento): cores próprias da cena (--pp-*), como as do hall e do corredor */
+.quarto-vars{
+  --pp-parede1:#D3C7AC; --pp-parede2:#DDD2B9; --pp-branco0:#F6F4EF; --pp-branco1:#E6E3DC; --pp-branco2:#D4D1C9;
+  --pp-piso0:#E4DED2; --pp-piso1:#DAD3C5; --pp-granito:#17181B; --pp-granito-claro:#A29F99; --pp-porc0:#9F9584; --pp-porc1:#ABA190;
+  --pp-reflexo:rgb(255 248 230 / .18); --pp-sacada:#C8B79F; --pp-taco0:#B98A52; --pp-taco1:#A47642; --pp-sanca:#FF9F45;
+  --pp-mureta0:#94603F; --pp-mureta1:#7E4F33; --pp-mureta2:#6B422B; --pp-vermelho0:#B5262F; --pp-vermelho1:#982029; --pp-vermelho2:#7E1A22;
+  --pp-creme0:#E7DEC1; --pp-creme1:#D7CDAD; --pp-creme2:#C3B996; --pp-pastilha:#1E2124; --pp-rejunte:#3A3F44; --pp-janela:#2B3540;
+  --pp-cortina:#F2F0EA; --pp-espelho:#BFCBD1; --pp-moldura:#3A2A20; --pp-gato0:#D9B45A; --pp-gato1:#8C6A2E; --pp-macaneta:#9A9A9A;
+  --pp-vidro:rgb(170 200 210 / .55); --pp-cinza-azul:#5D6A7A; --pp-almofada:#F0D34A; --pp-guitarra:#2E4BA8; --pp-guitarra2:#233A84}
+.quarto .q-pp-parede1{fill:var(--pp-parede1)} .quarto .q-pp-parede2{fill:var(--pp-parede2)}
+.quarto .q-pp-branco0{fill:var(--pp-branco0)} .quarto .q-pp-branco1{fill:var(--pp-branco1)} .quarto .q-pp-branco2{fill:var(--pp-branco2)}
+.quarto .q-pp-piso0{fill:var(--pp-piso0)} .quarto .q-pp-piso1{fill:var(--pp-piso1)} .quarto .q-pp-granito{fill:var(--pp-granito)}
+.quarto .q-pp-granito-claro{fill:var(--pp-granito-claro)} .quarto .q-pp-porc0{fill:var(--pp-porc0)} .quarto .q-pp-porc1{fill:var(--pp-porc1)}
+.quarto .q-pp-reflexo{fill:var(--pp-reflexo)} .quarto .q-pp-sacada{fill:var(--pp-sacada)} .quarto .q-pp-taco0{fill:var(--pp-taco0)} .quarto .q-pp-taco1{fill:var(--pp-taco1)}
+.quarto .q-pp-sanca{fill:var(--pp-sanca);filter:drop-shadow(0 -2px 6px var(--pp-sanca))}
+.quarto .q-pp-mureta0{fill:var(--pp-mureta0)} .quarto .q-pp-mureta1{fill:var(--pp-mureta1)} .quarto .q-pp-mureta2{fill:var(--pp-mureta2)}
+.quarto .q-pp-vermelho0{fill:var(--pp-vermelho0)} .quarto .q-pp-vermelho1{fill:var(--pp-vermelho1)} .quarto .q-pp-vermelho2{fill:var(--pp-vermelho2)}
+.quarto .q-pp-creme0{fill:var(--pp-creme0)} .quarto .q-pp-creme1{fill:var(--pp-creme1)} .quarto .q-pp-creme2{fill:var(--pp-creme2)}
+.quarto .q-pp-pastilha{fill:var(--pp-pastilha)} .quarto .q-pp-rejunte{fill:var(--pp-rejunte)} .quarto .q-pp-janela{fill:var(--pp-janela)}
+.quarto .q-pp-cortina{fill:var(--pp-cortina)} .quarto .q-pp-espelho{fill:var(--pp-espelho)} .quarto .q-pp-moldura{fill:var(--pp-moldura)}
+.quarto .q-pp-gato0{fill:var(--pp-gato0)} .quarto .q-pp-gato1{fill:var(--pp-gato1)} .quarto .q-pp-macaneta{fill:var(--pp-macaneta)}
+.quarto .q-pp-vidro{fill:var(--pp-vidro)} .quarto .q-pp-cinza-azul{fill:var(--pp-cinza-azul)} .quarto .q-pp-almofada{fill:var(--pp-almofada)}
+.quarto .q-pp-guitarra{fill:var(--pp-guitarra)} .quarto .q-pp-guitarra2{fill:var(--pp-guitarra2)}

@@ -7,13 +7,13 @@
 import type { Friend } from "@/lib/tipos";
 import { gradeDoQuarto, type Grade, type MovelGrade } from "./grade";
 
-export const CENAS = ["rua", "corredor", "banheiro", "arena"] as const;
+export const CENAS = ["rua", "corredor", "banheiro", "arena", "pirapo"] as const;
 export type CenaEspecial = (typeof CENAS)[number];
 export const ehCenaEspecial = (x: unknown): x is CenaEspecial => CENAS.includes(x as CenaEspecial);
 
 /* a arena (seção 58): chão vazio de 10×10 para o jogo de pintar o chão */
-export const TAM_CENA: Record<CenaEspecial, number> = { rua: 12, corredor: 9, banheiro: 5, arena: 10 };
-export const NOME_CENA: Record<CenaEspecial, string> = { rua: "A rua", corredor: "Corredor dos quartos", banheiro: "Banheiro do K-FOFO", arena: "Arena de pintar o chão" };
+export const TAM_CENA: Record<CenaEspecial, number> = { rua: 12, corredor: 9, banheiro: 5, arena: 10, pirapo: 14 };
+export const NOME_CENA: Record<CenaEspecial, string> = { rua: "A rua", corredor: "Corredor dos quartos", banheiro: "Banheiro do K-FOFO", arena: "Arena de pintar o chão", pirapo: "Pirapó 114" };
 
 /** O banheiro (a porta do canto do K-FOFO): o vaso (dá para sentar) e a pia; as paredes são das pixações (seção 51). */
 export const MOVEIS_BANHEIRO: readonly MovelGrade[] = [
@@ -38,7 +38,46 @@ export const MOVEIS_RUA: readonly MovelGrade[] = [
 export const GOL_RUA = -10;
 export const MARCA_PENALTI = { i: 8.5, j: 3.5 };
 
-export const moveisDaCena = (c: CenaEspecial): readonly MovelGrade[] => (c === "rua" ? MOVEIS_RUA : c === "banheiro" ? MOVEIS_BANHEIRO : []);
+/**
+ * A Pirapó 114 (03/11/2026, das fotos do apartamento; só entra quem tem a chave rara): o corredor no fundo, com a faixa
+ * de granito; a cozinha estreita à esquerda (mesa branca, cadeiras vermelhas, bancada, geladeira); a sala vazia de
+ * porcelanato no meio, com a sacada na frente; e o quarto à direita, de taco, com o setup gamer. As meias-paredes
+ * (como no Habbo) separam os cômodos e deixam uma porta para cada um.
+ */
+export const MOVEIS_PIRAPO: readonly MovelGrade[] = [
+  /* paredes: a fileira do corredor (portas da cozinha em i = 1, da sala em 6 e do quarto em 11), cozinha | sala | quarto, sala | sacada */
+  { id: -101, desenho: "meia-parede", ret: { i: 0, j: 2, w: 1, d: 1 }, giro: false },
+  { id: -102, desenho: "meia-parede", ret: { i: 2, j: 2, w: 4, d: 1 }, giro: false },
+  { id: -103, desenho: "meia-parede-sanca", ret: { i: 7, j: 2, w: 4, d: 1 }, giro: false },
+  { id: -104, desenho: "meia-parede", ret: { i: 12, j: 2, w: 2, d: 1 }, giro: false },
+  { id: -105, desenho: "meia-parede", ret: { i: 3, j: 3, w: 1, d: 11 }, giro: false },
+  { id: -106, desenho: "meia-parede-sanca", ret: { i: 9, j: 3, w: 1, d: 11 }, giro: false },
+  { id: -107, desenho: "meia-parede-sanca", ret: { i: 4, j: 11, w: 2, d: 1 }, giro: false },
+  { id: -108, desenho: "meia-parede-sanca", ret: { i: 7, j: 11, w: 2, d: 1 }, giro: false },
+  { id: -109, desenho: "mureta", ret: { i: 4, j: 13, w: 5, d: 1 }, giro: false },
+  /* corredor: a estante branca no fim */
+  { id: -110, desenho: "estante-branca", ret: { i: 13, j: 0, w: 1, d: 2 }, giro: false },
+  /* cozinha */
+  { id: -111, desenho: "mesa-branca", ret: { i: 0, j: 7, w: 2, d: 1 }, giro: false },
+  { id: -112, desenho: "cadeira-vermelha", ret: { i: 0, j: 6, w: 1, d: 1 }, giro: false },
+  { id: -113, desenho: "cadeira-vermelha", ret: { i: 1, j: 6, w: 1, d: 1 }, giro: false },
+  { id: -114, desenho: "cadeira-vermelha", ret: { i: 0, j: 8, w: 1, d: 1 }, giro: false },
+  { id: -115, desenho: "cadeira-vermelha", ret: { i: 2, j: 7, w: 1, d: 1 }, giro: true },
+  { id: -116, desenho: "balcao", ret: { i: 2, j: 9, w: 1, d: 3 }, giro: true },
+  { id: -117, desenho: "geladeira", ret: { i: 2, j: 12, w: 1, d: 1 }, giro: true },
+  { id: -118, desenho: "armario-alto", ret: { i: 2, j: 13, w: 1, d: 1 }, giro: true },
+  /* quarto */
+  { id: -120, desenho: "guarda-roupa-creme", ret: { i: 12, j: 3, w: 2, d: 1 }, giro: false },
+  { id: -121, desenho: "rack-tv", ret: { i: 10, j: 5, w: 1, d: 3 }, giro: true },
+  { id: -122, desenho: "cama-baixa", ret: { i: 11, j: 7, w: 2, d: 2 }, giro: false },
+  { id: -123, desenho: "guitarra", ret: { i: 10, j: 9, w: 1, d: 1 }, giro: false },
+  { id: -124, desenho: "gaveteiro", ret: { i: 11, j: 10, w: 1, d: 1 }, giro: false },
+  { id: -125, desenho: "cadeira-gamer-vermelha", ret: { i: 12, j: 11, w: 1, d: 1 }, giro: false },
+  { id: -126, desenho: "pc", ret: { i: 12, j: 12, w: 2, d: 1 }, giro: false },
+];
+
+export const moveisDaCena = (c: CenaEspecial): readonly MovelGrade[] =>
+  c === "rua" ? MOVEIS_RUA : c === "banheiro" ? MOVEIS_BANHEIRO : c === "pirapo" ? MOVEIS_PIRAPO : [];
 
 /* ---------- pixações do banheiro (seção 51): onde cada uma fica na parede ---------- */
 export const CORES_PIXO = ["preto", "vermelho", "azul", "verde", "rosa", "amarelo"] as const;

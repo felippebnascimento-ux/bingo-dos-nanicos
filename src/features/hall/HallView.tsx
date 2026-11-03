@@ -306,6 +306,9 @@ export function HallView({ hidden }: { hidden: boolean }) {
                   <button type="button" role="menuitem" onClick={() => (setPorta(false), irParaQuarto("arena"))}>
                     Arena de pintar o chão
                   </button>
+                  <button type="button" role="menuitem" onClick={() => (setPorta(false), irParaQuarto("pirapo"))}>
+                    🔑 Pirapó 114
+                  </button>
                   {temSalas && (
                     <button type="button" role="menuitem" onClick={() => (setPorta(false), setApp({ salasAberto: true }))}>
                       Salas da lan house

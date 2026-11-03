@@ -45,6 +45,8 @@ export function Previa({ it }: { it: ItemLoja }) {
   const foco = FOCO[it.espaco];
   if (foco) return <QuartoPrevia equip={{ [it.espaco]: it.dados.cor } as EquipQuarto} foco={foco} />;
   if (it.espaco === "titulo") return <span className="loja-titulo-previa">{it.dados.texto}</span>;
+  /* chave das casas (seção 62) */
+  if (it.espaco === "chave") return <span className="loja-chave" aria-hidden="true">🔑</span>;
   /* efeito no boneco (seção 61): o rosto com o efeito */
   if (it.espaco === "efeito")
     return (
