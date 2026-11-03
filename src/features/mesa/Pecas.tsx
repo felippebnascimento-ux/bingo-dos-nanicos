@@ -6,19 +6,22 @@
  */
 import type { CSSProperties, ReactNode } from "react";
 import { Avatar } from "@/components/ui/Avatar";
+import { AnimarMesa } from "./Animar";
 import type { Rosto } from "@/lib/tipos";
 
 /** A mesa: `oval` (truco, pôquer) ou `meia-lua` (blackjack). O que vai em cima dela entra como filho. */
 export function Mesa({ forma = "oval", marca, children, className = "" }: { forma?: "oval" | "meia-lua"; marca?: ReactNode; children?: ReactNode; className?: string }) {
   return (
-    <div className={`mesa-cartas ${forma} ${className}`}>
-      <div className="mesa-couro" aria-hidden="true">
-        <div className="mesa-madeira">
-          <div className="mesa-feltro">{marca && <span className="mesa-marca">{marca}</span>}</div>
+    <AnimarMesa>
+      <div className={`mesa-cartas ${forma} ${className}`}>
+        <div className="mesa-couro" aria-hidden="true">
+          <div className="mesa-madeira">
+            <div className="mesa-feltro">{marca && <span className="mesa-marca">{marca}</span>}</div>
+          </div>
         </div>
+        {children}
       </div>
-      {children}
-    </div>
+    </AnimarMesa>
   );
 }
 
@@ -45,12 +48,16 @@ type LugarProps = {
   /** balão de fala (TRUCO!, ENVIDO!) */
   fala?: ReactNode;
   eu?: boolean;
+  /** pouco tempo: o anel fica vermelho e pulsa */
+  urgente?: boolean;
+  /** ganhou a mão: o rosto brilha */
+  ganhou?: boolean;
 };
 
 /** Um lugar na mesa: o rosto com o anel do tempo, a placa com o nome e as fichas. */
-export function Lugar({ f, nome, info, vez = null, fora, etiqueta, fala, eu }: LugarProps) {
+export function Lugar({ f, nome, info, vez = null, fora, etiqueta, fala, eu, urgente, ganhou }: LugarProps) {
   return (
-    <div className={"mesa-lugar" + (vez !== null ? " vez" : "") + (fora ? " fora" : "") + (eu ? " eu" : "")}>
+    <div className={"mesa-lugar" + (vez !== null ? " vez" : "") + (vez !== null && urgente ? " urgente" : "") + (fora ? " fora" : "") + (eu ? " eu" : "") + (ganhou ? " ganhou" : "")}>
       {fala && <span className="mesa-fala">{fala}</span>}
       <span className="mesa-rosto" style={vez !== null ? ({ "--falta": Math.max(0, Math.min(1, vez)) } as CSSProperties) : undefined}>
         {f ? <Avatar f={f} /> : <span className="av">{nome[0]}</span>}

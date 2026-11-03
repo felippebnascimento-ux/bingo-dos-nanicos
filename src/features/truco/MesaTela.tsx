@@ -1,5 +1,5 @@
 "use client";
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useSure } from "@/components/ui/useSure";
 import { friendOf, useApp } from "@/lib/store";
 import { TR_ENV, TR_TEMPO_MS, TR_TRUCO, trOpcoes, trQuemDeve, trValido, type Carta as TCarta, type MesaPub } from "./engine";
@@ -7,6 +7,8 @@ import { Carta, Costas } from "./Carta";
 import { fecharMesa, fimDaJogada, garantirTempo, levantar, meuLugar, revanche, trEnviar, trNaMesa, useTruco, voltarAoLobby } from "./mesa";
 import { ApostarTruco } from "./ApostarTruco";
 import { Lugar, Mesa, NaMesa } from "@/features/mesa/Pecas";
+import { BarraJogo, BarraTempo } from "@/features/mesa/Painel";
+import { useCarteira } from "@/lib/carteira";
 
 /** As minhas cartas. A que eu cliquei sobe na hora ("indo") até o servidor devolver a mão nova; se ele recusar, desce. */
 function MinhaMao({ cartas, pode }: { cartas: TCarta[]; pode: boolean }) {
@@ -51,6 +53,25 @@ type Pos = "sul" | "leste" | "norte" | "oeste";
 const LUGAR_XY: Record<Pos, [number, number]> = { norte: [50, 12], oeste: [12, 46], leste: [88, 46], sul: [19, 84] };
 const JOGADA_XY: Record<Pos, [number, number, number]> = { norte: [50, 38, -4], oeste: [36, 48, -8], leste: [64, 48, 7], sul: [50, 60, 3] };
 
+/** Os tentos em palitinhos, como no placar de papel (um por ponto, até o alvo). */
+function Tentos({ n, alvo }: { n: number; alvo: number }) {
+  return (
+    <span className="tr-tentos" aria-hidden="true">
+      {Array.from({ length: alvo }, (_, i) => (
+        <i key={i} className={i < n ? "" : "v"} />
+      ))}
+    </span>
+  );
+}
+
+const REGRAS: ReactNode = (
+  <>
+    <p>Truco gaudério com o baralho espanhol: 3 cartas, a melhor de 3 vazas leva a mão. Espadão, bastião, 7 de espada e 7 de ouro mandam.</p>
+    <p>Truco vale 2, retruco 3 e vale-quatro 4. Envido, real envido e falta envido valem antes da primeira vaza acabar.</p>
+    <p>20 s por jogada: acabou o tempo, a mesa joga por você. Ganha quem chegar primeiro ao alvo.</p>
+  </>
+);
+
 /** A mesa aberta, no padrão das mesas de cartas: lugares em volta da mesa oval, cartas no meio, minha mão embaixo. */
 export function MesaTela({ m }: { m: MesaPub }) {
   const friends = useApp((s) => s.friends);
@@ -60,6 +81,7 @@ export function MesaTela({ m }: { m: MesaPub }) {
   const falas = useTruco((s) => s.falas);
   const novas = useTruco((s) => s.novas);
   const valor = useTruco((s) => s.valores[m.id] ?? 0);
+  const saldo = useCarteira((s) => s.carteira?.saldo);
   const mazo = useSure(3000);
   const fechar = useSure(3000);
 
@@ -180,35 +202,36 @@ export function MesaTela({ m }: { m: MesaPub }) {
     );
   };
 
-  /* pergunta para o meu time (truco ou envido esperando resposta) */
-  let pergunta = null;
+  /* pergunta para o meu time (truco ou envido esperando resposta): no meio da mesa e, no celular, no painel de baixo */
+  let pergunta: { quem: string; oque: string; botoes: ReactNode } | null = null;
   if (op?.quero && h) {
     const ep = h.env.st === "pend";
     const quem = ep ? h.env.por : (h.truco.pend?.por ?? null);
     const oque = ep ? h.env.apostas.map((k) => TR_ENV[k]).join(" + ") : TR_TRUCO[h.truco.pend?.nivel ?? 2];
-    pergunta = (
-      <div className="mesa-acoes tr-pergunta" role="alert">
-        <span className="tr-pergunta-txt">
-          <b>{quem !== null ? m.lugares[quem]?.nome || "" : ""}</b> pediu <b>{oque}</b>
-        </span>
-        <button className="mesa-bt ouro" type="button" onClick={() => trEnviar("quero")}>
-          Quero
-        </button>
-        <button className="mesa-bt" type="button" onClick={() => trEnviar("naoquero")}>
-          Não quero
-        </button>
-        {op.truco && !ep ? (
-          <button className="mesa-bt verm" type="button" onClick={() => trEnviar("truco")}>
-            {TR_TRUCO[op.truco]}!
+    pergunta = {
+      quem: quem !== null ? m.lugares[quem]?.nome || "" : "",
+      oque,
+      botoes: (
+        <>
+          <button className="mesa-pill verde" type="button" onClick={() => trEnviar("quero")}>
+            QUERO
           </button>
-        ) : null}
-        {op.envido.map((k) => (
-          <button key={k} className="mesa-bt verm" type="button" onClick={() => trEnviar("envido", k)}>
-            {TR_ENV[k]}!
+          <button className="mesa-pill cinza" type="button" onClick={() => trEnviar("naoquero")}>
+            NÃO QUERO
           </button>
-        ))}
-      </div>
-    );
+          {op.truco && !ep ? (
+            <button className="mesa-pill ouro" type="button" onClick={() => trEnviar("truco")}>
+              {TR_TRUCO[op.truco].toUpperCase()}!
+            </button>
+          ) : null}
+          {op.envido.map((k) => (
+            <button key={k} className="mesa-pill ouro" type="button" onClick={() => trEnviar("envido", k)}>
+              {TR_ENV[k].toUpperCase()}!
+            </button>
+          ))}
+        </>
+      ),
+    };
   }
 
   const esperando =
@@ -219,50 +242,77 @@ export function MesaTela({ m }: { m: MesaPub }) {
   const vazas = h ? h.vazas.filter((v) => v.vence !== null) : [];
 
   return (
-    <div className="tr-mesa">
-      <div className="mesa-topo">
-        <div className="mesa-topo-grupo">
-          <button className="btn soft sm" type="button" id="trVoltar" onClick={voltarAoLobby}>
-            Mesas
+    <div className="mesa-jogo tr-mesa">
+      <BarraJogo
+        voltar={
+          <button className="mesa-voltar" type="button" id="trVoltar" onClick={voltarAoLobby} aria-label="Voltar às mesas">
+            ←
           </button>
-          {times.map((t, k) => (
-            <Fragment key={t}>
-              {k === 1 ? <span className="tr-alvo">até {m.alvo}</span> : null}
-              <div className={"mesa-time" + (eu >= 0 && t === meuTime ? " nos" : "")}>
+        }
+        icone="T"
+        nome="Truco gaudério"
+        sub={`${N === 4 ? "2 contra 2" : "1 contra 1"} · até ${m.alvo}${valor > 0 ? ` · bolo de ${valor * N}` : ""}`}
+        falta={fim !== null ? falta : null}
+        urgente={falta !== null && falta < 0.25}
+        carteira={saldo}
+        naMesa={valor > 0 && eu >= 0 ? valor : null}
+        regras={REGRAS}
+        centro={
+          <div className="tr-placar">
+            {times.map((t) => (
+              <div key={t} className={"tr-time" + (eu >= 0 && t === meuTime ? " nos" : "")}>
                 <b>{m.placar[t]}</b>
-                <span>{rotulo(t)}</span>
+                <small>{rotulo(t)}</small>
+                <Tentos n={m.placar[t]} alvo={m.alvo} />
               </div>
-            </Fragment>
-          ))}
-        </div>
-        <div className="mesa-topo-grupo">
-          {vazas.length > 0 && (
-            <span className="tr-vazas" aria-label="Vazas desta mão">
-              {vazas.map((v, k) => (
-                <i key={k} className={`tr-pip ${v.vence === -1 ? "parda" : v.vence === meuTime ? "nos" : "eles"}`} title={v.vence === -1 ? "Parda" : rotulo(v.vence!)} />
-              ))}
-            </span>
+            ))}
+            {h && m.fase === "jogo" && h.truco.valor > 1 ? (
+              <div className="tr-valendo">
+                <small>Valendo</small>
+                <b>{h.truco.valor}</b>
+              </div>
+            ) : null}
+          </div>
+        }
+      />
+      <div className="tr-linha">
+        <span className="mesa-hist">
+          {vazas.length > 0 ? (
+            <>
+              <span>Vazas desta mão:</span>
+              <span className="tr-vazas" aria-label="Vazas desta mão">
+                {vazas.map((v, k) => (
+                  <i key={k} className={`tr-pip ${v.vence === -1 ? "parda" : v.vence === meuTime ? "nos" : "eles"}`} title={v.vence === -1 ? "Parda" : rotulo(v.vence!)} />
+                ))}
+              </span>
+            </>
+          ) : (
+            <span>{m.fase === "jogo" ? "Primeira vaza da mão" : m.fase === "espera" ? "Esperando a turma sentar" : "Partida encerrada"}</span>
           )}
-          {h && m.fase === "jogo" && h.truco.valor > 1 ? <span className="mesa-selo verm">Valendo {h.truco.valor}</span> : null}
-          {valor > 0 ? (
-            <span className="mesa-selo ouro" title={"Cada um pagou " + valor + " moedas; quem ganha leva o bolo"}>
-              Bolo {valor * N}
-            </span>
-          ) : null}
-          {souHost ? (
-            <button className={"btn soft sm" + (fechar.sure ? " sure" : "")} type="button" id="trFechar" onClick={() => fechar.pedir() && fecharMesa()}>
-              {fechar.sure ? "Confirmar: fechar" : "Fechar mesa"}
-            </button>
-          ) : eu >= 0 && m.fase === "espera" ? (
-            <button className="btn soft sm" type="button" id="trLevantar" onClick={levantar}>
-              Levantar
-            </button>
-          ) : null}
-        </div>
+        </span>
+        {souHost ? (
+          <button className={"btn soft sm" + (fechar.sure ? " sure" : "")} type="button" id="trFechar" onClick={() => fechar.pedir() && fecharMesa()}>
+            {fechar.sure ? "Confirmar: fechar" : "Fechar mesa"}
+          </button>
+        ) : eu >= 0 && m.fase === "espera" ? (
+          <button className="btn soft sm" type="button" id="trLevantar" onClick={levantar}>
+            Levantar
+          </button>
+        ) : null}
       </div>
       <Mesa marca="Truco gaudério" className={`tr-mesa-oval n${N}`}>
         {m.lugares.map((_, i) => lugar(i))}
         {centro()}
+        {pergunta ? (
+          <NaMesa x={50} y={47} className="tr-pedido-pc">
+            <div className="tr-pedido" role="alert">
+              <small>{pergunta.quem} pediu</small>
+              <b>{pergunta.oque.toUpperCase()}!</b>
+              <div className="mesa-linha">{pergunta.botoes}</div>
+              {falta !== null && <BarraTempo falta={falta} urgente={falta < 0.3} />}
+            </div>
+          </NaMesa>
+        ) : null}
         {/* a minha mão, grande, na beira da mesa do meu lado */}
         {eu >= 0 && h && m.fase === "jogo" ? (
           <NaMesa x={50} y={86} className="tr-minha">
@@ -277,32 +327,38 @@ export function MesaTela({ m }: { m: MesaPub }) {
         ) : null}
       </Mesa>
       {eu >= 0 && h && m.fase === "jogo" ? (
-        pergunta ?? (
-          <div className="mesa-acoes">
-            {pode ? (
-              <span className="mesa-tempo">
-                <b>{meuSeg ?? "—"}</b>sua vez
-              </span>
-            ) : esperando ? (
-              <span className="mesa-tempo">{esperando}</span>
-            ) : null}
-            {op && !op.quero && op.jogar && op.truco ? (
-              <button className="mesa-bt verm" type="button" onClick={() => trEnviar("truco")}>
-                {TR_TRUCO[op.truco]}!
-              </button>
-            ) : null}
-            {op && !op.quero && op.jogar
-              ? op.envido.map((k) => (
-                  <button key={k} className="mesa-bt" type="button" onClick={() => trEnviar("envido", k)}>
-                    {TR_ENV[k]}
-                  </button>
-                ))
-              : null}
-            {op?.mazo ? (
-              <button className={"mesa-bt" + (mazo.sure ? " sure" : "")} type="button" onClick={() => mazo.pedir() && trEnviar("mazo")}>
-                {mazo.sure ? "Confirmar" : "Ir ao mazo"}
-              </button>
-            ) : null}
+        pergunta ? (
+          <div className="mesa-painel urgente tr-pedido-cel" role="alert">
+            <div className="mesa-linha">
+              <b className="tr-pedido-tit">
+                {pergunta.quem} pediu {pergunta.oque}!
+              </b>
+              {meuSeg !== null || falta !== null ? <span className="mesa-tempo">{Math.ceil(((falta ?? 0) * TR_TEMPO_MS) / 1000)} s</span> : null}
+            </div>
+            <div className="mesa-linha">{pergunta.botoes}</div>
+          </div>
+        ) : (
+          <div className={"mesa-painel" + (pode ? " minha-vez" + ((falta ?? 1) < 0.25 ? " urgente" : "") : "")} key={pode ? "vez" : "espera"}>
+            <div className="mesa-linha">
+              {op && !op.quero && op.jogar && op.truco ? (
+                <button className="mesa-pill verm grande" type="button" onClick={() => trEnviar("truco")}>
+                  {TR_TRUCO[op.truco].toUpperCase()}!
+                </button>
+              ) : null}
+              {op && !op.quero && op.jogar
+                ? op.envido.map((k) => (
+                    <button key={k} className="mesa-pill cinza" type="button" onClick={() => trEnviar("envido", k)}>
+                      {TR_ENV[k].toUpperCase()}
+                    </button>
+                  ))
+                : null}
+              {op?.mazo ? (
+                <button className={"mesa-pill cinza" + (mazo.sure ? " sure" : "")} type="button" onClick={() => mazo.pedir() && trEnviar("mazo")}>
+                  {mazo.sure ? "CONFIRMAR" : "IR AO MAZO"}
+                </button>
+              ) : null}
+            </div>
+            <div className="mesa-linha dica">{pode ? `Sua vez · ${meuSeg ?? "—"} s · toque numa carta para jogar` : (esperando ?? "")}</div>
           </div>
         )
       ) : null}

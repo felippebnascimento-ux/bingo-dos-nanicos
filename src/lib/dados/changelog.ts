@@ -570,6 +570,17 @@ export const CHANGELOG: EntradaLog[] = [
     data: "03/11/2026",
     itens: ["Pôquer: abrir uma mesa funciona (ela fechava sozinha antes de alguém sentar); mesa vazia por 5 minutos fecha sozinha"],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Blackjack, pôquer e truco no jeito dos cassinos online: barra de cima com o que está acontecendo, o tempo, a carteira e quanto você tem na mesa, e o botão ? com as regras",
+      "Blackjack: últimas somas do dealer, círculos de aposta numerados, fichas para montar a aposta (desfazer, repetir, dobrar), botões redondos Pedir, Parar, Dobrar e Dividir e, no celular, a sua mão grande no meio",
+      "Pôquer: a jogada de cada um embaixo do lugar (pagou, aumentou, passou), as últimas mãos da mesa, a força da sua mão com a chance de vencer, atalhos de aposta e as jogadas marcadas antes da sua vez",
+      "Truco: placar com os tentos na barra de cima, o pedido de truco grande no meio da mesa e os botões TRUCO!, ENVIDO e IR AO MAZO",
+      "As cartas saem do baralho voando e viram, as fichas vão e voltam do pote e da banca, e quem ganha acende",
+      "A mesa do blackjack no celular ficou menos comprida",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

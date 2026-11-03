@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { baralhoPk, lerEstadoPk, melhor, nomeDaMao, nomeParcial, opcoesPk, sugestoes, valor5 } from "./pkRegras";
+import { baralhoPk, chanceDeVencer, lerEstadoPk, melhor, nomeDaMao, nomeParcial, opcoesPk, sugestoes, textoAcao, valor5 } from "./pkRegras";
 
 describe("pôquer", () => {
   it("dá a mesma força que o banco (pk_valor5 e pk_melhor, conferidos no Postgres local)", () => {
@@ -52,5 +52,24 @@ describe("pôquer", () => {
     expect(o).toMatchObject({ passar: false, pagar: 10, aumentar: true, min: 40, max: 1000 });
     expect(sugestoes(e!.mao!, o).map((s) => s.valor)).toEqual([40, 50, 60]);
     expect(lerEstadoPk({ agora: "x" })).toBeNull();
+  });
+
+  it("calcula a chance de vencer como as calculadoras de pôquer (perto dos números conhecidos)", () => {
+    /* AA contra uma mão qualquer: ~85%; 72 de naipes diferentes: ~35%; com a quadra feita, ~100% */
+    expect(chanceDeVencer(["As", "Ah"], [], 1, 2000)!).toBeGreaterThan(0.81);
+    expect(chanceDeVencer(["As", "Ah"], [], 1, 2000)!).toBeLessThan(0.89);
+    expect(chanceDeVencer(["7c", "2d"], [], 1, 2000)!).toBeLessThan(0.4);
+    expect(chanceDeVencer(["As", "Ah"], ["Ad", "Ac", "2s"], 3, 300)!).toBeGreaterThan(0.99);
+    /* mais gente na mão, menos chance */
+    expect(chanceDeVencer(["Ks", "Kh"], [], 4, 800)!).toBeLessThan(chanceDeVencer(["Ks", "Kh"], [], 1, 800)!);
+    /* a mesma mão dá o mesmo número (não fica pulando) */
+    expect(chanceDeVencer(["Qs", "Jh"], ["2c", "9d", "Kh"], 2)).toBe(chanceDeVencer(["Qs", "Jh"], ["2c", "9d", "Kh"], 2));
+    expect(chanceDeVencer(["Qs"], [], 2)).toBeNull();
+  });
+
+  it("escreve a jogada de cada um", () => {
+    expect(textoAcao("aumentou", 1200)).toBe("AUMENTOU 1.200");
+    expect(textoAcao("passou", null)).toBe("PASSOU");
+    expect(textoAcao(null, 5)).toBeNull();
   });
 });
