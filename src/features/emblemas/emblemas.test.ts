@@ -28,7 +28,8 @@ describe("emblemas", () => {
 
   it("descreve o nível e o próximo", () => {
     expect(descreverEmblema({ id: "online", nivel: 2, valor: 63 })).toBe("Morador do K-FOFO · prata: 63 h de site aberto (ouro com 200)");
-    expect(descreverEmblema({ id: "elo", nivel: 3, valor: 3 })).toBe("Elo alto · ouro: Diamante ou mais no LoL");
+    expect(descreverEmblema({ id: "elo", nivel: 2, valor: 5 })).toBe("Elo no LoL: Platina");
+    expect(descreverEmblema({ id: "gc", nivel: 2, valor: 14 })).toBe("Nível da GC: GC nível 14");
     expect(descreverEmblema({ id: "bingo", nivel: 3, valor: 51 })).toBe("Bingo! · ouro: 51 bingos");
   });
 

@@ -148,3 +148,5 @@ button.ficha-selo:hover{border-color:var(--accent)}
 .chama-nome svg{fill:color-mix(in srgb,var(--accent) 45%,transparent)}
 .ficha-cs{margin:0;font:600 14px var(--body)}
 .ficha-cs b{margin-right:6px;font:700 12px var(--display);letter-spacing:.06em;color:var(--accent)}
+/* linhas do "No jogo" com o brasão do elo e o círculo da GC na frente (fase 33) */
+.ficha-cs{display:flex;align-items:center;gap:6px;flex-wrap:wrap}

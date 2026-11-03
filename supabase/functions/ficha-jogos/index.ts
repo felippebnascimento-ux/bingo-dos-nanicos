@@ -3,7 +3,7 @@
 // O site chama esta função ao abrir a ficha de um nanico. Ela:
 //   1. confere se quem chamou é um nanico logado;
 //   2. para aquele nanico, busca de novo cada fonte só se o que está guardado tem mais de 6 h;
-//      - LoL: elo e vitórias da ranqueada solo (league-v4) e KDA e main das últimas 20 partidas
+//      - LoL: elo da solo/duo e da flex (league-v4; nos campos de cima, o mais alto) e KDA e main das últimas 20 partidas
 //        (match-v5; só busca as partidas que ainda não foram lidas);
 //      - Steam: horas de CS2 e o total de horas (perfil privado vira privado: true);
 //      - CS (Leetify, API pública sem chave): o Premier atual e o nível da Gamers Club da última partida na GC;
@@ -101,15 +101,35 @@ async function puuidDe(admin: any, fid: string, id: { nome: string; tag: string;
   return puuid;
 }
 
+/* ---------- elo: o mais alto entre a solo/duo e a flex (a mesma conta de eloMaisAlto em src/features/ficha/numeros.ts) ---------- */
+const TIERS = ["IRON", "BRONZE", "SILVER", "GOLD", "PLATINUM", "EMERALD", "DIAMOND", "MASTER", "GRANDMASTER", "CHALLENGER"];
+const DIVISOES = ["IV", "III", "II", "I"];
+type Fila = { tier: string; rank: string; lp: number; vitorias: number; derrotas: number };
+const pesoElo = (e: Fila) => TIERS.indexOf(e.tier) * 10000 + Math.max(0, DIVISOES.indexOf(e.rank)) * 1000 + Math.min(999, e.lp);
+/** No empate, a solo. */
+function maisAlto(solo: Fila | null, flex: Fila | null): Fila | null {
+  if (!solo) return flex;
+  if (!flex) return solo;
+  return pesoElo(flex) > pesoElo(solo) ? flex : solo;
+}
+
 async function buscarLol(admin: any, fid: string, opgg: string) {
   const id = lerOpgg(opgg);
   if (!id) throw new Error("O link do op.gg não tem o nome e a região da conta.");
   const puuid = await puuidDe(admin, fid, id);
 
-  // elo e vitórias da ranqueada solo
+  // elo da solo/duo e da flex; vale o mais alto (os campos de cima), e as duas ficam em solo e flex
   const liga = await riot(`https://${id.plataforma}.api.riotgames.com/lol/league/v4/entries/by-puuid/${encodeURIComponent(puuid)}`);
   if (liga.status === 401 || liga.status === 403) throw new Error("A chave da Riot está errada ou venceu.");
-  const solo = Array.isArray(liga.body) ? liga.body.find((e: any) => e?.queueType === "RANKED_SOLO_5x5") : null;
+  const fila = (q: string) => {
+    const e = Array.isArray(liga.body) ? liga.body.find((x: any) => x?.queueType === q) : null;
+    return e && TIERS.includes(String(e.tier))
+      ? { tier: String(e.tier), rank: String(e.rank ?? ""), lp: Number(e.leaguePoints) || 0, vitorias: Number(e.wins) || 0, derrotas: Number(e.losses) || 0 }
+      : null;
+  };
+  const solo = fila("RANKED_SOLO_5x5");
+  const flex = fila("RANKED_FLEX_SR");
+  const top = maisAlto(solo, flex);
 
   // últimas 20 partidas: só busca as que ainda não foram lidas
   const regiao = REGIAO[id.plataforma] ?? "americas";
@@ -145,11 +165,14 @@ async function buscarLol(admin: any, fid: string, opgg: string) {
   for (const p of partidas) if (p.campeao) conta.set(p.campeao, (conta.get(p.campeao) ?? 0) + 1);
   const main = [...conta.entries()].sort((x, y) => y[1] - x[1])[0]?.[0] ?? null;
   return {
-    tier: solo ? String(solo.tier) : null,
-    rank: solo ? String(solo.rank) : null,
-    lp: solo ? Number(solo.leaguePoints) || 0 : null,
-    vitorias: solo ? Number(solo.wins) || 0 : 0,
-    derrotas: solo ? Number(solo.losses) || 0 : 0,
+    tier: top ? top.tier : null,
+    rank: top ? top.rank : null,
+    lp: top ? top.lp : null,
+    fila: top ? (top === solo ? "solo" : "flex") : null,
+    solo,
+    flex,
+    vitorias: top ? top.vitorias : 0,
+    derrotas: top ? top.derrotas : 0,
     kda: partidas.length ? Math.round(((k + a) / Math.max(1, d)) * 100) / 100 : null,
     main,
     partidas: partidas.length,

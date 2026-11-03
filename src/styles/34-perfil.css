@@ -40,3 +40,22 @@
 .emblema.em-ouro .em-simbolo{stroke:var(--emblema-ouro)}
 /* emblemas na ficha */
 .ficha-emblemas .perfil-emblemas{gap:8px}
+
+/* nível da GC (fase 33): círculo com as cores de cima e de baixo de cada nível, tiradas do print do João (desenho nosso).
+   São cores próprias da Gamers Club, iguais nos dois temas (exceção --gc-*, como a roleta do Cassino). */
+.gc-nivel{
+  --gc-1-a:#9E1DC8; --gc-1-b:#7B16B5; --gc-2-a:#6B1BC8; --gc-2-b:#5314B6; --gc-3-a:#5618AF; --gc-3-b:#3E1088; --gc-4-a:#43118B; --gc-4-b:#300B66;
+  --gc-5-a:#300D67; --gc-5-b:#23084A; --gc-6-a:#0A2A6B; --gc-6-b:#091D53; --gc-7-a:#0D40A1; --gc-7-b:#0D327F; --gc-8-a:#0D52C1; --gc-8-b:#0C3AA8;
+  --gc-9-a:#3375D5; --gc-9-b:#2B5BC6; --gc-10-a:#3B78E5; --gc-10-b:#245DD6; --gc-11-a:#3A9AC8; --gc-11-b:#2F6EA1; --gc-12-a:#4EB89A; --gc-12-b:#338B66;
+  --gc-13-a:#36AB4B; --gc-13-b:#278436; --gc-14-a:#35BB28; --gc-14-b:#298C22; --gc-15-a:#2ADE19; --gc-15-b:#1ACB0D; --gc-16-a:#D1CA1D; --gc-16-b:#C5B923;
+  --gc-17-a:#DEB332; --gc-17-b:#DD9F1C; --gc-18-a:#DE8A14; --gc-18-b:#F46E17; --gc-19-a:#E86D1A; --gc-19-b:#F55516; --gc-20-a:#E8261B; --gc-20-b:#A30107;
+  --gc-borda:#0B0F1A; --gc-brilho:#FF3B2F; --gc-texto:#FFFFFF;
+  display:inline-grid;place-items:center;flex:none}
+.gc-nivel svg{display:block}
+.gc-nivel .gc-aro{stroke:var(--gc-borda)}
+.gc-nivel .gc-vinte{fill:none;stroke:var(--gc-brilho);opacity:.7}
+.gc-nivel .gc-luz{fill:var(--gc-texto);opacity:.18}
+.gc-nivel text{fill:var(--gc-texto);stroke:var(--gc-borda);stroke-width:1;font:800 24px var(--display)}
+.gc-nivel text.dois{font-size:20px}
+/* brasão oficial do elo (imagem do Community Dragon, 1280×720 com o brasão no meio): recorte por CSS */
+.brasao-elo{display:inline-block;flex:none;background:center 46% / 380% auto no-repeat}

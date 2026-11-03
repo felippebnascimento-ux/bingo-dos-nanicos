@@ -4374,6 +4374,62 @@ begin
   end loop;
 end $$;
 
+-- 41) emblemas de elo e da GC (fase 33, 03/11/2026) -----------------------------------------------------------------------
+--     Substitui a emblemas_de da seção 37 (já com eh_membro da 39 e sem as devoluções do truco da 40):
+--     elo: aparece com qualquer tier; o valor é o tier (1 = Ferro … 10 = Desafiante), o desenho é o brasão oficial e o
+--          nível só ordena (Ferro a Prata = 1, Ouro a Esmeralda = 2, Diamante para cima = 3). O tier é o mais alto entre
+--          a solo/duo e a flex, que a ficha-jogos já guarda nos campos de cima de jogos_stats.
+--     gc:  o nível da Gamers Club (jogos_stats fonte 'cs', dados->>'gc'); nível 1 de 1 a 7, 2 de 8 a 14, 3 de 15 a 20.
+create or replace function public.emblemas_de(p_para uuid) returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  v_uid  uuid;
+  v_out  jsonb := '[]'::jsonb;
+  r      record;
+  v_tier text;
+  v_gc   text;
+begin
+  if not public.eh_membro() then raise exception 'Só nanicos veem os emblemas.' using errcode = 'P0001'; end if;
+  select user_id into v_uid from public.friends where id = p_para;
+  select upper(coalesce(dados->>'tier', '')) into v_tier from public.jogos_stats where friend_id = p_para and fonte = 'lol';
+  select dados->>'gc' into v_gc from public.jogos_stats where friend_id = p_para and fonte = 'cs';
+  for r in
+    select * from (values
+      ('online',     (select coalesce(sum(minutos), 0) / 60 from public.online_diario where user_id = v_uid), 10, 50, 200),
+      ('sequencia',  (select coalesce(max(seq), 0) from public.bonus_diario where user_id = v_uid), 7, 30, 100),
+      ('tela',       (select coalesce(sum(tela_min), 0) / 60 from public.online_diario where user_id = v_uid), 1, 10, 50),
+      ('coroa',      (select coalesce(sum(chapeu_min), 0) / 60 from public.online_diario where user_id = v_uid), 1, 24, 100),
+      ('respeito',   (select count(*)::int from public.respeitos where para = p_para), 10, 50, 200),
+      ('elo',        coalesce(array_position(array['IRON', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'EMERALD', 'DIAMOND', 'MASTER', 'GRANDMASTER', 'CHALLENGER'], v_tier), 0), 1, 4, 7),
+      ('cs',         (select coalesce((dados->>'cs2_horas')::int, 0) from public.jogos_stats where friend_id = p_para and fonte = 'steam'), 100, 500, 1000),
+      ('trofeu',     (select count(*)::int from public.trofeus_semana where friend_id = p_para and posicao = 1 and trofeu <> 'feeder'), 1, 5, 20),
+      ('truco',      (select count(*)::int from public.extrato where user_id = v_uid and motivo = 'truco' and valor > 0 and coalesce(ref, '') not like '%:devolvida'), 5, 25, 100),
+      ('bingo',      (select count(*)::int from public.bingo_premios where user_id = v_uid and linhas > 0), 1, 10, 50),
+      ('cassino',    (select count(*)::int from public.cassino_apostas where user_id = v_uid), 50, 500, 2000),
+      ('cronista',   (select count(*)::int from public.phrases where created_by = v_uid), 5, 25, 100),
+      ('missao',     (select count(*)::int from public.missoes_dia where user_id = v_uid and feita_em is not null), 10, 50, 200),
+      ('perfeito',   (select count(*)::int from public.extrato where user_id = v_uid and motivo = 'missao' and ref like '%:bonus'), 3, 15, 60),
+      ('mao',        (select count(*)::int from public.cassino_apostas where user_id = v_uid and pagou > 0), 25, 250, 1000),
+      ('tubarao',    (select coalesce(max(pagou), 0) from public.cassino_apostas where user_id = v_uid), 500, 2500, 10000),
+      ('aviao',      (select count(*)::int from public.cassino_apostas where user_id = v_uid and jogo = 'aviao' and pagou > 0), 10, 100, 500),
+      ('artilheiro', (select coalesce(sum(gols), 0)::int from public.penalti_jogos where user_id = v_uid), 20, 150, 600),
+      ('coruja',     (select coalesce(sum(happy_min), 0) / 60 from public.online_diario where user_id = v_uid), 1, 10, 50),
+      ('churrasco',  (select count(*)::int from public.extrato where user_id = v_uid and motivo = 'churrasco'), 1, 5, 20),
+      ('fenix',      (select count(*)::int from public.extrato where user_id = v_uid and motivo = 'bolsa'), 1, 5, 15),
+      ('colecao',    (select count(*)::int from public.mochila where user_id = v_uid), 5, 12, 20),
+      ('gc',         case when v_gc ~ '^[0-9]{1,2}$' and v_gc::int between 1 and 20 then v_gc::int else 0 end, 1, 8, 15)
+    ) as e(id, valor, n1, n2, n3)
+  loop
+    if coalesce(r.valor, 0) >= r.n1 then
+      v_out := v_out || jsonb_build_object('id', r.id, 'valor', r.valor,
+                                           'nivel', case when r.valor >= r.n3 then 3 when r.valor >= r.n2 then 2 else 1 end);
+    end if;
+  end loop;
+  return v_out;
+end $$;
+revoke all on function public.emblemas_de(uuid) from public, anon;
+grant execute on function public.emblemas_de(uuid) to authenticated;
+
 -- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')

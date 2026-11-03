@@ -4,6 +4,8 @@
    uma dica com o nome, o nível e quanto falta para o próximo; ela vai para o body para não sair cortada. */
 import { useState } from "react";
 import { createPortal } from "react-dom";
+import { TIERS } from "@/features/ficha/numeros";
+import { BrasaoElo, NivelGc } from "./brasao";
 import { descreverEmblema, EMBLEMAS, NIVEL, progressoEmblema, type Emblema as TEmblema, type IdEmblema } from "./emblemas";
 
 const SIMBOLO: Record<IdEmblema, React.ReactNode> = {
@@ -29,13 +31,18 @@ const SIMBOLO: Record<IdEmblema, React.ReactNode> = {
   churrasco: <path d="M6.8 17.2 17.2 6.8M8.8 12.6l2.6 2.6M10.9 10.5l2.6 2.6M13 8.4l2.6 2.6" />,
   fenix: <path d="M12 17.2V8M8.6 11.4 12 8l3.4 3.4M7 13.5c1.3 0 2.2-.7 2.7-1.8M17 13.5c-1.3 0-2.2-.7-2.7-1.8" />,
   colecao: <path d="M10 8.3V8a2 2 0 0 1 4 0v.3M7.6 10a1.6 1.6 0 0 1 1.6-1.7h5.6a1.6 1.6 0 0 1 1.6 1.7v7H7.6zM10 12.5h4" />,
+  /* a GC é desenhada pelo NivelGc; o símbolo fica só como reserva */
+  gc: <path d="M8 12a4 4 0 1 0 8 0 4 4 0 0 0-8 0z" />,
 };
 
 /** Largura da dica (igual à do CSS), para não sair da tela. */
 const DICA_L = 230;
 
-export function Emblema({ e, tam = 36 }: { e: TEmblema; tam?: number }) {
-  const titulo = descreverEmblema(e);
+/** `detalhe`: o texto da dica no lugar do padrão (o elo com divisão e fila, "Platina IV na flex"). */
+export function Emblema({ e, tam = 36, detalhe }: { e: TEmblema; tam?: number; detalhe?: string }) {
+  const titulo = detalhe ? `${EMBLEMAS[e.id].nome}: ${detalhe}` : descreverEmblema(e);
+  /* elo e GC são desenhados com o brasão oficial e o círculo da GC, no lugar da medalha */
+  const imagem = e.id === "elo" || e.id === "gc";
   const [dica, setDica] = useState<{ x: number; y: number; acima: boolean } | null>(null);
   const mostrar = (el: HTMLElement) => {
     const r = el.getBoundingClientRect();
@@ -46,7 +53,7 @@ export function Emblema({ e, tam = 36 }: { e: TEmblema; tam?: number }) {
   const esconder = () => setDica(null);
   return (
     <span
-      className={"emblema em-" + NIVEL[e.nivel]}
+      className={"emblema " + (imagem ? "em-imagem" : "em-" + NIVEL[e.nivel])}
       role="img"
       aria-label={titulo}
       tabIndex={0}
@@ -55,24 +62,30 @@ export function Emblema({ e, tam = 36 }: { e: TEmblema; tam?: number }) {
       onFocus={(ev) => mostrar(ev.currentTarget)}
       onBlur={esconder}
     >
-      <svg viewBox="0 0 24 24" width={tam} height={tam} aria-hidden="true">
-        <circle cx="12" cy="12" r="11" className="em-aro" />
-        <circle cx="12" cy="12" r="8.6" className="em-fundo" />
-        <g className="em-simbolo">{SIMBOLO[e.id]}</g>
-      </svg>
-      {dica && createPortal(<DicaEmblema e={e} {...dica} />, document.body)}
+      {e.id === "elo" ? (
+        <BrasaoElo tier={TIERS[e.valor - 1]} tam={tam} />
+      ) : e.id === "gc" ? (
+        <NivelGc n={e.valor} tam={tam} />
+      ) : (
+        <svg viewBox="0 0 24 24" width={tam} height={tam} aria-hidden="true">
+          <circle cx="12" cy="12" r="11" className="em-aro" />
+          <circle cx="12" cy="12" r="8.6" className="em-fundo" />
+          <g className="em-simbolo">{SIMBOLO[e.id]}</g>
+        </svg>
+      )}
+      {dica && createPortal(<DicaEmblema e={e} detalhe={detalhe} {...dica} />, document.body)}
     </span>
   );
 }
 
-function DicaEmblema({ e, x, y, acima }: { e: TEmblema; x: number; y: number; acima: boolean }) {
+function DicaEmblema({ e, x, y, acima, detalhe }: { e: TEmblema; x: number; y: number; acima: boolean; detalhe?: string }) {
   const d = EMBLEMAS[e.id];
   const p = progressoEmblema(e);
   return (
     <span className={"em-dica" + (acima ? " acima" : "")} style={{ left: x, top: y }} aria-hidden="true">
       <b>{d.nome}</b>
-      <span className={"em-dica-nivel em-" + NIVEL[e.nivel]}>{NIVEL[e.nivel]}</span>
-      <span className="em-dica-tx">{d.texto(e.valor)}</span>
+      {e.id !== "elo" && e.id !== "gc" && <span className={"em-dica-nivel em-" + NIVEL[e.nivel]}>{NIVEL[e.nivel]}</span>}
+      <span className="em-dica-tx">{detalhe ?? d.texto(e.valor)}</span>
       {p ? (
         <>
           <span className="missao-barra">
