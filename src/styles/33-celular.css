@@ -8,7 +8,8 @@
 
 /* o iPhone 17 Pro Max: moldura de titânio, botões laterais, tela com a Dynamic Island, barra de status e o indicador
    de início. Ilustração com cores próprias (--iph-* e, no app, --ig-* do modo escuro do Instagram), como o hall. */
-.celular-fundo{position:fixed;inset:0;z-index:1900;display:grid;place-items:center;padding:16px;background:color-mix(in srgb,var(--ink) 62%,transparent);backdrop-filter:blur(6px)}
+/* fundo escuro e desfocado em volta (o --ink fica claro no tema escuro, por isso não serve aqui) */
+.celular-fundo{position:fixed;inset:0;z-index:1900;display:grid;place-items:center;padding:16px;background:rgb(0 0 0 / .78);backdrop-filter:blur(10px) saturate(.8)}
 .celular-fundo.anima .iphone{animation:iph-entra .45s cubic-bezier(.2,.9,.25,1.05) both}
 @keyframes iph-entra{from{transform:translateY(40px) scale(.94);opacity:0}}
 .iphone{
@@ -16,14 +17,14 @@
   --ig-bg:#000000; --ig-txt:#F5F5F5; --ig-cinza:#A8A8A8; --ig-linha:#262626; --ig-visto:#5B5B5B; --ig-campo:#262626; --ig-cartao:#1C1C1E; --ig-azul:#0095F6; --ig-vermelho:#FF3040;
   --ig-a1:#FEDA75; --ig-a2:#FA7E1E; --ig-a3:#D62976; --ig-a4:#962FBF; --ig-a5:#4F5BD5;
   --ig-roxo:#7B2FF7; --ig-laranja:#FF6A2B; --ig-verde:#13A85F; --ig-azul2:#1F6BFF; --ig-preto:#111111;
-  position:relative;height:min(880px,calc(100vh - 32px));aspect-ratio:440 / 956;border-radius:16% / 7.4%;padding:1.6%;
+  position:relative;height:min(860px,calc(100vh - 40px));aspect-ratio:440 / 956;border-radius:15.5% / 7.2%;padding:4px;
   background:linear-gradient(135deg,var(--iph-titanio2) 0%,var(--iph-titanio0) 18%,var(--iph-titanio1) 50%,var(--iph-titanio0) 82%,var(--iph-titanio2) 100%);
   box-shadow:inset 0 0 0 1px rgb(255 255 255 / .18),inset 0 0 0 3px rgb(0 0 0 / .5),0 30px 80px rgb(0 0 0 / .6),0 0 0 1px rgb(0 0 0 / .6)}
 /* botões laterais: ação, volume, liga/desliga e o controle da câmera */
 .iph-botao{position:absolute;width:3px;border-radius:2px;background:linear-gradient(90deg,var(--iph-titanio1),var(--iph-titanio2))}
 .iph-botao.acao{left:-3px;top:17%;height:4%}.iph-botao.vol1{left:-3px;top:24%;height:7%}.iph-botao.vol2{left:-3px;top:33%;height:7%}
 .iph-botao.power{right:-3px;top:26%;height:11%}.iph-botao.camera{right:-2px;top:58%;height:7%;width:2px;opacity:.8}
-.iph-tela{position:relative;height:100%;display:flex;flex-direction:column;border-radius:14.4% / 6.6%;overflow:hidden;background:var(--iph-tela);box-shadow:0 0 0 4px var(--iph-moldura);color:var(--ig-txt)}
+.iph-tela{position:relative;height:100%;display:flex;flex-direction:column;border-radius:14.6% / 6.8%;overflow:hidden;background:var(--iph-tela);border:5px solid var(--iph-moldura);color:var(--ig-txt)}
 /* barra de status com a ilha no meio */
 .iph-status{position:relative;flex:none;height:54px;display:flex;align-items:center;justify-content:space-between;padding:6px 26px 0 34px;font:600 15px/1 var(--body);color:var(--ig-txt);z-index:5}
 .iph-hora{font-variant-numeric:tabular-nums;letter-spacing:.01em}
@@ -82,7 +83,8 @@
 .ig-menu button{padding:13px 16px;border:0;border-top:1px solid var(--ig-linha);background:none;color:var(--ig-txt);font:500 14px var(--body);text-align:center;cursor:pointer}
 .ig-menu button:first-child{border-top:0}
 .ig-midia{position:relative;background:var(--ig-cartao);user-select:none}
-.ig-midia .midia-img{border-radius:0;aspect-ratio:1;min-height:0}
+/* foto no formato do feed do Instagram: 4:5 (em pé), que é como sai a foto do celular; corta só as pontas */
+.ig-midia .midia-img{border-radius:0;aspect-ratio:4 / 5;min-height:0}
 .ig-midia .midia-img img{width:100%;height:100%;object-fit:cover}
 .ig-post-texto{display:grid;place-items:center;aspect-ratio:1;padding:28px;text-align:center;font:700 22px/1.25 var(--body);white-space:pre-wrap;overflow-wrap:anywhere;
   background:linear-gradient(135deg,var(--ig-a4),var(--ig-a3) 55%,var(--ig-a2))}
@@ -185,7 +187,7 @@
   .celular-fundo{padding:0}
   .iphone{height:100%;width:100%;aspect-ratio:auto;border-radius:0;padding:0;background:var(--iph-tela);box-shadow:none}
   .iph-botao{display:none}
-  .iph-tela{border-radius:0;box-shadow:none}
+  .iph-tela{border-radius:0;border:0}
   .iph-ilha{display:none}
   .iph-status{display:none}
 }

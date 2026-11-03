@@ -327,6 +327,10 @@ export const CHANGELOG: EntradaLog[] = [
       "InstaNanico no lugar da rede nanica: igual ao Instagram, com stories de 24 h (foto ou texto colorido, com quem viu), feed com curtir em dois toques, comentários, explorar, notificações, perfil com grade e postagem só com foto",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: ["Celular mais bonito: fundo escuro e desfocado em volta (no tema escuro ficava um quadro cinza enorme), a moldura do iPhone mais fina e as fotos do feed em pé (4:5), como no Instagram"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
