@@ -22,22 +22,12 @@ function Retrato({ campeao }: { campeao: string }) {
   );
 }
 
-const jogadores = [
-  { nome: "Jogador A", selos: [
-    { campeao: "Yasuo", motivo: "Ultou sozinho no meio de cinco.", chaves: 3 },
-    { campeao: "Teemo", motivo: "Esqueceu de defender a base enquanto plantava cogumelos.", chaves: 2 },
-  ] },
-  { nome: "Jogador B", selos: [
-    { campeao: "Jinx", motivo: "Gastou o foguete tentando roubar um dragão que já tinha caído.", chaves: 1 },
-  ] },
-];
-
 export function CampeoesSelados({ dialogRef, friends }: { dialogRef: Ref<HTMLDialogElement>; friends: readonly Friend[] }) {
   const [filtro, setFiltro] = useState("");
   const [registrando, setRegistrando] = useState(false);
   const [campeaoEscolhido, setCampeaoEscolhido] = useState("");
   const [erro, setErro] = useState("");
-  type Registro = (typeof jogadores)[number]["selos"][number] & { jogador: string };
+  type Registro = { jogador: string; campeao: string; motivo: string; chaves: number };
   const chave = "nanicos:selos:preview";
   const [registros, setRegistros] = useState<Registro[]>(() => {
     try { return JSON.parse(localStorage.getItem(chave) ?? "[]"); }
@@ -119,24 +109,6 @@ export function CampeoesSelados({ dialogRef, friends }: { dialogRef: Ref<HTMLDia
               </article>
             ))}</div>
             : <p>Nenhum campeão selado cadastrado.</p>}
-        </section>
-      ))}
-      {!selecionado && <h3 className={styles.jogador}>Exemplos de cartas</h3>}
-      {!selecionado && jogadores.map(({ nome, selos }) => (
-        <section key={nome} className={styles.jogador} aria-label={nome}>
-          <h3>{nome}</h3>
-          <div className={styles.cartas}>
-            {selos.map(({ campeao, motivo, chaves }) => (
-              <article key={campeao} className={styles.carta}>
-                <Retrato campeao={campeao} />
-                <div className={styles.detalhes}>
-                  <h4>{campeao}</h4>
-                  <p>{motivo}</p>
-                  <span className={styles.chaves}><span aria-hidden="true">⚿</span> {chaves} {chaves === 1 ? "chave" : "chaves"}</span>
-                </div>
-              </article>
-            ))}
-          </div>
         </section>
       ))}
     </dialog>
