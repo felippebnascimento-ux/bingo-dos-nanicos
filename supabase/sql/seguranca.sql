@@ -1186,9 +1186,11 @@ grant execute on function public.rodizio_desistir(text) to authenticated;
 -- 20) zoeira: chinelada e torta na cara no Sítio ------------------------------------------------
 --     É paga (5 e 25 moedas, que somem da economia), então passa pelo banco e chega a todos pelo
 --     tempo real da tabela, nunca por broadcast. O alvo não perde nada.
+-- a lista de motivos aparece em todas as vezes que a regra é recriada: motivo novo entra em TODAS (senão rodar o arquivo
+-- inteiro de novo falha nas linhas que já existem com o motivo novo)
 alter table public.extrato drop constraint if exists extrato_motivo_check;
 alter table public.extrato add constraint extrato_motivo_check
-  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco', 'missao', 'bolsa'));
+  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco', 'missao', 'bolsa', 'duelo'));
 
 create table if not exists public.zoeiras (
   id   bigint generated always as identity primary key,
@@ -1274,7 +1276,7 @@ grant execute on function public.placar_zoeira(uuid) to authenticated;
 --     (semana_vez) e o pagamento acontece uma vez só (trofeus_pagar confere o extrato).
 alter table public.extrato drop constraint if exists extrato_motivo_check;
 alter table public.extrato add constraint extrato_motivo_check
-  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco', 'missao', 'bolsa'));
+  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco', 'missao', 'bolsa', 'duelo'));
 
 create table if not exists public.trofeus_semana (
   semana    date not null,
@@ -3843,7 +3845,7 @@ end $$;
 --     (saldo de agora e o extrato do dia). O ref é a data, então chamar de novo no mesmo dia não paga.
 alter table public.extrato drop constraint if exists extrato_motivo_check;
 alter table public.extrato add constraint extrato_motivo_check
-  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco', 'missao', 'bolsa'));
+  check (motivo in ('inicio', 'diario', 'sequencia', 'online', 'cassino', 'bingo', 'truco', 'aposta', 'loja', 'admin', 'zoeira', 'trofeu', 'churrasco', 'missao', 'bolsa', 'duelo'));
 
 -- a bolsa de 03/11/2026 do Abreutz foi paga à mão como 'admin' antes desta seção; vira 'bolsa' para contar como do dia
 update public.extrato set motivo = 'bolsa', ref = '2026-11-03' where motivo = 'admin' and ref = 'bolsa:2026-11-03';
