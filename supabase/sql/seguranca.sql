@@ -1483,6 +1483,12 @@ insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem)
   ('energetico',     'Energético',              'Dá a tremedeira de quem vai jogar a noite toda.',            'consumivel', 30,   '{"anim":"tremer","cor":"lata2"}', 13),
   ('caipirinha',     'Caipirinha',              'Bebe e fica meio tonto por uns segundos.',                   'consumivel', 40,   '{"anim":"tonto","cor":"copo"}', 14),
   ('charuto',        'Charuto do patrão',       'Fumaça grossa de quem está rico.',                           'consumivel', 60,   '{"anim":"charuto"}', 15),
+  -- 03/11/2026 (loja nova): comidas e bebidas novas, com as animações que já existem
+  ('cafe',           'Cafezinho',               'Passado na hora, para aguentar a madrugada.',                'consumivel', 15,   '{"anim":"beber","cor":"xicara"}', 16),
+  ('pipoca',         'Pipoca',                  'Para assistir à live de alguém.',                            'consumivel', 20,   '{"anim":"beber","cor":"pipoca"}', 17),
+  ('pizza',          'Fatia de pizza',          'Calabresa, a da madrugada depois da ranked.',                'consumivel', 35,   '{"anim":"beber","cor":"pizza"}', 18),
+  ('whisky',         'Whisky 12 anos',          'Um gole de quem ganhou no cassino. Deixa tonto.',            'consumivel', 90,   '{"anim":"tonto","cor":"whisky"}', 19),
+  ('champanhe',      'Champanhe',               'Para comemorar a vitória. Deixa bem tonto.',                 'consumivel', 150,  '{"anim":"tonto","cor":"champanhe"}', 19),
   ('escudo',         'Escudo de sequência',     'Salva um dia perdido da sequência. É gasto sozinho.',        'escudo',     400,  '{}', 20),
   ('planta-samambaia','Samambaia',              'A planta da vó, no canto do quarto.',                        'planta',     150,  '{"cor":"verde"}', 30),
   ('planta-cacto',   'Cacto',                   'Pouca água, igual a quem joga de suporte.',                  'planta',     180,  '{"cor":"cacto"}', 31),

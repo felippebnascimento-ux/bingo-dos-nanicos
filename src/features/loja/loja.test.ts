@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { balanco, doGrupo, equipados, equipavel, lerItem, podeComprar, progressoCompra, restanteEfeito, textoConsumo, type ItemLoja } from "./loja";
+import { balanco, doGrupo, equipados, equipavel, lerItem, podeComprar, progressoCompra, raridade, restanteEfeito, textoConsumo, type ItemLoja } from "./loja";
 
 const it_ = (id: string, espaco: ItemLoja["espaco"], preco: number, ordem = 0): ItemLoja => ({ id, nome: id, descricao: "", espaco, preco, dados: {}, ordem });
 const ITENS = [it_("cadeira-trono", "cadeira", 1500, 2), it_("cadeira-gamer", "cadeira", 600, 1), it_("cigarro", "consumivel", 15), it_("escudo", "escudo", 400), it_("titulo-tilt", "titulo", 300)];
@@ -62,5 +62,15 @@ describe("loja", () => {
     expect(progressoCompra(3000, 1284)).toEqual({ parte: 0.428, falta: 1716 });
     expect(progressoCompra(3000, 5000)).toEqual({ parte: 1, falta: 0 });
     expect(progressoCompra(3000, null).falta).toBe(3000);
+  });
+
+  it("dá a raridade pelo preço", () => {
+    expect([15, 99, 100, 499, 500, 1499, 1500, 3000].map(raridade)).toEqual(["comum", "comum", "rara", "rara", "epica", "epica", "lendaria", "lendaria"]);
+  });
+
+  it("escreve o aviso das comidas e do champanhe", () => {
+    expect(textoConsumo("Pin", { id: "pipoca", nome: "Pipoca" })).toBe("Pin comeu uma pipoca");
+    expect(textoConsumo("Max", { id: "champanhe", nome: "Champanhe" })).toBe("Max estourou um champanhe");
+    expect(textoConsumo("DD", { id: "cafe", nome: "Cafezinho" })).toBe("DD tomou um cafezinho");
   });
 });

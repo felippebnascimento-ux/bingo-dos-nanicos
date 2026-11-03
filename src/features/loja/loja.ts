@@ -7,14 +7,19 @@ export type Anim = "fumar" | "charuto" | "beber" | "tremer" | "tonto";
 export type ItemLoja = { id: string; nome: string; descricao: string; espaco: Espaco; preco: number; dados: { cor?: string; texto?: string; anim?: Anim }; ordem: number };
 export type LinhaMochila = { userId: string; itemId: string; qtd: number; equipado: boolean };
 
-/** Os grupos da vitrine, na ordem em que aparecem. */
-export const GRUPOS: readonly { id: string; nome: string; espacos: readonly Espaco[] }[] = [
-  { id: "celular", nome: "A meta grande", espacos: ["celular"] },
-  { id: "consumivel", nome: "Para usar no K-FOFO", espacos: ["consumivel"] },
-  { id: "quarto", nome: "Para o quarto", espacos: ["cadeira", "mesa", "tapete", "poster", "planta", "parede", "luz"] },
-  { id: "visual", nome: "Títulos e molduras", espacos: ["titulo", "moldura"] },
-  { id: "escudo", nome: "Proteção", espacos: ["escudo"] },
+/** Os grupos da vitrine, na ordem em que aparecem (`curto` é o filtro no topo). */
+export const GRUPOS: readonly { id: string; nome: string; curto: string; espacos: readonly Espaco[] }[] = [
+  { id: "celular", nome: "A meta grande", curto: "Celular", espacos: ["celular"] },
+  { id: "consumivel", nome: "Para usar no K-FOFO", curto: "Consumíveis", espacos: ["consumivel"] },
+  { id: "quarto", nome: "Para o quarto", curto: "Quarto", espacos: ["cadeira", "mesa", "tapete", "poster", "planta", "parede", "luz"] },
+  { id: "visual", nome: "Títulos e molduras", curto: "Visual", espacos: ["titulo", "moldura"] },
+  { id: "escudo", nome: "Proteção", curto: "Proteção", espacos: ["escudo"] },
 ];
+
+/** Raridade pelo preço (só aparência; o banco não sabe dela): até 99 comum, até 499 rara, até 1.499 épica, depois lendária. */
+export type Raridade = "comum" | "rara" | "epica" | "lendaria";
+export const raridade = (preco: number): Raridade => (preco >= 1500 ? "lendaria" : preco >= 500 ? "epica" : preco >= 100 ? "rara" : "comum");
+export const NOME_RARIDADE: Readonly<Record<Raridade, string>> = { comum: "Comum", rara: "Rara", epica: "Épica", lendaria: "Lendária" };
 
 export const NOME_ESPACO: Readonly<Record<Espaco, string>> = {
   cadeira: "Cadeira",
@@ -123,5 +128,7 @@ export function textoConsumo(nome: string, it: Pick<ItemLoja, "id" | "nome">) {
   const n = it.nome.toLowerCase();
   if (it.id === "cigarro" || it.id === "charuto") return `${nome} acendeu um ${n}`;
   if (it.id === "chimarrao") return `${nome} tomou um chimarrão`;
+  if (it.id === "pipoca" || it.id === "pizza") return `${nome} comeu uma ${n}`;
+  if (it.id === "champanhe") return `${nome} estourou um champanhe`;
   return `${nome} tomou um${it.id === "cerveja" || it.id === "caipirinha" ? "a" : ""} ${n}`;
 }

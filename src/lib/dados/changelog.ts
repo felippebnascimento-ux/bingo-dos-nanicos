@@ -443,6 +443,13 @@ export const CHANGELOG: EntradaLog[] = [
       "10 emblemas novos: Missionário (missões feitas), Dia perfeito (as 3 missões no dia), Mão quente (apostas ganhas), Tubarão (maior prêmio numa aposta), Pé no chão (voos sacados), Artilheiro (gols no Pênalti), Coruja (happy hour), Churrasqueiro (espetinhos), Fênix (Bolsas Cassino) e Colecionador (itens na mochila)",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Loja nova: filtros no topo, cada item com a raridade (comum, rara, épica ou lendária) e uma janela com o item grande ao tocar nele",
+      "Cinco itens novos para usar no K-FOFO: cafezinho, pipoca, fatia de pizza, whisky 12 anos e champanhe",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

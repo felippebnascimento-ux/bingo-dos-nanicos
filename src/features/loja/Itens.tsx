@@ -1,7 +1,8 @@
 "use client";
 /*
  * Desenhos dos itens da loja (SVG, sem imagens): o cigarrinho, o charuto, as latinhas, a cuia do chimarrão,
- * o copo da caipirinha e o escudo. Os mesmos desenhos aparecem na vitrine e na mão do boneco no Sítio.
+ * o copo da caipirinha, o cafezinho, a pipoca, a pizza, o whisky, o champanhe e o escudo. Os mesmos desenhos
+ * aparecem na vitrine e na mão do boneco no Sítio.
  * As cores são as variáveis --loja-* do 30-loja.css (com tema escuro).
  */
 import type { Boneco } from "@/features/hall/bonecos";
@@ -56,6 +57,51 @@ export function DesenhoItem({ id }: { id: string }) {
           <circle cx="9" cy="24" r="3" className="l-limao" />
           <circle cx="14" cy="19" r="2.4" className="l-limao" />
           <rect x="13" y="0" width="2" height="16" className="l-canudo" transform="rotate(14 14 8)" />
+        </svg>
+      );
+    case "cafe":
+      return (
+        <svg viewBox="0 0 26 30" aria-hidden="true">
+          <path d="M3 10 L19 10 L17 27 Q11 29 5 27 Z" className="l-xicara" />
+          <path d="M19 13 Q25 13 24 18 Q23 22 18 21" fill="none" strokeWidth="2.4" className="l-xicara-asa" />
+          <ellipse cx="11" cy="10.5" rx="8" ry="2" className="l-cafe" />
+          <path d="M8 7 Q6 4 8 1 M13 7 Q11 4 13 1" fill="none" strokeWidth="1.2" strokeLinecap="round" className="l-vapor" />
+        </svg>
+      );
+    case "pipoca":
+      return (
+        <svg viewBox="0 0 26 36" aria-hidden="true">
+          {[[6, 9], [11, 6], [16, 7], [20, 10], [8, 4], [14, 3], [18, 4]].map(([x, y], k) => (
+            <circle key={k} cx={x} cy={y + 4} r="3.6" className="l-milho" />
+          ))}
+          <path d="M2 12 L24 12 L21 34 L5 34 Z" className="l-balde" />
+          <path d="M8 12 L9.5 34 L12.5 34 L12 12 Z M16 12 L15.5 34 L18.5 34 L20 12 Z" className="l-listra" />
+        </svg>
+      );
+    case "pizza":
+      return (
+        <svg viewBox="0 0 26 34" aria-hidden="true">
+          <path d="M2 4 Q13 0 24 4 L13 33 Z" className="l-queijo" />
+          <path d="M2 4 Q13 0 24 4 L23 7 Q13 3 3 7 Z" className="l-massa" />
+          <circle cx="10" cy="11" r="2.6" className="l-calabresa" />
+          <circle cx="16" cy="13" r="2.4" className="l-calabresa" />
+          <circle cx="13" cy="20" r="2.2" className="l-calabresa" />
+        </svg>
+      );
+    case "whisky":
+      return (
+        <svg viewBox="0 0 24 28" aria-hidden="true">
+          <path d="M2 6 L22 6 L20 26 L4 26 Z" className="l-copo" />
+          <path d="M3.2 14 L20.8 14 L20 26 L4 26 Z" className="l-whisky" />
+          <rect x="7" y="10" width="6" height="6" rx="1" transform="rotate(12 10 13)" className="l-gelo" />
+        </svg>
+      );
+    case "champanhe":
+      return (
+        <svg viewBox="0 0 16 44" aria-hidden="true">
+          <path d="M6 1 L10 1 L10 12 Q14 15 14 20 L14 41 Q14 43 12 43 L4 43 Q2 43 2 41 L2 20 Q2 15 6 12 Z" className="l-garrafa" />
+          <path d="M5.5 0 L10.5 0 L10.5 13 L5.5 13 Z" className="l-anel" />
+          <rect x="2" y="25" width="12" height="9" className="l-papel" />
         </svg>
       );
     case "celular":
