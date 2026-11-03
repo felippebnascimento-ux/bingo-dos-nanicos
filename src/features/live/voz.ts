@@ -12,6 +12,7 @@ import { getApp, MY_KEY, setApp } from "@/lib/store";
 import { local, newId } from "@/lib/util";
 import { ajustarSender, canCam, novaConexao, sendRtc, type MsgRtc } from "./rtc";
 import { abrirMic, type MicFiltrado } from "./ruido";
+import { somDaVoz } from "./sonsVoz";
 import { euOfereco, falandoAgora, LIMIAR_FALA, mesmaLista, volumeDe } from "./vozRegras";
 
 type Par = {
@@ -38,6 +39,8 @@ const VOZ = {
   pares: new Map<string, Par>(),
   /** se estava mudo antes de ficar surdo (ao voltar a ouvir, o microfone volta como estava) */
   mudoAntes: false,
+  /** quem (friend id) estava na voz da minha sala no último sync, para o som de entrou/saiu; null = acabei de entrar */
+  naCall: null as Set<string> | null,
 };
 
 export const naVoz = () => !!VOZ.sid;
@@ -165,6 +168,8 @@ export function sairVoz() {
   VOZ.mic = null;
   VOZ.stream = null;
   VOZ.sid = null;
+  VOZ.naCall = null;
+  somDaVoz("saiu", useAjustesVoz.getState().geral);
   esquecerMedidas();
   setApp({ myVozSid: null, vozMudo: false, vozSurdo: false });
 }
@@ -386,6 +391,18 @@ export function syncVoz() {
     if (p.key === MY_KEY || !p.voz || (myFid && p.fid === myFid) || VOZ.pares.has(p.key)) continue;
     if (euOfereco(MY_KEY, p.key)) oferecer(p.key);
   }
+  avisarEntradas(onlineSala, myFid);
+}
+
+/** Som de quem entrou ou saiu da voz da minha sala (um por nanico, mesmo com várias abas). Ao entrar, o meu som. */
+function avisarEntradas(onlineSala: ReturnType<typeof getApp>["onlineSala"], myFid: string | null) {
+  const agora = new Set(onlineSala.filter((p) => p.voz && p.fid && p.fid !== myFid).map((p) => p.fid as string));
+  const antes = VOZ.naCall;
+  VOZ.naCall = agora;
+  const vol = useAjustesVoz.getState().geral;
+  if (!antes) return somDaVoz("entrou", vol);
+  if ([...agora].some((f) => !antes.has(f))) somDaVoz("entrou", vol);
+  else if ([...antes].some((f) => !agora.has(f))) somDaVoz("saiu", vol);
 }
 
 /* ---------- tocar (o navegador só toca som depois de um toque na página) ---------- */

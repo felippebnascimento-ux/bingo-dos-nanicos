@@ -548,6 +548,10 @@ export const CHANGELOG: EntradaLog[] = [
     data: "03/11/2026",
     itens: ["Bolsa Nanica: com menos de 100 moedas, aparece no K-FOFO o botão para pedir 5.000 moedas, uma vez por dia"],
   },
+  {
+    data: "03/11/2026",
+    itens: ["Voz: toca um som quando alguém entra ou sai do canal em que você está (e quando você entra ou sai)"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
