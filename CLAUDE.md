@@ -87,7 +87,7 @@ src/
                        do Hall da Fama; o antigo QuadroTrofeus.tsx saiu), Lupa.tsx (a lupa: zoom de 100% a 200% da cena, em
                        `hall-zoom`, com a cena rolando e arrastando dentro de `ZoomCaixa`), o menu da porta de vidro ("Rua · Salas":
                        a rua, o corredor dos quartos e as salas da lan house) e Chapeu.tsx
-                       (chapéu de burro, coroa dourada e coroa de moedas na cabeça do boneco); eventos com
+                       (chapéu de burro, coroa dourada e coroa de moedas na cabeça do boneco); acoes.ts (acenar, dançar, deitar), comandos.ts (o/, :g, :s Nome; puro e testado) e seguir.ts (Ir até: vai para a cena e o piso da pessoa pela presença); eventos com
                        horário: eventosSala.ts (relógio, espetinho já pego, chama churrasco_pegar()) e EventosTela.tsx
                        (faixa em cima do cômodo, luz do happy hour, brasa e fumaça, placa "Pegar espetinho")
     loja/              aba Loja (aba `loja`, no grupo Jogos do menu; abre também pela geladeira do K-FOFO):

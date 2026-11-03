@@ -25,6 +25,7 @@ import { friendOf, getApp, setApp, useApp } from "@/lib/store";
 import type { Friend } from "@/lib/tipos";
 import { AtributosFicha } from "./AtributosFicha";
 import { NoSitio } from "./NoSitio";
+import { seguir } from "@/features/hall/seguir";
 import { carregarFicha, useFicha } from "./estado";
 import { csTexto, eloDaFicha, textoElo } from "./numeros";
 import { BrasaoElo, NivelGc } from "@/features/emblemas/brasao";
@@ -160,6 +161,8 @@ function FichaAberta({ f }: { f: Friend }) {
 
   const art = artOf(f);
   const eu = f.id === getApp().myFid;
+  /* seguir: só aparece com a pessoa no site */
+  const online = useApp((s) => s.online.some((p) => p.fid === f.id));
   const temQuarto = useQuartos((s) => !!f.user_id && !!s.quartos[f.user_id]);
   return (
     <div className="gate ficha-gate" role="dialog" aria-modal="true" aria-labelledby="fichaNome" onKeyDown={tecla} onClick={(e) => e.target === e.currentTarget && fechar()}>
@@ -226,6 +229,18 @@ function FichaAberta({ f }: { f: Friend }) {
           >
             Ver as nanicadas de {f.name}
           </button>
+          {!eu && online && (
+            <button
+              className="linkish"
+              type="button"
+              onClick={() => {
+                fechar();
+                seguir(f.id);
+              }}
+            >
+              Ir até {f.name} (está no site agora)
+            </button>
+          )}
         </div>
       </div>
     </div>

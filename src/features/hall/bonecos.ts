@@ -326,6 +326,17 @@ export function andarAte(para: Piso, sentar: string | null = null) {
   if (rota(b, p, p.s ?? null)) enviar("hall", { para: p.s ? { i: p.i, j: p.j, s: p.s } : { i: p.i, j: p.j }, ...(q ? { q } : {}) });
 }
 
+/** Anda até um piso livre ao lado de `alvo` (o piso de alguém, conferido com a grade da cena). */
+export function andarPerto(alvo: unknown) {
+  const p = posCena(alvo);
+  if (!p) return;
+  const ok = livreCena();
+  for (const [di, dj] of [[0, 1], [1, 0], [0, -1], [-1, 0], [1, 1], [-1, -1], [1, -1], [-1, 1]]) {
+    const q = { i: p.i + di, j: p.j + dj };
+    if (ok(q.i, q.j)) return andarAte(q);
+  }
+}
+
 /** Acenar, dançar ou deitar (acoes.ts): o meu boneco faz na hora e a cena vê pelo evento `hall`. */
 export function fazerAcao(tipo: Acao) {
   if (!B.has(MY_KEY)) return;

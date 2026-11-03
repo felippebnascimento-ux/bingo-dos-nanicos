@@ -659,6 +659,10 @@ export const CHANGELOG: EntradaLog[] = [
       "Um balãozinho com três pontinhos aparece em cima de quem está escrevendo",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: ["Seguir amigo: na ficha de quem está no site e no cartão do perfil, o botão Ir até leva você para onde a pessoa está (K-FOFO, rua, corredor ou quarto) e para ao lado dela"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

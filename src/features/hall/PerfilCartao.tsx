@@ -14,6 +14,7 @@ import { artOf } from "@/lib/dados/nanicos";
 import { friendOf, setApp, useApp } from "@/lib/store";
 import type { Boneco } from "./bonecos";
 import { abrirMenu } from "./zoeiraSala";
+import { seguir } from "./seguir";
 
 export function PerfilCartao({ b }: { b: Boneco }) {
   const fid = b.fid;
@@ -110,6 +111,18 @@ export function PerfilCartao({ b }: { b: Boneco }) {
       >
         Ver ficha
       </button>
+      {!souEu && (
+        <button
+          type="button"
+          className="btn soft sm perfil-ficha"
+          onClick={() => {
+            abrirMenu(null);
+            seguir(fid);
+          }}
+        >
+          Ir até {f.name}
+        </button>
+      )}
     </aside>
   );
 }
