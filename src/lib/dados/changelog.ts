@@ -401,6 +401,12 @@ export const CHANGELOG: EntradaLog[] = [
       "A qualidade da sua transmissão aparece curta (1440p60)",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Os botões ligados (transmitir e câmera) continuam na cor deles ao passar o mouse, e todos os botões do painel da voz têm o mesmo fundo",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

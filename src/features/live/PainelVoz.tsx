@@ -431,7 +431,7 @@ export function VozPainel() {
             className={"vz-ib" + (ruido ? " on" : "")}
             aria-pressed={ruido}
             aria-label={ruido ? "Desligar a supressão de ruído" : "Ligar a supressão de ruído"}
-            data-dica={ruido ? "Supressão de ruído: ligada" : "Supressão de ruído: desligada"}
+            data-dica="Supressão de ruído"
             data-dica-fim=""
             onClick={() => salvarMidia({ ruido: !ruido })}
           >
