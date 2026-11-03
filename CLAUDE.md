@@ -145,7 +145,7 @@ src/
     live/              live.ts (liga tudo à sala), rtc.ts (WebRTC comum), tela.ts (transmissão), camera.ts,
                        voz.ts (voz da sala: um par WebRTC só de áudio com cada um na voz, microfone, fone, quem
                        está falando; volume e "silenciar" de cada nanico só no meu aparelho, `useAjustesVoz`, e o
-                       sinal da conexão, `sinalDaVoz`), ruido.ts (abrirMic: microfone passado pela RNNoise; sem ela, a supressão
+                       sinal da conexão, `sinalDaVoz`), sonsVoz.ts (o som de quem entra ou sai do meu canal de voz, desenhado com o AudioContext; o `syncVoz` decide quando tocar), ruido.ts (abrirMic: microfone passado pela RNNoise; sem ela, a supressão
                        do navegador), vozRegras.ts (quem oferece, volume, anel de fala; puro e testado),
                        reacoes.ts, desenho.ts, estado.ts (store + preferências), pip.ts;
                        telas: LiveView, Palco, Painel (Chat e Cartela; a aba Telas saiu na v1.90), Cameras, Video,
