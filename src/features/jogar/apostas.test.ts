@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { divisao, retornoEstimado, type Aposta, type Lado } from "./apostas";
+import { divisao, divisaoLados, retornoEstimado, retornoLados, type Aposta, type Lado } from "./apostas";
 
 /* o mesmo mercado do teste do banco (seção 14): azul 30 + 20, vermelho 50 + 7 */
 const exemplo: Aposta[] = [
@@ -60,5 +60,32 @@ describe("retornoEstimado", () => {
   });
   it("valor inválido dá 0", () => {
     expect(retornoEstimado(0, 100, 10, 10)).toBe(0);
+  });
+});
+
+describe("apostas no truco (lados 0 e 1)", () => {
+  it("divide o bolo menos 5% entre quem acertou", () => {
+    const d = divisaoLados(
+      [
+        { userId: "a", lado: 0, valor: 50 },
+        { userId: "b", lado: 0, valor: 30 },
+        { userId: "c", lado: 1, valor: 100 },
+      ],
+      0,
+    );
+    /* bolo 180, casa 9, sobram 171: 50/80 e 30/80 disso */
+    expect(d.pagos.get("a")).toBe(106);
+    expect(d.pagos.get("b")).toBe(64);
+    expect(d.pagos.get("c")).toBe(0);
+    expect(d.casa).toBe(10);
+  });
+  it("um lado vazio ou mesa fechada devolve tudo", () => {
+    expect(divisaoLados([{ userId: "a", lado: 1, valor: 40 }], 1).devolvido).toBe(true);
+    expect(divisaoLados([{ userId: "a", lado: 0, valor: 40 }, { userId: "b", lado: 1, valor: 5 }], null).pagos.get("b")).toBe(5);
+  });
+  it("estima o retorno antes e depois de apostar", () => {
+    expect(retornoLados(20, 1, [100, 0])).toBe(114);
+    expect(retornoLados(20, 1, [100, 20], true)).toBe(114);
+    expect(retornoLados(20, 0, [100, 0])).toBe(20);
   });
 });

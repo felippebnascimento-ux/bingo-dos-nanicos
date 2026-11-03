@@ -8,7 +8,9 @@
 // A resposta nunca traz cartas: só { ok } ou { erro }.
 // Cada jogada tem 20 s (TR_TEMPO_MS): quem está na mesa manda "tempo" quando acaba, e a função joga uma carta
 // sorteada (ou aceita o pedido) por quem não jogou, se o relógio dela também disser que acabou.
-// No fim da partida chama truco_premiar (+15 por vencedor, até 3 vitórias pagas por dia).
+// No fim da partida chama truco_premiar: numa mesa valendo, quem ganha leva o bolo; na de 0, +15 (até 3 por dia).
+// Mesa valendo (fase 31): a entrada é cobrada no mesmo truco_salvar que começa a partida (sem saldo, nada muda).
+// Cada partida abre um mercado de apostas, que fecha depois da 1ª mão e é pago no fim (truco_mercado_*).
 
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 import {
@@ -59,8 +61,10 @@ function novoId(): string {
   return s;
 }
 
-/** A mesa completa guardada no banco: as regras (M), a partida (para o prêmio) e quando a mão acabou. */
-type Estado = { M: Mesa; partida: number; fimEm: number | null };
+/** A mesa completa guardada no banco: as regras (M), a partida (para o prêmio), quando a mão acabou e quanto vale. */
+type Estado = { M: Mesa; partida: number; fimEm: number | null; valor?: number };
+/** quanto a mesa pode valer por jogador */
+const VALORES = [0, 10, 25, 50, 100];
 type Eu = { uid: string; fid: string; nome: string };
 class Recusa extends Error {}
 
@@ -134,6 +138,26 @@ function aplicar(E: Estado, eu: Eu, acao: string, b: Record<string, unknown>): b
   return true;
 }
 
+/** As apostas da partida: abrem no começo, fecham quando a 2ª mão é dada e são pagas no fim (com o prêmio). */
+async function depoisDeGravar(admin: any, mesa: string, E: Estado, acao: string) {
+  const M = E.M;
+  if (acao === "comecar") {
+    const times = Object.fromEntries(M.lugares.flatMap((l, i) => (l ? [[l.fid, i % 2]] : [])));
+    const { error } = await admin.rpc("truco_mercado_abrir", { p_mesa: mesa, p_partida: E.partida, p_times: times });
+    if (error) console.error("mercado do truco", error);
+  }
+  if (acao === "nova_mao" && (M.h?.n ?? 0) >= 2) {
+    const { error } = await admin.rpc("truco_mercado_fechar", { p_mesa: mesa, p_partida: E.partida });
+    if (error) console.error("fechar apostas do truco", error);
+  }
+  if (M.fase === "fim") {
+    const { error: ep } = await admin.rpc("truco_premiar", { p_mesa: mesa });
+    if (ep) console.error("prêmio do truco", ep);
+    const { error: el } = await admin.rpc("truco_mercado_liquidar", { p_mesa: mesa, p_partida: E.partida, p_vencedor: M.vencedor });
+    if (el) console.error("apostas do truco", el);
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors(req) });
   if (req.method !== "POST") return json(req, { erro: "Use POST" }, 405);
@@ -164,12 +188,13 @@ Deno.serve(async (req: Request) => {
       const modo = b.modo === 4 ? 4 : 2;
       const alvo = [12, 24, 30].includes(b.alvo as number) ? (b.alvo as number) : 24;
       const flor = b.flor !== false;
+      const valor = VALORES.includes(b.valor as number) ? (b.valor as number) : 0;
       const id = novoId();
       const M = trNovaMesa(id, { fid: eu2.fid, key: eu2.uid, nome: eu2.nome }, modo, alvo, flor);
-      const E: Estado = { M, partida: 0, fimEm: null };
+      const E: Estado = { M, partida: 0, fimEm: null, valor };
       const { error } = await admin.rpc("truco_salvar", {
         p_mesa: id, p_versao: -1, p_estado: E, p_publico: trPublica(M), p_fase: M.fase, p_maos: maos(M),
-        p_user: eu2.uid, p_opcoes: { modo, alvo, flor },
+        p_user: eu2.uid, p_opcoes: { modo, alvo, flor, valor },
       });
       if (error) return json(req, { erro: error.message });
       return json(req, { ok: true, id });
@@ -197,16 +222,18 @@ Deno.serve(async (req: Request) => {
         throw e;
       }
       if (!mudou) return json(req, { ok: true });
+      /* começo de partida: a entrada de cada um (lugar → user_id) vai junto com a gravação */
+      const comeca = acao === "comecar";
+      const jogadores = Object.fromEntries(E.M.lugares.flatMap((l, i) => (l ? [[String(i), l.key]] : [])));
       const { data: gravou, error: es } = await admin.rpc("truco_salvar", {
         p_mesa: mesa, p_versao: c.versao, p_estado: E, p_publico: trPublica(E.M), p_fase: E.M.fase, p_maos: maos(E.M),
-        p_user: eu2.uid,
+        p_user: eu2.uid, p_cobrar: comeca ? { partida: E.partida, valor: E.valor ?? 0, jogadores } : null,
       });
+      /* sem saldo de alguém, o banco desfaz tudo e diz quem: a partida não começa */
+      if (es && comeca && es.code === "P0001") return json(req, { erro: es.message });
       if (es) throw es;
       if (!gravou) continue;
-      if (E.M.fase === "fim") {
-        const { error: ep } = await admin.rpc("truco_premiar", { p_mesa: mesa });
-        if (ep) console.error("prêmio do truco", ep);
-      }
+      await depoisDeGravar(admin, mesa, E, acao);
       return json(req, { ok: true });
     }
     return json(req, { erro: "A mesa está concorrida. Tente de novo." });

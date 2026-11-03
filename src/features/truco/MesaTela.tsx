@@ -6,6 +6,7 @@ import { friendOf, useApp } from "@/lib/store";
 import { TR_ENV, TR_TEMPO_MS, TR_TRUCO, trOpcoes, trQuemDeve, trValido, type Carta as TCarta, type MesaPub } from "./engine";
 import { Carta, Costas } from "./Carta";
 import { fecharMesa, fimDaJogada, garantirTempo, levantar, meuLugar, revanche, trEnviar, trNaMesa, useTruco, voltarAoLobby } from "./mesa";
+import { ApostarTruco } from "./ApostarTruco";
 
 /** Os segundos que faltam para a jogada (20 s). Acabou, a carta sai sozinha. */
 function Relogio({ fim, eu }: { fim: number; eu: boolean }) {
@@ -64,6 +65,7 @@ export function MesaTela({ m }: { m: MesaPub }) {
   const minhaId = useTruco((s) => s.minhaId);
   const falas = useTruco((s) => s.falas);
   const novas = useTruco((s) => s.novas);
+  const valor = useTruco((s) => s.valores[m.id] ?? 0);
   const mazo = useSure(3000);
   const fechar = useSure(3000);
 
@@ -259,6 +261,7 @@ export function MesaTela({ m }: { m: MesaPub }) {
           ))}
         </div>
         <div className="tr-top-d">
+          {valor > 0 ? <span className="tr-bolo" title={"Cada um pagou " + valor + " moedas; quem ganha leva o bolo"}>Bolo {valor * N}</span> : null}
           {h && m.fase === "jogo" && h.truco.valor > 1 ? <span className="tr-valendo">Valendo {h.truco.valor}</span> : null}
           <span className="tr-vazas">
             {h
@@ -319,6 +322,7 @@ export function MesaTela({ m }: { m: MesaPub }) {
           </div>
         </div>
       ) : null}
+      <ApostarTruco m={m} rotulo={nomeT} />
       <ol className="tr-log">
         {(m.log || []).slice(-4).map((t, k) => (
           <li key={k}>{String(t).slice(0, 120)}</li>

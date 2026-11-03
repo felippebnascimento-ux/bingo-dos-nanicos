@@ -30,9 +30,11 @@ export type TrucoUI = {
   falas: Record<number, string>;
   /** cartas que acabaram de cair na mesa aberta (animação) */
   novas: string[];
+  /** quanto cada mesa vale por jogador (opcoes.valor; 0 = mesa de graça, a do +15) */
+  valores: Record<string, number>;
 };
 
-export const useTruco = create<TrucoUI>()(() => ({ mesas: [], ver: null, mao: null, minhaId: null, falas: {}, novas: [] }));
+export const useTruco = create<TrucoUI>()(() => ({ mesas: [], ver: null, mao: null, minhaId: null, falas: {}, novas: [], valores: {} }));
 
 type Entrada = { pub: MesaPub; at: number; js: string };
 const TRU = {
@@ -50,7 +52,15 @@ const TRU = {
   /** relógio da jogada: quando vi cada `desde` (mesa:n:desde → hora local) e o aviso de "tempo" agendado */
   relogio: new Map<string, number>(),
   tempo: new Map<string, ReturnType<typeof setTimeout>>(),
+  valores: new Map<string, number>(),
 };
+
+/** quanto a mesa pode valer por jogador (o banco e a função conferem de novo) */
+export const TR_VALORES = [0, 10, 25, 50, 100] as const;
+function lerValor(id: string, opcoes: unknown) {
+  const v = opcoes && typeof opcoes === "object" ? (opcoes as { valor?: unknown }).valor : 0;
+  TRU.valores.set(id, (TR_VALORES as readonly unknown[]).includes(v) ? (v as number) : 0);
+}
 
 const FALA_MS = 3500;
 /** depois do fim da mão, cada um pede a próxima (a função espera 3 s e vale só o primeiro pedido) */
@@ -116,6 +126,7 @@ function avisa() {
     minhaId: lista.find((m) => !!uid && m.host === uid)?.id ?? null,
     falas: pub ? falasVivas(pub) : {},
     novas: pub ? novasNaMesa(pub) : [],
+    valores: Object.fromEntries(TRU.valores),
   });
 }
 
@@ -192,6 +203,7 @@ function onMesa(row: Record<string, unknown> | null, ev: string) {
     avisa();
     return;
   }
+  if (row && "opcoes" in row) lerValor(id, row.opcoes);
   guardarMesa(row?.publico, Date.parse(String(row?.atualizada_em ?? "")) || Date.now());
   avisa();
 }
@@ -242,7 +254,7 @@ function guardarMao(row: Record<string, unknown> | null): boolean {
 async function carregar() {
   const desde = new Date(Date.now() - VELHA_MS).toISOString();
   const [m, h] = await Promise.all([
-    sb().from("truco_mesas").select("id,publico,atualizada_em").gt("atualizada_em", desde).limit(30),
+    sb().from("truco_mesas").select("id,publico,opcoes,atualizada_em").gt("atualizada_em", desde).limit(30),
     sb().from("truco_maos").select("mesa_id,lugar,user_id,cartas,mao_n"),
   ]);
   if (m.error || h.error) {
@@ -251,7 +263,10 @@ async function carregar() {
     return;
   }
   TRU.mesas.clear();
-  for (const r of m.data ?? []) guardarMesa(r.publico, Date.parse(r.atualizada_em) || Date.now());
+  for (const r of m.data ?? []) {
+    lerValor(r.id, r.opcoes);
+    guardarMesa(r.publico, Date.parse(r.atualizada_em) || Date.now());
+  }
   TRU.maos.clear();
   for (const r of h.data ?? []) guardarMao(r as Record<string, unknown>);
   avisa();
@@ -302,13 +317,14 @@ export function trEnviar(a: string, arg?: unknown): Promise<boolean> {
   return chamar({ acao: a, mesa: id, arg: arg ?? null });
 }
 
-export async function abrirMesa(modo: 2 | 4, alvo: number, comFlor: boolean) {
+export async function abrirMesa(modo: 2 | 4, alvo: number, comFlor: boolean, valor = 0) {
   if (ocupado) return;
   ocupado = true;
   novaId = null;
-  if ((await chamar({ acao: "abrir", modo, alvo, flor: comFlor })) && novaId) {
+  if ((await chamar({ acao: "abrir", modo, alvo, flor: comFlor, valor })) && novaId) {
     /* não espera o tempo real: lê a mesa nova e já abre na tela */
-    const { data } = await sb().from("truco_mesas").select("publico,atualizada_em").eq("id", novaId).maybeSingle();
+    const { data } = await sb().from("truco_mesas").select("publico,opcoes,atualizada_em").eq("id", novaId).maybeSingle();
+    if (data) lerValor(novaId, data.opcoes);
     if (data) guardarMesa(data.publico, Date.parse(data.atualizada_em) || Date.now());
     if (TRU.mesas.has(novaId)) TRU.ver = novaId;
     avisa();

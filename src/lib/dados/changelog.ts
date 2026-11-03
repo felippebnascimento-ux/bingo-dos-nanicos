@@ -473,6 +473,13 @@ export const CHANGELOG: EntradaLog[] = [
     data: "03/11/2026",
     itens: ["No K-FOFO, quando alguém entra no site aparece \"Fulano entrou!\" no canto de cima, embaixo do Na sala agora"],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Truco valendo moedas: escolha quanto vale a mesa e quem ganha leva o bolo. Dá para apostar em quem vai ganhar a partida",
+      "Mesa fechada no meio do jogo devolve as entradas e as apostas; a mesa grátis continua com o +15",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
