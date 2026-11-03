@@ -366,6 +366,15 @@ export const CHANGELOG: EntradaLog[] = [
       "O painel da voz cabe inteiro no menu e o aviso de sem som ficou mais curto",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Clique em qualquer quadro do Ao vivo (a sua tela, a tela de alguém, uma câmera) para ver ele grande, com o resto do canal embaixo",
+      "O Ao vivo usa a largura toda da tela e as telas em destaque ficam do maior tamanho que cabe",
+      "No menu, o seu nome aparece ao lado do microfone e do fone; na voz, as moedas ficam numa linha embaixo",
+      "No celular, o botão de transmitir só aparece onde dá para transmitir",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

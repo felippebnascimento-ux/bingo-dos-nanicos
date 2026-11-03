@@ -5,7 +5,7 @@ import { nomeDaSala } from "@/features/salas/trocar";
 import { setApp, useApp } from "@/lib/store";
 import { local } from "@/lib/util";
 import { JanelaCameras } from "./Cameras";
-import { FaixaFoco, GradeCanal, TopoCanal } from "./Grade";
+import { DestaqueCanal, FaixaFoco, GradeCanal, TopoCanal } from "./Grade";
 import { useLive } from "./estado";
 import { iniciarLive } from "./live";
 import { Painel } from "./Painel";
@@ -32,6 +32,7 @@ export function LiveView({ hidden }: { hidden: boolean }) {
   const sala = useApp((s) => nomeDaSala(s.minhaSala, s.salas));
   const naVoz = useApp((s) => !!s.myVozSid);
   const modo = useLive((s) => s.modo);
+  const destaque = useLive((s) => s.destaque);
 
   return (
     <section id="view-live" className="inner" hidden={hidden}>
@@ -61,9 +62,10 @@ export function LiveView({ hidden }: { hidden: boolean }) {
           {/* como no Discord: todo mundo em quadrados (grade) ou uma tela grande com o resto embaixo (foco).
               O Palco fica montado também na grade (escondido), para a tela principal seguir com som */}
           <TopoCanal />
-          <div className="palco-foco" hidden={modo === "grade"}>
+          <div className="palco-foco" hidden={modo === "grade" || !!destaque}>
             <Palco />
           </div>
+          {modo === "foco" && destaque && <DestaqueCanal />}
           {modo === "grade" ? <GradeCanal /> : <FaixaFoco />}
         </div>
         <Painel />

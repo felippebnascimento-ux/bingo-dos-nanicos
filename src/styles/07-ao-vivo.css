@@ -1,5 +1,5 @@
 /* ---------- ao vivo ---------- */
-#view-live{width:100%;max-width:1560px;margin:0 auto}
+#view-live{width:100%;max-width:2400px;margin:0 auto}
 .live-grid{display:grid;gap:22px;align-items:start}
 @media (min-width:1180px){.live-grid{grid-template-columns:minmax(0,1fr) 340px}}
 .stage-col{display:grid;gap:12px;min-width:0}

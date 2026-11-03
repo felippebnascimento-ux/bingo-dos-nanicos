@@ -46,7 +46,7 @@ export function goWatch(key: string) {
   if (key !== MY_KEY) {
     assistir(key, true);
     /* abre já grande, como clicar no AO VIVO de alguém no Discord */
-    setLive({ modo: "foco" });
+    setLive({ modo: "foco", destaque: null });
   }
   /* a minha própria tela aparece no meu quadrado da grade */
   if (ehCelular()) setTimeout(() => rolarAte(document.getElementById("stage")), 0);
