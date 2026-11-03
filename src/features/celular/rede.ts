@@ -14,7 +14,7 @@ import { errMsg, sb } from "@/lib/supabase";
 import { getApp } from "@/lib/store";
 import { toast } from "@/lib/toast";
 import { local, newId } from "@/lib/util";
-import { DIA_MS, FUNDOS, type Fundo, type Story } from "./insta";
+import { DIA_MS, FUNDOS, naoLidasDM, type Fundo, type Mensagem, type Story } from "./insta";
 
 export type Post = { id: number; userId: string; texto: string; midia: string | null; em: number };
 export type Comentario = { id: number; postId: number; userId: string; texto: string; em: number };
@@ -38,11 +38,15 @@ type Estado = {
   /** quem viu cada story meu (userIds), lido quando abro o meu */
   quemViu: Record<number, string[]>;
   /** a Dynamic Island aberta com um aviso (some sozinha) */
-  ilha: { texto: string; userId: string | null; tipo: "post" | "story" | "envio" } | null;
+  ilha: { texto: string; userId: string | null; tipo: "post" | "story" | "envio" | "mensagem" } | null;
+  /** Direct: as minhas mensagens (enviadas e recebidas) e com quem estou conversando agora */
+  mensagens: Mensagem[];
+  conversaAberta: string | null;
+  naoLidasDM: number;
 };
 export const useRede = create<Estado>()(() => ({
   aberto: false, posts: [], fim: false, curtidas: {}, comentarios: {}, perfil: null, carregando: false, enviando: false, naoLidas: 0,
-  stories: [], vistos: lerVistos(), quemViu: {}, ilha: null,
+  stories: [], vistos: lerVistos(), quemViu: {}, ilha: null, mensagens: [], conversaAberta: null, naoLidasDM: 0,
 }));
 
 function lerVistos(): number[] {
@@ -132,7 +136,7 @@ export async function maisPostagens() {
 /* ---------- Dynamic Island ---------- */
 let ilhaTimer: ReturnType<typeof setTimeout> | undefined;
 /** Abre a ilha com um aviso por uns segundos (o envio fica aberto até terminar). */
-export function avisarIlha(texto: string, userId: string | null, tipo: "post" | "story" | "envio", ms = 3800) {
+export function avisarIlha(texto: string, userId: string | null, tipo: "post" | "story" | "envio" | "mensagem", ms = 3800) {
   clearTimeout(ilhaTimer);
   useRede.setState({ ilha: { texto, userId, tipo } });
   if (ms > 0) ilhaTimer = setTimeout(() => useRede.setState({ ilha: null }), ms);
@@ -241,6 +245,79 @@ export async function apagarStory(s: Story) {
   useRede.setState({ stories: useRede.getState().stories.filter((x) => x.id !== s.id) });
 }
 
+/* ---------- Direct (mensagens, seção 35) ---------- */
+const lerMensagem = (r: Record<string, unknown>): Mensagem => ({
+  id: Number(r.id),
+  de: String(r.de),
+  para: String(r.para),
+  texto: String(r.texto ?? "").slice(0, 1000),
+  storyId: r.story_id == null ? null : Number(r.story_id),
+  postId: r.post_id == null ? null : Number(r.post_id),
+  em: Date.parse(String(r.em)) || 0,
+  lidaEm: r.lida_em ? Date.parse(String(r.lida_em)) || 1 : null,
+});
+const contarDM = () => useRede.setState({ naoLidasDM: naoLidasDM(useRede.getState().mensagens, getApp().myUid) });
+
+/** As minhas últimas 500 mensagens (o banco só devolve as que eu mandei ou recebi). */
+export async function carregarMensagens() {
+  if (!celularNaMochila) return;
+  const { data, error } = await sb().from("rede_mensagens").select("id,de,para,texto,story_id,post_id,em,lida_em").order("id", { ascending: false }).limit(500);
+  if (error) return console.warn("mensagens indisponíveis (seção 35)", error.message);
+  useRede.setState({ mensagens: (data ?? []).map(lerMensagem) });
+  contarDM();
+}
+
+function onMensagem(row: Record<string, unknown> | null, ev: string) {
+  const id = Number(row?.id);
+  if (!id || !row) return;
+  const st = useRede.getState(), eu = getApp().myUid;
+  const m = lerMensagem(row);
+  if (ev === "UPDATE") {
+    useRede.setState({ mensagens: st.mensagens.map((x) => (x.id === id ? m : x)) });
+    return contarDM();
+  }
+  if (ev !== "INSERT" || st.mensagens.some((x) => x.id === id)) return;
+  useRede.setState({ mensagens: [m, ...st.mensagens] });
+  if (m.para === eu) {
+    /* conversa aberta com quem mandou: já fica lida; senão, avisa na ilha */
+    if (st.aberto && st.conversaAberta === m.de) void marcarLidas(m.de);
+    else if (st.aberto) {
+      const nome = getApp().friends.find((x) => x.user_id === m.de)?.name ?? "Alguém";
+      avisarIlha(`${nome}: ${m.postId ? "enviou uma publicação" : m.texto}`, m.de, "mensagem");
+    }
+  }
+  contarDM();
+}
+
+/** Manda uma mensagem (texto, resposta a um story ou uma publicação). */
+export async function enviarMensagem(para: string, texto: string, extra: { storyId?: number; postId?: number } = {}): Promise<boolean> {
+  if (!texto.trim() && !extra.postId) return false;
+  const { data, error } = await sb()
+    .from("rede_mensagens")
+    .insert({ para, texto: texto.trim().slice(0, 1000), story_id: extra.storyId ?? null, post_id: extra.postId ?? null })
+    .select("id,de,para,texto,story_id,post_id,em,lida_em");
+  if (error) {
+    toast(motivo(error, "Não deu para mandar a mensagem. Confira a internet."));
+    return false;
+  }
+  const nova = (data ?? []).map(lerMensagem).filter((m) => !useRede.getState().mensagens.some((x) => x.id === m.id));
+  if (nova.length) useRede.setState({ mensagens: [...nova, ...useRede.getState().mensagens] });
+  return true;
+}
+
+/** Abre (ou fecha, com null) a conversa e marca como lidas as mensagens dessa pessoa. */
+export function abrirConversa(outro: string | null) {
+  useRede.setState({ conversaAberta: outro });
+  if (outro) void marcarLidas(outro);
+}
+export async function marcarLidas(de: string) {
+  const eu = getApp().myUid;
+  if (!useRede.getState().mensagens.some((m) => m.de === de && m.para === eu && !m.lidaEm)) return;
+  useRede.setState({ mensagens: useRede.getState().mensagens.map((m) => (m.de === de && m.para === eu && !m.lidaEm ? { ...m, lidaEm: Date.now() } : m)) });
+  contarDM();
+  await sb().rpc("marcar_lidas", { p_de: de });
+}
+
 /* ---------- tempo real ---------- */
 function onPost(row: Record<string, unknown> | null, ev: string) {
   const id = Number(row?.id);
@@ -283,11 +360,13 @@ export function iniciarRede(tenho: boolean) {
   if (tenho && !antes) {
     void carregarRede();
     void carregarStories();
+    void carregarMensagens();
   }
   if (ligado) return;
   ligado = true;
   aoMudarTabela("rede_posts", onPost);
   aoMudarTabela("rede_stories", onStory);
+  aoMudarTabela("rede_mensagens", onMensagem);
   aoMudarTabela("rede_curtidas", onDetalhe);
   aoMudarTabela("rede_comentarios", onDetalhe);
 }
@@ -298,12 +377,13 @@ export function abrirCelular() {
   contarNaoLidas();
   if (!useRede.getState().posts.length) void carregarRede();
   void carregarStories();
+  void carregarMensagens();
 }
 export function fecharCelular() {
   /* as imagens da rede saem da memória ao fechar */
   for (const p of useRede.getState().posts) if (p.midia) soltarImagem(p.midia);
   for (const s of useRede.getState().stories) if (s.midia) soltarImagem(s.midia);
-  useRede.setState({ aberto: false, ilha: null });
+  useRede.setState({ aberto: false, ilha: null, conversaAberta: null });
   contarNaoLidas();
 }
 export function verPerfil(userId: string | null) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { agrupar, andar, DIA_MS, inicioDoGrupo, tempoCurto, type Story } from "./insta";
+import { agrupar, andar, conversas, daConversa, DIA_MS, inicioDoGrupo, naoLidasDM, resumo, tempoCurto, type Mensagem, type Story } from "./insta";
 
 const H = 60 * 60 * 1000, AGORA = 100 * DIA_MS;
 const st = (id: number, userId: string, horasAtras: number): Story => ({ id, userId, midia: null, texto: "oi", fundo: "roxo", em: AGORA - horasAtras * H });
@@ -36,5 +36,32 @@ describe("stories do InstaNanico", () => {
     expect(tempoCurto(AGORA - 5 * 60_000, AGORA)).toBe("5 min");
     expect(tempoCurto(AGORA - 3 * H, AGORA)).toBe("3 h");
     expect(tempoCurto(AGORA - 2 * DIA_MS, AGORA)).toBe("2 d");
+  });
+});
+
+
+describe("Direct do InstaNanico", () => {
+  const m = (id: number, de: string, para: string, min: number, lida = false, extra: Partial<Mensagem> = {}): Mensagem => ({
+    id, de, para, texto: "oi " + id, storyId: null, postId: null, em: min * 60_000, lidaEm: lida ? 1 : null, ...extra,
+  });
+  const lista = [m(1, "ana", "eu", 1, true), m(2, "eu", "ana", 2), m(3, "bia", "eu", 5), m(4, "bia", "eu", 6), m(5, "caio", "dani", 9)];
+
+  it("uma conversa por pessoa, a mais recente primeiro, contando as não lidas", () => {
+    const c = conversas(lista, "eu");
+    expect(c.map((x) => x.outro)).toEqual(["bia", "ana"]);
+    expect(c[0]).toMatchObject({ naoLidas: 2 });
+    expect(c[0].ultima.id).toBe(4);
+    expect(c[1].naoLidas).toBe(0);
+    expect(naoLidasDM(lista, "eu")).toBe(2);
+  });
+
+  it("mensagens da conversa em ordem", () => {
+    expect(daConversa(lista, "eu", "ana").map((x) => x.id)).toEqual([1, 2]);
+  });
+
+  it("resumo da última mensagem", () => {
+    expect(resumo(m(9, "eu", "ana", 1), "eu")).toBe("Você: oi 9");
+    expect(resumo(m(9, "ana", "eu", 1, false, { postId: 3 }), "eu")).toBe("Enviou uma publicação");
+    expect(resumo(m(9, "ana", "eu", 1, false, { storyId: 3, texto: "kkk" }), "eu")).toBe("Respondeu ao seu story: kkk");
   });
 });
