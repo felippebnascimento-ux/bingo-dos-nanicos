@@ -559,6 +559,13 @@ export const CHANGELOG: EntradaLog[] = [
       "Os balões aparecem para quem está no mesmo lugar (no K-FOFO ou no mesmo quarto) e a mensagem também fica no #geral",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Emblemas novos, em relevo: aro de metal com luz e sombra, e o símbolo gravado",
+      "O número do nível da GC voltou a ser lido no cartão do perfil, e o cartão não deixa mais aparecer o que está atrás",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
