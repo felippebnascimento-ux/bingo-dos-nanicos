@@ -9,6 +9,10 @@ export type Friend = {
   /** segunda conta do LoL (smurf) */
   opgg_smurf?: string | null;
   steam?: string | null;
+  /** nanico (um dos 14), amigo dos nanicos ou inativo (amigo que saiu); seção 39 do SQL */
+  tipo?: "nanico" | "amigo" | "inativo";
+  /** quem convidou o amigo (friend id de um nanico) */
+  convidado_por?: string | null;
 };
 
 /** Algo que dá para desenhar como rosto: um nanico ou só um nome. */

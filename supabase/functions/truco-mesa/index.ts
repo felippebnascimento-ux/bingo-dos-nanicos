@@ -145,7 +145,8 @@ Deno.serve(async (req: Request) => {
     // só nanicos logados
     const { data: u, error: eu } = await admin.auth.getUser(token);
     if (eu || !u?.user) return json(req, { erro: "Faça login de novo." }, 401);
-    const { data: f } = await admin.from("friends").select("id,name").eq("user_id", u.user.id).maybeSingle();
+    /* nanico ou amigo dos nanicos (seção 39); inativo não joga */
+    const { data: f } = await admin.from("friends").select("id,name").eq("user_id", u.user.id).in("tipo", ["nanico", "amigo"]).maybeSingle();
     if (!f) return json(req, { erro: "Conta sem nanico." }, 403);
     const eu2: Eu = { uid: u.user.id, fid: f.id, nome: String(f.name ?? "?").slice(0, 30) };
 

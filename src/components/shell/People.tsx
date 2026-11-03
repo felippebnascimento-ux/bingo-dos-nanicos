@@ -2,7 +2,8 @@
 import { useEffect, useState } from "react";
 import { ChamaNome } from "@/features/ficha/NoSitio";
 import { Avatar } from "@/components/ui/Avatar";
-import { IcVoltar } from "@/components/ui/icones";
+import { IcSeta, IcVoltar } from "@/components/ui/icones";
+import { ehAmigo, soAmigos, soNanicos } from "@/lib/dados/nanicos";
 import { CamNaSala } from "@/features/live/CamNaSala";
 import { setLive } from "@/features/live/estado";
 import { assistir } from "@/features/live/live";
@@ -193,6 +194,7 @@ export function Membros() {
   const min = useApp((s) => s.membrosMin);
   const estreita = useEstreita();
   const pessoas = useNanicosOnline();
+  const [amigosMin, setAmigosMin] = useState(() => local.get("membros-amigos-min") === "1");
 
   useEffect(() => {
     document.body.classList.toggle("membros-min", min || estreita);
@@ -204,11 +206,20 @@ export function Membros() {
     return { p, f, nome: f?.name ?? p.name };
   });
   /* eu primeiro; depois quem está online em ordem de nome */
-  const online = linhas.sort((a, b) => (a.p.chaves.includes(MY_KEY) ? -1 : b.p.chaves.includes(MY_KEY) ? 1 : porNome(a, b)));
-  const offline = friends
+  const ordenadas = linhas.sort((a, b) => (a.p.chaves.includes(MY_KEY) ? -1 : b.p.chaves.includes(MY_KEY) ? 1 : porNome(a, b)));
+  /* os 14 em cima; os amigos dos nanicos numa categoria própria embaixo (inativo não aparece) */
+  const online = ordenadas.filter((l) => !ehAmigo(l.f) && l.f?.tipo !== "inativo");
+  const offline = soNanicos(friends)
     .filter((f) => !linhas.some((l) => l.f?.id === f.id))
     .map((f) => ({ p: null, f, nome: f.name }))
     .sort(porNome);
+  const amigos = [
+    ...ordenadas.filter((l) => ehAmigo(l.f)),
+    ...soAmigos(friends)
+      .filter((f) => !linhas.some((l) => l.f?.id === f.id))
+      .map((f) => ({ p: null, f, nome: f.name }))
+      .sort(porNome),
+  ];
 
   return (
     <aside className="membros" aria-label="Membros">
@@ -247,6 +258,30 @@ export function Membros() {
               <Membro key={f.id} p={null} f={f} />
             ))}
           </ul>
+        </>
+      )}
+      {amigos.length > 0 && (
+        <>
+          <h3>
+            <button
+              type="button"
+              className="membros-cat"
+              aria-expanded={!amigosMin}
+              onClick={() => {
+                setAmigosMin(!amigosMin);
+                local.set("membros-amigos-min", amigosMin ? "0" : "1");
+              }}
+            >
+              <IcSeta tam={10} />
+              <span className="t">Amigos — </span>
+              {amigos.length}
+            </button>
+          </h3>
+          {!amigosMin && (
+            <ul className="people">
+              {amigos.map(({ p, f }) => <Membro key={p ? p.id : f?.id} p={p} f={f} />)}
+            </ul>
+          )}
         </>
       )}
     </aside>

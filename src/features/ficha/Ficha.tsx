@@ -16,7 +16,7 @@ import { opggNick, opggOf, opggSmurfOf } from "@/features/perfil/opgg";
 import { steamNome, steamOf } from "@/features/perfil/steam";
 import { linksDe, useMidias } from "@/features/midias/midiasDados";
 import { TIPOS_LINK } from "@/features/perfil/links";
-import { artOf, bonecoOf } from "@/lib/dados/nanicos";
+import { artOf, bonecoOf, ehAmigo } from "@/lib/dados/nanicos";
 import { friendOf, getApp, setApp, useApp } from "@/lib/store";
 import type { Friend } from "@/lib/tipos";
 import { AtributosFicha } from "./AtributosFicha";
@@ -87,10 +87,11 @@ function Links({ f }: { f: Friend }) {
 function Selos({ f, eu }: { f: Friend; eu: boolean }) {
   const lista = useRanking();
   const linha = lista?.find((l) => l.fid === f.id);
-  if (!eu && !linha?.pos) return null;
+  if (!eu && !linha?.pos && !ehAmigo(f)) return null;
   return (
     <div className="ficha-selos">
       {eu && <span className="ficha-selo eu">você</span>}
+      {ehAmigo(f) && <span className="ficha-selo amigo">amigo dos nanicos</span>}
       {linha?.pos && linha.saldo !== null && (
         <button type="button" className="ficha-selo" title="Abrir o ranking" onClick={() => {
             setApp({ fichaAberta: null });
@@ -163,7 +164,8 @@ function FichaAberta({ f }: { f: Friend }) {
           <NoSitio fid={f.id} eu={eu} />
           <EmblemasFicha fid={f.id} />
           <Links f={f} />
-          <AtributosFicha f={f} eu={eu} />
+          {/* amigo dos nanicos não recebe votos nos atributos (o banco também recusa) */}
+          {!ehAmigo(f) && <AtributosFicha f={f} eu={eu} />}
           {eu && (
             <div className="ficha-acoes">
               <button

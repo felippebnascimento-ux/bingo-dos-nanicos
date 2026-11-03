@@ -32,3 +32,4 @@ button.nanico:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px
 .nanico .lnk{padding:4px 8px}
 @media (max-width:520px){.nan-block{padding:12px}.nanicos{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.nanico{padding:10px 4px 4px}.nanico .av.lg{width:64px;height:64px;font-size:20px}.nanico strong{font-size:13px}.nanico .status,.nanico .lnk{font-size:11.5px}}
 
+.amigo-status.on{color:var(--accent-text);font-weight:600}

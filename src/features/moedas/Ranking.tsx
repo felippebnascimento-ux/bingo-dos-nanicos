@@ -11,6 +11,7 @@ import { formatarMoedas, ordinal, posicaoDe, ranking } from "@/lib/moedas";
 import { friendOf, setApp, useApp } from "@/lib/store";
 import { MoedasBloco } from "./Moedas";
 import { ChamaNome } from "@/features/ficha/NoSitio";
+import { ehAmigo } from "@/lib/dados/nanicos";
 
 /** O ranking calculado (carrega as carteiras na primeira tela que precisar). */
 export function useRanking() {
@@ -97,6 +98,7 @@ function PainelAberto({ aba }: { aba: "ranking" | "extrato" }) {
                     <span className="ranking-nome">
                       {l.nome}
                       <ChamaNome fid={l.fid} />
+                      {ehAmigo(f) && <em className="ranking-amigo">amigo</em>}
                       {subiu && <em className="ranking-subiu">▲ subiu</em>}
                     </span>
                     <b>{l.saldo !== null ? formatarMoedas(l.saldo) : "—"}</b>

@@ -51,7 +51,8 @@ export function iniciarLocal() {
 export async function loadFriends() {
   /* se o SQL do smurf, da ficha (Steam) ou do op.gg ainda não rodou, o site segue funcionando sem a coluna */
   const tentativas = [
-    { cols: "opgg,steam,opgg_smurf", ok: { opggOk: true, steamOk: true, smurfOk: true }, aviso: "" },
+    { cols: "opgg,steam,opgg_smurf,tipo,convidado_por", ok: { opggOk: true, steamOk: true, smurfOk: true }, aviso: "" },
+    { cols: "opgg,steam,opgg_smurf", ok: { opggOk: true, steamOk: true, smurfOk: true }, aviso: "banco sem friends.tipo: rode a seção 39 do seguranca.sql" },
     { cols: "opgg,steam", ok: { opggOk: true, steamOk: true, smurfOk: false }, aviso: "banco sem a coluna opgg_smurf: rode a seção 27 do seguranca.sql" },
     { cols: "opgg", ok: { opggOk: true, steamOk: false, smurfOk: false }, aviso: "banco sem a coluna steam: rode a seção 8 do seguranca.sql" },
   ];

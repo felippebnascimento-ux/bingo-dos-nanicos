@@ -80,10 +80,11 @@ export type LinhaRanking = { fid: string; nome: string; userId: string | null; s
  */
 export function ranking(
   carteiras: readonly { userId: string; saldo: number }[],
-  friends: readonly { id: string; name: string; user_id?: string | null }[],
+  friends: readonly { id: string; name: string; user_id?: string | null; tipo?: string }[],
 ): LinhaRanking[] {
   const saldo = new Map(carteiras.map((c) => [c.userId, c.saldo]));
-  const linhas: LinhaRanking[] = friends.map((f) => {
+  /* amigo que saiu (inativo) não entra no ranking */
+  const linhas: LinhaRanking[] = friends.filter((f) => f.tipo !== "inativo").map((f) => {
     const s = f.user_id ? saldo.get(f.user_id) : undefined;
     return { fid: f.id, nome: f.name, userId: f.user_id ?? null, saldo: s ?? null, pos: null };
   });

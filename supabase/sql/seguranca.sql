@@ -3923,7 +3923,138 @@ insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem)
 on conflict (id) do update set nome = excluded.nome, descricao = excluded.descricao, espaco = excluded.espaco,
   preco = excluded.preco, dados = excluded.dados, ordem = excluded.ordem;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, e a bolsa
+-- 39) amigos dos nanicos (fase 30, 03/11/2026): o Lightzin é o primeiro -------------------------------------------------
+--     O amigo ganha uma linha em friends com tipo = 'amigo' (os 14 ficam 'nanico'; quem sai vira 'inativo'). Assim tudo
+--     o que usa o friend id (boneco, presença, truco, zoeira, respeitos, ficha, mochila) funciona sem tabela paralela.
+--     eh_nanico() passa a exigir tipo = 'nanico' (o padrão fica fechado) e eh_membro() aceita nanico e amigo. Onde o
+--     amigo entra, a troca é feita uma por uma, pelas listas abaixo, sobre a definição que já está no banco.
+alter table public.friends add column if not exists tipo text not null default 'nanico';
+alter table public.friends drop constraint if exists friends_tipo_check;
+alter table public.friends add constraint friends_tipo_check check (tipo in ('nanico', 'amigo', 'inativo'));
+alter table public.friends add column if not exists convidado_por uuid references public.friends(id);
+-- o Lightzin foi criado como nanico provisório (criar_login_nanico) antes desta seção
+update public.friends set tipo = 'amigo' where name = 'Lightzin' and tipo = 'nanico';
+
+create or replace function public.eh_nanico() returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.friends where user_id = auth.uid() and tipo = 'nanico');
+$$;
+revoke all on function public.eh_nanico() from public, anon;
+grant execute on function public.eh_nanico() to authenticated;
+
+create or replace function public.eh_membro() returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.friends where user_id = auth.uid() and tipo in ('nanico', 'amigo'));
+$$;
+revoke all on function public.eh_membro() from public, anon;
+grant execute on function public.eh_membro() to authenticated;
+
+-- onde o amigo entra: funções (moedas, cassino, loja, zoeira, presença, emblemas, rede, missões, atributos só para ver)
+-- e políticas (ler friends, salas, chat, tempo real, mídias, rede, loja, truco; ler phrases e game para o Ao vivo).
+-- Continuam eh_nanico(): escrever nanicadas, escalação, rodízio (rodizio_linha), bingo, votar e apostas do LoL.
+do $$
+declare
+  v_fn   text;
+  v_def  text;
+  v_novo text;
+  p      record;
+  v_q    text;
+  v_c    text;
+begin
+  foreach v_fn in array array[
+    'minha_carteira', 'bater_ponto', 'pulso', 'pedir_bolsa', 'churrasco_pegar',
+    'cassino_estado', 'trocar_semente', 'apostar_roleta', 'cassino_feed', 'apostar_limbo', 'apostar_dado', 'apostar_slot',
+    'apostar_roleta_mesa', 'aviao_decolar', 'aviao_mesa', 'mesa_apostar_roleta', 'mesa_apostar_aviao', 'mesa_sacar_aviao',
+    'mesa_estado', 'penalti_comecar', 'penalti_chutar', 'penalti_sacar', 'penalti_estado',
+    'comprar', 'equipar', 'usar_item', 'quarto_de',
+    'zoar', 'placar_zoeira', 'presenca_de', 'presenca_todos', 'emblemas_de', 'hall_da_fama', 'marcar_lidas',
+    'minhas_missoes', 'atributos_de', 'atributos_todos'] loop
+    for v_def in select pg_get_functiondef(oid) from pg_proc where pronamespace = 'public'::regnamespace and proname = v_fn loop
+      v_novo := replace(v_def, 'eh_nanico()', 'eh_membro()');
+      -- missões: o amigo não sorteia as de nanicada, bingo, roleta do rodízio e aposta no LoL
+      v_novo := replace(v_novo, 'where fase_ok order by random()',
+        'where fase_ok and (public.eh_nanico() or id not in (''nanicada'', ''bingo'', ''roleta'', ''aposta'')) order by random()');
+      -- atributos: a lista de todos é só dos 14
+      v_novo := replace(v_novo, 'public.atributos_de(f.id)), ''{}''::jsonb) from public.friends f)',
+        'public.atributos_de(f.id)), ''{}''::jsonb) from public.friends f where f.tipo = ''nanico'')');
+      if v_novo <> v_def then execute v_novo; end if;
+    end loop;
+  end loop;
+
+  -- ninguém vota em amigo, e o perfil não muda o tipo nem quem convidou
+  for v_def in select pg_get_functiondef(oid) from pg_proc
+                where pronamespace = 'public'::regnamespace and proname in ('votar_atributos', 'perfil_protecao') loop
+    v_novo := replace(v_def, 'select name into v_nome from public.friends where id = p_para;',
+                             'select name into v_nome from public.friends where id = p_para and tipo = ''nanico'';');
+    if position('new.tipo := old.tipo' in v_novo) = 0 then
+      v_novo := replace(v_novo, 'new.username := old.username;',
+                                'new.username := old.username; new.tipo := old.tipo; new.convidado_por := old.convidado_por;');
+    end if;
+    if v_novo <> v_def then execute v_novo; end if;
+  end loop;
+
+  for p in select schemaname, tablename, policyname, qual, with_check from pg_policies
+            where (schemaname || '.' || tablename || ' :: ' || policyname) in (
+              'public.friends :: nanicos leem', 'public.salas :: nanicos veem as salas',
+              'public.chat_messages :: nanicos leem o chat', 'public.chat_messages :: nanicos escrevem no chat',
+              'realtime.messages :: nanicos entram na sala', 'realtime.messages :: nanicos falam na sala',
+              'public.phrases :: nanicos leem', 'public.game :: nanicos leem', 'public.rodizio :: nanicos veem o rodizio',
+              'public.carteiras :: nanicos veem as carteiras', 'public.jogos_stats :: nanicos leem os numeros',
+              'public.cassino_rolos :: nanicos veem os rolos', 'public.cassino_pagamentos :: nanicos veem os pagamentos',
+              'public.cassino_jackpot :: nanicos veem o jackpot', 'public.zoeiras :: nanicos veem a zoeira do dia',
+              'public.trofeus_semana :: nanicos veem os trofeus', 'public.riot_semana_meta :: nanicos veem a semana',
+              'public.loja_itens :: nanicos leem a loja', 'public.mochila :: equipados para todos e a mochila para o dono',
+              'public.consumos :: nanicos veem os consumos recentes', 'public.truco_mesas :: truco_mesas_ler',
+              'public.missoes_def :: missoes_def_ler', 'storage.objects :: midias_ler', 'storage.objects :: midias_subir',
+              'public.midias :: midias_tabela_ler', 'public.midias :: midias_tabela_criar', 'public.perfil_links :: perfil_links_ler',
+              'public.mural_links :: mural_ler', 'public.mural_links :: mural_criar', 'public.rede_posts :: rede_posts_ler',
+              'public.rede_curtidas :: rede_curtidas_ler', 'public.rede_comentarios :: rede_comentarios_ler',
+              'public.rede_stories :: rede_stories_ler', 'public.rede_mensagens :: rede_mensagens_ler',
+              'public.rede_mensagens :: rede_mensagens_criar', 'public.respeitos :: respeitos_ler') loop
+    v_q := replace(p.qual, 'eh_nanico()', 'eh_membro()');
+    v_c := replace(p.with_check, 'eh_nanico()', 'eh_membro()');
+    if v_q is distinct from p.qual then
+      execute format('alter policy %I on %I.%I using (%s)', p.policyname, p.schemaname, p.tablename, v_q);
+    end if;
+    if v_c is distinct from p.with_check then
+      execute format('alter policy %I on %I.%I with check (%s)', p.policyname, p.schemaname, p.tablename, v_c);
+    end if;
+  end loop;
+end $$;
+
+-- cria o login de um amigo (só o admin, no SQL Editor). Uso:
+--   select public.criar_login_amigo('Fulano', 'fulano', 'senha123', (select id from friends where name = 'Felippe'));
+create or replace function public.criar_login_amigo(p_nome text, p_usuario text, p_senha text, p_convidou uuid)
+returns text language plpgsql security definer set search_path = public, auth, extensions as $$
+declare
+  v_nome text := btrim(p_nome);
+begin
+  if v_nome is null or char_length(v_nome) not between 2 and 30 then raise exception 'Nome inválido'; end if;
+  if p_convidou is null or not exists (select 1 from public.friends where id = p_convidou and tipo = 'nanico') then
+    raise exception 'Quem convidou precisa ser um dos nanicos';
+  end if;
+  if not exists (select 1 from public.friends where lower(name) = lower(v_nome)) then
+    insert into public.friends (name, tipo, convidado_por) values (v_nome, 'amigo', p_convidou);
+  else
+    update public.friends set tipo = 'amigo', convidado_por = p_convidou
+     where lower(name) = lower(v_nome) and user_id is null;
+  end if;
+  -- o resto (usuário, senha, e-mail interno, troca de senha no primeiro acesso) é o mesmo dos nanicos
+  return public.criar_login_nanico(v_nome, p_usuario, p_senha);
+end $$;
+revoke all on function public.criar_login_amigo(text, text, text, uuid) from public, anon, authenticated;
+
+-- tira o acesso de um amigo sem apagar nada (moedas, mochila e histórico ficam). Uso: select public.desativar_amigo('fulano');
+create or replace function public.desativar_amigo(p_usuario text) returns text
+language plpgsql security definer set search_path = public as $$
+begin
+  update public.friends set tipo = 'inativo' where username = lower(btrim(p_usuario)) and tipo = 'amigo';
+  if not found then raise exception 'Amigo "%" não encontrado', p_usuario; end if;
+  return 'amigo desativado: ' || p_usuario;
+end $$;
+revoke all on function public.desativar_amigo(text) from public, anon, authenticated;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa e as 3 dos amigos
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -3997,4 +4128,7 @@ select tablename::text, 'stories' from pg_tables
 union all
 select proname::text, 'bolsa' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('pedir_bolsa')
+union all
+select proname::text, 'amigos' from pg_proc
+ where pronamespace = 'public'::regnamespace and proname in ('eh_membro', 'criar_login_amigo', 'desativar_amigo')
 order by 2, 1;

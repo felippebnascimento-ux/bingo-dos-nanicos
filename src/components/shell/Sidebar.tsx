@@ -8,7 +8,7 @@ import { CarteiraChip } from "@/features/moedas/Moedas";
 import { useCarteira } from "@/lib/carteira";
 import { VERSION } from "@/lib/dados/changelog";
 import { temNovidade } from "@/lib/dados/novidades";
-import { CREW, MARCA, ehAmigo } from "@/lib/dados/nanicos";
+import { CREW, MARCA, ehAmigo, soAmigos, soNanicos } from "@/lib/dados/nanicos";
 import { friendOf, MY_KEY, setApp, useApp } from "@/lib/store";
 import type { Aba } from "@/lib/tipos";
 import { local } from "@/lib/util";
@@ -63,7 +63,10 @@ function Nav() {
   const aba = useApp((s) => s.aba);
   const nFrases = useApp((s) => s.phrases.length);
   /* só os 14: os amigos dos nanicos têm a aba Amigos */
-  const nAmigos = useApp((s) => s.friends.filter((f) => !ehAmigo(f)).length);
+  const nAmigos = useApp((s) => soNanicos(s.friends).length);
+  /* amigo dos nanicos: sem Nanicadas, Jogar (bingo) e Troféus, que não são para ele (quem barra de verdade é o banco) */
+  const souAmigo = useApp((s) => ehAmigo(friendOf(s.myFid, s.friends)));
+  const temAmigos = useApp((s) => soAmigos(s.friends).length > 0);
   const nLive = useApp((s) => s.onlineSala.filter((p) => p.live && p.key !== MY_KEY).length + (s.myLiveSid ? 1 : 0));
   const nTruco = useApp((s) => s.trucoAbertas);
   const unread = useApp((s) => s.chatUnread > 0);
@@ -130,7 +133,9 @@ function Nav() {
     <nav className="nav" role="tablist" aria-label="Seções">
       {GRUPOS.map((g) => {
         const recolhido = recolhidos.includes(g.id);
-        const itens = g.itens.filter((x) => x.aba !== "loja" || temMoedas);
+        const itens = g.itens.filter(
+          (x) => (x.aba !== "loja" || temMoedas) && (x.aba !== "amigos" || temAmigos) && !(souAmigo && (x.aba === "frases" || x.aba === "jogar" || x.aba === "trofeus")),
+        );
         return [
           <button
             key={"g-" + g.id}
