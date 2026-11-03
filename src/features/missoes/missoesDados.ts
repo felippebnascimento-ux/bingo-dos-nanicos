@@ -20,7 +20,7 @@ export type MissoesEstado = {
   novas: string[];
 };
 
-export const useMissoes = create<MissoesEstado>()(() => ({ ok: null, missoes: [], bonus: 25, bonusPago: false, novas: [] }));
+export const useMissoes = create<MissoesEstado>()(() => ({ ok: null, missoes: [], bonus: 250, bonusPago: false, novas: [] }));
 
 const ID = /^[a-z0-9_]{2,20}$/;
 const int = (x: unknown, min: number, max: number) => (typeof x === "number" && Number.isInteger(x) && x >= min && x <= max ? x : null);
@@ -33,11 +33,11 @@ export function lerMissoes(d: unknown): { missoes: Missao[]; bonus: number; bonu
   for (const m of o.missoes.slice(0, 5)) {
     if (!m || typeof m !== "object") continue;
     const x = m as Record<string, unknown>;
-    const meta = int(x.meta, 1, 600), valor = int(x.valor, 1, 100), prog = int(x.progresso, 0, 600);
+    const meta = int(x.meta, 1, 600), valor = int(x.valor, 1, 1000), prog = int(x.progresso, 0, 600);
     if (typeof x.id !== "string" || !ID.test(x.id) || typeof x.texto !== "string" || meta === null || valor === null || prog === null) continue;
     missoes.push({ id: x.id, texto: x.texto.slice(0, 80), meta, valor, progresso: Math.min(prog, meta), feita: x.feita === true });
   }
-  return { missoes, bonus: int(o.bonus, 0, 100) ?? 25, bonusPago: o.bonus_pago === true };
+  return { missoes, bonus: int(o.bonus, 0, 1000) ?? 250, bonusPago: o.bonus_pago === true };
 }
 
 let ocupado = false, deNovo = false;

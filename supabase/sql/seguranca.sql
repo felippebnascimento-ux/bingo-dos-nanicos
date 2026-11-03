@@ -4989,6 +4989,32 @@ end $$;
 revoke all on function public.bj_acao(text) from public, anon;
 grant execute on function public.bj_acao(text) to authenticated;
 
+-- 44) mais moedas (03/11/2026, pedido do João): as missões pagam cerca de 10 vezes mais (bônus das 3: +250) e o tempo
+--     online paga 5 moedas onde pagava 1 (5 a cada 6 minutos; no happy hour, 5 a cada 3). Muda as funções que já estão
+--     no banco por troca de texto, como a seção 39, então rodar de novo não muda nada.
+alter table public.missoes_def drop constraint if exists missoes_def_valor_check;
+alter table public.missoes_def add constraint missoes_def_valor_check check (valor between 1 and 1000);
+update public.missoes_def m set valor = v.valor
+  from (values ('online30', 100), ('chat5', 100), ('nanicada', 150), ('chinelada', 150), ('torta', 200),
+               ('truco', 200), ('bingo', 200), ('roleta', 100), ('aposta', 150)) as v(id, valor)
+ where m.id = v.id and m.valor <> v.valor;
+
+do $
+declare
+  v_def  text;
+  v_novo text;
+begin
+  for v_def in select pg_get_functiondef(oid) from pg_proc
+                where pronamespace = 'public'::regnamespace and proname in ('pulso', 'minhas_missoes') loop
+    v_novo := replace(v_def, 'creditar(v_uid, 1, ''online''', 'creditar(v_uid, 5, ''online''');
+    v_novo := replace(v_novo, 'v_hgan := v_hgan + 1;', 'v_hgan := v_hgan + 5;');
+    v_novo := replace(v_novo, 'creditar(v_uid, 25, ''missao''', 'creditar(v_uid, 250, ''missao''');
+    v_novo := replace(v_novo, 'v_ganhou := v_ganhou + 25;', 'v_ganhou := v_ganhou + 250;');
+    v_novo := replace(v_novo, '''bonus'', 25,', '''bonus'', 250,');
+    if v_novo <> v_def then execute v_novo; end if;
+  end loop;
+end $;
+
 -- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo e as 2 tabelas e 3 funções do quarto próprio e as 2 tabelas e 3 funções do blackjack
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')

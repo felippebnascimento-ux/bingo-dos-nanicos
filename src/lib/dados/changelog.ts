@@ -184,7 +184,7 @@ export const CHANGELOG: EntradaLog[] = [
   },
   {
     data: "02/11/2026",
-    itens: ["Tempo no site sem limite de moedas por dia: 1 a cada 6 minutos (no happy hour, 1 a cada 3)"],
+    itens: [{ t: "Tempo no site sem limite de moedas por dia: 1 a cada 6 minutos (no happy hour, 1 a cada 3)", off: "trocado por 5 a cada 6 minutos na v1.116" }],
   },
   {
     data: "02/11/2026",
@@ -523,6 +523,14 @@ export const CHANGELOG: EntradaLog[] = [
       "Cassino: blackjack ao vivo, todo mundo na mesma mesa contra o mesmo dealer; a primeira aposta abre a rodada (10 s para apostar, de 5 a 200)",
       "Na sua vez: pedir, parar, dobrar ou dividir, com 15 s para decidir; o dealer pede até 16 e para em 17, e o blackjack paga 3 para 2",
       "Dá para conferir cada rodada: o sapato é embaralhado por um segredo que aparece no fim",
+    ],
+  },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Acentos consertados nos itens da loja, nas missões e nos avisos de erro",
+      "Missões do dia pagam bem mais (de 100 a 200 cada) e fazer as 3 dá +250",
+      "Tempo no site rende 5 moedas a cada 6 minutos (no happy hour, 5 a cada 3)",
     ],
   },
 ];
