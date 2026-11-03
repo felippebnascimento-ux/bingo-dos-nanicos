@@ -184,7 +184,7 @@ export const CHANGELOG: EntradaLog[] = [
   },
   {
     data: "02/11/2026",
-    itens: ["Tempo no site sem limite de moedas por dia: 1 a cada 6 minutos (no happy hour, 1 a cada 3)"],
+    itens: [{ t: "Tempo no site sem limite de moedas por dia: 1 a cada 6 minutos (no happy hour, 1 a cada 3)", off: "trocado por 5 a cada 6 minutos na v1.117" }],
   },
   {
     data: "02/11/2026",
@@ -534,6 +534,14 @@ export const CHANGELOG: EntradaLog[] = [
       "No fim, a mão de quem ganhou acende na mesa; a casa leva 3% do pote, só se a mão chegou ao flop",
       "O seletor de jogos do Cassino ficou numa linha só (no celular, 3 por linha)",
       "Celular: desmutar o microfone na voz volta a mandar o som (antes, às vezes ficava mudo)",
+    ],
+  },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Acentos consertados nos itens da loja, nas missões e nos avisos de erro",
+      "Missões do dia pagam bem mais (de 100 a 200 cada) e fazer as 3 dá +250",
+      "Tempo no site rende 5 moedas a cada 6 minutos (no happy hour, 5 a cada 3)",
     ],
   },
 ];
