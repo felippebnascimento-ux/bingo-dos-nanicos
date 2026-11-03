@@ -1,0 +1,19 @@
+/* K-FOFO Teste: a sala do hall com visual Habbo */
+
+.habbo-tag{font:500 14px var(--body);color:var(--muted);vertical-align:middle}
+
+/* o palco Habbo herda o hall-palco e hall-area do 22-hall.css */
+.habbo-sala{background:linear-gradient(180deg,#1B3A5C 0%,#2A5580 60%,#3E7AAE 100%);border-radius:var(--r-lg);overflow:hidden}
+
+/* piso e paredes no fundo */
+.habbo-piso,.habbo-paredes{position:absolute;inset:0}
+
+/* os móveis são imagens posicionadas no palco */
+.habbo-movel{position:absolute;pointer-events:none}
+.habbo-movel img{width:100%;height:auto;display:block;image-rendering:pixelated;filter:drop-shadow(0 4px 6px rgba(0,0,0,.3))}
+
+/* o boneco Habbo: herda a posição do boneco do hall */
+.habbo-boneco{position:absolute;display:flex;flex-direction:column;align-items:center;pointer-events:none}
+.habbo-boneco .boneco-nome{font:600 11px var(--body);color:#fff;background:rgba(0,0,0,.55);padding:1px 6px;border-radius:6px;white-space:nowrap;margin-bottom:2px;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.habbo-boneco .habbo-avatar{width:60%;height:auto;display:block;image-rendering:pixelated;filter:drop-shadow(0 3px 4px rgba(0,0,0,.4))}
+.habbo-boneco.eu .boneco-nome{background:var(--accent);color:var(--accent-ink)}

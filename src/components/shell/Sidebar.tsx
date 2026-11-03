@@ -30,6 +30,7 @@ const GRUPOS: { id: string; titulo: string; itens: ItemMenu[] }[] = [
       { aba: "live", t: "Ao vivo", Ic: IcAoVivo },
       { aba: "truco", t: "Truco", Ic: IcTruco },
       { aba: "cassino", t: "Cassino", Ic: IcCassino },
+      { aba: "habbo", t: "K-FOFO Teste", curto: "Habbo", Ic: IcSitio },
       { aba: "loja", t: "Loja", Ic: IcLoja, soComputador: true },
     ],
   },

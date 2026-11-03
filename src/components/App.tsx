@@ -25,6 +25,7 @@ import { AmigosView } from "@/features/amigos/AmigosView";
 import { PerfilView } from "@/features/perfil/PerfilView";
 import { LiveView } from "@/features/live/LiveView";
 import { TrucoView } from "@/features/truco/TrucoView";
+import { HabboView } from "@/features/habbo/HabboView";
 import { CamadaReacoesMinha } from "@/features/live/CamadaReacoesMinha";
 import { boot } from "@/lib/dados";
 import { CHAMPS } from "@/lib/dados/campeoes";
@@ -42,7 +43,7 @@ export default function App() {
   }, []);
   /* a lista de membros some no K-FOFO (ele tem a própria lista no canto) */
   useEffect(() => {
-    document.body.classList.toggle("sem-membros", aba === "hall");
+    document.body.classList.toggle("sem-membros", aba === "hall" || aba === "habbo");
   }, [aba]);
 
   return (
@@ -68,6 +69,7 @@ export default function App() {
             <PerfilView hidden={aba !== "perfil"} />
             <LiveView hidden={aba !== "live"} />
             <ChatView hidden={aba !== "chat"} />
+            <HabboView hidden={aba !== "habbo"} />
           </div>
         </main>
         <Membros />
