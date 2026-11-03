@@ -242,6 +242,8 @@ function QuadroCanal({ q, pequeno }: { q: Quadro; pequeno?: boolean }) {
   const [menu, setMenu] = useState<{ lugar: Lugar; ancora: HTMLElement | null } | null>(null);
   const el = useRef<HTMLDivElement>(null);
   const [video, setVideo] = useState<HTMLVideoElement | null>(null);
+  /* a minha própria tela: como no Discord, sem prévia (senão vira tela dentro da tela, sem fim); dá para ligar */
+  const [previa, setPrevia] = useState(false);
 
   const fecharMenu = useCallback(() => setMenu(null), []);
   const comMenu = {
@@ -268,7 +270,7 @@ function QuadroCanal({ q, pequeno }: { q: Quadro; pequeno?: boolean }) {
   if (q.tipo === "tela") {
     const w = q.eu ? null : LIVE.watching.get(q.key);
     const principal = !q.eu && LIVE.main === q.key;
-    const st = q.eu ? LIVE.myStream : (w?.stream ?? null);
+    const st = q.eu ? (previa ? LIVE.myStream : null) : (w?.stream ?? null);
     const n = q.eu ? [...LIVE.viewers.values()].filter((v) => v.pc.connectionState === "connected").length : null;
     return (
       <div ref={el} className={"qd tela" + (pequeno ? " peq" : "") + (principal ? " principal" : "")} {...comMenu}>
@@ -278,9 +280,30 @@ function QuadroCanal({ q, pequeno }: { q: Quadro; pequeno?: boolean }) {
             <span className="live-pill">AO VIVO</span>
             {!pequeno && <b>{q.nome} está transmitindo</b>}
             <button type="button" className="btn sm" onClick={() => destacar(q.key)}>
-              {pequeno ? "Assistir" : "Assistir transmissão"}
+              {pequeno ? (
+                "Assistir"
+              ) : (
+                <>
+                  <span className="qd-longo">Assistir transmissão</span>
+                  <span className="qd-curto">Assistir</span>
+                </>
+              )}
             </button>
           </div>
+        )}
+        {q.eu && !previa && (
+          <div className="qd-minha">
+            <IcTela tam={28} />
+            <b>Você está transmitindo</b>
+            <button type="button" className="btn soft sm" onClick={() => setPrevia(true)}>
+              Ver prévia
+            </button>
+          </div>
+        )}
+        {q.eu && previa && (
+          <button type="button" className="btn soft sm qd-esconder" onClick={() => setPrevia(false)}>
+            Esconder prévia
+          </button>
         )}
         {w && w.state !== "live" && <div className="qd-espera">{w.state === "failed" ? "Não conectou. Toque para tentar de novo." : "Conectando…"}</div>}
         {/* tela aberta: clicar põe em destaque (ou tenta de novo, se falhou) */}
@@ -406,7 +429,7 @@ export function GradeCanal() {
     );
   return (
     <div className="cv-grade">
-      <div className="cv-quadros" style={{ "--cols": colunas(q.length) } as React.CSSProperties}>
+      <div className="cv-quadros" style={{ "--cols": colunas(q.length), "--linhas": Math.ceil(q.length / colunas(q.length)) } as React.CSSProperties}>
         {q.map((x) => (
           <QuadroCanal key={x.id} q={x} />
         ))}

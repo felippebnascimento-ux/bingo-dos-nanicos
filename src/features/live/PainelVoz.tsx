@@ -319,11 +319,14 @@ function MinhaTransmissao() {
       {/* pediu o som do PC e ele não veio: diz o que fazer e deixa transmitir de novo */}
       {somPc && !LIVE.hasAudio && (
         <div className="vz-semsom">
-          <p>
-            <SemSom />
-          </p>
-          <button type="button" className="btn sm" onClick={() => setLive({ janelaTela: true })}>
-            Transmitir de novo com som
+          <details>
+            <summary>Sem o som do PC</summary>
+            <p>
+              <SemSom />
+            </p>
+          </details>
+          <button type="button" className="btn soft sm" onClick={() => setLive({ janelaTela: true })}>
+            Tentar com som
           </button>
         </div>
       )}
