@@ -3,7 +3,8 @@
  * (duelo_estado, 2 vezes por segundo com a disputa em jogo), com a diferença do relógio do banco para o anel do tempo.
  * Perguntar também faz o duelo andar no banco (cancelar o aberto vencido, sortear para quem não escolheu, pagar).
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import { useLaco } from "./laco";
 import { getApp, setApp } from "@/lib/store";
 import { sb } from "@/lib/supabase";
 import { toast } from "@/lib/toast";
@@ -16,9 +17,8 @@ export function abrirDuelo() {
   setApp({ aba: "cassino" });
 }
 
-/* em jogo: 2 por segundo; esperando adversário: devagar; saguão: a cada 3 s; aba escondida: quase parado */
-function intervalo(id: number | null, d: Duelo | null, ativo: boolean) {
-  if (!ativo || document.hidden) return 5000;
+/* em jogo: 2 por segundo; esperando adversário: devagar; saguão: a cada 3 s (fora da tela, para: laco.ts) */
+function intervalo(id: number | null, d: Duelo | null) {
   if (!id) return 3000;
   if (d?.estado === "jogando") return 500;
   if (d?.estado === "aberto") return 1500;
@@ -76,20 +76,7 @@ export function useDuelo(ativo = true) {
     return usar(data, antes);
   }, [id, usar]);
 
-  useEffect(() => {
-    let vivo = true;
-    let t: ReturnType<typeof setTimeout> | undefined;
-    const laco = async () => {
-      const d = await ler().catch(() => null);
-      if (!vivo) return;
-      t = setTimeout(laco, intervalo(id, d, ativo));
-    };
-    void laco();
-    return () => {
-      vivo = false;
-      clearTimeout(t);
-    };
-  }, [ler, ativo, id]);
+  useLaco(ler, (d) => intervalo(id, d), ativo);
 
   /** Chama uma função do duelo; as que devolvem o estado já atualizam a tela. */
   const chamar = useCallback(

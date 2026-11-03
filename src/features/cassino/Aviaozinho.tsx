@@ -150,9 +150,9 @@ function lerAlvo(txt: string) {
   return Number.isFinite(n) && n >= 1.01 && n <= 1000 ? Math.round(n * 100) / 100 : null;
 }
 
-export function Aviaozinho() {
+export function Aviaozinho({ ativa = true }: { ativa?: boolean }) {
   const saldo = useCarteira((s) => s.carteira?.saldo);
-  const { estado, ligada, agora, recarregar } = useMesa("aviao");
+  const { estado, ligada, agora, recarregar } = useMesa("aviao", ativa);
   const [ficha, setFicha] = useState(25);
   const [alvoTxt, setAlvoTxt] = useState(() => local.get("aviao-alvo") ?? "2,00");
   const [autoOn, setAutoOn] = useState(() => local.get("aviao-auto") === "1");

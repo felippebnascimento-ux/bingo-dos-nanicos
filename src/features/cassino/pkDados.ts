@@ -3,16 +3,16 @@
  * diferença do relógio do banco para as contagens; e as jogadas. Perguntar também faz a mesa andar no banco (começar
  * a mão, jogar por quem estourou o tempo, levantar quem saiu).
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import { useLaco } from "./laco";
 import { sb } from "@/lib/supabase";
 import { toast } from "@/lib/toast";
 import { local } from "@/lib/util";
 import { lerEstadoPk, lerListaPk, type EstadoPk, type MesaListaPk } from "./pkRegras";
 import { carregar, msgDe } from "./estado";
 
-/* mais rápido com a mão em andamento; devagar no salão ou com a aba escondida */
-function intervalo(mesa: number | null, e: EstadoPk | null, ativo: boolean) {
-  if (!ativo || document.hidden) return 4000;
+/* mais rápido com a mão em andamento; devagar no salão (fora da tela, para: laco.ts) */
+function intervalo(mesa: number | null, e: EstadoPk | null) {
   if (!mesa) return 3000;
   if (!e?.mao || e.mao.fase === "fim") return 1200;
   return 700;
@@ -78,20 +78,7 @@ export function usePoquer(ativo = true) {
     return usar(data, antes);
   }, [mesa, usar, irPara]);
 
-  useEffect(() => {
-    let vivo = true;
-    let t: ReturnType<typeof setTimeout> | undefined;
-    const laco = async () => {
-      const e = await ler().catch(() => null);
-      if (!vivo) return;
-      t = setTimeout(laco, intervalo(mesa, e, ativo));
-    };
-    void laco();
-    return () => {
-      vivo = false;
-      clearTimeout(t);
-    };
-  }, [ler, ativo, mesa]);
+  useLaco(ler, (e) => intervalo(mesa, e), ativo);
 
   /** Chama uma função do pôquer; as que devolvem o estado já atualizam a mesa. */
   const chamar = useCallback(

@@ -3292,6 +3292,23 @@ begin
 end $$;
 revoke all on function public.mesa_avancar(text) from public, anon, authenticated;
 
+-- só para ler o estado (o site pergunta várias vezes por segundo): olha a rodada sem a trava e só chama mesa_avancar
+-- (que trava) quando há algo a fazer, sortear ou pagar. As apostas continuam passando pela trava de mesa_avancar.
+-- Sem isso, cada consulta entrava na fila da trava e as apostas esperavam atrás delas (03/11/2026).
+create or replace function public.mesa_olhar(p_jogo text) returns public.mesa_rodadas
+language plpgsql security definer set search_path = public as $$
+declare
+  r public.mesa_rodadas;
+begin
+  select * into r from public.mesa_rodadas where jogo = p_jogo order by id desc limit 1;
+  if not found then return null; end if;
+  if (r.resultado is null and clock_timestamp() >= r.fecha_em) or (not r.liquidada and r.resultado is not null and clock_timestamp() >= r.fim_em) then
+    return public.mesa_avancar(p_jogo);
+  end if;
+  return r;
+end $$;
+revoke all on function public.mesa_olhar(text) from public, anon, authenticated;
+
 -- a rodada aberta para apostar agora (abre uma se a mesa estiver parada); erro se estiver no meio do jogo
 create or replace function public.mesa_para_apostar(p_jogo text) returns public.mesa_rodadas
 language plpgsql security definer set search_path = public as $$
@@ -3433,7 +3450,7 @@ declare
 begin
   if not public.eh_nanico() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
   if p_jogo is null or p_jogo not in ('roleta', 'aviao') then raise exception 'Mesa inválida.' using errcode = 'P0001'; end if;
-  r := public.mesa_avancar(p_jogo);
+  r := public.mesa_olhar(p_jogo);
   v_ag := clock_timestamp();
   if r.id is null then
     v_fase := 'parada';
@@ -4871,6 +4888,24 @@ begin
 end $$;
 revoke all on function public.bj_avancar() from public, anon, authenticated;
 
+-- só para ler o estado: sem a trava enquanto não há o que fazer (apostas abertas, alguém na vez dentro do tempo ou a
+-- rodada já paga); senão chama bj_avancar, que trava. bj_apostar e bj_acao continuam passando pela trava.
+create or replace function public.bj_olhar() returns public.bj_rodadas
+language plpgsql security definer set search_path = public as $$
+declare
+  r public.bj_rodadas;
+begin
+  select * into r from public.bj_rodadas order by id desc limit 1;
+  if not found then return null; end if;
+  if r.fase = 'fim'
+     or (r.fase = 'apostas' and clock_timestamp() < r.fecha_em)
+     or (r.fase = 'jogo' and r.vez_ate is not null and clock_timestamp() <= r.vez_ate and (public.bj_vez(r.id)).id is not null) then
+    return r;
+  end if;
+  return public.bj_avancar();
+end $$;
+revoke all on function public.bj_olhar() from public, anon, authenticated;
+
 -- o estado da mesa para a tela (sem o sapato e, até a vez do dealer, sem a segunda carta dele)
 create or replace function public.bj_estado() returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -4881,7 +4916,7 @@ declare
   v_hist jsonb;
 begin
   if not public.eh_membro() then raise exception 'Só nanicos jogam.' using errcode = 'P0001'; end if;
-  r := public.bj_avancar();
+  r := public.bj_olhar();
   -- as últimas somas do dealer (a faixa de histórico da tela)
   v_hist := coalesce((select jsonb_agg(jsonb_build_object('pontos', public.bj_pontos(x.dealer), 'bj', coalesce(array_length(x.dealer, 1), 0) = 2 and public.bj_pontos(x.dealer) = 21) order by x.id desc)
     from (select id, dealer from public.bj_rodadas where fase = 'fim' order by id desc limit 8) x), '[]'::jsonb);

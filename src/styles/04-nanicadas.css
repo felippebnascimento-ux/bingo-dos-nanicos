@@ -38,7 +38,5 @@ ul.list li.li-empty{grid-column:1/-1;background:none}
 .badge.f{background:var(--mint-soft);color:var(--ink);padding-left:3px}
 .badge.c{background:var(--sun-soft);color:var(--ink)}
 .badge.g{background:var(--surface-2);color:var(--muted)}
-.lnk{border:0;background:none;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;padding:6px 8px;border-radius:8px;white-space:nowrap;position:relative}
-.lnk:hover{background:var(--surface-2);color:var(--ink)}
 .li-empty{justify-content:center;color:var(--muted);border:0!important;padding:28px 0!important}
 
