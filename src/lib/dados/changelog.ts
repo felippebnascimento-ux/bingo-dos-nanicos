@@ -437,6 +437,12 @@ export const CHANGELOG: EntradaLog[] = [
       "Na sua ficha, os botões Minha mochila e Abrir a loja",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "10 emblemas novos: Missionário (missões feitas), Dia perfeito (as 3 missões no dia), Mão quente (apostas ganhas), Tubarão (maior prêmio numa aposta), Pé no chão (voos sacados), Artilheiro (gols no Pênalti), Coruja (happy hour), Churrasqueiro (espetinhos), Fênix (Bolsas Cassino) e Colecionador (itens na mochila)",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
