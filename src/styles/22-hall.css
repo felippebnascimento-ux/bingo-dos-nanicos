@@ -561,3 +561,11 @@
 .hall-lupa svg{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
 .hall-lupa span{font:700 10px var(--display)}
 @media (max-width:760px){.hall-lupa{position:static;transform:none;grid-auto-flow:column;align-self:flex-end;align-items:center}}
+/* histórico do chat (tecla Z) */
+.habbo-historico{position:fixed;z-index:950;right:24px;bottom:24px;width:min(380px,calc(100vw - 32px));max-height:min(60vh,520px);display:grid;grid-template-rows:auto 1fr;border-radius:var(--r-md);background:var(--stamp-ink);color:var(--accent-ink);box-shadow:0 18px 40px -10px var(--shadow);overflow:hidden}
+.habbo-historico header{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid color-mix(in srgb,var(--accent-ink) 12%,transparent)}
+.habbo-historico header small{flex:1;color:color-mix(in srgb,var(--accent-ink) 55%,transparent)}
+.habbo-historico .perfil-fechar{color:var(--accent-ink);background:color-mix(in srgb,var(--accent-ink) 8%,transparent)}
+.habbo-historico-lista{overflow:auto;padding:8px 12px 12px;display:grid;gap:8px;align-content:start}
+.habbo-historico-msg{display:flex;gap:8px;margin:0;font-size:13.5px;overflow-wrap:anywhere}
+.habbo-historico-msg small{color:color-mix(in srgb,var(--accent-ink) 50%,transparent)}

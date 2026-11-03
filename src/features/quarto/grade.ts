@@ -12,7 +12,7 @@ export type AssentoQuarto = { id: string; movel: number; i: number; j: number; c
 export type Grade = { tam: number; livre: (i: number, j: number) => boolean; assentos: AssentoQuarto[] };
 
 /** móveis de sentar: um lugar por piso da largura, sentando pela frente */
-export const SENTAVEIS: ReadonlySet<string> = new Set(["cama", "cama-casal", "sofa", "poltrona", "puff", "cadeira-gamer", "cadeira-trono", "banco-praca"]);
+export const SENTAVEIS: ReadonlySet<string> = new Set(["cama", "cama-casal", "sofa", "poltrona", "puff", "cadeira-gamer", "cadeira-trono", "banco-praca", "vaso"]);
 /** tapete não bloqueia: dá para andar por cima */
 const PISAVEL = (desenho: string) => desenho.startsWith("tapete");
 
