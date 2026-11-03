@@ -3,11 +3,14 @@ import { create } from "zustand";
 import { sb } from "@/lib/supabase";
 import type { Pagamentos, Rolo } from "./regras";
 
-export type Jogo = "roleta" | "aviao" | "limbo" | "dado" | "slot" | "penalti" | "blackjack" | "poker";
+export type Jogo = "roleta" | "aviao" | "limbo" | "dado" | "slot" | "penalti" | "blackjack" | "poker" | "duelo";
 export type Estado = { hash: string; cliente: string; nonce: number };
 export type Aposta = { id: number; jogo: Jogo; aposta: number; escolha: Record<string, unknown>; resultado: Record<string, unknown>; pagou: number; hash: string; nonce: number; em: string };
 export type Revelada = { id: number; semente_hex: string; hash: string; semente_cliente: string; ultimo_nonce: number };
 export type Feed = { nome: string | null; jogo: Jogo; aposta: number; pagou: number };
+
+/** O jogo escolhido na aba Cassino (fica aqui para o K-FOFO poder abrir direto num jogo, como o Pênalti x1). */
+export const useJogoCassino = create<{ jogo: Jogo }>()(() => ({ jogo: "roleta" }));
 
 /** `ligado` = null enquanto não carregou; false se o SQL do cassino não rodou. */
 export const useCassino = create<{

@@ -93,7 +93,7 @@ function LadoGoleiro() {
 }
 
 /** O goleiro de frente, na espera: pernas abertas e flexionadas, braços abertos, luvas para cima (o pulo é CSS). */
-function Goleiro() {
+export function Goleiro() {
   return (
     <svg viewBox="0 0 200 250" className="pn-goleiro-svg">
       <defs>
@@ -164,7 +164,7 @@ function Goleiro() {
 }
 
 /** Bola de futebol (gomos pretos), girando durante o chute. */
-function Bola() {
+export function Bola() {
   return (
     <svg viewBox="-20 -20 40 40" className="pn-bola-svg">
       <circle r="19" className="pn-bola-branca" />
