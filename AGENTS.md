@@ -9,3 +9,5 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 <!-- END:nextjs-agent-rules -->
 
 Regras do projeto (segurança, padrão de código, visual, dados): leia o **CLAUDE.md**.
+
+Para implementar mudanças na interface, nos jogos, no Supabase ou na sala em tempo real, use a skill [nanicos-full-stack](.agents/skills/nanicos-full-stack/SKILL.md).
