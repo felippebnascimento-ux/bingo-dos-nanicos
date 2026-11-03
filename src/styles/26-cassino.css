@@ -466,7 +466,8 @@
 .penalti{
   --pn-noite0:#0B1226; --pn-noite1:#1A2440; --pn-grama0:#2E8B3E; --pn-grama1:#26773A; --pn-grama2:#1C5E2C; --pn-cal:#F4F6EF;
   --pn-trave:#FAFAF7; --pn-trave-sombra:#B9BDB4; --pn-luz:#FFF6D8; --pn-torcida0:#2A3150; --pn-torcida1:#4A3A55;
-  --pn-camisa0:#C7F23A; --pn-camisa1:#7FB51C; --pn-calcao:#1B1E24; --pn-meia:#C7F23A; --pn-luva:#FF7A1A; --pn-pele:#D9A177; --pn-cabelo:#2B1B12; --pn-chuteira:#111111;
+  --pn-camisa0:#D8FF4A; --pn-camisa1:#86C21E; --pn-camisa2:#4E7A0E; --pn-calcao:#1B1E24; --pn-calcao2:#3A3F4A; --pn-meia:#C7F23A; --pn-luva:#FF8A2A; --pn-luva2:#C2500C;
+  --pn-pele:#F0C29A; --pn-pele2:#D29A6E; --pn-pele3:#9C6440; --pn-cabelo:#2B1B12; --pn-chuteira:#111111;
   --pn-bola:#FFFFFF; --pn-gomo:#16181C; --pn-mira:#FFD27A; --pn-gol:#86EFAC; --pn-defendeu:#FF8A98}
 .pn-escada{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
 .pn-escada li{display:grid;place-items:center;padding:7px 4px;border-radius:12px;background:rgb(0 0 0 / .28);border:1px solid color-mix(in srgb,var(--rm-creme) 14%,transparent);font:800 15px var(--display);font-variant-numeric:tabular-nums}
@@ -491,16 +492,33 @@
 .pn-trave{position:absolute;inset:-4px -4px 0;border:6px solid var(--pn-trave);border-bottom:0;border-radius:3px 3px 0 0;box-shadow:inset 0 0 0 1px var(--pn-trave-sombra),3px 4px 8px rgb(0 0 0 / .45)}
 .pn-goleiro{position:absolute;left:50%;bottom:-4%;width:26%;transform:translateX(-50%);transform-origin:50% 90%;transition:transform .55s cubic-bezier(.2,.8,.3,1) .35s;z-index:2;filter:drop-shadow(0 6px 6px rgb(0 0 0 / .4))}
 .pn-goleiro-svg{display:block;width:100%;height:auto;overflow:visible}
-.pn-goleiro.esq.alto{transform:translate(-150%,-18%) rotate(-62deg)}.pn-goleiro.esq.baixo{transform:translate(-150%,8%) rotate(-82deg)}
-.pn-goleiro.dir.alto{transform:translate(50%,-18%) rotate(62deg)}.pn-goleiro.dir.baixo{transform:translate(50%,8%) rotate(82deg)}
-.pn-goleiro.meio.alto{transform:translate(-50%,-22%)}.pn-goleiro.meio.baixo{transform:translate(-50%,6%) scaleY(.86)}
+.pn-goleiro.esq.alto{transform:translate(-145%,-30%) rotate(-62deg)}.pn-goleiro.esq.baixo{transform:translate(-140%,-12%) rotate(-80deg)}
+.pn-goleiro.dir.alto{transform:translate(45%,-30%) rotate(62deg)}.pn-goleiro.dir.baixo{transform:translate(40%,-12%) rotate(80deg)}
+.pn-goleiro.meio.alto{transform:translate(-50%,-24%)}.pn-goleiro.meio.baixo{transform:translate(-50%,4%) scaleY(.88)}
 .pn-st-camisa0{stop-color:var(--pn-camisa0)}.pn-st-camisa1{stop-color:var(--pn-camisa1)}
-.pn-camisa{stroke:rgb(0 0 0 / .25);stroke-width:1}.pn-listra{stroke:var(--pn-calcao);stroke-width:3;opacity:.55}
-.pn-numero{font:800 20px var(--display);fill:var(--pn-calcao);text-anchor:middle}
-.pn-calcao{fill:var(--pn-calcao)}.pn-meia{fill:var(--pn-meia)}.pn-chuteira{fill:var(--pn-chuteira)}
-.pn-braco{fill:none;stroke:var(--pn-camisa1);stroke-width:9;stroke-linecap:round}
-.pn-luva{fill:var(--pn-luva);stroke:rgb(0 0 0 / .25);stroke-width:1}
-.pn-pele{fill:var(--pn-pele)}.pn-cabelo{fill:var(--pn-cabelo)}.pn-olho{fill:var(--pn-calcao)}
+.pn-st-pele0{stop-color:var(--pn-pele)}.pn-st-pele1{stop-color:var(--pn-pele2)}
+.pn-st-luva0{stop-color:var(--pn-luva)}.pn-st-luva1{stop-color:var(--pn-luva2)}
+.pn-st-calcao0{stop-color:var(--pn-calcao2)}.pn-st-calcao1{stop-color:var(--pn-calcao)}
+.pn-camisa{stroke:var(--pn-camisa2);stroke-width:1.2;stroke-linejoin:round}
+.pn-camisa-sombra{fill:var(--pn-camisa2);opacity:.35}
+.pn-listra{fill:var(--pn-calcao);opacity:.5}
+.pn-gola{fill:none;stroke:var(--pn-calcao);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.pn-numero{font:800 20px var(--display);fill:var(--pn-calcao);text-anchor:middle;opacity:.85}
+.pn-calcao{stroke:var(--pn-calcao);stroke-width:1}
+.pn-coxa{fill:none;stroke:var(--pn-pele2);stroke-width:13;stroke-linecap:round}
+.pn-canela{fill:none;stroke:var(--pn-meia);stroke-width:11;stroke-linecap:round}
+.pn-meia-faixa{stroke:var(--pn-calcao);stroke-width:11;opacity:.55}
+.pn-chuteira{fill:var(--pn-chuteira)}.pn-chuteira-sola{stroke:var(--pn-luva);stroke-width:1.5;stroke-linecap:round}
+.pn-braco{fill:none;stroke:var(--pn-camisa1);stroke-width:11;stroke-linecap:round;stroke-linejoin:round}
+.pn-punho{stroke:var(--pn-calcao);stroke-width:11;stroke-linecap:butt;opacity:.6}
+.pn-luva{stroke:var(--pn-luva2);stroke-width:1;stroke-linejoin:round}
+.pn-luva-faixa{fill:none;stroke:var(--pn-trave);stroke-width:2.4;stroke-linecap:round;opacity:.9}
+.pn-pele{fill:var(--pn-pele2)}.pn-pescoco{fill:var(--pn-pele2)}.pn-cabeca{stroke:var(--pn-pele2);stroke-width:.6}
+.pn-cabelo{fill:var(--pn-cabelo)}
+.pn-sobrancelha{fill:none;stroke:var(--pn-cabelo);stroke-width:1.8;stroke-linecap:round}
+.pn-olho-branco{fill:var(--pn-trave)}.pn-olho{fill:var(--pn-calcao)}
+.pn-nariz{fill:none;stroke:var(--pn-pele3);stroke-width:1.3;stroke-linecap:round}
+.pn-boca{fill:none;stroke:var(--pn-pele3);stroke-width:1.6;stroke-linecap:round}
 .pn-sombra{fill:rgb(0 0 0 / .35)}
 .pn-zonas{position:absolute;inset:4% 3% 0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:4px;z-index:3}
 .pn-zona{position:relative;padding:0;border:2px dashed transparent;border-radius:10px;background:none;cursor:pointer;transition:background .15s,border-color .15s}

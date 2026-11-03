@@ -55,36 +55,78 @@ function torcida(gol: boolean) {
   }
 }
 
-/** O goleiro de frente, braços abertos (o pulo é CSS). */
+/** Um lado do goleiro (braço, luva, perna e chuteira); o outro lado é o espelho. */
+function LadoGoleiro() {
+  return (
+    <>
+      {/* perna: coxa, joelho flexionado, meião até a chuteira */}
+      <path d="M66 112 L53 130" className="pn-coxa" />
+      <path d="M53 130 L49 153" className="pn-canela" />
+      <path d="M52.5 134 L51 141" className="pn-meia-faixa" />
+      <path d="M38 152 Q48 145 60 151 L61 157 Q49 161 38 158 Z" className="pn-chuteira" />
+      <path d="M42 156 L58 156" className="pn-chuteira-sola" />
+      {/* braço aberto: ombro, cotovelo e punho, com a manga comprida */}
+      <path d="M60 57 Q42 58 33 64 Q24 58 21 48" className="pn-braco" />
+      <path d="M23.5 52 L19 50" className="pn-punho" />
+      {/* luva aberta, dedos para cima */}
+      <path
+        d="M11 50 Q5 40 8 27 Q9.5 23 12 25 L13.5 34 L13.5 21 Q15 17 17.5 20 L18.5 33 L20 19.5 Q22 16 24.5 19.5 L24 33 L27 25.5 Q30 23 31 27 L28 41 Q27 50 19 52 Z"
+        fill="url(#pn-luva)"
+        className="pn-luva"
+      />
+      <path d="M12 46 Q19 49 26 45" className="pn-luva-faixa" />
+    </>
+  );
+}
+
+/** O goleiro de frente, agachado na espera, braços abertos (o pulo é CSS). */
 function Goleiro() {
   return (
-    <svg viewBox="0 0 120 150" className="pn-goleiro-svg">
+    <svg viewBox="0 0 160 168" className="pn-goleiro-svg">
       <defs>
-        <linearGradient id="pn-camisa" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id="pn-camisa" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" className="pn-st-camisa0" />
           <stop offset="1" className="pn-st-camisa1" />
         </linearGradient>
+        <radialGradient id="pn-rosto" cx="40%" cy="35%" r="70%">
+          <stop offset="0" className="pn-st-pele0" />
+          <stop offset="1" className="pn-st-pele1" />
+        </radialGradient>
+        <linearGradient id="pn-luva" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" className="pn-st-luva0" />
+          <stop offset="1" className="pn-st-luva1" />
+        </linearGradient>
+        <linearGradient id="pn-short" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" className="pn-st-calcao0" />
+          <stop offset="1" className="pn-st-calcao1" />
+        </linearGradient>
       </defs>
-      <ellipse cx="60" cy="146" rx="26" ry="4" className="pn-sombra" />
-      {/* pernas e chuteiras */}
-      <path d="M48 98 L42 136 L52 137 L58 102 Z M72 98 L78 136 L68 137 L62 102 Z" className="pn-meia" />
-      <path d="M38 136 Q46 132 54 136 L54 141 L38 141 Z M66 136 Q74 132 82 136 L82 141 L66 141 Z" className="pn-chuteira" />
-      <path d="M42 84 L78 84 L80 104 L62 104 L60 96 L58 104 L40 104 Z" className="pn-calcao" />
-      {/* braços abertos com as luvas */}
-      <path d="M40 50 Q22 46 12 30" className="pn-braco" />
-      <path d="M80 50 Q98 46 108 30" className="pn-braco" />
-      <circle cx="11" cy="27" r="8" className="pn-luva" />
-      <circle cx="109" cy="27" r="8" className="pn-luva" />
-      {/* camisa */}
-      <path d="M38 44 Q60 36 82 44 L84 88 L36 88 Z" fill="url(#pn-camisa)" className="pn-camisa" />
-      <path d="M38 60 L82 60" className="pn-listra" />
-      <text x="60" y="80" className="pn-numero">1</text>
-      {/* cabeça */}
-      <rect x="55" y="32" width="10" height="8" rx="3" className="pn-pele" />
-      <circle cx="60" cy="22" r="13" className="pn-pele" />
-      <path d="M47 20 Q48 7 60 7 Q73 7 73 20 Q67 13 60 14 Q52 13 47 20 Z" className="pn-cabelo" />
-      <circle cx="55" cy="23" r="1.6" className="pn-olho" />
-      <circle cx="65" cy="23" r="1.6" className="pn-olho" />
+      <ellipse cx="80" cy="161" rx="44" ry="5" className="pn-sombra" />
+      <LadoGoleiro />
+      <g transform="matrix(-1 0 0 1 160 0)">
+        <LadoGoleiro />
+      </g>
+      {/* calção */}
+      <path d="M57 96 L103 96 L107 117 L85 118 L80 109 L75 118 L53 117 Z" fill="url(#pn-short)" className="pn-calcao" />
+      {/* camisa: ombros largos, corpo inclinado para a frente */}
+      <path d="M57 52 Q80 43 103 52 L108 73 Q107 89 102 100 L58 100 Q53 89 52 73 Z" fill="url(#pn-camisa)" className="pn-camisa" />
+      <path d="M53 66 L107 60 L107.6 67 L53.6 73 Z" className="pn-listra" />
+      <path d="M58 100 Q53 89 52 73 L57 52 Q62 76 66 100 Z" className="pn-camisa-sombra" />
+      <path d="M71 48.5 L80 58 L89 48.5" className="pn-gola" />
+      <text x="80" y="93" className="pn-numero">1</text>
+      {/* pescoço e cabeça */}
+      <path d="M74 40 L86 40 L87 51 Q80 54 73 51 Z" className="pn-pescoco" />
+      <ellipse cx="66.5" cy="31" rx="3" ry="4.2" className="pn-pele" />
+      <ellipse cx="93.5" cy="31" rx="3" ry="4.2" className="pn-pele" />
+      <ellipse cx="80" cy="29" rx="13" ry="15" fill="url(#pn-rosto)" className="pn-cabeca" />
+      <path d="M67 27 Q65 12 80 11 Q95 12 93 27 Q91 19 80 18.5 Q69 19 67 27 Z" className="pn-cabelo" />
+      <path d="M71.5 25.5 Q74.5 24 77.5 25.2 M82.5 25.2 Q85.5 24 88.5 25.5" className="pn-sobrancelha" />
+      <ellipse cx="75" cy="29.8" rx="2.7" ry="1.9" className="pn-olho-branco" />
+      <ellipse cx="85" cy="29.8" rx="2.7" ry="1.9" className="pn-olho-branco" />
+      <circle cx="75.4" cy="30" r="1.25" className="pn-olho" />
+      <circle cx="85.4" cy="30" r="1.25" className="pn-olho" />
+      <path d="M80 31 Q82.6 35 79.4 36.2" className="pn-nariz" />
+      <path d="M75.5 39.2 Q80 41.6 84.5 39.2" className="pn-boca" />
     </svg>
   );
 }
