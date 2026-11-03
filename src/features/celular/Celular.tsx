@@ -13,11 +13,12 @@ import { useSure } from "@/components/ui/useSure";
 import { useMinhaMochila } from "@/features/loja/lojaDados";
 import { Imagem } from "@/features/midias/Imagem";
 import { setApp, useApp } from "@/lib/store";
+import { toast } from "@/lib/toast";
 import { reduzMovimento } from "@/lib/util";
-import { agrupar, andar, FUNDOS, inicioDoGrupo, STORY_MS, tempoCurto, type Fundo, type Grupo, type Story } from "./insta";
+import { agrupar, andar, conversas, daConversa, FUNDOS, inicioDoGrupo, resumo, STORY_MS, tempoCurto, type Fundo, type Grupo, type Mensagem, type Story } from "./insta";
 import {
-  abrirCelular, apagarComentario, apagarPost, apagarStory, comentar, curtir, fecharCelular, iniciarRede, lerQuemViu, marcarVisto,
-  maisPostagens, postar, postarStory, useRede, verPerfil, type Comentario, type Post,
+  abrirCelular, abrirConversa, apagarComentario, apagarPost, apagarStory, comentar, curtir, enviarMensagem, fecharCelular, iniciarRede,
+  lerQuemViu, marcarVisto, maisPostagens, postar, postarStory, useRede, verPerfil, type Comentario, type Post,
 } from "./rede";
 
 /** Tenho o celular na mochila? Também avisa a rede quando muda (comprou agora). */
@@ -32,7 +33,7 @@ const hora = () => new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", min
 /** Botão do celular (menu e canto do Sítio), com a bolinha de não lidas. Some para quem não tem o item. */
 export function BotaoCelular({ className = "" }: { className?: string }) {
   const tem = useTemCelular();
-  const nao = useRede((s) => s.naoLidas);
+  const nao = useRede((s) => s.naoLidas + s.naoLidasDM);
   if (!tem) return null;
   return (
     <button type="button" className={"celular-botao " + className} onClick={abrirCelular} aria-label={`Abrir o celular${nao ? `, ${nao} novas` : ""}`}>
@@ -66,6 +67,7 @@ const IcX = () => <Ic d={<path d="M5 5l14 14M19 5 5 19" />} />;
 const IcVoltar = () => <Ic d={<path d="M15 4 7 12l8 8" />} />;
 const IcOlho = () => <Ic tam={18} d={<><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12Z" /><circle cx="12" cy="12" r="3" /></>} />;
 const IcGrade = () => <Ic tam={20} d={<><rect x="3" y="3" width="18" height="18" /><path d="M9 3v18M15 3v18M3 9h18M3 15h18" /></>} />;
+const IcCaneta = () => <Ic d={<><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17v3Z" /><path d="m14.5 7.5 3 3" /></>} />;
 const IcFoto = () => <Ic d={<><rect x="3" y="3" width="18" height="18" rx="3" /><circle cx="9" cy="9" r="2" /><path d="m21 15-5-5L5 21" /></>} />;
 
 /* ---------- pedaços comuns ---------- */
@@ -103,13 +105,17 @@ function RostoAnel({ userId, tam = 32, anel = "nenhum", onClick, rotulo }: { use
 /** O "usuário" do Instagram: o nome do nanico em minúsculas, sem espaço. */
 const arroba = (nome: string | undefined) => (nome ?? "alguem").toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "");
 
-type Tela = "inicio" | "explorar" | "novo" | "atividade" | "perfil";
+type Tela = "inicio" | "explorar" | "novo" | "atividade" | "perfil" | "direct";
 type Nav = {
   ir: (t: Tela) => void;
   perfil: (userId: string) => void;
   verStories: (userId: string) => void;
   comentarios: (p: Post) => void;
   abrirPost: (p: Post) => void;
+  /** abre a conversa com um nanico no Direct */
+  conversa: (userId: string) => void;
+  /** abre a folha para mandar a publicação para alguém */
+  compartilhar: (p: Post) => void;
 };
 
 /* ---------- Dynamic Island ---------- */
@@ -230,7 +236,7 @@ function PostInsta({ p, nav }: { p: Post; nav: Nav }) {
         <button type="button" className="ig-sem-botao" aria-label="Comentar" onClick={() => nav.comentarios(p)}>
           <IcBalao />
         </button>
-        <button type="button" className="ig-sem-botao" aria-label="Enviar (em breve)" disabled>
+        <button type="button" className="ig-sem-botao" aria-label="Enviar para um nanico" onClick={() => nav.compartilhar(p)}>
           <IcAviao />
         </button>
         <span className="ig-espaco" />
@@ -334,9 +340,7 @@ function Feed({ grupos, nav, abrirCriador }: { grupos: Grupo[]; nav: Nav; abrirC
         <button type="button" className="ig-sem-botao" aria-label="Atividade" onClick={() => nav.ir("atividade")}>
           <IcCoracao />
         </button>
-        <button type="button" className="ig-sem-botao" aria-label="Mensagens (em breve)" disabled>
-          <IcAviao />
-        </button>
+        <BotaoDirect nav={nav} />
       </header>
       <FileiraStories grupos={grupos} nav={nav} abrirCriador={abrirCriador} />
       {posts.map((p) => (
@@ -598,6 +602,9 @@ function VerStories({ grupos, inicio, fechar }: { grupos: Grupo[]; inicio: { g: 
   const [pos, setPos] = useState(inicio);
   const [pausa, setPausa] = useState(false);
   const [lista, setLista] = useState(false);
+  /* respondendo: o story para de andar enquanto a pessoa digita */
+  const [resposta, setResposta] = useState("");
+  const [digitando, setDigitando] = useState(false);
   const { sure, pedir } = useSure(3000);
   const grupo = grupos[pos.g];
   const story: Story | undefined = grupo?.stories[pos.s];
@@ -618,14 +625,14 @@ function VerStories({ grupos, inicio, fechar }: { grupos: Grupo[]; inicio: { g: 
     setPos(n);
   };
   useEffect(() => {
-    if (pausa || lista || !story) return;
+    if (pausa || lista || digitando || !story) return;
     const t = setTimeout(() => {
       const n = andar(grupos, pos.g, pos.s, 1);
       if (!n) fechar();
       else setPos(n);
     }, STORY_MS);
     return () => clearTimeout(t);
-  }, [pos, pausa, lista, story, grupos, fechar]);
+  }, [pos, pausa, lista, digitando, story, grupos, fechar]);
 
   if (!grupo || !story) return null;
   const viu = quemViu[story.id] ?? [];
@@ -634,7 +641,7 @@ function VerStories({ grupos, inicio, fechar }: { grupos: Grupo[]; inicio: { g: 
       <div className="ig-barras" aria-hidden="true">
         {grupo.stories.map((s, k) => (
           <span key={s.id} className={k < pos.s ? "cheia" : ""}>
-            {k === pos.s && <i key={`${story.id}-${pausa || lista}`} className={pausa || lista ? "pausa" : ""} style={{ animationDuration: `${STORY_MS}ms` }} />}
+            {k === pos.s && <i key={`${story.id}-${pausa || lista || digitando}`} className={pausa || lista || digitando ? "pausa" : ""} style={{ animationDuration: `${STORY_MS}ms` }} />}
           </span>
         ))}
       </div>
@@ -669,10 +676,37 @@ function VerStories({ grupos, inicio, fechar }: { grupos: Grupo[]; inicio: { g: 
           </button>
         </footer>
       ) : (
-        <footer className="ig-story-pe">
-          <span className="ig-responder">Envie uma mensagem para {arroba(f?.name)}</span>
-          <IcCoracao />
-        </footer>
+        <form
+          className="ig-story-pe"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!resposta.trim()) return;
+            void enviarMensagem(grupo.userId, resposta, { storyId: story.id }).then((ok) => {
+              if (!ok) return;
+              setResposta("");
+              setDigitando(false);
+              toast(`Enviada para ${f?.name ?? "o nanico"}`);
+            });
+          }}
+        >
+          <input
+            className="ig-responder"
+            aria-label={`Responder ao story de ${f?.name ?? "alguém"}`}
+            maxLength={1000}
+            placeholder={`Envie uma mensagem para ${arroba(f?.name)}`}
+            value={resposta}
+            onFocus={() => setDigitando(true)}
+            onBlur={() => !resposta.trim() && setDigitando(false)}
+            onChange={(e) => setResposta(e.target.value)}
+          />
+          {resposta.trim() ? (
+            <button type="submit" className="ig-sem-botao ig-azul">
+              Enviar
+            </button>
+          ) : (
+            <IcCoracao />
+          )}
+        </form>
       )}
       {lista && (
         <div className="ig-folha-fundo" onClick={(e) => e.target === e.currentTarget && setLista(false)}>
@@ -701,13 +735,256 @@ function Visualizou({ userId }: { userId: string }) {
   );
 }
 
+/* ---------- Direct ---------- */
+function BotaoDirect({ nav }: { nav: Nav }) {
+  const n = useRede((s) => s.naoLidasDM);
+  return (
+    <button type="button" className="ig-sem-botao ig-direct-botao" aria-label={`Mensagens${n ? `, ${n} não lidas` : ""}`} onClick={() => nav.ir("direct")}>
+      <IcAviao />
+      {n > 0 && <span className="ig-selo">{n > 9 ? "9+" : n}</span>}
+    </button>
+  );
+}
+
+function ItemConversa({ outro, ultima, naoLidas, nav }: { outro: string; ultima: Mensagem; naoLidas: number; nav: Nav }) {
+  const eu = useApp((s) => s.myUid);
+  const f = useNome(outro);
+  const agora = useAgora();
+  return (
+    <li>
+      <button type="button" className={"ig-sem-botao ig-conversa-item" + (naoLidas ? " nova" : "")} onClick={() => nav.conversa(outro)}>
+        <RostoAnel userId={outro} tam={52} />
+        <span className="ig-conversa-txt">
+          <b>{f?.name ?? "Alguém"}</b>
+          <small>
+            {resumo(ultima, eu)} · {tempoCurto(ultima.em, agora)}
+          </small>
+        </span>
+        {naoLidas > 0 && <span className="ig-ponto-azul" aria-label={`${naoLidas} não lidas`} />}
+      </button>
+    </li>
+  );
+}
+
+function DirectLista({ nav }: { nav: Nav }) {
+  const eu = useApp((s) => s.myUid);
+  const meu = useNome(eu);
+  const mensagens = useRede((s) => s.mensagens);
+  const friends = useApp((s) => s.friends);
+  const [nova, setNova] = useState(false);
+  const [busca, setBusca] = useState("");
+  const lista = useMemo(() => conversas(mensagens, eu), [mensagens, eu]);
+  const gente = friends.filter((f) => f.user_id && f.user_id !== eu && (!busca.trim() || arroba(f.name).includes(arroba(busca))));
+  const semConversa = gente.filter((f) => !lista.some((c) => c.outro === f.user_id));
+  return (
+    <>
+      <header className="ig-topo">
+        <button type="button" className="ig-sem-botao" aria-label="Voltar" onClick={() => (nova ? setNova(false) : nav.ir("inicio"))}>
+          <IcVoltar />
+        </button>
+        <b className="ig-titulo">{nova ? "Nova mensagem" : arroba(meu?.name)}</b>
+        <span className="ig-espaco" />
+        {!nova && (
+          <button type="button" className="ig-sem-botao" aria-label="Nova mensagem" onClick={() => setNova(true)}>
+            <IcCaneta />
+          </button>
+        )}
+      </header>
+      <div className="ig-busca">
+        <IcLupa />
+        <input aria-label="Pesquisar" placeholder="Pesquisar" value={busca} onChange={(e) => setBusca(e.target.value)} />
+      </div>
+      {nova || busca.trim() ? (
+        <ul className="ig-lista-gente">
+          {gente.map((f) => (
+            <li key={f.id}>
+              <button type="button" className="ig-sem-botao" onClick={() => nav.conversa(f.user_id!)}>
+                <RostoAnel userId={f.user_id!} tam={44} />
+                <span>
+                  <b>{f.name}</b>
+                  <small className="ig-cinza">{arroba(f.name)}</small>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <>
+          <p className="ig-secao">Mensagens</p>
+          <ul className="ig-conversas">
+            {lista.length ? lista.map((c) => <ItemConversa key={c.outro} {...c} nav={nav} />) : <li className="ig-vazio">Nenhuma conversa ainda. Mande a primeira mensagem.</li>}
+          </ul>
+          {semConversa.length > 0 && (
+            <>
+              <p className="ig-secao">Sugestões</p>
+              <ul className="ig-lista-gente">
+                {semConversa.slice(0, 8).map((f) => (
+                  <li key={f.id}>
+                    <button type="button" className="ig-sem-botao" onClick={() => nav.conversa(f.user_id!)}>
+                      <RostoAnel userId={f.user_id!} tam={44} />
+                      <span>
+                        <b>{f.name}</b>
+                        <small className="ig-cinza">Toque para mandar mensagem</small>
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </>
+      )}
+    </>
+  );
+}
+
+/** Um balão da conversa: texto, resposta a story ou publicação enviada. */
+function Balao({ m, meu, nav }: { m: Mensagem; meu: boolean; nav: Nav }) {
+  const post = useRede((s) => (m.postId ? s.posts.find((p) => p.id === m.postId) : undefined));
+  const autor = useNome(post?.userId);
+  return (
+    <div className={"ig-balao-linha" + (meu ? " meu" : "")}>
+      <div className="ig-balao-col">
+        {m.storyId && <small className="ig-cinza ig-balao-nota">{meu ? "Você respondeu ao story" : "Respondeu ao seu story"}</small>}
+        {m.postId &&
+          (post ? (
+            <button type="button" className="ig-balao-post" onClick={() => nav.abrirPost(post)}>
+              <span className="ig-balao-post-topo">
+                <RostoAnel userId={post.userId} tam={22} /> <b>{arroba(autor?.name)}</b>
+              </span>
+              {post.midia ? <Imagem caminho={post.midia} alt="" /> : <span className="ig-quadrado-texto">{post.texto}</span>}
+            </button>
+          ) : (
+            <span className="ig-balao ig-cinza">Publicação</span>
+          ))}
+        {m.texto && <span className={"ig-balao" + (meu ? " meu" : "")}>{m.texto}</span>}
+      </div>
+    </div>
+  );
+}
+
+function Conversa({ outro, nav }: { outro: string; nav: Nav }) {
+  const eu = useApp((s) => s.myUid);
+  const f = useNome(outro);
+  const mensagens = useRede((s) => s.mensagens);
+  const lista = useMemo(() => daConversa(mensagens, eu, outro), [mensagens, eu, outro]);
+  const [texto, setTexto] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const fim = useRef<HTMLDivElement>(null);
+  const ultimaVista = lista[lista.length - 1];
+  const vista = !!ultimaVista && ultimaVista.de === eu && !!ultimaVista.lidaEm;
+  useEffect(() => {
+    fim.current?.scrollIntoView({ block: "end" });
+  }, [lista.length]);
+  const mandar = async () => {
+    if (!texto.trim() || enviando) return;
+    setEnviando(true);
+    if (await enviarMensagem(outro, texto)) setTexto("");
+    setEnviando(false);
+  };
+  return (
+    <div className="ig-chat">
+      <header className="ig-topo">
+        <button type="button" className="ig-sem-botao" aria-label="Voltar" onClick={() => nav.ir("direct")}>
+          <IcVoltar />
+        </button>
+        <button type="button" className="ig-sem-botao ig-chat-quem" onClick={() => nav.perfil(outro)}>
+          <RostoAnel userId={outro} tam={30} />
+          <span>
+            <b>{f?.name ?? "Alguém"}</b>
+            <small className="ig-cinza">{arroba(f?.name)}</small>
+          </span>
+        </button>
+      </header>
+      <div className="ig-chat-lista">
+        <div className="ig-chat-cabeca">
+          <RostoAnel userId={outro} tam={86} />
+          <b>{f?.name}</b>
+          <small className="ig-cinza">{arroba(f?.name)} · InstaNanico</small>
+        </div>
+        {lista.map((m) => (
+          <Balao key={m.id} m={m} meu={m.de === eu} nav={nav} />
+        ))}
+        {vista && <small className="ig-cinza ig-visto-chat">Visto</small>}
+        <div ref={fim} />
+      </div>
+      <form
+        className="ig-chat-campo"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void mandar();
+        }}
+      >
+        <input aria-label="Mensagem" maxLength={1000} placeholder="Mensagem…" value={texto} onChange={(e) => setTexto(e.target.value)} />
+        {texto.trim() && (
+          <button type="submit" className="ig-sem-botao ig-azul" disabled={enviando}>
+            Enviar
+          </button>
+        )}
+      </form>
+    </div>
+  );
+}
+
+/** Folha para mandar uma publicação para um ou mais nanicos. */
+function FolhaCompartilhar({ p, fechar }: { p: Post; fechar: () => void }) {
+  const eu = useApp((s) => s.myUid);
+  const friends = useApp((s) => s.friends);
+  const [marcados, setMarcados] = useState<string[]>([]);
+  const [enviando, setEnviando] = useState(false);
+  const gente = friends.filter((f) => f.user_id && f.user_id !== eu);
+  const mandar = async () => {
+    setEnviando(true);
+    let ok = 0;
+    for (const u of marcados) if (await enviarMensagem(u, "", { postId: p.id })) ok++;
+    setEnviando(false);
+    if (ok) {
+      toast(ok === 1 ? "Enviada" : `Enviada para ${ok} nanicos`);
+      fechar();
+    }
+  };
+  return (
+    <div className="ig-folha-fundo" onClick={(e) => e.target === e.currentTarget && fechar()}>
+      <section className="ig-folha" aria-label="Enviar para">
+        <span className="ig-alca" aria-hidden="true" />
+        <h3>Enviar para</h3>
+        <div className="ig-compartilhar">
+          {gente.map((f) => {
+            const on = marcados.includes(f.user_id!);
+            return (
+              <button
+                key={f.id}
+                type="button"
+                className={"ig-sem-botao ig-comp-item" + (on ? " on" : "")}
+                aria-pressed={on}
+                onClick={() => setMarcados((m) => (on ? m.filter((x) => x !== f.user_id) : [...m, f.user_id!]))}
+              >
+                <RostoAnel userId={f.user_id!} tam={60} />
+                <small>{f.name}</small>
+                {on && <span className="ig-comp-ok">✓</span>}
+              </button>
+            );
+          })}
+        </div>
+        <div className="ig-comp-pe">
+          <button type="button" className="ig-botao-azul" disabled={!marcados.length || enviando} onClick={() => void mandar()}>
+            {enviando ? "Enviando…" : marcados.length > 1 ? `Enviar separadamente (${marcados.length})` : "Enviar"}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 /* ---------- o app inteiro ---------- */
 function InstaNanico() {
   const eu = useApp((s) => s.myUid);
   const stories = useRede((s) => s.stories);
   const vistos = useRede((s) => s.vistos);
   const perfilAberto = useRede((s) => s.perfil);
+  const conversaAberta = useRede((s) => s.conversaAberta);
   const [tela, setTela] = useState<Tela>("inicio");
+  const [compartilhando, setCompartilhando] = useState<Post | null>(null);
   const [modoNovo, setModoNovo] = useState<"post" | "story">("post");
   const [vendo, setVendo] = useState<{ grupos: Grupo[]; g: number; s: number } | null>(null);
   const [folha, setFolha] = useState<Post | null>(null);
@@ -719,6 +996,7 @@ function InstaNanico() {
 
   const nav: Nav = {
     ir: (t) => {
+      if (conversaAberta) abrirConversa(null);
       if (t === "inicio" && perfilAberto) verPerfil(null);
       if (t === "perfil" && eu && perfilAberto !== eu) verPerfil(eu);
       if (t === "novo") setModoNovo("post");
@@ -727,6 +1005,7 @@ function InstaNanico() {
       rolagem.current?.scrollTo({ top: 0 });
     },
     perfil: (userId) => {
+      if (conversaAberta) abrirConversa(null);
       setPostAberto(null);
       if (perfilAberto !== userId) verPerfil(userId);
       setTela("perfil");
@@ -738,6 +1017,13 @@ function InstaNanico() {
     },
     comentarios: (p) => setFolha(p),
     abrirPost: (p) => setPostAberto(p),
+    conversa: (userId) => {
+      setPostAberto(null);
+      setVendo(null);
+      abrirConversa(userId);
+      setTela("direct");
+    },
+    compartilhar: (p) => setCompartilhando(p),
   };
   const abrirCriador = () => {
     setModoNovo("story");
@@ -747,7 +1033,9 @@ function InstaNanico() {
   return (
     <div className="ig">
       <div className="ig-rola" ref={rolagem}>
-        {postAberto ? (
+        {conversaAberta && !postAberto ? (
+          <Conversa outro={conversaAberta} nav={nav} />
+        ) : postAberto ? (
           <>
             <header className="ig-topo">
               <button type="button" className="ig-sem-botao" aria-label="Voltar" onClick={() => setPostAberto(null)}>
@@ -765,11 +1053,13 @@ function InstaNanico() {
           <Novo key={modoNovo} nav={nav} modoInicial={modoNovo} />
         ) : tela === "atividade" ? (
           <Atividade nav={nav} />
+        ) : tela === "direct" ? (
+          <DirectLista nav={nav} />
         ) : (
           <Perfil userId={perfilAberto ?? eu ?? ""} nav={nav} />
         )}
       </div>
-      <nav className="ig-barra" aria-label="InstaNanico">
+      <nav className="ig-barra" aria-label="InstaNanico" hidden={!!conversaAberta && !postAberto}>
         <button type="button" className={"ig-sem-botao" + (tela === "inicio" ? " on" : "")} aria-label="Início" onClick={() => nav.ir("inicio")}>
           <IcCasa cheio={tela === "inicio"} />
         </button>
@@ -787,6 +1077,7 @@ function InstaNanico() {
         </button>
       </nav>
       {folha && <FolhaComentarios p={folha} fechar={() => setFolha(null)} />}
+      {compartilhando && <FolhaCompartilhar p={compartilhando} fechar={() => setCompartilhando(null)} />}
       {vendo && <VerStories grupos={vendo.grupos} inicio={{ g: vendo.g, s: vendo.s }} fechar={() => setVendo(null)} />}
     </div>
   );

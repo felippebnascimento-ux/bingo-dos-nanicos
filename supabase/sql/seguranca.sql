@@ -3746,7 +3746,76 @@ begin
   begin alter publication supabase_realtime add table public.rede_stories; exception when duplicate_object then null; end;
 end $$;
 
--- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti e as 2 tabelas dos stories
+-- 35) InstaNanico Direct: mensagens entre os nanicos (só quem tem o Celular manda e lê) -----------------------------------
+--   Cada um lê só as mensagens em que é remetente ou destinatário, e só com o Celular (tem_item). O remetente é sempre
+--   quem está logado; o destinatário tem que ser outro nanico. A mensagem pode responder a um story (story_id) ou mandar
+--   uma publicação (post_id). Quem recebe marca como lida (lida_em) por marcar_lidas(de). Limite: 30 por minuto.
+create table if not exists public.rede_mensagens (
+  id       bigint generated always as identity primary key,
+  de       uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  para     uuid not null references auth.users(id) on delete cascade,
+  texto    text not null default '' check (char_length(texto) <= 1000),
+  story_id bigint references public.rede_stories(id) on delete set null,
+  post_id  bigint references public.rede_posts(id) on delete set null,
+  em       timestamptz not null default now(),
+  lida_em  timestamptz,
+  check (de <> para)
+);
+create index if not exists rede_mensagens_para on public.rede_mensagens (para, em desc);
+create index if not exists rede_mensagens_de on public.rede_mensagens (de, em desc);
+alter table public.rede_mensagens enable row level security;
+revoke all on public.rede_mensagens from public, anon, authenticated;
+grant select on public.rede_mensagens to authenticated;
+grant insert (para, texto, story_id, post_id) on public.rede_mensagens to authenticated;
+
+drop policy if exists rede_mensagens_ler on public.rede_mensagens;
+create policy rede_mensagens_ler on public.rede_mensagens for select to authenticated
+  using ((de = auth.uid() or para = auth.uid()) and public.eh_nanico() and public.tem_item('celular'));
+drop policy if exists rede_mensagens_criar on public.rede_mensagens;
+create policy rede_mensagens_criar on public.rede_mensagens for insert to authenticated
+  with check (de = auth.uid() and public.eh_nanico() and public.tem_item('celular'));
+
+create or replace function public.rede_mensagem_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.de := auth.uid();
+  new.em := now();
+  new.lida_em := null;
+  new.texto := btrim(regexp_replace(coalesce(new.texto, ''), '[\x00-\x09\x0B-\x1F\x7F]', ' ', 'g'));
+  if char_length(new.texto) = 0 and new.post_id is null then
+    raise exception 'Escreva a mensagem.' using errcode = 'P0001';
+  end if;
+  if new.para = new.de then raise exception 'Escolha outro nanico.' using errcode = 'P0001'; end if;
+  if not exists (select 1 from public.friends where user_id = new.para) then
+    raise exception 'Esse nanico não existe.' using errcode = 'P0001';
+  end if;
+  perform public.limitar('rede_mensagem', 30, interval '1 minute', 'Calma: mensagens demais em pouco tempo.');
+  return new;
+end $$;
+revoke all on function public.rede_mensagem_protecao() from public, anon, authenticated;
+drop trigger if exists rede_mensagem_protecao on public.rede_mensagens;
+create trigger rede_mensagem_protecao before insert on public.rede_mensagens for each row execute function public.rede_mensagem_protecao();
+
+-- marca como lidas as mensagens que alguém me mandou
+create or replace function public.marcar_lidas(p_de uuid) returns int
+language plpgsql security definer set search_path = public as $$
+declare
+  n int;
+begin
+  if not public.eh_nanico() or not public.tem_item('celular') then return 0; end if;
+  update public.rede_mensagens set lida_em = now() where para = auth.uid() and de = p_de and lida_em is null;
+  get diagnostics n = row_count;
+  return n;
+end $$;
+revoke all on function public.marcar_lidas(uuid) from public, anon;
+grant execute on function public.marcar_lidas(uuid) to authenticated;
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.rede_mensagens; exception when duplicate_object then null; end;
+end $$;
+
+-- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')
 union all
@@ -3816,5 +3885,5 @@ select proname::text, 'penalti' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('penalti_comecar', 'penalti_chutar', 'penalti_sacar', 'penalti_estado')
 union all
 select tablename::text, 'stories' from pg_tables
- where schemaname = 'public' and tablename in ('rede_stories', 'rede_stories_vistos')
+ where schemaname = 'public' and tablename in ('rede_stories', 'rede_stories_vistos', 'rede_mensagens')
 order by 2, 1;

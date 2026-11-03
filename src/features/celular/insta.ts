@@ -59,3 +59,36 @@ export function tempoCurto(t: number, agora: number) {
   if (m < 7 * 24 * 60) return `${Math.floor(m / (24 * 60))} d`;
   return `${Math.floor(m / (7 * 24 * 60))} sem`;
 }
+
+/* ---------- Direct (mensagens) ---------- */
+export type Mensagem = { id: number; de: string; para: string; texto: string; storyId: number | null; postId: number | null; em: number; lidaEm: number | null };
+export type Conversa = { outro: string; ultima: Mensagem; naoLidas: number };
+
+/** Uma conversa por pessoa, a mais recente primeiro, com quantas mensagens dela eu ainda não li. */
+export function conversas(lista: readonly Mensagem[], eu: string | null): Conversa[] {
+  if (!eu) return [];
+  const por = new Map<string, Conversa>();
+  for (const m of lista) {
+    if (m.de !== eu && m.para !== eu) continue;
+    const outro = m.de === eu ? m.para : m.de;
+    const c = por.get(outro) ?? { outro, ultima: m, naoLidas: 0 };
+    if (m.em > c.ultima.em || (m.em === c.ultima.em && m.id > c.ultima.id)) c.ultima = m;
+    if (m.para === eu && !m.lidaEm) c.naoLidas++;
+    por.set(outro, c);
+  }
+  return [...por.values()].sort((a, b) => b.ultima.em - a.ultima.em);
+}
+
+/** As mensagens de uma conversa, da mais velha para a mais nova. */
+export const daConversa = (lista: readonly Mensagem[], eu: string | null, outro: string) =>
+  lista.filter((m) => (m.de === eu && m.para === outro) || (m.de === outro && m.para === eu)).sort((a, b) => a.em - b.em || a.id - b.id);
+
+/** Quantas mensagens recebidas eu ainda não li (no total). */
+export const naoLidasDM = (lista: readonly Mensagem[], eu: string | null) => lista.filter((m) => m.para === eu && !m.lidaEm).length;
+
+/** O resumo da última mensagem na lista de conversas ("Você: oi", "Enviou uma publicação"…). */
+export function resumo(m: Mensagem, eu: string | null) {
+  const meu = m.de === eu;
+  const texto = m.postId ? (meu ? "Você enviou uma publicação" : "Enviou uma publicação") : m.storyId ? (meu ? `Você respondeu ao story: ${m.texto}` : `Respondeu ao seu story: ${m.texto}`) : meu ? `Você: ${m.texto}` : m.texto;
+  return texto.length > 60 ? texto.slice(0, 59) + "…" : texto;
+}

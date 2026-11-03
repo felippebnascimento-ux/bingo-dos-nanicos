@@ -331,6 +331,13 @@ export const CHANGELOG: EntradaLog[] = [
     data: "03/11/2026",
     itens: ["Celular mais bonito: fundo escuro e desfocado em volta (no tema escuro ficava um quadro cinza enorme), a moldura do iPhone mais fina e as fotos do feed em pé (4:5), como no Instagram"],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "InstaNanico Direct: mande mensagens para os nanicos, responda stories e envie publicações pelo aviãozinho; a Dynamic Island avisa quando chega mensagem",
+      "As fotos do feed aparecem inteiras, no formato delas, sem cortar",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
