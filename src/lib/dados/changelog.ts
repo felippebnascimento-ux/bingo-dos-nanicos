@@ -511,6 +511,10 @@ export const CHANGELOG: EntradaLog[] = [
   },
   {
     data: "03/11/2026",
+    itens: ["No celular de verdade, o InstaNanico tem um X no topo para sair, e o voltar do celular também fecha"],
+  },
+  {
+    data: "03/11/2026",
     itens: ["Truco repaginado: mesa oval de cassino com borda de couro e feltro, os nanicos sentados em volta com o anel do tempo, o grito em balão, as cartas jogadas viradas para quem jogou e a sua mão grande na beira da mesa"],
   },
 ];

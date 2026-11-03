@@ -372,6 +372,8 @@ input.ig-responder::placeholder{color:rgb(255 255 255 / .75)}
 .iph-ilha,.iph-ilha::after,.iph-ilha-conteudo,.iph-ilha.aberta .iph-ilha-conteudo{transition-duration:1ms !important}.ig-barras i{animation-duration:1ms !important}
 }
 
+/* o X de fechar só aparece no celular de verdade (no computador, fecha pelo fundo, pelo Esc ou pelo traço de baixo) */
+.ig-sair{display:none}
 /* celular de verdade: o app ocupa a tela inteira, sem a moldura */
 @media (max-width:520px){
   .celular-fundo{display:block;padding:0}
@@ -381,6 +383,7 @@ input.ig-responder::placeholder{color:rgb(255 255 255 / .75)}
   .ig{padding-top:env(safe-area-inset-top,0px)}
   .ig-barra{padding-bottom:max(18px,calc(env(safe-area-inset-bottom,0px) + 12px))}
   .iph-inicio{bottom:max(7px,calc(env(safe-area-inset-bottom,0px) + 2px))}
+  .ig-sair{display:grid;margin-right:2px}
   .iph-botao{display:none}
   .iph-tela{border-radius:0;border:0}
   .iph-status{display:none}
