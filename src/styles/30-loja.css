@@ -10,6 +10,10 @@
   --loja-xicara:#F4F1EA; --loja-cafe:#5A3A22; --loja-vapor:#C9C3BA; --loja-milho:#F6E7B4; --loja-balde:#B4442F;
   --loja-listra:#F4F1EA; --loja-queijo:#F2C46B; --loja-massa:#C98A45; --loja-calabresa:#B4442F;
   --loja-whisky:rgba(201,122,42,.85); --loja-gelo:rgba(235,245,250,.8); --loja-garrafa:#2F5A3A;
+  /* acessórios da cabeça (seção 38): boné, óculos, headset e cartola */
+  --loja-bone:#3E4C59; --loja-bone-aba:#2F3A44; --loja-bone-botao:#B08D57; --loja-lente:#1E1E1E; --loja-armacao:#262626;
+  --loja-brilho:rgba(255,255,255,.55); --loja-headset:#262626; --loja-headset-luz:#E0705A; --loja-cartola:#1E1E1E;
+  --loja-cartola-fita:#B4442F; --loja-cabeca:#E8C39E;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --loja-papel:#D6D3CC; --loja-lata:#A9ADB2; --loja-cuia:#5B3A22; --loja-fumaca:#8D8780;
@@ -26,6 +30,17 @@
 .l-milho{fill:var(--loja-milho)} .l-balde{fill:var(--loja-balde)} .l-listra{fill:var(--loja-listra)}
 .l-queijo{fill:var(--loja-queijo)} .l-massa{fill:var(--loja-massa)} .l-calabresa{fill:var(--loja-calabresa)}
 .l-whisky{fill:var(--loja-whisky)} .l-gelo{fill:var(--loja-gelo)} .l-garrafa{fill:var(--loja-garrafa)}
+.l-bone{fill:var(--loja-bone)} .l-bone-aba{fill:var(--loja-bone-aba)} .l-bone-botao{fill:var(--loja-bone-botao)} .l-bone-costura{stroke:var(--loja-bone-aba)}
+.l-lente{fill:var(--loja-lente)} .l-armacao{stroke:var(--loja-armacao)} .l-brilho{stroke:var(--loja-brilho)}
+.l-headset{fill:var(--loja-headset);stroke:var(--loja-headset)} path.l-headset[fill=none]{fill:none} .l-headset-luz{fill:var(--loja-headset-luz)}
+.l-cartola{fill:var(--loja-cartola)} .l-cartola-fita{fill:var(--loja-cartola-fita)} .l-cartola-brilho{stroke:var(--loja-brilho)}
+.l-cabeca{fill:var(--loja-cabeca)}
+
+/* acessório por cima do boneco (K-FOFO): a célula inteira, sem cortar a cartola que passa do topo */
+.boneco-acessorio{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;filter:drop-shadow(0 1px 1px var(--shadow))}
+.boneco.balanca .boneco-acessorio{transform:rotate(var(--balanco,0deg));transform-origin:50% 100%}
+.boneco.acess-cartola .boneco-nome{bottom:118%}
+.boneco.acess-bone .boneco-nome,.boneco.acess-headset .boneco-nome{bottom:102%}
 .l-escudo{fill:var(--accent)} .l-escudo2{fill:var(--accent-ink)} .l-check{fill:none;stroke:var(--accent);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 
 /* ---------- aba Loja ---------- */
