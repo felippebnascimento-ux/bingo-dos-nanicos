@@ -450,6 +450,12 @@ export const CHANGELOG: EntradaLog[] = [
       "Cinco itens novos para usar no K-FOFO: cafezinho, pipoca, fatia de pizza, whisky 12 anos e champanhe",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Acessórios para o boneco na loja: boné de aba reta, óculos escuros, headset gamer e cartola do magnata. Equipado, aparece no seu boneco no K-FOFO e no quarto da ficha",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

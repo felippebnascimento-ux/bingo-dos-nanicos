@@ -10,6 +10,7 @@ import { peNaTela, type Caixa2D } from "@/features/hall/hall";
 import { useApp } from "@/lib/store";
 import type { ItemLoja } from "./loja";
 import { DURA_ANIM, restanteEfeito } from "./loja";
+import { DesenhoAcessorio, tipoAcessorio } from "./Acessorio";
 import { useConsumo } from "./consumoSala";
 import { useEquipados, useLoja } from "./lojaDados";
 
@@ -120,8 +121,11 @@ export function DesenhoItem({ id }: { id: string }) {
           <path d="M11 16 L14 20 L20 12" className="l-check" />
         </svg>
       );
-    default:
-      return null;
+    default: {
+      /* acessórios da cabeça: o id é o próprio tipo (bone, oculos, headset, cartola) */
+      const t = tipoAcessorio(id);
+      return t ? <DesenhoAcessorio tipo={t} /> : null;
+    }
   }
 }
 

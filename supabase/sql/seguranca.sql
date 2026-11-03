@@ -1463,7 +1463,7 @@ create table if not exists public.loja_itens (
   id        text primary key check (id ~ '^[a-z0-9-]{2,30}$'),
   nome      text not null check (char_length(nome) between 2 and 40),
   descricao text not null default '' check (char_length(descricao) <= 140),
-  espaco    text not null check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular')),
+  espaco    text not null check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca')),
   preco     int not null check (preco between 10 and 5000),
   dados     jsonb not null default '{}'::jsonb check (octet_length(dados::text) <= 500),
   ativo     boolean not null default true,
@@ -2407,7 +2407,7 @@ end $$;
 -- Imagem da postagem vai para o bucket "midias", na pasta rede/<uid>/. Postar e curtir não dão moedas.
 alter table public.loja_itens drop constraint if exists loja_itens_espaco_check;
 alter table public.loja_itens add constraint loja_itens_espaco_check
-  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular'));
+  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca'));
 insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem) values
   ('celular', 'Celular', 'Abre a rede social nanica: poste, curta e comente com o grupo.', 'celular', 3000, '{}', 0)
 on conflict (id) do update set nome = excluded.nome, descricao = excluded.descricao, espaco = excluded.espaco,
@@ -3906,6 +3906,22 @@ begin
 end $$;
 revoke all on function public.emblemas_de(uuid) from public, anon;
 grant execute on function public.emblemas_de(uuid) to authenticated;
+
+-- 38) acessórios na cabeça do boneco: boné, óculos, headset e cartola (espaço 'cabeca') -----------------------------------
+--     Equipa como os itens do quarto (um por espaço, pela equipar() da seção 15) e aparece no boneco do K-FOFO e no
+--     quarto da ficha; o desenho é do site (features/loja/Acessorio.tsx). Os enfeites dos troféus têm prioridade
+--     sobre o que vai no alto da cabeça (só os óculos ficam junto).
+alter table public.loja_itens drop constraint if exists loja_itens_espaco_check;
+alter table public.loja_itens add constraint loja_itens_espaco_check
+  check (espaco in ('cadeira', 'mesa', 'tapete', 'poster', 'planta', 'parede', 'luz', 'titulo', 'moldura', 'escudo', 'consumivel', 'celular', 'cabeca'));
+
+insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem) values
+  ('bone',     'Boné de aba reta',   'O boné de quem joga de top.',               'cabeca', 300,  '{"cor":"bone"}', 120),
+  ('oculos',   'Óculos escuros',     'Ninguém percebe que você está tiltado.',    'cabeca', 500,  '{"cor":"oculos"}', 121),
+  ('headset',  'Headset gamer',      'Para ouvir os passos no CS.',               'cabeca', 800,  '{"cor":"headset"}', 122),
+  ('cartola',  'Cartola do magnata', 'Para quem é dono do cassino.',              'cabeca', 1800, '{"cor":"cartola"}', 123)
+on conflict (id) do update set nome = excluded.nome, descricao = excluded.descricao, espaco = excluded.espaco,
+  preco = excluded.preco, dados = excluded.dados, ordem = excluded.ordem;
 
 -- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, e a bolsa
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger

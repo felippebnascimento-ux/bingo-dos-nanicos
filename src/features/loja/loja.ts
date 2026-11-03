@@ -2,7 +2,7 @@
  * Loja e mochila (puro e testado): os espaços, a vitrine agrupada, o que cada um tem equipado e se dá
  * para comprar. Só serve para MOSTRAR: quem confere preço, saldo e repetição é o banco (comprar(), seção 15).
  */
-export type Espaco = "cadeira" | "mesa" | "tapete" | "poster" | "planta" | "parede" | "luz" | "titulo" | "moldura" | "escudo" | "consumivel" | "celular";
+export type Espaco = "cadeira" | "mesa" | "tapete" | "poster" | "planta" | "parede" | "luz" | "titulo" | "moldura" | "escudo" | "consumivel" | "celular" | "cabeca";
 export type Anim = "fumar" | "charuto" | "beber" | "tremer" | "tonto";
 export type ItemLoja = { id: string; nome: string; descricao: string; espaco: Espaco; preco: number; dados: { cor?: string; texto?: string; anim?: Anim }; ordem: number };
 export type LinhaMochila = { userId: string; itemId: string; qtd: number; equipado: boolean };
@@ -11,6 +11,7 @@ export type LinhaMochila = { userId: string; itemId: string; qtd: number; equipa
 export const GRUPOS: readonly { id: string; nome: string; curto: string; espacos: readonly Espaco[] }[] = [
   { id: "celular", nome: "A meta grande", curto: "Celular", espacos: ["celular"] },
   { id: "consumivel", nome: "Para usar no K-FOFO", curto: "Consumíveis", espacos: ["consumivel"] },
+  { id: "boneco", nome: "Para o boneco", curto: "Boneco", espacos: ["cabeca"] },
   { id: "quarto", nome: "Para o quarto", curto: "Quarto", espacos: ["cadeira", "mesa", "tapete", "poster", "planta", "parede", "luz"] },
   { id: "visual", nome: "Títulos e molduras", curto: "Visual", espacos: ["titulo", "moldura"] },
   { id: "escudo", nome: "Proteção", curto: "Proteção", espacos: ["escudo"] },
@@ -34,6 +35,7 @@ export const NOME_ESPACO: Readonly<Record<Espaco, string>> = {
   escudo: "Escudo",
   consumivel: "Consumível",
   celular: "Celular",
+  cabeca: "Cabeça",
 };
 
 /** Escudo e consumíveis acumulam; o resto só se compra uma vez e se equipa (menos o celular, que se abre). */

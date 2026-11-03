@@ -8,6 +8,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { IcFechar, IcLoja, IcMochila } from "@/components/ui/icones";
 import { TituloNanico } from "@/features/loja/Itens";
 import { useEquipados, useLoja } from "@/features/loja/lojaDados";
+import { tipoAcessorio } from "@/features/loja/Acessorio";
 import { abrirCarteira, useRanking } from "@/features/moedas/Ranking";
 import { formatarMoedas, ordinal } from "@/lib/moedas";
 import { verNanicadas } from "@/features/nanicos/NanicosView";
@@ -204,5 +205,5 @@ function QuartoDe({ f, arte }: { f: Friend; arte: { src: string; w: number; h: n
     for (const k of ["cadeira", "mesa", "tapete", "poster", "planta", "parede", "luz"] as const) if (eq[k]?.dados.cor) out[k] = eq[k]!.dados.cor;
     return out;
   }, [eq]);
-  return <Quarto nome={f.name} boneco={bonecoOf(f)} arte={arte} equip={equip} />;
+  return <Quarto nome={f.name} boneco={bonecoOf(f)} arte={arte} equip={equip} cabeca={tipoAcessorio(eq.cabeca?.dados.cor)} />;
 }

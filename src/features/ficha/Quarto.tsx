@@ -7,6 +7,7 @@
  */
 import { memo } from "react";
 import { ANCORA, CEL_H, CEL_W } from "@/features/hall/hall";
+import { FormasAcessorio, type TipoAcessorio } from "@/features/loja/Acessorio";
 
 type Pt = [number, number];
 type Poly = { q: Pt[]; c: string; linha?: boolean };
@@ -152,16 +153,21 @@ export const Quarto = memo(function Quarto({
   boneco,
   arte,
   equip = SEM_ITENS,
+  cabeca = null,
 }: {
   nome: string;
   boneco: string | null;
   arte: { src: string; w: number; h: number } | null;
   equip?: EquipQuarto;
+  /** acessório da cabeça (boné, óculos…), só com a folha do boneco */
+  cabeca?: TipoAcessorio | null;
 }) {
   const formas = quartoCom(equip);
   const altura = boneco ? CEL_H * ESCALA : 270;
   const topo = PE_Y - (boneco ? ANCORA.y * ESCALA : altura - 6);
   const placa = Math.max(68, nome.length * 9 + 22);
+  /* a placa do nome sobe acima da cartola, do boné e do headset */
+  const sobe = !boneco || !cabeca || cabeca === "oculos" ? 0 : cabeca === "cartola" ? 48 : 8;
   return (
     <svg className="quarto" viewBox="20 20 580 570" role="img" aria-label={`${nome} no quarto`}>
       <Poligonos lista={formas} />
@@ -173,8 +179,13 @@ export const Quarto = memo(function Quarto({
       ) : arte ? (
         <image href={arte.src} x={PE_X - (altura * arte.w) / arte.h / 2} y={topo} width={(altura * arte.w) / arte.h} height={altura} />
       ) : null}
-      <rect x={PE_X - placa / 2} y={topo - 26} width={placa} height={20} rx={4} className="q-placa" />
-      <text x={PE_X} y={topo - 12} textAnchor="middle" className="q-nome">
+      {boneco && cabeca && (
+        <svg x={PE_X - ANCORA.x * ESCALA} y={topo} width={CEL_W * ESCALA} height={CEL_H * ESCALA} viewBox={`0 0 ${CEL_W} ${CEL_H}`} overflow="visible">
+          <FormasAcessorio tipo={cabeca} />
+        </svg>
+      )}
+      <rect x={PE_X - placa / 2} y={topo - 26 - sobe} width={placa} height={20} rx={4} className="q-placa" />
+      <text x={PE_X} y={topo - 12 - sobe} textAnchor="middle" className="q-nome">
         {nome.toUpperCase()}
       </text>
     </svg>

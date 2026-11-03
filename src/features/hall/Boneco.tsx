@@ -9,6 +9,8 @@ import type { Boneco as B } from "./bonecos";
 import { ANCORA, assentoDe, CEL_H, CEL_W, quadroSprite, tela, type Caixa2D } from "./hall";
 import { abrirMenu } from "./zoeiraSala";
 import { Chapeu } from "./Chapeu";
+import { Acessorio, noAlto, tipoAcessorio } from "@/features/loja/Acessorio";
+import { useEquipados } from "@/features/loja/lojaDados";
 import type { Enfeite } from "@/features/trofeus/trofeus";
 
 const pct = (v: number) => `${v * 100}%`;
@@ -18,7 +20,11 @@ export const Boneco = memo(function Boneco({ b, f, eu, z, vb, rot = 0, enfeite }
   const a = assentoDe(b.senta);
   const [x, y] = a ? tela(a.i, a.j) : tela(b.i + 0.5, b.j + 0.5);
   const folha = bonecoOf(f);
-  const q = quadroSprite(a ? a.olha : b.sentido, a ? 0 : b.quadro);
+  const olha = a ? a.olha : b.sentido;
+  const q = quadroSprite(olha, a ? 0 : b.quadro);
+  /* acessório da loja (boné, óculos…): o enfeite dos troféus tem prioridade no alto da cabeça */
+  const cabeca = tipoAcessorio(useEquipados(f.user_id).cabeca?.dados.cor);
+  const acess = folha && cabeca && !(enfeite && noAlto(cabeca)) ? cabeca : null;
   /* a célula do boneco, em % do hall, com o pé (âncora) no centro do piso */
   const caixa: CSSProperties = {
     left: pct((x - ANCORA.x - vb.x) / vb.w),
@@ -39,7 +45,7 @@ export const Boneco = memo(function Boneco({ b, f, eu, z, vb, rot = 0, enfeite }
     </span>
   );
   return (
-    <div className={"boneco" + (eu ? " eu" : "") + (a ? " sentado" : "") + (rot ? " balanca" : "") + (enfeite ? " chapeu-" + enfeite : "")} style={caixa}>
+    <div className={"boneco" + (eu ? " eu" : "") + (a ? " sentado" : "") + (rot ? " balanca" : "") + (enfeite ? " chapeu-" + enfeite : "") + (acess ? " acess-" + acess : "")} style={caixa}>
       <span className="boneco-nome">{b.name}</span>
       {enfeite && <Chapeu tipo={enfeite} />}
       {!f.id ? (
@@ -67,6 +73,7 @@ export const Boneco = memo(function Boneco({ b, f, eu, z, vb, rot = 0, enfeite }
           {corpo}
         </span>
       )}
+      {acess && <Acessorio tipo={acess} costas={olha.startsWith("costas")} />}
     </div>
   );
 });
