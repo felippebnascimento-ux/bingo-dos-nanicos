@@ -9,6 +9,9 @@ import { IcFechar, IcLoja, IcMochila } from "@/components/ui/icones";
 import { TituloNanico } from "@/features/loja/Itens";
 import { useEquipados, useLoja } from "@/features/loja/lojaDados";
 import { tipoAcessorio } from "@/features/loja/Acessorio";
+import { QuartoCena } from "@/features/quarto/QuartoCena";
+import { paraCena } from "@/features/quarto/ArrumarQuarto";
+import { abrirArrumar, iniciarQuartos, moveisDe, useQuartos } from "@/features/quarto/quartoDados";
 import { abrirCarteira, useRanking } from "@/features/moedas/Ranking";
 import { formatarMoedas, ordinal } from "@/lib/moedas";
 import { verNanicadas } from "@/features/nanicos/NanicosView";
@@ -156,6 +159,7 @@ function FichaAberta({ f }: { f: Friend }) {
 
   const art = artOf(f);
   const eu = f.id === getApp().myFid;
+  const temQuarto = useQuartos((s) => !!f.user_id && !!s.quartos[f.user_id]);
   return (
     <div className="gate ficha-gate" role="dialog" aria-modal="true" aria-labelledby="fichaNome" onKeyDown={tecla} onClick={(e) => e.target === e.currentTarget && fechar()}>
       <div className="ficha-card" ref={caixa}>
@@ -196,6 +200,18 @@ function FichaAberta({ f }: { f: Friend }) {
               <button type="button" className="btn soft sm" onClick={() => setApp({ aba: "loja", fichaAberta: null })}>
                 <IcLoja tam={16} /> Abrir a loja
               </button>
+              {temQuarto && (
+                <button
+                  type="button"
+                  className="btn soft sm"
+                  onClick={() => {
+                    fechar();
+                    abrirArrumar();
+                  }}
+                >
+                  Arrumar meu quarto
+                </button>
+              )}
             </div>
           )}
           <button
@@ -222,5 +238,15 @@ function QuartoDe({ f, arte }: { f: Friend; arte: { src: string; w: number; h: n
     for (const k of ["cadeira", "mesa", "tapete", "poster", "planta", "parede", "luz"] as const) if (eq[k]?.dados.cor) out[k] = eq[k]!.dados.cor;
     return out;
   }, [eq]);
+  /* quarto próprio (fase 34): com ele, o quarto de verdade, com os móveis onde a pessoa pôs; sem ele, o fixo de antes */
+  const tamanho = useQuartos((s) => (f.user_id ? s.quartos[f.user_id] : undefined));
+  const todos = useQuartos((s) => s.moveis);
+  const itens = useLoja((s) => s.itens);
+  useEffect(() => {
+    void iniciarQuartos();
+  }, []);
+  const cena = useMemo(() => paraCena(moveisDe(todos, f.user_id), itens), [todos, f.user_id, itens]);
+  const equipCena = useMemo(() => ({ parede: equip.parede, luz: equip.luz, poster: equip.poster }), [equip]);
+  if (tamanho) return <QuartoCena tamanho={tamanho} equip={equipCena} moveis={cena} nome={f.name} boneco={bonecoOf(f)} />;
   return <Quarto nome={f.name} boneco={bonecoOf(f)} arte={arte} equip={equip} cabeca={tipoAcessorio(eq.cabeca?.dados.cor)} />;
 }

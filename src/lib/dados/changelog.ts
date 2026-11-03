@@ -491,6 +491,13 @@ export const CHANGELOG: EntradaLog[] = [
     data: "03/11/2026",
     itens: ["Ficha: o elo do LoL voltou (o mais alto entre solo e flex), com o brasão do elo e o nível da GC como emblemas"],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Quarto próprio: compre o seu na Loja (pequeno, médio ou grande), compre móveis e arrume do seu jeito",
+      "Doze móveis novos (cama, sofá, setup gamer, TV, estante, frigobar e mais); trocar por um quarto maior custa só a diferença e os móveis continuam no lugar",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

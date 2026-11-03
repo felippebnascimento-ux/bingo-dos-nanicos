@@ -1,0 +1,12 @@
+[
+  { "tam": 6, "ocupados": [], "i": 1, "j": 1, "w": 2, "d": 1, "cabe": true },
+  { "tam": 6, "ocupados": [], "i": 0, "j": 0, "w": 1, "d": 1, "cabe": false },
+  { "tam": 6, "ocupados": [], "i": 0, "j": 1, "w": 1, "d": 2, "cabe": true },
+  { "tam": 6, "ocupados": [], "i": 5, "j": 5, "w": 2, "d": 1, "cabe": false },
+  { "tam": 6, "ocupados": [], "i": -1, "j": 2, "w": 1, "d": 1, "cabe": false },
+  { "tam": 6, "ocupados": [{ "i": 2, "j": 2, "w": 2, "d": 2 }], "i": 3, "j": 3, "w": 1, "d": 1, "cabe": false },
+  { "tam": 6, "ocupados": [{ "i": 2, "j": 2, "w": 2, "d": 2 }], "i": 4, "j": 2, "w": 1, "d": 2, "cabe": true },
+  { "tam": 9, "ocupados": [{ "i": 0, "j": 1, "w": 1, "d": 2 }], "i": 0, "j": 3, "w": 1, "d": 1, "cabe": true },
+  { "tam": 12, "ocupados": [], "i": 10, "j": 11, "w": 2, "d": 1, "cabe": true },
+  { "tam": 12, "ocupados": [], "i": 11, "j": 11, "w": 2, "d": 1, "cabe": false }
+]
