@@ -44,6 +44,7 @@ export function QuartoVisita({ dono }: { dono: string }) {
           quadro: a ? 0 : b.quadro,
           sentado: a ? { i: a.i, j: a.j, movel: a.movel } : null,
           eu: b.key === MY_KEY,
+          uid: friendDaPresenca(b, friends)?.user_id ?? null,
         };
       }),
     [bonecos, grade, friends],

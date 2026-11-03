@@ -552,6 +552,13 @@ export const CHANGELOG: EntradaLog[] = [
     data: "03/11/2026",
     itens: ["Voz: toca um som quando alguém entra ou sai do canal em que você está (e quando você entra ou sai)"],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Chat do K-FOFO como no Habbo: escreva na barra branca embaixo do cômodo e a mensagem sobe num balão em cima do seu boneco",
+      "Os balões aparecem para quem está no mesmo lugar (no K-FOFO ou no mesmo quarto) e a mensagem também fica no #geral",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

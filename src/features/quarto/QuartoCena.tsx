@@ -6,6 +6,7 @@
  */
 import { memo, useMemo } from "react";
 import { ANCORA, caixaDoBoneco, CEL_H, CEL_W, ordemZ, quadroSprite, type Caixa, type Sentido } from "@/features/hall/hall";
+import { BaloesSvg } from "@/features/hall/ChatHabbo";
 import { desenharMovel, Poligonos, type Poly, type Pt } from "./Moveis";
 import { camadasQuarto, type Retangulo } from "./quarto";
 
@@ -24,6 +25,8 @@ export type BonecoCena = {
   quadro: number;
   sentado: { i: number; j: number; movel: number } | null;
   eu: boolean;
+  /** user_id, para os balões do chat (ChatHabbo) */
+  uid?: string | null;
 };
 
 /** A projeção de um quarto de lado n: a origem fica no canto de cima, com folga para as paredes. */
@@ -172,6 +175,14 @@ export const QuartoCena = memo(function QuartoCena({
         const [x, y] = p(b.i + 0.5, b.j + 0.5);
         return <circle key={b.id} className="quarto-brilho" cx={x} cy={y - 50} r={46} pointerEvents="none" />;
       })}
+      {bonecos && (
+        <BaloesSvg
+          itens={bonecos.map((b) => {
+            const [x, y] = b.sentado ? p(b.sentado.i, b.sentado.j) : p(b.i + 0.5, b.j + 0.5);
+            return { key: b.key, nome: b.nome, uid: b.uid, x, y: y - CEL_H * ESCALA_VISITA * (b.sentado ? 0.8 : 1) };
+          })}
+        />
+      )}
       {boneco && (
         <svg x={px - ANCORA.x * escala} y={py - ANCORA.y * escala} width={CEL_W * escala} height={CEL_H * escala} viewBox={`0 0 ${CEL_W} ${CEL_H}`} pointerEvents="none">
           <image href={boneco} width={CEL_W * 5} height={CEL_H * 2} />
