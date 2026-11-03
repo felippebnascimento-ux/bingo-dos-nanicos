@@ -280,7 +280,7 @@ export const CHANGELOG: EntradaLog[] = [
   },
   {
     data: "02/11/2026",
-    itens: ["Maior ou menor de cara nova: placas de dígitos que param uma a uma, lados grandes, barra colorida para mudar a chance e ½, ×2 e Máx"],
+    itens: [{ t: "Maior ou menor de cara nova: placas de dígitos que param uma a uma, lados grandes, barra colorida para mudar a chance e ½, ×2 e Máx", off: "trocado pelo Pênalti na v1.83" }],
   },
   {
     data: "02/11/2026",
@@ -296,6 +296,14 @@ export const CHANGELOG: EntradaLog[] = [
       "Roleta mais bonita: vermelho de cassino de verdade, números maiores, cruzeta dourada brilhando e um brilho na casa que saiu",
       "Aviãozinho de cara nova: avião desenhado de novo, esperando na pista, nuvens passando, lua, montanhas, escala do multiplicador e fumaça quando ele vai embora",
       "Cassino mais real: roda de madeira com veio, frisos cromados e inclinada como numa mesa, rastro da bolinha, feltro com textura e borda de madeira, fichas com relevo, avião com volume e fumaça de rastro, nuvens macias e luzes na pista",
+    ],
+  },
+  {
+    data: "02/11/2026",
+    itens: [
+      "Cassino ao vivo: roleta e aviãozinho agora são rodadas para todo mundo junto. A primeira aposta abre a rodada, a contagem aparece para todos e quem entrar a tempo joga na mesma roleta e no mesmo avião",
+      "Pênalti no lugar do Maior ou menor: todos chutam juntos contra o goleiro da casa, cada gol sobe o multiplicador (até 7,36× no 5º) e dá para sacar quando quiser",
+      "Jackpot do grupo no caça-níquel: 1% de cada giro de qualquer nanico vai para o prêmio, e quem tirar 3 bolas leva tudo",
     ],
   },
 ];

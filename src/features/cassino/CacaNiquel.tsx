@@ -66,6 +66,58 @@ function festa(ctx: AudioContext | null, grande: boolean) {
   notas.forEach((f, i) => bip(ctx, f, i * 0.11, 0.16, "triangle", 0.07));
 }
 
+/*
+ * Jackpot do grupo (seção 33): 1% de cada giro de qualquer nanico vai para ele; 3 bolas levam tudo.
+ * Lido da tabela a cada poucos segundos; quando alguém leva, aparece o aviso para todo mundo que está na máquina.
+ */
+type Jackpot = { valor: number; ganhador: string | null; ganhou: number | null; ganhou_em: string | null };
+let lerJackpotAgora: () => void = () => {};
+function JackpotPainel() {
+  const [jp, setJp] = useState<Jackpot | null>(null);
+  const [mostrado, setMostrado] = useState(0);
+  const visto = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    let vivo = true;
+    const ler = async () => {
+      const { data } = await sb().from("cassino_jackpot").select("valor,ganhador,ganhou,ganhou_em").eq("id", 1).maybeSingle();
+      if (!vivo || !data) return;
+      const j = { valor: Number(data.valor) || 0, ganhador: data.ganhador ?? null, ganhou: data.ganhou ?? null, ganhou_em: data.ganhou_em ?? null };
+      /* alguém levou desde a última leitura (não avisa na primeira) */
+      if (visto.current !== undefined && j.ganhou_em && j.ganhou_em !== visto.current)
+        toast(`💰 ${j.ganhador ?? "Alguém"} levou o jackpot de ${formatarMoedas(j.ganhou ?? 0)} moedas!`);
+      visto.current = j.ganhou_em;
+      setJp(j);
+    };
+    lerJackpotAgora = () => void ler();
+    void ler();
+    const t = setInterval(() => !document.hidden && void ler(), 4000);
+    return () => {
+      vivo = false;
+      clearInterval(t);
+    };
+  }, []);
+  /* o número sobe contando até o valor novo */
+  useEffect(() => {
+    if (!jp) return;
+    const alvo = Math.floor(jp.valor);
+    if (alvo === mostrado) return;
+    const pula = reduzMovimento() || Math.abs(alvo - mostrado) > 2000;
+    const t = setTimeout(() => setMostrado((m) => (pula ? alvo : m + Math.sign(alvo - m) * Math.max(1, Math.round(Math.abs(alvo - m) / 8)))), pula ? 0 : 40);
+    return () => clearTimeout(t);
+  }, [jp, mostrado]);
+  if (!jp) return null;
+  return (
+    <div className="cn-jackpot" aria-live="polite">
+      <span className="cn-jp-rotulo">JACKPOT DO GRUPO</span>
+      <b className="cn-jp-valor">{formatarMoedas(mostrado)}</b>
+      <small>
+        3 bolas levam tudo · 1% de cada giro de qualquer nanico entra aqui
+        {jp.ganhador && jp.ganhou ? ` · último: ${jp.ganhador}, ${formatarMoedas(jp.ganhou)}` : ""}
+      </small>
+    </div>
+  );
+}
+
 export function CacaNiquel() {
   const { rolos, pagamentos } = useCassino();
   const saldo = useCarteira((s) => s.carteira?.saldo);
@@ -112,7 +164,8 @@ export function CacaNiquel() {
       void ctx?.close();
       return false;
     }
-    const r = data as { simbolos: string[]; pagou: number; saldo: number };
+    const r = data as { simbolos: string[]; pagou: number; saldo: number; jackpot?: number };
+    lerJackpotAgora();
     const s = r.simbolos;
     /* param da esquerda para a direita, ~0,4 s um do outro; com dois iguais parados, o terceiro demora mais */
     const passo = rapido ? 180 : 400, dur = rapido ? 450 : 850;
@@ -201,6 +254,7 @@ export function CacaNiquel() {
         {mudo ? <IcSemSom /> : <IcVolume />}
       </button>
 
+      <JackpotPainel />
       <div className="cn-grid">
         <div className="cn-maq-caixa">
           <div className={"cn-maq" + (ganhou ? " ganhou" : "") + (res?.combo === "tres_bola" ? " maximo" : "")}>
