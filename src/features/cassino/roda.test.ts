@@ -50,4 +50,14 @@ describe("roda", () => {
     expect(a.quiques.length).toBeGreaterThanOrEqual(2);
     expect(a.quiques.length).toBeLessThanOrEqual(4);
   });
+  it("a bolinha pula nos quiques e termina no chão, parada", () => {
+    for (let semente = 1; semente < 100; semente++) {
+      const p = planoDoGiro(ORDEM[semente % 37], gerador(semente));
+      const q = p.quiques[0];
+      expect(quadroDoGiro(p, (q.ini + q.fim) / 2).salto).toBeGreaterThan(0.2);
+      expect(quadroDoGiro(p, p.total).salto).toBe(0);
+      /* depois de balançar na casa, ela para antes do fim do giro */
+      expect(p.assenta + 700).toBeLessThan(p.total);
+    }
+  });
 });

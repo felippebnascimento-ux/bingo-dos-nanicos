@@ -68,8 +68,11 @@ export function RoletaMesa({ ativa = true }: { ativa?: boolean }) {
   const [ultima, setUltima] = useState<Ficha[]>([]);
   const [ficha, setFicha] = useState<number>(25);
   const [enviando, setEnviando] = useState(false);
-  /* a rodada em que a roda já parou na tela */
+  /* a rodada em que a roda já parou na tela (e quando), e a rodada em que a pessoa fechou a câmera */
   const [parouEm, setParouEm] = useState<number | null>(null);
+  /* a rodada cujo resultado a câmera ainda mostra (por 2,4 s depois que a roda para) */
+  const [mostrandoRes, setMostrandoRes] = useState<number | null>(null);
+  const [fechouZoom, setFechouZoom] = useState<number | null>(null);
   const [conferida, setConferida] = useState<Record<number, string>>({});
   const relogio = useRelogio(ativa);
 
@@ -83,7 +86,12 @@ export function RoletaMesa({ ativa = true }: { ativa?: boolean }) {
   const giro: Giro | null = useMemo(() => (rid !== null && res !== null && !parada ? { id: rid, casa: res } : null), [rid, res, parada]);
   const girando = giro !== null && parouEm !== giro.id;
   const fimDoGiro = () => {
-    if (giro) setParouEm(giro.id);
+    if (giro) {
+      const id = giro.id;
+      setParouEm(id);
+      setMostrandoRes(id);
+      setTimeout(() => setMostrandoRes((x) => (x === id ? null : x)), 2400);
+    }
     void recarregar();
   };
 
@@ -145,13 +153,30 @@ export function RoletaMesa({ ativa = true }: { ativa?: boolean }) {
   const vencedoras = resultadoNaTela !== null ? minhas.filter((f) => cobre(f.tipo, f.valor, resultadoNaTela)) : [];
   const corRes = resultadoNaTela !== null ? corDa(resultadoNaTela) : null;
   void relogio;
+  /* câmera: a roda vai para o meio da tela enquanto gira e fica uns 2 s mostrando o resultado */
+  const zoom =
+    ativa && giro !== null && fechouZoom !== giro.id && (girando || mostrandoRes === giro.id);
+  useEffect(() => {
+    if (!zoom || !giro) return;
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setFechouZoom(giro.id);
+    document.addEventListener("keydown", esc);
+    return () => document.removeEventListener("keydown", esc);
+  }, [zoom, giro]);
 
   if (ligada === false) return <p className="block hint">A roleta ao vivo ainda não foi ligada no banco (seção 32 do seguranca.sql).</p>;
 
   return (
     <div className="roleta rm">
-      <div className="rm-topo">
+      <div className={"rm-topo" + (zoom ? " zoom" : "")}>
+        {zoom && giro && <div className="rr-palco" aria-hidden="true" onClick={() => setFechouZoom(giro.id)} />}
         <RodaRoleta giro={giro} onFim={fimDoGiro} />
+        {zoom && resultadoNaTela !== null && corRes && (
+          <div className="rr-zoom-res" aria-hidden="true">
+            <span className={"rm-bola rm-" + corRes}>{resultadoNaTela}</span>
+            <b>{NOME_COR[corRes]}</b>
+            {totalMeu > 0 && pago && <small className={lucro > 0 ? "bom" : "ruim"}>{lucro > 0 ? `+${formatarMoedas(lucro)} moedas` : `−${formatarMoedas(totalMeu - pagouMeu)} moedas`}</small>}
+          </div>
+        )}
         <div className="rm-lado" aria-live="polite">
           <MesaStatus jogo="roleta" fase={fase} rodada={r} agora={agora()} gente={estado?.gente.length ?? 0} />
           {resultadoNaTela !== null && corRes ? (

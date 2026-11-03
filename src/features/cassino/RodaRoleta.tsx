@@ -161,6 +161,7 @@ export function RodaRoleta({ giro, onFim }: { giro: Giro | null; onFim?: (casa: 
   const molduraRef = useRef<SVGGElement>(null);
   const molduraCasaRef = useRef<SVGPathElement>(null);
   const rastroRef = useRef<SVGGElement>(null);
+  const sombraRef = useRef<SVGCircleElement>(null);
   const angulo = useRef(0);
   const fimRef = useRef(onFim);
   const [mudo, setMudo] = useState(() => local.get("roleta-som") === "0");
@@ -188,8 +189,15 @@ export function RodaRoleta({ giro, onFim }: { giro: Giro | null; onFim?: (casa: 
       roda.setAttribute("transform", `rotate(${q.roda})`);
       molduraRef.current?.setAttribute("transform", `rotate(${q.roda})`);
       const [x, y] = polar(raioDaBola(q.raio), q.bola);
-      bola.setAttribute("transform", `translate(${x} ${y})`);
+      /* no ar, a bolinha cresce (vem para perto da câmera) e a sombra fica para trás, mais apagada */
+      const s = Math.min(1.2, q.salto);
+      bola.setAttribute("transform", `translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${(1 + s * 0.45).toFixed(3)})`);
       bola.style.opacity = "1";
+      const sombra = sombraRef.current;
+      if (sombra) {
+        sombra.setAttribute("transform", `translate(${(x + 1.6 + s * 7).toFixed(2)} ${(y + 2.2 + s * 9).toFixed(2)})`);
+        sombra.style.opacity = String((0.9 - s * 0.45).toFixed(2));
+      }
       /* rastro: cópias apagadas um pouco atrás, só enquanto ela anda rápido */
       const delta = q.bola - bolaAntes;
       bolaAntes = q.bola;
@@ -378,8 +386,9 @@ export function RodaRoleta({ giro, onFim }: { giro: Giro | null; onFim?: (casa: 
               <circle key={k} r={6.5 - k} opacity={0} data-o={o} className="rr-bola-fantasma" />
             ))}
           </g>
+          {/* a sombra fica no chão: separada da bolinha, ela se afasta quando a bolinha pula */}
+          <circle ref={sombraRef} r={6.8} className="rr-sombra rr-sombra-bola" style={{ opacity: 0 }} />
           <g ref={bolaRef} style={{ opacity: 0 }}>
-            <circle r={7.5} cx={2} cy={2.5} className="rr-sombra" />
             <circle r={6.5} fill={`url(#${id}-bola)`} className="rr-bola" />
             <circle r={2.2} cx={-2.2} cy={-2.4} className="rr-bola-luz" />
           </g>

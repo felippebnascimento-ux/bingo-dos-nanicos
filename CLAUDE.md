@@ -143,7 +143,8 @@ src/
                        o canal de texto escolhido no menu)
     cassino/           aba Cassino (moedas fictícias): regras.ts (roleta, limbo, dado, caça-níquel, conferir() e
                        refazer() com HMAC-SHA256; puro e testado), roda.ts (plano do giro da roleta animada: a bolinha termina no centro
-                       da casa que o banco mandou; puro e testado), RodaRoleta.tsx (a roda em SVG, animação, sons e mudo),
+                       da casa que o banco mandou, com `salto` para o tamanho e a sombra nos quiques e o balanço ao
+                       assentar; puro e testado), RodaRoleta.tsx (a roda em SVG, animação, sons e mudo),
                        mesa.ts (mesas ao vivo da roleta e do avião: lê mesa_estado, relógio do banco, fases e conferência
                        da rodada; e as contas do pênalti; puro e testado), mesaDados.ts (`useMesa(jogo)`: pergunta ao banco
                        algumas vezes por segundo, mais rápido com o avião no ar; `chamarMesa`), Penalti.tsx (o pênalti

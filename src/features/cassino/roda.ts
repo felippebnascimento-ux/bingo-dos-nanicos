@@ -108,6 +108,8 @@ export type Quadro = {
   rolando: number;
   /** a bolinha já está parada na casa */
   assentou: boolean;
+  /** quanto a bolinha está no ar (0 = rolando ou na casa, até ~1 no quique mais alto), para o tamanho e a sombra */
+  salto: number;
 };
 
 /** Onde está tudo no instante `t` (ms desde o início). */
@@ -119,10 +121,14 @@ export function quadroDoGiro(p: Plano, t: number): Quadro {
   let raio = R_PISTA;
   if (t >= p.chega) raio = R_CASA;
   else if (t > p.desce) raio = R_PISTA - (R_PISTA - R_CASA) * easeInOut((t - p.desce) / (p.chega - p.desce));
-  /* batidas nos losangos: um empurrão curto para fora enquanto desce */
+  /* batidas nos losangos: um empurrão curto para fora enquanto desce, e ela pula */
+  let salto = 0;
   for (const b of p.batidas) {
     const d = (t - b.t) / 180;
-    if (d > 0 && d < 1) raio += b.forca * Math.sin(Math.PI * d);
+    if (d > 0 && d < 1) {
+      raio += b.forca * Math.sin(Math.PI * d);
+      salto = Math.max(salto, b.forca * 12 * Math.sin(Math.PI * d));
+    }
   }
   /* quiques entre casas vizinhas */
   const q = p.quiques.find((x) => t >= x.ini && t < x.fim);
@@ -130,9 +136,13 @@ export function quadroDoGiro(p: Plano, t: number): Quadro {
     const v = (t - q.ini) / (q.fim - q.ini);
     rel += (q.de + (q.para - q.de) * easeInOut(v)) * FATIA;
     raio = R_CASA + q.altura * Math.sin(Math.PI * v);
+    salto = (q.altura / 0.07) * 0.8 * Math.sin(Math.PI * v);
   }
+  /* caiu na casa: balança de leve entre as divisórias e para no centro (some antes do fim do giro) */
+  const assentando = (t - p.assenta) / 700;
+  if (assentando > 0 && assentando < 1) rel += FATIA * 0.14 * Math.sin(assentando * Math.PI * 3) * (1 - assentando);
   const rolando = t >= p.assenta ? 0 : (1 - u) ** 2;
-  return { roda, bola: roda + rel, raio, rolando, assentou: t >= p.assenta };
+  return { roda, bola: roda + rel, raio, rolando, assentou: t >= p.assenta, salto };
 }
 
 /** Ângulo entre 0 e 360. */

@@ -107,6 +107,7 @@
 .rr-ponta{stroke:var(--roleta-ouro1);stroke-width:.8}
 .rr-brilho{fill:var(--roleta-branco);opacity:.6}
 .rr-sombra{fill:var(--roleta-sombra)}
+.rr-sombra-bola{filter:blur(1.2px)}
 .rr-bola{stroke:rgba(0,0,0,.25);stroke-width:.6}
 .rr-bola-luz{fill:var(--roleta-branco);opacity:.9}
 .rr-bola-fantasma{fill:var(--roleta-bola0)}
@@ -325,10 +326,17 @@
 .av-chave i::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:var(--stamp-ink);transition:left .15s}
 .av-chave.on i{background:var(--av-verde)}
 .av-chave.on i::after{left:23px}
-.aviao{--av-verde:#22C55E;--av-verde0:#86EFAC;--av-verde1:#15803D;--av-verdetx:#062B14}
+/* o verde do botão de sacar vale no aviãozinho e no pênalti */
+.aviao,.penalti{--av-verde:#22C55E;--av-verde0:#86EFAC;--av-verde1:#15803D;--av-verdetx:#062B14}
 .av-sacar{width:100%;padding:14px;border:0;border-radius:16px;font:800 20px var(--display);color:var(--av-verdetx);cursor:pointer;
   background:linear-gradient(180deg,var(--av-verde0),var(--av-verde) 55%,var(--av-verde1));box-shadow:inset 0 1px 0 rgb(255 255 255 / .6),0 8px 24px color-mix(in srgb,var(--av-verde) 45%,transparent)}
 .av-sacar small{display:block;font:700 13px var(--body);opacity:.8}
+.av-sacar:not(:disabled){animation:av-sacar-brilho 1.6s ease-in-out infinite}
+.av-sacar:hover:not(:disabled){filter:brightness(1.08)}
+.av-sacar:focus-visible{outline:3px solid var(--rm-ouro);outline-offset:3px}
+.av-sacar:disabled{opacity:.6;cursor:default}
+@keyframes av-sacar-brilho{50%{box-shadow:inset 0 1px 0 rgb(255 255 255 / .6),0 0 0 4px color-mix(in srgb,var(--av-verde) 35%,transparent),0 10px 34px color-mix(in srgb,var(--av-verde) 70%,transparent)}}
+@media (prefers-reduced-motion:reduce){.av-sacar{animation:none}}
 .av-res{margin:0;font:800 15px var(--body)}
 .av-res.bom{color:var(--rm-verdeclaro)}.av-res.ruim{color:var(--rm-vermelhoclaro)}
 .av-mesa{list-style:none;margin:0;padding:0;display:grid}
@@ -594,3 +602,17 @@
 .pn-ultimos li.defesa{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--pn-defendeu) 70%,transparent)}
 .pn-ultimos li.av-vazio{width:auto;height:auto;background:none}
 .penalti .pn-escada{margin-right:48px}
+
+/* câmera da roleta: enquanto gira, a roda vai para o meio da tela, grande, com o resto escurecido (RoletaMesa, .zoom) */
+.rm .rr{width:min(100%,400px);aspect-ratio:1}
+.rr-palco{position:fixed;inset:0;z-index:60;cursor:zoom-out;background:radial-gradient(ellipse at 50% 45%,color-mix(in srgb,var(--rm-feltro1) 70%,transparent),rgb(0 0 0 / .92) 75%);backdrop-filter:blur(4px);animation:rr-palco .35s ease-out both}
+.rm-topo.zoom .rr-roda-caixa{position:fixed;z-index:61;left:50%;top:44%;width:min(92vw,72vh);transform:translate(-50%,-50%);animation:rr-zoom .6s cubic-bezier(.2,.8,.2,1) both}
+.rr-zoom-res{position:fixed;z-index:62;left:50%;bottom:5vh;transform:translateX(-50%);display:flex;align-items:center;gap:14px;padding:10px 22px 10px 10px;border-radius:99px;
+  background:rgb(0 0 0 / .55);box-shadow:0 0 0 1px color-mix(in srgb,var(--rm-ouro) 50%,transparent);color:var(--rm-creme);animation:rr-res .45s cubic-bezier(.2,1.5,.4,1) both;pointer-events:none}
+.rr-zoom-res .rm-bola{width:64px;height:64px;font-size:30px}
+.rr-zoom-res b{font:800 26px var(--display);letter-spacing:.04em;color:var(--stamp-ink)}
+.rr-zoom-res small{font:800 18px var(--display)}.rr-zoom-res small.bom{color:var(--rm-verdeclaro)}.rr-zoom-res small.ruim{color:var(--rm-vermelhoclaro)}
+@keyframes rr-palco{from{opacity:0}}
+@keyframes rr-zoom{from{transform:translate(-50%,-50%) scale(.5);opacity:.3}}
+@keyframes rr-res{from{transform:translateX(-50%) scale(.4);opacity:0}}
+@media (prefers-reduced-motion:reduce){.rr-palco,.rm-topo.zoom .rr-roda-caixa,.rr-zoom-res{animation:none}}
