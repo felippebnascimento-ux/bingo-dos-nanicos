@@ -536,6 +536,10 @@ export const CHANGELOG: EntradaLog[] = [
       "Celular: desmutar o microfone na voz volta a mandar o som (antes, às vezes ficava mudo)",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: ["Pôquer: abrir uma mesa funciona (ela fechava sozinha antes de alguém sentar); mesa vazia por 5 minutos fecha sozinha"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

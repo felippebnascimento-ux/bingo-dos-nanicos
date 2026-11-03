@@ -42,6 +42,7 @@ export function usePoquer(ativo = true) {
       dif.current = e.agora - (antes + (Date.now() - antes) / 2);
       setLigada(true);
       if (e.mesa.fechada) {
+        toast("Essa mesa fechou.");
         irPara(null);
         return null;
       }

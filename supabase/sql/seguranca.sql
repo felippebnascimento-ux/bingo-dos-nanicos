@@ -5372,8 +5372,10 @@ begin
       if l.fichas > 0 then perform public.creditar(l.user_id, l.fichas, 'cassino', 'poker'); end if;
       delete from public.pk_lugares where mesa_id = p_mesa and lugar = l.lugar;
     end loop;
+    -- todo mundo levantou depois de jogar: a mesa fecha (recém-aberta e vazia, ela espera alguém sentar; a lista
+    -- fecha a que ficar 5 min sem ninguém)
     if not exists (select 1 from public.pk_lugares where mesa_id = p_mesa) then
-      update public.pk_mesas set fechada = true, mao_atual = null where id = p_mesa;
+      if m.mao_atual is not null then update public.pk_mesas set fechada = true, mao_atual = null where id = p_mesa; end if;
       return;
     end if;
     perform public.pk_iniciar(p_mesa);
