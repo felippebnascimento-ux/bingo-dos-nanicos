@@ -613,7 +613,7 @@ export const CHANGELOG: EntradaLog[] = [
     itens: [
       "K-FOFO remodelado: o janelão foi para a parede da esquerda, a TV para a da direita e a mesa comprida para perto do Mural",
       "Mural no lugar do antigo janelão: avisos do grupo (hall da fama, banca, eventos) e recados que qualquer nanico prega",
-      "A porta de vidro leva à rua (gramado, árvore com bancos, carros e o gol do pênalti x1) e ao corredor dos quartos",
+      { t: "A porta de vidro leva à rua (gramado, árvore com bancos, carros e o gol do pênalti x1) e ao corredor dos quartos", off: "os carros saíram da rua e foram para a garagem na v1.152" },
       "Corredor dos quartos: uma porta para cada nanico, aberta para quem já comprou o quarto e fechada para quem não",
       "Lupa no canto do K-FOFO para aumentar e diminuir a cena (arraste para andar pela cena aumentada)",
       "Sentado no quarto e na rua, o boneco afunda no banco como no K-FOFO",
@@ -748,6 +748,7 @@ export const CHANGELOG: EntradaLog[] = [
   },
   { data: "03/11/2026", itens: ["Móveis novos em todos os quartos e no K-FOFO: quinas arredondadas, sombra suave e mais capricho (almofadas no sofá, travesseiros e cobertor na cama, livros na estante, portas no guarda-roupa, monitores e teclado no PC)"] },
   { data: "03/11/2026", itens: ["O corredor dos quartos virou corredor de hotel: papel de parede listrado, lambri de madeira, carpete vinho, portas com almofadas e maçaneta dourada e uma arandela acesa ao lado de cada porta"] },
+  { data: "03/11/2026", itens: ["Garagem nova ao ar livre, pelo portão da rua: os 14 veículos da turma desenhados das fotos, cada um na sua vaga, com guarita, cancela e postes (toque num carro para ver qual é)"] },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

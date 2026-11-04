@@ -24,7 +24,7 @@ import { useArena } from "./arena";
 import { ArenaPainel } from "./ArenaPainel";
 import { GatilhosPainel } from "./GatilhosPainel";
 import { irParaQuarto, paraCena } from "./visita";
-import { CORES_PIXO, portaDaCena, ehCenaEspecial, gradeEspecial, GOL_RUA, moveisDaCena, NOME_CENA, portasDoCorredor, TAM_CENA, type CorPixo } from "./cenas";
+import { CORES_PIXO, portaDaCena, ehCenaEspecial, gradeEspecial, GOL_RUA, PORTAO_GARAGEM, VEICULOS, veiculoDo, moveisDaCena, NOME_CENA, portasDoCorredor, TAM_CENA, type CorPixo } from "./cenas";
 import { iniciarPixacoes, pixar, usePixacoes } from "./pixacoes";
 import { abrirDuelo } from "@/features/cassino/dueloDados";
 import { soNanicos } from "@/lib/dados/nanicos";
@@ -86,6 +86,10 @@ export function QuartoVisita({ dono }: { dono: string }) {
   const sentarNo = (movel: number) => {
     /* na rua, o gol abre o pênalti x1 */
     if (movel === GOL_RUA) return abrirDuelo();
+    /* o portão da rua leva à garagem; tocar num veículo mostra qual é */
+    if (movel === PORTAO_GARAGEM) return irParaQuarto("garagem");
+    const v = veiculoDo(cena.find((x) => x.id === movel)?.desenho ?? "");
+    if (v) return toast(VEICULOS[v]?.nome ?? "Veículo");
     const eu = bonecos.find((b) => b.key === MY_KEY);
     const lugares = grade.assentos.filter((a) => a.movel === movel);
     if (!lugares.length) return;
@@ -137,7 +141,7 @@ export function QuartoVisita({ dono }: { dono: string }) {
         tipo={especial === "arena" ? "quarto" : (especial ?? "quarto")}
         portas={portas}
         aoTocarPorta={(fid) => (portas?.find((p) => p.fid === fid)?.aberta ? irParaQuarto(fid) : toast("Esse nanico ainda não comprou o quarto: a porta está fechada."))}
-        aoTocarSaida={especial ? () => irParaQuarto(null) : undefined}
+        aoTocarSaida={especial ? () => irParaQuarto(especial === "garagem" ? "rua" : null) : undefined}
         porta={portaDaCena(dono)}
         pixos={especial === "banheiro" ? pixos : undefined}
         pisosCor={especial === "arena" ? pisosArena : undefined}

@@ -63,7 +63,11 @@
   --rua-branco0:#F4F4F2;--rua-branco1:#D9D9D5;--rua-branco2:#BDBDB8;--rua-preto0:#3B3B3D;--rua-preto1:#2A2A2C;--rua-preto2:#1E1E20;
   --rua-amarelo0:#F2C94C;--rua-amarelo1:#D9AE33;--rua-amarelo2:#BC9528;
   --corredor-carpete0:#7A2E2E;--corredor-carpete1:#933A3A;--corredor-batente:#5C3B22;--corredor-dentro:#1C1A18;--corredor-placa:#F3E9D2;--corredor-placa-texto:#3A2A1A}
-.quarto-visita.cena-rua{background:linear-gradient(180deg,var(--rua-ceu1),var(--rua-ceu2))}
+.quarto-visita.cena-rua,.quarto-visita.cena-garagem{background:linear-gradient(180deg,var(--rua-ceu1),var(--rua-ceu2))}
+/* a garagem (fundoGaragem): asfalto, faixas, meio-fio e a mureta */
+.quarto-vars{--garagem-asfalto0:#3C4046;--garagem-asfalto1:#383C42;--garagem-faixa:#F2F0EA;--garagem-meiofio:#C9C5B8;--garagem-muro1:#BFB8A8;--garagem-muro2:#CFC8B8}
+.quarto .q-garagem-asfalto0{fill:var(--garagem-asfalto0)} .quarto .q-garagem-asfalto1{fill:var(--garagem-asfalto1)} .quarto .q-garagem-faixa{fill:var(--garagem-faixa)}
+.quarto .q-garagem-meiofio{fill:var(--garagem-meiofio)} .quarto .q-garagem-muro1{fill:var(--garagem-muro1)} .quarto .q-garagem-muro2{fill:var(--garagem-muro2)}
 .quarto .q-grama0{fill:var(--rua-grama0)} .quarto .q-grama1{fill:var(--rua-grama1)} .quarto .q-terra{fill:var(--rua-terra)}
 .quarto .q-cal{fill:var(--rua-cal)} .quarto .q-cal-area{fill:none;stroke:var(--rua-cal);stroke-width:2}
 .quarto .q-fachada{fill:var(--rua-fachada)} .quarto .q-fachada-linha{fill:var(--rua-fachada-linha)}

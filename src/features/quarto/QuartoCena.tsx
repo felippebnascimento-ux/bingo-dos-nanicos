@@ -15,7 +15,7 @@ import { useEquipados } from "@/features/loja/lojaDados";
 import { corDoQuarto, ehInterativo, type EstadoMovel } from "./interativo";
 import { desenharMovel, Poligonos, type Poly, type Pt } from "./Moveis";
 import { camadasQuarto, type Retangulo } from "./quarto";
-import { MARCA_PENALTI, type PortaCorredor } from "./cenas";
+import { MARCA_PENALTI, MOVEIS_GARAGEM, VEICULOS, veiculoDo, type PortaCorredor } from "./cenas";
 import type { Pixo } from "./pixacoes";
 
 const TW = 46, TH = 23, ZS = 1.3, WH = 150, MARGEM = 24;
@@ -182,6 +182,36 @@ function fundoPirapo(n: number, p: (i: number, j: number, z?: number) => Pt): Po
 }
 
 /** O corredor: as duas paredes sem janela nem pôster, o carpete comprido e a saída para o K-FOFO no piso (0, 0). */
+/** A garagem ao ar livre: mureta baixa com cerca viva nos fundos, a faixa de grama da entrada, o asfalto e a vaga
+    pintada em volta de cada carro (MOVEIS_GARAGEM). */
+function fundoGaragem(n: number, p: (i: number, j: number, z?: number) => Pt): Poly[] {
+  const L: Poly[] = [];
+  const poly = (q: Pt[], c: string, linha = false) => L.push({ q, c, linha });
+  const plano = (i0: number, j0: number, i1: number, j1: number, c: string) => poly([p(i0, j0), p(i1, j0), p(i1, j1), p(i0, j1)], c);
+  /* a mureta e a cerca viva em cima, nas duas bordas do fundo (a entrada fica em i 10–13 da borda da direita) */
+  for (const [a, b] of [[0, 10], [13.9, n]] as const) {
+    poly([p(a, 0), p(b, 0), p(b, 0, 26), p(a, 0, 26)], "garagem-muro2");
+    poly([p(a, 0, 26), p(b, 0, 26), p(b, 0, 44), p(a, 0, 44)], "folha1");
+  }
+  poly([p(0, 0), p(0, n), p(0, n, 26), p(0, 0, 26)], "garagem-muro1");
+  poly([p(0, 0, 26), p(0, n, 26), p(0, n, 44), p(0, 0, 44)], "folha0");
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) plano(i, j, i + 1, j + 1, j < 2 ? ((i + j) % 2 ? "grama0" : "grama1") : (i + j) % 2 ? "garagem-asfalto0" : "garagem-asfalto1");
+  /* o meio-fio entre a grama e o asfalto, e o caminho da entrada */
+  plano(0, 1.94, n, 2.04, "garagem-meiofio");
+  plano(10.2, 0, 11.8, 2, "garagem-asfalto1");
+  /* a vaga de cada veículo: as duas laterais e o fundo, em branco */
+  for (const m of MOVEIS_GARAGEM) {
+    if (!veiculoDo(m.desenho) || m.ret.w < 2) continue;
+    const { i, j, w, d } = m.ret;
+    plano(i + 0.05, j - 0.45, i + 0.1, j + d + 0.45, "garagem-faixa");
+    plano(i + w - 0.1, j - 0.45, i + w - 0.05, j + d + 0.45, "garagem-faixa");
+    plano(i + 0.05, j - 0.45, i + w - 0.05, j - 0.4, "garagem-faixa");
+  }
+  /* a seta pintada no corredor do meio */
+  for (const a of [3.4, 8.4]) poly([p(a, 7.85), p(a + 0.6, 7.85), p(a + 0.6, 7.75), p(a + 0.85, 8), p(a + 0.6, 8.25), p(a + 0.6, 8.15), p(a, 8.15)], "garagem-faixa");
+  return L;
+}
+
 /** O corredor no jeito de hotel (opção 1, escolhida em 03/11/2026): papel de parede listrado, lambri de madeira
     com friso dourado, sanca no alto, piso de tábuas escuras e o carpete vinho com losangos dourados. */
 function fundoCorredor(n: number, p: (i: number, j: number, z?: number) => Pt): Poly[] {
@@ -314,7 +344,7 @@ export const QuartoCena = memo(function QuartoCena({
   aoTocarMovel?: (id: number) => void;
   bonecos?: readonly BonecoCena[];
   brilhos?: readonly { id: string; i: number; j: number }[];
-  tipo?: "quarto" | "rua" | "corredor" | "banheiro" | "pirapo";
+  tipo?: "quarto" | "rua" | "corredor" | "banheiro" | "pirapo" | "garagem";
   /** as pixações do banheiro */
   pixos?: readonly Pixo[];
   /** a arena (seção 58): "i,j" → cor do time que pintou */
@@ -329,7 +359,7 @@ export const QuartoCena = memo(function QuartoCena({
   const n = tamanho;
   const { p, largura, altura } = useMemo(() => projecao(n), [n]);
   const fundo = useMemo(
-    () => (tipo === "rua" ? fundoRua(n, p) : tipo === "corredor" ? fundoCorredor(n, p) : tipo === "banheiro" ? fundoBanheiro(n, p) : tipo === "pirapo" ? fundoPirapo(n, p) : paredes(n, p, equip)),
+    () => (tipo === "rua" ? fundoRua(n, p) : tipo === "corredor" ? fundoCorredor(n, p) : tipo === "banheiro" ? fundoBanheiro(n, p) : tipo === "pirapo" ? fundoPirapo(n, p) : tipo === "garagem" ? fundoGaragem(n, p) : paredes(n, p, equip)),
     [n, p, equip, tipo],
   );
   const ordem = useMemo(() => camadasQuarto(moveis.map((m) => m.ret)), [moveis]);
@@ -363,7 +393,7 @@ export const QuartoCena = memo(function QuartoCena({
       )}
       {aoTocarSaida && (
         <polygon className="quarto-alvo-porta" points={[p(porta.i + 0.12, 0), p(porta.i + 0.88, 0), p(porta.i + 0.88, 0, 104), p(porta.i + 0.12, 0, 104)].map((v) => v.join(",")).join(" ")} onClick={aoTocarSaida}>
-          <title>Voltar ao K-FOFO</title>
+          <title>{tipo === "garagem" ? "Voltar para a rua" : "Voltar ao K-FOFO"}</title>
         </polygon>
       )}
       {pixos && <Pixos lista={pixos} p={p} />}
@@ -430,6 +460,7 @@ export const QuartoCena = memo(function QuartoCena({
             onClick={aoTocarMovel ? () => aoTocarMovel(m.id) : undefined}
           >
             <Poligonos lista={desenharMovel(p, m.desenho, m.ret, m.giro)} />
+            {veiculoDo(m.desenho) && <Veiculo id={veiculoDo(m.desenho)!} ret={m.ret} p={p} />}
             {ehInterativo(m.desenho) && <EstadoNoMovel m={m} p={p} />}
           </g>
         );
@@ -492,6 +523,21 @@ function BonecoNoQuarto({ b, p }: { b: BonecoCena; p: (i: number, j: number, z?:
         {b.nome}
       </text>
     </g>
+  );
+}
+
+/**
+ * Um veículo da garagem: a imagem public/arte/carros/<id>.svg (desenhada na mesma projeção, com o ponto (0, 0, 0) do
+ * veículo em (80, 110) e 240 × 220 de tamanho), centralizada na vaga.
+ */
+function Veiculo({ id, ret, p }: { id: string; ret: { i: number; j: number; w: number; d: number }; p: (i: number, j: number, z?: number) => Pt }) {
+  const v = VEICULOS[id];
+  if (!v) return null;
+  const [x, y] = p(ret.i + (ret.w - v.L) / 2, ret.j + (ret.d - v.W) / 2);
+  return (
+    <image href={`/arte/carros/${id}.svg`} x={x - 80} y={y - 110} width="240" height="220">
+      <title>{v.nome}</title>
+    </image>
   );
 }
 

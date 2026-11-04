@@ -8,11 +8,11 @@ describe("cenas especiais", () => {
     expect(ehCenaEspecial("f1")).toBe(false);
     expect(ehCenaEspecial(null)).toBe(false);
   });
-  it("na rua dá para chegar da porta até os bancos, e os carros e a árvore bloqueiam", () => {
+  it("na rua dá para chegar da porta até os bancos, e o portão da garagem e a árvore bloqueiam", () => {
     const g = gradeEspecial("rua");
     expect(g.livre(0, 0)).toBe(true);
     expect(g.livre(5, 5)).toBe(false);
-    expect(g.livre(1, 10)).toBe(false);
+    expect(g.livre(11, 9)).toBe(false);
     expect(g.assentos.length).toBeGreaterThanOrEqual(6);
     expect(g.assentos.every((a) => g.livre(a.chegar.i, a.chegar.j))).toBe(true);
   });
@@ -42,5 +42,21 @@ describe("Pirapó 114 (planta do João)", () => {
     for (const alvo of [{ i: 1, j: 11 }, { i: 6, j: 12 }, { i: 11, j: 14 }, { i: 15, j: 6 }]) expect(caminho(porta, alvo, g.livre).length).toBeGreaterThan(1);
     /* o lado de fora do prédio não se pisa */
     expect(g.livre(15, 10)).toBe(false);
+  });
+});
+
+describe("garagem", () => {
+  it("da entrada dá para andar até cada fileira de vagas, e os carros bloqueiam", async () => {
+    const { caminho } = await import("@/features/hall/hall");
+    const { portaDaCena, MOVEIS_GARAGEM, VEICULOS, veiculoDo } = await import("./cenas");
+    const g = gradeEspecial("garagem");
+    const porta = portaDaCena("garagem");
+    expect(g.livre(porta.i, porta.j)).toBe(true);
+    for (const alvo of [{ i: 2, j: 4 }, { i: 6, j: 7 }, { i: 2, j: 10 }, { i: 9, j: 13 }]) expect(caminho(porta, alvo, g.livre).length).toBeGreaterThan(1);
+    expect(g.livre(2, 3)).toBe(false);
+    /* os 14 veículos, cada um com o seu desenho */
+    const v = MOVEIS_GARAGEM.map((m) => veiculoDo(m.desenho)).filter(Boolean);
+    expect(v).toHaveLength(14);
+    expect(v.every((id) => id! in VEICULOS)).toBe(true);
   });
 });

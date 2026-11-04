@@ -385,6 +385,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 - **Exceção: as cartas do truco** (`20-truco.css`): o baralho desenhado usa as variáveis `--carta-*` (definidas em `.tc`; o papel fica claro também no tema escuro, só mais apagado) e as classes `cf-<nome>`.
 - **Exceção: o iPhone e o InstaNanico** (`33-celular.css`): a moldura usa `--iph-*` e o app as cores do modo escuro do Instagram, `--ig-*` (preto, cinzas, azul dos botões, o degradê do anel dos stories e os fundos dos stories de texto), definidas em `.iphone`.
 - **Exceção: os desenhos dos itens da loja** (`30-loja.css`): cigarro, latas, cuia, copo e fumaça usam as variáveis `--loja-*` (com tema escuro) e as classes `l-<nome>`.
+- **A garagem** (cena `garagem` em cenas.ts, 14×14): entra pelo portão da rua (`PORTAO_GARAGEM`) e a saída volta para a rua; os veículos são imagens (`veiculo-<id>` → `public/arte/carros/<id>.svg`), e o chão usa `--garagem-*` em 37-quarto.css.
 - **Exceção: a rua e o corredor dos quartos** (`36-quarto.css`): gramado, céu de dia, fachada, árvore, carros, gol e as portas usam `--rua-*`, `--corredor-*` e, no corredor de hotel (papel listrado, lambri, carpete, arandelas), `--hotel-*` (em `.quarto-vars`), iguais nos dois temas (a rua é sempre de dia); o Mural usa `--hall-cortica*`, `--hall-nota-*` e `--hall-tachinha` (em `.hall` e `.mural-painel`).
 - **Exceção: o cômodo do hall** (`22-hall.css`). Ele é uma ilustração com cores próprias (tijolo, madeira, lajota), definidas como variáveis `--hall-*` em `.hall`, cada uma com uma versão mais escura no tema escuro. O SVG usa as classes `f-<nome>` (preenchimento) e `s-<nome>` (traço). A interface em volta (placas com nome, TV, botões) continua com a paleta acima.
 
@@ -581,6 +582,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 - **Tamanhos:** o rosto tem 160×160 e o corpo, 440 px de altura. Use `artOf(friend)`.
 - **`amigos/{slug}-rosto.webp` e `{slug}-corpo.webp`:** a arte dos amigos dos nanicos (o primeiro é o Lightzin), pelo mapa `AMIGOS` de `nanicos.ts`; o boneco fica em `bonecos/{slug}.webp`, no mesmo formato. `artOf` e `bonecoOf` já caem nele.
 - **`bonecos/*.webp`:** uma spritesheet por nanico para o hall (células de 84×134 nas medidas do código; desde a v1.68 a folha está em 3x, 252×402 px por célula, para ficar nítida ampliada; linhas `frente`/`costas`, colunas `parado` + 4 de andar; os lados esquerdos são o espelho). O formato está em `bonecos/bonecos.json`. Use `bonecoOf(friend)`; quem não tem boneco aparece com o rosto num pino.
+- **`carros/<id>.svg`:** os 14 veículos da garagem (desenhados das fotos, 03/11/2026), na projeção das cenas (46 × 23 por piso, o ponto (0, 0, 0) do veículo em (80, 110), 240 × 220). Gerados fora do repositório; a cena usa `VEICULOS` (cenas.ts) para o nome e o tamanho.
 - **`turma.webp`:** foto da turma. **`marca.png`:** bola de bingo. **`reacoes/`:** os Picarétezzi.
 
 ---

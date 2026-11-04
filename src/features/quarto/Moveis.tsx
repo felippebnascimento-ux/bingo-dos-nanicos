@@ -351,11 +351,36 @@ const DESENHO_QUARTO: Record<string, Desenho> = {
     const c = atras(r, giro, 0.12);
     k.box(c.i + M, c.j + M, c.w - (giro ? 0 : 2 * M), c.d - (giro ? 2 * M : 0), 22, "madeira0", "madeira1", "madeira2", 18);
   },
-  "carro-vermelho": (k, r, giro) => carro(k, r, giro, "vermelho"),
-  "carro-azul": (k, r, giro) => carro(k, r, giro, "azul"),
-  "carro-branco": (k, r, giro) => carro(k, r, giro, "branco"),
-  "carro-preto": (k, r, giro) => carro(k, r, giro, "preto"),
-  "carro-amarelo": (k, r, giro) => carro(k, r, giro, "amarelo"),
+  /* o portão da garagem na rua: dois pilares, as folhas de grade abertas para dentro e a placa em cima */
+  "portao-garagem": (k, r, giro) => {
+    const { W, box } = rel(k, r, giro);
+    box(0.05, 0.35, 0.3, 0.3, 96, ...tons("cinza"));
+    for (const [u, v] of [[0.35, 0.05], [W - 0.41, 0.05]]) {
+      box(u, v, 0.06, 0.3, 4, "ferro0", "ferro1", "ferro1", 4);
+      for (let x = 0; x < 3; x++) box(u + 0.01, v + 0.03 + x * 0.1, 0.04, 0.04, 64, "ferro0", "ferro1", "ferro1", 4);
+      box(u, v, 0.06, 0.3, 4, "ferro0", "ferro1", "ferro1", 68);
+    }
+    box(W - 0.35, 0.35, 0.3, 0.3, 96, ...tons("cinza"));
+    box(0.05, 0.4, W - 0.1, 0.2, 20, "placa-kfofo", "placa-kfofo", "preto1", 96);
+    box(0.25, 0.6, W - 0.5, 0.01, 6, "ouro0", "ouro0", "ouro1", 103);
+  },
+  /* garagem: a guarita (paredes claras, janela, telhado vermelho), a cancela levantada e os postes */
+  guarita: (k, r) => {
+    k.box(r.i + 0.1, r.j + 0.1, 0.8, 0.8, 60, "pp-branco0", "pp-branco1", "pp-branco2");
+    k.box(r.i + 0.2, r.j + 0.9, 0.6, 0.01, 22, "vidro", "vidro", "vidro", 30);
+    k.box(r.i + 0.9, r.j + 0.2, 0.01, 0.6, 22, "vidro", "vidro", "vidro", 30);
+    k.box(r.i + 0.04, r.j + 0.04, 0.92, 0.92, 7, ...tons("pp-vermelho"), 60);
+  },
+  cancela: (k, r) => {
+    k.box(r.i + 0.35, r.j + 0.35, 0.3, 0.3, 34, "pp-branco0", "pp-branco1", "pp-branco2");
+    for (let n = 0; n < 6; n++) k.box(r.i + 0.46, r.j + 0.46, 0.08, 0.08, 14, ...(n % 2 ? tons("pp-branco") : tons("pp-vermelho")), 34 + n * 14);
+  },
+  poste: (k, r) => {
+    k.box(r.i + 0.4, r.j + 0.4, 0.2, 0.2, 6, "ferro0", "ferro1", "ferro1");
+    k.box(r.i + 0.46, r.j + 0.46, 0.08, 0.08, 120, "ferro0", "ferro1", "ferro1", 6);
+    k.box(r.i + 0.36, r.j + 0.36, 0.28, 0.28, 8, "ferro0", "ferro1", "ferro1", 126);
+    k.box(r.i + 0.4, r.j + 0.4, 0.2, 0.2, 4, "neon-ouro", "neon-ouro", "neon-ouro", 122);
+  },
   /* o banheiro: vaso sanitário (com a caixa encostada atrás) e a pia com o espelho em cima */
   vaso: (k, r, giro) => {
     const ci = r.i + r.w / 2, cj = r.j + r.d / 2;
@@ -378,26 +403,6 @@ const DESENHO_QUARTO: Record<string, Desenho> = {
     k.box(i - 0.06, a, 0.08, b - a, 6, "gol", "gol", "gol", 48);
   },
 };
-
-/** Um carro estacionado: lataria, cabine com vidros e as rodas; comprido no sentido de i (sem giro) ou de j. */
-function carro(k: Lapis, r: Retangulo, giro: boolean, cor: string) {
-  const [i, j, w, d] = [r.i + 0.12, r.j + 0.12, r.w - 0.24, r.d - 0.24];
-  const roda = (a: number, b: number) => k.box(a, b, 0.24, 0.24, 12, "pneu", "pneu", "pneu");
-  if (giro) {
-    roda(i, j + 0.2);
-    roda(i + w - 0.24, j + 0.2);
-    roda(i, j + d - 0.44);
-    roda(i + w - 0.24, j + d - 0.44);
-  } else {
-    roda(i + 0.2, j);
-    roda(i + w - 0.44, j);
-    roda(i + 0.2, j + d - 0.24);
-    roda(i + w - 0.44, j + d - 0.24);
-  }
-  k.box(i, j, w, d, 16, `carro-${cor}0`, `carro-${cor}1`, `carro-${cor}2`, 6);
-  const [ci, cj, cw, cd] = giro ? [i + 0.06, j + d * 0.28, w - 0.12, d * 0.46] : [i + w * 0.28, j + 0.06, w * 0.46, d - 0.12];
-  k.box(ci, cj, cw, cd, 14, `carro-${cor}0`, "vidro", "vidro", 22);
-}
 
 /* cadeira de escritório: estrela com rodinhas, pistão, assento, braços e o encosto com a almofada de cabeça */
 function cadeira(k: Lapis, r: Retangulo, giro: boolean, c: [string, string, string], encosto: number) {
