@@ -82,6 +82,10 @@ export type AppState = {
   logAberto: boolean;
   /** id do nanico com a ficha aberta (aba Nanicos) */
   fichaAberta: string | null;
+  /** parado há um tempo (fica "Ausente" sozinho, como no Discord; vai na presença) */
+  ausente: boolean;
+  /** o cartão de perfil aberto (friend id e onde abrir na tela) */
+  cartao: { fid: string; x: number; y: number } | null;
   /** "novidades" = abriu sozinho depois de uma atualização; "tudo" = botão Log do rodapé */
   logModo: "novidades" | "tudo";
   /** índice da última entrada do CHANGELOG que a pessoa viu (conta, com o navegador de reserva) */
@@ -132,6 +136,8 @@ export const useApp = create<AppState>()(() => ({
   pwAberto: false,
   logAberto: false,
   fichaAberta: null,
+  ausente: false,
+  cartao: null,
   logModo: "tudo",
   logVisto: null,
 }));

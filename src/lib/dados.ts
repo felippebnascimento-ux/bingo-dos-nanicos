@@ -11,6 +11,7 @@ import { LANES } from "./dados/campeoes";
 import { VERSION } from "./dados/changelog";
 import { juntarVisto, lerVisto, temNovidade, ULTIMA } from "./dados/novidades";
 import { carregarChat } from "@/features/chat/chat";
+import { iniciarStatus } from "@/features/status/status";
 import { iniciarCarteira } from "./carteira";
 import { iniciarSomPremio } from "@/features/cassino/somPremio";
 import { iniciarPedro } from "@/features/hall/pedroDados";
@@ -266,6 +267,7 @@ export function enterApp() {
   abrirNovidades();
   joinRoom(recarregar);
   carregarChat();
+  iniciarStatus();
   iniciarCarteira();
   /* o som do dinheiro nos prêmios grandes do cassino e o Pedro do K-FOFO (pelo tempo real) */
   iniciarSomPremio();

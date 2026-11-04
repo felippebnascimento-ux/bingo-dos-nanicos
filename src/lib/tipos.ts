@@ -67,6 +67,9 @@ export type Presence = {
   voz?: string | null;
   /** microfone desligado / sem ouvir ninguém (só aparecem para quem está na voz) */
   mudo?: boolean;
+  /** parado há um tempo (Ausente sozinho) e no modo invisível (aparece offline nas listas) */
+  aus?: boolean;
+  inv?: boolean;
   surdo?: boolean;
   /** canal de texto aberto agora ("geral" ou o id de uma sala; null = nenhum) */
   texto?: string | null;

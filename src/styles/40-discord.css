@@ -1,0 +1,287 @@
+/* ============ o chat, o cartão de perfil e o status como no Discord (seção 70) ============
+ * Exceção de cor (ver CLAUDE.md): as bolinhas do status são as do Discord, iguais nos dois temas:
+ * --st-on (verde, o mesmo --fala da call), --st-aus (amarelo), --st-np (vermelho) e --st-off (cinza);
+ * --mencao é o amarelo de quando alguém me menciona. */
+:root{--st-on:#23A55A;--st-aus:#F0B232;--st-np:#F23F43;--st-off:#80848E;--mencao:#F0B232}
+
+/* ---------- a conversa ---------- */
+.chat{position:relative;display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden}
+.chat>.chat-list{flex:1;min-height:0;gap:0;padding:6px 0 10px}
+.chat-barra{display:flex;justify-content:flex-end;gap:4px;padding:6px 10px;border-bottom:1px solid var(--line)}
+.chat-barra-bt{display:flex;align-items:center;gap:4px;height:28px;padding:0 10px;border:0;border-radius:6px;background:none;color:var(--muted);font:600 12.5px var(--body);cursor:pointer}
+.chat-barra-bt:hover{background:var(--surface-2);color:var(--ink)}
+.chat-barra-bt.on{background:var(--surface-2);color:var(--ink)}
+.chat-painel2{display:grid;gap:8px;max-height:260px;padding:10px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--surface-2) 45%,transparent);overflow:auto}
+.chat-busca{display:flex;gap:6px}
+.chat-busca input{flex:1;min-width:0}
+.chat-painel2-lista{display:grid;gap:4px}
+.chat-achado{display:grid;grid-template-columns:auto auto 1fr;align-items:center;gap:2px 8px;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.chat-achado:hover{border-color:var(--accent)}
+.chat-achado b{font-size:13.5px}
+.chat-achado time{font-size:11.5px;color:var(--muted)}
+.chat-achado span{grid-column:1/-1;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-comeco{margin:10px 16px 6px;padding-bottom:10px;border-bottom:1px solid var(--line);color:var(--muted);font-size:13px}
+
+/* cada mensagem: rosto de 40, nome, hora; as seguidas da mesma pessoa ficam coladas e mostram a hora ao passar o mouse */
+.chat .msg{position:relative;display:grid;grid-template-columns:40px minmax(0,1fr);column-gap:14px;padding:1px 16px 1px 14px;border-left:2px solid transparent}
+.chat .msg.first{margin-top:14px;padding-top:3px}
+.chat .msg:hover,.chat .msg.menu{background:color-mix(in srgb,var(--ink) 4%,transparent)}
+.chat .msg .msg-rosto{grid-row:span 2;align-self:start;margin-top:2px;cursor:pointer;border-radius:50%}
+.chat .msg .msg-rosto .av{width:40px;height:40px}
+.chat .msg .msg-rosto:hover{filter:brightness(1.06)}
+.chat .msg .hd{display:flex;gap:8px;align-items:baseline;min-width:0;font-size:14.5px;line-height:1.35}
+.chat .msg .hd b{font-weight:650;cursor:pointer}
+.chat .msg .hd b:hover{text-decoration:underline}
+.chat .msg .hd time{color:var(--muted);font-size:11.5px;font-weight:500}
+.chat .msg .tx{grid-column:2;min-width:0;overflow-wrap:anywhere;font-size:14.5px;line-height:1.45}
+.msg-hora{grid-row:1;align-self:center;justify-self:end;font-size:10.5px;color:var(--muted);opacity:0;font-variant-numeric:tabular-nums}
+.chat .msg:hover .msg-hora{opacity:1}
+.msg-editado{font-size:11px;color:var(--muted)}
+.msg-fixada{font-size:11px}
+/* quando me mencionam: fundo amarelo e a barrinha na esquerda */
+.chat .msg.mencao{background:color-mix(in srgb,var(--mencao) 12%,transparent);border-left-color:var(--mencao)}
+.chat .msg.mencao:hover{background:color-mix(in srgb,var(--mencao) 17%,transparent)}
+.chat .msg.piscar{animation:msg-piscar 1.6s ease}
+@keyframes msg-piscar{0%,40%{background:color-mix(in srgb,var(--accent) 26%,transparent)}100%{background:transparent}}
+
+/* a resposta: a linha curva e a mensagem citada em cima */
+.msg-citada{grid-column:1/-1;display:flex;align-items:center;gap:6px;min-width:0;margin:0 0 2px 20px;padding:0;border:0;background:none;color:var(--muted);font:inherit;font-size:12.5px;text-align:left;cursor:pointer}
+.msg-citada-linha{flex:none;width:32px;height:10px;margin-top:8px;border-left:2px solid var(--line);border-top:2px solid var(--line);border-top-left-radius:6px}
+.msg-citada .av{width:16px;height:16px;font-size:8px}
+.msg-citada b{flex:none;color:var(--ink);font-weight:600}
+.msg-citada span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.msg-citada:hover span{color:var(--ink)}
+
+/* a barra de ações flutuando no canto da mensagem */
+.msg-acoes{position:absolute;top:-16px;right:14px;z-index:3;display:none;align-items:center;gap:0;padding:2px;border:1px solid var(--line);border-radius:8px;background:var(--surface);box-shadow:0 4px 14px -6px var(--shadow)}
+.chat .msg:hover .msg-acoes,.chat .msg.menu .msg-acoes,.msg-acoes:focus-within{display:flex}
+.msg-acoes button{display:grid;place-items:center;min-width:30px;height:28px;padding:0 6px;border:0;border-radius:6px;background:none;color:var(--muted);font:600 15px var(--body);cursor:pointer}
+.msg-acoes button:hover{background:var(--surface-2);color:var(--ink)}
+.msg-acoes button.perigo:hover,.msg-acoes button.perigo.sure{background:color-mix(in srgb,var(--live) 16%,transparent);color:var(--live)}
+.msg-acoes button.perigo.sure{font-size:12px}
+.chat .msg .chat-emojis{top:16px;right:14px}
+
+/* reações em pílulas, a minha com a borda */
+.msg-reacoes{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.msg-reacao{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px;border:1px solid transparent;border-radius:8px;background:var(--surface-2);color:var(--ink);font:500 14px var(--body);cursor:pointer}
+.msg-reacao b{font-size:12px;font-weight:650;color:var(--muted)}
+.msg-reacao:hover{border-color:var(--line)}
+.msg-reacao.minha{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.msg-reacao.minha b{color:var(--accent-text)}
+.msg-reacao.mais{color:var(--muted);opacity:0}
+.chat .msg:hover .msg-reacao.mais{opacity:1}
+
+/* o texto formatado */
+.chat .tx a{color:var(--mint);text-decoration:none}
+.chat .tx a:hover{text-decoration:underline}
+:root[data-theme="dark"] .chat .tx a{color:var(--accent-text)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .chat .tx a{color:var(--accent-text)}}
+.chat .tx code{padding:1px 5px;border-radius:4px;background:var(--surface-2);font:13px ui-monospace,SFMono-Regular,Menlo,monospace}
+.chat-citacao{margin:2px 0;padding-left:10px;border-left:4px solid color-mix(in srgb,var(--muted) 55%,transparent);color:var(--ink)}
+.chat-mencao{padding:0 3px;border-radius:4px;background:color-mix(in srgb,var(--mint) 18%,transparent);color:var(--mint);font-weight:600}
+.chat-mencao.eu{background:color-mix(in srgb,var(--mencao) 26%,transparent);color:var(--ink)}
+.chat-spoiler{padding:0 2px;border-radius:4px;background:color-mix(in srgb,var(--ink) 35%,var(--bg));color:transparent;cursor:pointer;transition:background .15s}
+.chat-spoiler *{visibility:hidden}
+.chat-spoiler.ver{background:color-mix(in srgb,var(--ink) 12%,transparent);color:inherit;cursor:text}
+.chat-spoiler.ver *{visibility:visible}
+
+/* imagem e vídeo */
+.msg-foto{display:block;max-width:min(400px,100%);margin-top:6px;border-radius:8px;overflow:hidden}
+.msg-foto img{display:block;max-width:100%;max-height:340px;width:auto;height:auto;object-fit:contain;border-radius:8px}
+.chat-embed{display:block;width:min(420px,100%);aspect-ratio:16/9;margin-top:6px;border:0;border-radius:8px;background:var(--cv-fundo)}
+.chat-embed-capa{display:flex;align-items:center;gap:12px;width:min(420px,100%);margin-top:6px;padding:12px 14px;border:0;border-left:4px solid var(--live);border-radius:6px;background:var(--surface-2);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.chat-embed-capa.twitch{border-left-color:var(--mint)}
+.chat-embed-capa.medal{border-left-color:var(--accent)}
+.chat-embed-capa span{display:grid}
+.chat-embed-capa b{font-size:14px}
+.chat-embed-capa small{font-size:12px;color:var(--muted)}
+.chat-embed-play{flex:none;display:grid!important;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--ink);color:var(--bg);font-size:14px}
+.chat-embed-capa:hover .chat-embed-play{background:var(--live)}
+
+/* editar no lugar */
+.msg-editar{display:grid;gap:4px;margin-top:2px}
+.msg-editar textarea{width:100%;resize:none;padding:10px 12px;border:0;border-radius:8px;background:var(--surface-2);color:var(--ink);font:inherit}
+.msg-editar small{font-size:11.5px;color:var(--muted)}
+.chat .link{padding:0;border:0;background:none;color:var(--mint);font:inherit;cursor:pointer}
+.chat .link:hover{text-decoration:underline}
+
+/* separadores: o dia no meio da linha e a linha vermelha de "Novas mensagens" */
+.chat-dia{display:flex;align-items:center;gap:8px;margin:18px 16px 2px;color:var(--muted);font:600 11.5px var(--body)}
+.chat-dia::before,.chat-dia::after{content:"";flex:1;height:1px;background:var(--line)}
+.chat-novas{position:relative;display:flex;justify-content:flex-end;margin:14px 16px 0;height:1px;background:var(--live)}
+.chat-novas span{position:relative;top:-8px;height:16px;padding:0 6px;border-radius:4px;background:var(--live);color:var(--bg);font:700 10px/16px var(--body);text-transform:uppercase;letter-spacing:.04em}
+.chat-novas+.msg{margin-top:6px}
+
+.chat-pular{position:absolute;left:50%;bottom:118px;z-index:4;transform:translateX(-50%);padding:6px 14px;border:0;border-radius:99px;background:var(--mint);color:var(--stamp-ink);font:600 12.5px var(--body);cursor:pointer;box-shadow:0 6px 18px -8px var(--shadow)}
+.chat-pular:hover{filter:brightness(1.1)}
+
+/* quem está digitando: os três pontinhos */
+.chat-digitando{min-height:20px;padding:0 16px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:3px}
+.chat-digitando b{margin-left:4px;color:var(--ink)}
+.chat-digitando i{width:5px;height:5px;border-radius:50%;background:var(--muted);animation:dig 1.2s infinite ease-in-out}
+.chat-digitando i:nth-child(2){animation-delay:.15s}
+.chat-digitando i:nth-child(3){animation-delay:.3s}
+@keyframes dig{0%,60%,100%{transform:none;opacity:.5}30%{transform:translateY(-3px);opacity:1}}
+
+/* respondendo e o anexo, colados em cima da caixa */
+.chat-respondendo,.chat-anexo{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 12px;padding:8px 12px;border-radius:8px 8px 0 0;background:color-mix(in srgb,var(--surface-2) 70%,transparent);font-size:13px;color:var(--muted)}
+.chat-respondendo b{color:var(--ink)}
+.chat-anexo img{max-height:110px;max-width:180px;border-radius:6px;object-fit:cover}
+.chat-respondendo+.chat-anexo{border-radius:0}
+
+/* a caixa de mensagem: uma barra só, arredondada, com o + na esquerda e o emoji na direita */
+.chat .chat-form{position:relative;display:flex;align-items:flex-end;gap:2px;margin:0 12px;padding:4px 6px;border-radius:10px;background:var(--surface-2)}
+.chat-respondendo~.chat-form,.chat-anexo~.chat-form{border-top-left-radius:0;border-top-right-radius:0}
+.chat .chat-form textarea{flex:1;min-width:0;min-height:36px;max-height:140px;resize:none;scrollbar-width:none;padding:8px 6px;border:0;background:none;color:var(--ink);font:14.5px/1.4 var(--body);outline:0}
+.chat .chat-form textarea::placeholder{color:var(--muted)}
+.chat .chat-form:focus-within{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 45%,transparent)}
+.chat-mais{flex:none;display:grid;place-items:center;width:34px;height:34px;margin-bottom:1px;padding:0;border:0;border-radius:50%;background:none;color:var(--muted);font:500 22px/1 var(--body);cursor:pointer}
+.chat-mais:hover{color:var(--ink);background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.chat-emoji-caixa .chat-mais{font-size:19px;filter:grayscale(1);opacity:.75}
+.chat-emoji-caixa .chat-mais:hover{filter:none;opacity:1}
+.chat-emoji-caixa{position:relative;flex:none}
+.chat .chat-form .btn.sq{flex:none;height:34px;margin-bottom:1px;padding:0 14px}
+.chat-conta{align-self:center;padding:0 4px;font-size:11.5px;color:var(--live);font-variant-numeric:tabular-nums}
+.chat-ajuda{display:block;padding:4px 16px 10px;font-size:11px;color:var(--muted);opacity:.8}
+
+/* a caixinha de emojis */
+.chat-emojis{position:absolute;right:0;bottom:calc(100% + 8px);z-index:8;display:grid;gap:8px;width:min(320px,calc(100vw - 32px));max-height:300px;padding:10px;overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:0 12px 32px -12px var(--shadow)}
+.chat .msg .chat-emojis{bottom:auto}
+.chat-emojis small{display:block;margin-bottom:4px;font:700 10.5px var(--display);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.chat-emojis span{display:grid;grid-template-columns:repeat(8,1fr);gap:2px}
+.chat-emojis button{display:grid;place-items:center;aspect-ratio:1;padding:0;border:0;border-radius:6px;background:none;font-size:20px;cursor:pointer}
+.chat-emojis button:hover{background:var(--surface-2);transform:scale(1.08)}
+
+/* as sugestões de @ em cima da caixa */
+.chat-sugestoes{position:absolute;left:0;right:0;bottom:calc(100% + 6px);z-index:8;margin:0;padding:6px;list-style:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);box-shadow:0 12px 28px -12px var(--shadow)}
+.chat-sugestoes button{display:flex;align-items:center;gap:8px;width:100%;padding:6px 8px;border:0;border-radius:6px;background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.chat-sugestoes button:hover,.chat-sugestoes button:focus-visible{background:var(--surface-2)}
+.chat-sugestoes b{font-size:14px}
+.chat-sugestoes small{color:var(--muted);font-size:12px}
+.chat-sugestoes .av.xs{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--surface-2);font-size:12px}
+
+@media (max-width:600px){
+  .chat .msg{grid-template-columns:34px minmax(0,1fr);column-gap:10px;padding-inline:10px}
+  .chat .msg .msg-rosto .av{width:34px;height:34px}
+  .msg-acoes{right:8px}
+  .chat-ajuda{display:none}
+  .chat .chat-form .btn.sq{padding:0 10px}
+}
+@media (prefers-reduced-motion:reduce){.chat-digitando i,.chat .msg.piscar{animation:none}.chat-spoiler{transition:none}}
+
+/* ---------- o nome com a cor do cargo ---------- */
+.nome-mod{color:var(--accent-text)}
+.nome-amigo{color:var(--mint)}
+:root[data-theme="dark"] .nome-amigo{color:var(--mint-soft);filter:brightness(1.9)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .nome-amigo{color:var(--mint-soft);filter:brightness(1.9)}}
+
+/* ---------- a bolinha do status ---------- */
+.ponto-status{--furo:var(--surface);position:absolute;right:-2px;bottom:-2px;width:12px;height:12px;border-radius:50%;background:var(--st-off);box-shadow:0 0 0 3px var(--furo)}
+.ponto-status.on{background:var(--st-on)}
+.ponto-status.aus{background:radial-gradient(circle at 25% 25%,var(--furo) 0 32%,transparent 34%),var(--st-aus)}
+.ponto-status.np{background:linear-gradient(var(--furo),var(--furo)) center/60% 22% no-repeat,var(--st-np)}
+.ponto-status.off{background:radial-gradient(circle,var(--furo) 0 30%,transparent 32%),var(--st-off)}
+
+/* nos membros e no "eu" embaixo do menu: o rosto ganha a bolinha */
+.membro-rosto{position:relative;flex:none;display:inline-flex}
+.membros li.offline .membro-rosto .ponto-status{display:none}
+.membro-sub{display:block;font-size:12px;font-weight:500;color:var(--muted);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.membros li.offline .membro-sub{opacity:.7}
+.eu-rosto{position:relative;flex:none;display:inline-flex;padding:0;border:0;border-radius:50%;background:none;cursor:pointer}
+.eu-rosto .av{width:34px;height:34px}
+.eu-rosto:hover{filter:brightness(1.06)}
+
+/* ---------- o cartão de perfil ---------- */
+.cartao-perfil{position:fixed;z-index:60;max-height:calc(100dvh - 16px);overflow:auto;border-radius:12px;background:var(--surface);color:var(--ink);box-shadow:0 0 0 1px var(--line),0 18px 48px -14px var(--shadow);animation:cartao-abre .14s ease-out}
+@keyframes cartao-abre{from{opacity:0;transform:translateY(4px) scale(.98)}to{opacity:1;transform:none}}
+.cartao-faixa{height:64px;background:linear-gradient(135deg,var(--olive),var(--accent))}
+.cartao-rosto{position:relative;display:inline-flex;margin:-42px 0 0 14px;padding:5px;border-radius:50%;background:var(--surface)}
+.cartao-rosto .av{width:76px;height:76px}
+.cartao-rosto .ponto-status{right:4px;bottom:4px;width:20px;height:20px;box-shadow:0 0 0 5px var(--furo)}
+.cartao-corpo{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin:6px 12px 12px;padding:12px;border-radius:10px;background:color-mix(in srgb,var(--surface-2) 55%,transparent)}
+.cartao-nome{font:700 19px var(--body);line-height:1.15}
+.cartao-at{margin-top:-8px;font-size:13px;color:var(--muted)}
+.cartao-recado{margin:0;font-size:13.5px}
+.cartao-sec{display:block;margin-bottom:3px;font:700 10.5px var(--display);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.cartao-jogando,.cartao-onde{margin:0;padding-top:10px;border-top:1px solid var(--line);font-size:13.5px}
+.cartao-cargos{display:flex;flex-wrap:wrap;gap:4px;padding-top:10px;border-top:1px solid var(--line)}
+.cartao-cargos .cartao-sec{flex-basis:100%}
+.cargo{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:6px;background:var(--surface);font-size:12px;font-weight:600}
+.cargo i{width:10px;height:10px;border-radius:50%;background:var(--muted)}
+.cargo.mod i{background:var(--accent)}
+.cargo.nanico i{background:var(--olive)}
+.cargo.amigo i{background:var(--mint)}
+.cartao-voz{padding-top:10px;border-top:1px solid var(--line)}
+.cartao-bts{display:flex;flex-wrap:wrap;gap:6px}
+.cartao-bts .btn{flex:1}
+
+/* o meu status, dentro do meu cartão */
+.meu-status{display:grid;gap:8px;padding-top:10px;border-top:1px solid var(--line)}
+.meu-status-modos{display:grid;gap:2px}
+.meu-status-modos button{display:flex;align-items:center;gap:10px;padding:7px 8px;border:0;border-radius:6px;background:none;color:var(--ink);font:500 13.5px var(--body);text-align:left;cursor:pointer}
+.meu-status-modos button:hover{background:var(--surface)}
+.meu-status-modos button.on{background:var(--surface);font-weight:650}
+.meu-status-modos .ponto-status{position:relative;inset:auto;flex:none;box-shadow:none}
+.meu-status-modos .ponto-status{--furo:color-mix(in srgb,var(--surface-2) 55%,var(--surface))}
+.meu-status-modos button:hover .ponto-status,.meu-status-modos button.on .ponto-status{--furo:var(--surface)}
+.meu-recado{display:grid;gap:6px}
+.meu-recado-linha{display:flex;gap:6px;min-width:0}
+.meu-recado-linha .btn{flex:none}
+.meu-recado-linha input{flex:1;min-width:0}
+.meu-recado-linha select:first-child{flex:none;width:58px}
+.meu-recado-linha:last-child select{flex:1;width:auto;min-width:0}
+
+@media (prefers-reduced-motion:reduce){.cartao-perfil{animation:none}}
+
+/* ---------- os canais: menção em vermelho, silenciado apagado ---------- */
+.canal-novas.mencao{background:var(--st-np);color:var(--stamp-ink)}
+.canal-ponto{flex:none;width:8px;height:8px;border-radius:50%;background:var(--ink)}
+.canal.novo .nm{font-weight:700}
+.canal.mudo{opacity:.5}
+.canal.mudo:hover{opacity:.8}
+.canal-mudo{flex:none}
+
+/* ---------- voz: tempo de call, soundboard, modo de entrada ---------- */
+.vz-tempo{font-variant-numeric:tabular-nums}
+.vz-sb-lista{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:2px 4px}
+.vz-sb-lista button{display:flex;align-items:center;gap:6px;min-width:0;padding:8px 10px;border:0;border-radius:8px;background:var(--surface-2);color:var(--ink);font:600 13px var(--body);text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vz-sb-lista button:hover{background:color-mix(in srgb,var(--accent) 22%,var(--surface-2))}
+.vz-sb-lista button:active{transform:scale(.97)}
+.vz-sb-lista span{font-size:17px}
+.vz-modo{display:grid;gap:2px}
+.vz-ptt{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:4px 9px}
+.vz-ptt>span{font-size:13px;color:var(--muted)}
+.vz-ptt .btn.on{box-shadow:0 0 0 2px var(--accent)}
+.vz-ptt .vz-dica{flex-basis:100%;margin:0}
+.vz-sensib{display:grid;gap:6px;padding:4px 9px 6px}
+.vz-sensib>span:first-child{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.vz-sensib>span:first-child b{color:var(--ink);font-weight:600}
+.vz-sensib-trilho{position:relative;height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.vz-sensib-trilho::after{content:"";position:absolute;top:0;bottom:0;left:var(--marca);width:2px;background:var(--ink)}
+.vz-sensib-nivel{position:absolute;inset:0;background:var(--st-on);transform-origin:left;transform:scaleX(0)}
+.vz-sensib input{width:100%;accent-color:var(--accent)}
+.vz-sensib .vz-dica{margin:0}
+.vz-info{font-variant-numeric:tabular-nums}
+
+/* ---------- live: a câmera de quem transmite em cima da tela e o mini player ---------- */
+.stage-cam{position:absolute;right:14px;top:14px;z-index:3;width:clamp(84px,14%,150px);aspect-ratio:1;border-radius:50%;overflow:hidden;box-shadow:0 0 0 3px color-mix(in srgb,var(--stamp-ink) 85%,transparent),0 10px 24px -8px var(--shadow)}
+.stage-cam video{width:100%;height:100%;object-fit:cover}
+.stage-cam button{position:absolute;top:8%;right:8%;display:grid;place-items:center;width:22px;height:22px;padding:0;border:0;border-radius:50%;background:color-mix(in srgb,var(--cv-fundo) 80%,transparent);color:var(--stamp-ink);opacity:0;cursor:pointer}
+.stage-cam:hover button,.stage-cam button:focus-visible{opacity:1}
+
+.mini-player{position:fixed;z-index:70;width:min(320px,calc(100vw - 32px));aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:var(--cv-fundo);box-shadow:0 0 0 1px color-mix(in srgb,var(--stamp-ink) 12%,transparent),0 18px 44px -14px var(--shadow);cursor:pointer}
+.mini-player.dir-baixo{right:16px;bottom:16px}
+.mini-player.esq-baixo{left:16px;bottom:16px}
+.mini-player.dir-cima{right:16px;top:16px}
+.mini-player.esq-cima{left:16px;top:16px}
+.mini-player video{width:100%;height:100%;object-fit:contain}
+.mini-nome{position:absolute;left:8px;bottom:8px;display:flex;align-items:center;gap:6px;padding:3px 8px;border-radius:6px;background:color-mix(in srgb,var(--cv-fundo) 75%,transparent);color:var(--stamp-ink);font:600 12px var(--body)}
+.mini-nome i{width:7px;height:7px;border-radius:50%;background:var(--live)}
+.mini-fechar{position:absolute;top:6px;right:6px;display:grid;place-items:center;width:26px;height:26px;padding:0;border:0;border-radius:50%;background:color-mix(in srgb,var(--cv-fundo) 75%,transparent);color:var(--stamp-ink);cursor:pointer;opacity:0}
+.mini-player:hover .mini-fechar,.mini-fechar:focus-visible{opacity:1}
+.mini-player:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px}
+@media (max-width:860px){
+  .mini-player{width:min(200px,50vw)}
+  .mini-player.dir-baixo,.mini-player.esq-baixo{bottom:84px}
+  .mini-fechar{opacity:1}
+}

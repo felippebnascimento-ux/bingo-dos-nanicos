@@ -57,6 +57,9 @@ export function umPorNanico(online: readonly Presence[], minhaChave: string): Pr
          (senão, com duas abas, a pessoa pula entre a sala e o lobby a cada renovação) */
       sala: (eu ?? naVoz ?? numaSala ?? recente).sala,
       lines: Math.max(...lista.map((p) => p.lines)),
+      /* ausente só se todas as abas estão paradas; invisível se alguma está */
+      aus: lista.every((p) => p.aus),
+      inv: lista.some((p) => p.inv),
       id: eu ? minhaChave : g,
       chaves: lista.map((p) => p.key),
       chaveCam: comCam?.key ?? null,

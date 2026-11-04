@@ -8184,3 +8184,227 @@ union all
 select proname::text, 'instanico 69' from pg_proc where pronamespace = 'public'::regnamespace
    and proname in ('aceitar_colab', 'eh_do_grupo', 'criar_grupo', 'grupo_adicionar', 'grupo_lido', 'abrir_unica')
 order by 1;
+
+-- 70) o Discord do site perfeito (04/11/2026, pedido do Henrique) -------------------------------------------------------
+--   Chat: responder (`resposta_a`), editar a própria (`editado_em`), apagar a própria (moderador apaga qualquer uma),
+--   foto ou GIF (`midia`, na pasta <uid>/ do bucket midias), fixar no canal (`fixada_em`, qualquer membro) e reações
+--   com emoji (chat_reacoes). As conversas passam a ficar 1 ano (antes eram 30 dias).
+--   Status de cada um (status_nanico: online, ausente, não perturbe, invisível e o recado). Os moderadores ficam
+--   visíveis (cargo no site). Moderador silencia alguém na voz para todos (voz_silenciados) e desconecta da call
+--   (voz_desconectar); o site de quem foi silenciado ou desconectado obedece pelo tempo real.
+
+-- ---------- chat ----------
+alter table public.chat_messages add column if not exists resposta_a bigint references public.chat_messages(id) on delete set null;
+alter table public.chat_messages add column if not exists editado_em timestamptz;
+alter table public.chat_messages add column if not exists midia text;
+alter table public.chat_messages add column if not exists fixada_em timestamptz;
+alter table public.chat_messages add column if not exists fixada_por uuid references auth.users(id) on delete set null;
+alter table public.chat_messages drop constraint if exists chat_messages_text_check;
+alter table public.chat_messages add constraint chat_messages_text_check check (char_length(text) <= 300);
+alter table public.chat_messages drop constraint if exists chat_messages_midia_check;
+alter table public.chat_messages add constraint chat_messages_midia_check
+  check (midia is null or midia ~ '^[0-9a-f-]{36}/chat-[a-z0-9-]{6,40}\.(webp|gif)$');
+create index if not exists chat_messages_fixadas on public.chat_messages (sala, fixada_em) where fixada_em is not null;
+grant insert (text, sala, grito, resposta_a, midia) on public.chat_messages to authenticated;
+grant update (text, fixada_em) on public.chat_messages to authenticated;
+grant delete on public.chat_messages to authenticated;
+
+-- quem é moderador (agora todo membro vê, para o cargo aparecer)
+create or replace function public.eh_moderador() returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.moderadores m join public.friends f on f.id = m.friend_id where f.user_id = auth.uid());
+$$;
+revoke all on function public.eh_moderador() from public, anon;
+grant execute on function public.eh_moderador() to authenticated;
+grant select on public.moderadores to authenticated;
+drop policy if exists moderadores_ler on public.moderadores;
+create policy moderadores_ler on public.moderadores for select to authenticated using (public.eh_membro());
+
+drop policy if exists chat_mudar on public.chat_messages;
+create policy chat_mudar on public.chat_messages for update to authenticated using (public.eh_membro()) with check (public.eh_membro());
+drop policy if exists chat_apagar on public.chat_messages;
+create policy chat_apagar on public.chat_messages for delete to authenticated using (user_id = auth.uid() or public.eh_moderador());
+
+create or replace function public.chat_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.text := left(btrim(regexp_replace(coalesce(new.text, ''), '[\x00-\x09\x0B-\x1F\x7F]', '', 'g')), 300);
+  if char_length(new.text) = 0 and new.midia is null then raise exception 'Mensagem vazia' using errcode = 'P0001'; end if;
+  new.created_at := now();
+  new.editado_em := null;
+  new.fixada_em := null;
+  new.fixada_por := null;
+  if new.midia is not null then
+    if split_part(new.midia, '/', 1) <> auth.uid()::text then raise exception 'A imagem tem que estar na sua pasta.' using errcode = 'P0001'; end if;
+    if not exists (select 1 from storage.objects where bucket_id = 'midias' and name = new.midia) then
+      raise exception 'A imagem não chegou. Tente de novo.' using errcode = 'P0001';
+    end if;
+  end if;
+  if new.resposta_a is not null and not exists (select 1 from public.chat_messages where id = new.resposta_a and sala = new.sala) then
+    new.resposta_a := null;
+  end if;
+  perform public.limitar('chat', 8, interval '10 seconds', 'Calma: muitas mensagens seguidas. Espere alguns segundos.');
+  perform public.limitar('chat_hora', 300, interval '1 hour', 'Calma: limite de mensagens por hora atingido.');
+  return new;
+end $$;
+revoke all on function public.chat_protecao() from public, anon, authenticated;
+
+-- editar: só o autor muda o texto (fica "editado"); fixar e desafixar qualquer membro (como um canal de amigos)
+create or replace function public.chat_edicao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.text is distinct from old.text then
+    if old.user_id <> auth.uid() then raise exception 'Só quem escreveu edita a mensagem.' using errcode = 'P0001'; end if;
+    new.text := left(btrim(regexp_replace(coalesce(new.text, ''), '[\x00-\x09\x0B-\x1F\x7F]', '', 'g')), 300);
+    if char_length(new.text) = 0 and old.midia is null then raise exception 'Mensagem vazia' using errcode = 'P0001'; end if;
+    new.editado_em := now();
+  end if;
+  if new.fixada_em is distinct from old.fixada_em then
+    if new.fixada_em is not null then
+      new.fixada_em := now();
+      new.fixada_por := auth.uid();
+      if (select count(*) from public.chat_messages where sala = old.sala and fixada_em is not null and id <> old.id) >= 50 then
+        raise exception 'Esse canal já tem 50 mensagens fixadas.' using errcode = 'P0001';
+      end if;
+    else
+      new.fixada_por := null;
+    end if;
+  end if;
+  perform public.limitar('chat_editar', 30, interval '1 minute', 'Calma: muitas edições seguidas.');
+  return new;
+end $$;
+revoke all on function public.chat_edicao() from public, anon, authenticated;
+drop trigger if exists chat_edicao on public.chat_messages;
+create trigger chat_edicao before update on public.chat_messages for each row execute function public.chat_edicao();
+
+-- as conversas ficam 1 ano (as fixadas ficam para sempre)
+create or replace function public.limpar_chat_antigo() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  delete from public.chat_messages where created_at < now() - interval '365 days' and fixada_em is null;
+  return null;
+end $$;
+
+create table if not exists public.chat_reacoes (
+  mensagem_id bigint not null references public.chat_messages(id) on delete cascade,
+  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  emoji       text not null check (char_length(emoji) between 1 and 8),
+  em          timestamptz not null default now(),
+  primary key (mensagem_id, user_id, emoji)
+);
+alter table public.chat_reacoes enable row level security;
+revoke all on public.chat_reacoes from public, anon, authenticated;
+grant select, delete on public.chat_reacoes to authenticated;
+grant insert (mensagem_id, emoji) on public.chat_reacoes to authenticated;
+drop policy if exists chat_reacoes_ler on public.chat_reacoes;
+create policy chat_reacoes_ler on public.chat_reacoes for select to authenticated using (public.eh_membro());
+drop policy if exists chat_reacoes_criar on public.chat_reacoes;
+create policy chat_reacoes_criar on public.chat_reacoes for insert to authenticated with check (user_id = auth.uid() and public.eh_membro());
+drop policy if exists chat_reacoes_apagar on public.chat_reacoes;
+create policy chat_reacoes_apagar on public.chat_reacoes for delete to authenticated using (user_id = auth.uid());
+create or replace function public.chat_reacao_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if (select count(distinct emoji) from public.chat_reacoes where mensagem_id = new.mensagem_id) >= 20
+     and not exists (select 1 from public.chat_reacoes where mensagem_id = new.mensagem_id and emoji = new.emoji) then
+    raise exception 'Essa mensagem já tem reações demais.' using errcode = 'P0001';
+  end if;
+  perform public.limitar('chat_reacao', 60, interval '1 minute', 'Calma: reações demais em pouco tempo.');
+  return new;
+end $$;
+revoke all on function public.chat_reacao_protecao() from public, anon, authenticated;
+drop trigger if exists chat_reacao_protecao on public.chat_reacoes;
+create trigger chat_reacao_protecao before insert on public.chat_reacoes for each row execute function public.chat_reacao_protecao();
+
+-- ---------- status (online, ausente, não perturbe, invisível) e o recado ----------
+create table if not exists public.status_nanico (
+  user_id uuid primary key default auth.uid() references auth.users(id) on delete cascade,
+  modo    text not null default 'on' check (modo in ('on', 'aus', 'np', 'inv')),
+  texto   text not null default '' check (char_length(texto) <= 60),
+  emoji   text not null default '' check (char_length(emoji) <= 8),
+  ate     timestamptz,
+  em      timestamptz not null default now()
+);
+alter table public.status_nanico enable row level security;
+revoke all on public.status_nanico from public, anon, authenticated;
+grant select on public.status_nanico to authenticated;
+grant insert (modo, texto, emoji, ate), update (modo, texto, emoji, ate) on public.status_nanico to authenticated;
+-- o invisível só o próprio vê como invisível (para os outros, a linha some: ele aparece offline)
+drop policy if exists status_ler on public.status_nanico;
+create policy status_ler on public.status_nanico for select to authenticated using (public.eh_membro() and (modo <> 'inv' or user_id = auth.uid()));
+drop policy if exists status_criar on public.status_nanico;
+create policy status_criar on public.status_nanico for insert to authenticated with check (user_id = auth.uid() and public.eh_membro());
+drop policy if exists status_mudar on public.status_nanico;
+create policy status_mudar on public.status_nanico for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+create or replace function public.status_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.texto := btrim(regexp_replace(coalesce(new.texto, ''), '[\x00-\x1F\x7F]', ' ', 'g'));
+  new.em := now();
+  perform public.limitar('status', 30, interval '1 hour', 'Calma: mudou o status vezes demais.');
+  return new;
+end $$;
+revoke all on function public.status_protecao() from public, anon, authenticated;
+drop trigger if exists status_protecao on public.status_nanico;
+create trigger status_protecao before insert or update on public.status_nanico for each row execute function public.status_protecao();
+
+-- ---------- moderador: silenciar na voz para todos e desconectar da call ----------
+create table if not exists public.voz_silenciados (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  por     uuid references auth.users(id) on delete set null,
+  em      timestamptz not null default now()
+);
+create table if not exists public.voz_desconectar (
+  id      bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  por     uuid default auth.uid() references auth.users(id) on delete set null,
+  em      timestamptz not null default now()
+);
+alter table public.voz_silenciados enable row level security;
+alter table public.voz_desconectar enable row level security;
+revoke all on public.voz_silenciados, public.voz_desconectar from public, anon, authenticated;
+grant select on public.voz_silenciados, public.voz_desconectar to authenticated;
+grant insert (user_id) on public.voz_silenciados, public.voz_desconectar to authenticated;
+grant delete on public.voz_silenciados to authenticated;
+drop policy if exists voz_sil_ler on public.voz_silenciados;
+create policy voz_sil_ler on public.voz_silenciados for select to authenticated using (public.eh_membro());
+drop policy if exists voz_sil_criar on public.voz_silenciados;
+create policy voz_sil_criar on public.voz_silenciados for insert to authenticated with check (public.eh_moderador() and user_id <> auth.uid());
+drop policy if exists voz_sil_tirar on public.voz_silenciados;
+create policy voz_sil_tirar on public.voz_silenciados for delete to authenticated using (public.eh_moderador());
+drop policy if exists voz_desc_ler on public.voz_desconectar;
+create policy voz_desc_ler on public.voz_desconectar for select to authenticated using (user_id = auth.uid() or public.eh_moderador());
+drop policy if exists voz_desc_criar on public.voz_desconectar;
+create policy voz_desc_criar on public.voz_desconectar for insert to authenticated with check (public.eh_moderador() and user_id <> auth.uid());
+create or replace function public.voz_mod_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.por := auth.uid();
+  new.em := now();
+  if not exists (select 1 from public.friends where user_id = new.user_id) then raise exception 'Esse nanico não existe.' using errcode = 'P0001'; end if;
+  perform public.limitar('voz_mod', 30, interval '1 minute', 'Calma: muitas ações de moderador seguidas.');
+  if tg_table_name = 'voz_desconectar' then
+    delete from public.voz_desconectar where em < now() - interval '1 day';
+  end if;
+  return new;
+end $$;
+revoke all on function public.voz_mod_protecao() from public, anon, authenticated;
+drop trigger if exists voz_mod_protecao on public.voz_silenciados;
+create trigger voz_mod_protecao before insert on public.voz_silenciados for each row execute function public.voz_mod_protecao();
+drop trigger if exists voz_mod_protecao on public.voz_desconectar;
+create trigger voz_mod_protecao before insert on public.voz_desconectar for each row execute function public.voz_mod_protecao();
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.chat_reacoes;    exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.status_nanico;   exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.voz_silenciados; exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.voz_desconectar; exception when duplicate_object then null; end;
+end $$;
+
+-- confere: deve listar as 4 tabelas novas e a função de moderador
+select tablename::text as nome, 'discord 70' as parte from pg_tables
+ where schemaname = 'public' and tablename in ('chat_reacoes', 'status_nanico', 'voz_silenciados', 'voz_desconectar')
+union all
+select proname::text, 'discord 70' from pg_proc where pronamespace = 'public'::regnamespace and proname = 'eh_moderador'
+order by 1;

@@ -5,13 +5,18 @@
  * `assistir` (lista da sala) e `pararTudoAoVivo` (ao sair).
  */
 import { aoMudarPresenca, aoReceber, naMinhaSala, limitePorPessoa, sidValido } from "@/lib/sala";
-import { MY_KEY, useApp } from "@/lib/store";
+import { getApp, MY_KEY, useApp } from "@/lib/store";
+import { toast } from "@/lib/toast";
 import { camOnAnswer, camOnBye, camOnIce, camOnOffer, camOnWatch, closeAllCams, fecharSaidasCam, stopCam, syncCams } from "./camera";
 import { onRisco, pintar } from "./desenho";
 import { onReacao } from "./reacoes";
 import type { MsgRtc } from "./rtc";
+import { ligarSomTelas } from "./somTelas";
 import { closeAllWatches, onAnswer, onBye, onIce, onOffer, onWatch, stopLive, syncLive, watch } from "./tela";
-import { sairVoz, syncVoz, vozOnAnswer, vozOnBye, vozOnIce, vozOnOffer } from "./voz";
+import { ligarSoundboard } from "./soundboard";
+import { somDeLive } from "./sonsVoz";
+import { sairVoz, syncVoz, useAjustesVoz, vozOnAnswer, vozOnBye, vozOnIce, vozOnOffer } from "./voz";
+import { iniciarVozMod } from "./vozMod";
 
 const RTC_T = new Set(["watch", "offer", "answer", "ice", "bye", "cw", "co", "ca", "ci", "cb", "vo", "va", "vi", "vb"]);
 const ACOES: Record<string, (m: MsgRtc) => unknown> = {
@@ -63,6 +68,7 @@ function onRtc(m: Record<string, unknown>, tentativa = 0) {
 let iniciado = false;
 /** Liga os handlers da sala e os eventos do navegador (uma vez só). */
 export function iniciarLive() {
+  ligarSomTelas();
   if (iniciado) return;
   iniciado = true;
   aoReceber("rtc", (m) => onRtc(m));
@@ -72,7 +78,10 @@ export function iniciarLive() {
     syncLive();
     syncCams();
     syncVoz();
+    avisarLives();
   });
+  iniciarVozMod();
+  ligarSoundboard();
   /* entrei ou saí da voz: as câmeras são só de quem está na voz junto */
   useApp.subscribe((s, p) => {
     if (s.myVozSid !== p.myVozSid) syncCams();
@@ -91,6 +100,21 @@ export function iniciarLive() {
   /* a presença pode ter chegado antes da aba montar */
   syncLive();
   syncCams();
+}
+
+/* "Fulano entrou ao vivo" (com um som), como no Discord: quem começa a transmitir na sala em que estou na voz.
+   A primeira leitura (e trocar de sala) só anota quem já estava, sem avisar. */
+let aoVivo: { sala: string | null; fids: Set<string> } | null = null;
+function avisarLives() {
+  const { onlineSala, minhaSala, myFid, myVozSid } = getApp();
+  const fids = new Set(onlineSala.filter((p) => p.live && p.fid && p.fid !== myFid).map((p) => p.fid as string));
+  const antes = aoVivo;
+  aoVivo = { sala: minhaSala, fids };
+  if (!antes || antes.sala !== minhaSala || !myVozSid) return;
+  const novo = onlineSala.find((p) => p.live && p.fid && !antes.fids.has(p.fid) && p.fid !== myFid);
+  if (!novo) return;
+  toast(`${novo.name} entrou ao vivo`);
+  somDeLive(useAjustesVoz.getState().geral);
 }
 
 /** Para a minha transmissão, as que estou assistindo, as câmeras e a voz (ao sair do site ou trocar de sala). */

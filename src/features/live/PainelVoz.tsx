@@ -31,13 +31,14 @@ import { entrarSala, nomeDaSala } from "@/features/salas/trocar";
 import { setApp, useApp } from "@/lib/store";
 import { toast } from "@/lib/toast";
 import { local } from "@/lib/util";
-import { activeCams, CAM, openCamPip, startCam, stopCam } from "./camera";
+import { activeCams, aplicarDesfoque, CAM, mudarDesfoque, openCamPip, podeDesfocar, querDesfoque, startCam, stopCam } from "./camera";
 import { setLive, useLive, type Fps, type Mostrar, type Res } from "./estado";
 import { REACOES, REACOES_FOTO, reagir } from "./reacoes";
 import { canCam, canShare, chromeVer, isChromium, isMac } from "./rtc";
 import { LIVE, startLive, stopLive } from "./tela";
 import { VideoMudo } from "./Video";
-import { ajustarVoz, alternarMudo, alternarSurdo, entrarVoz, nivelDoMeuMic, sinalDaVoz, useAjustesVoz } from "./voz";
+import { mandarSom, SONS } from "./soundboard";
+import { ajustarVoz, alternarMudo, alternarSurdo, entrarVoz, limiarDaSensib, mudarModoVoz, nivelBruto, nivelDoMeuMic, nomeDaTecla, sinalDaVoz, useAjustesVoz, useModoVoz, useVoz } from "./voz";
 
 /* ---------- balão que abre por cima (ou por baixo, no celular, onde o menu fica no alto) ---------- */
 export type Lugar = { left: number; top?: number; bottom?: number };
@@ -219,6 +220,117 @@ export function BotaoReacoes() {
   );
 }
 
+/* ---------- soundboard (sons curtos que todo mundo da voz ouve) ---------- */
+function BotaoSoundboard() {
+  const b = useBalao();
+  return (
+    <>
+      <button type="button" className={"vz-acao" + (b.lugar ? " aberta" : "")} aria-label="Soundboard" data-dica="Soundboard" onClick={(e) => b.alternar(e, 250)}>
+        <IcSoundboard />
+      </button>
+      {b.lugar && (
+        <Balao lugar={b.lugar} ancora={b.ancora} fechar={b.fechar} rotulo="Soundboard" className="vz-sb">
+          <h4>Soundboard</h4>
+          <div className="vz-sb-lista">
+            {SONS.map((x) => (
+              <button key={x.id} type="button" onClick={() => mandarSom(x.id)}>
+                <span aria-hidden="true">{x.emoji}</span>
+                {x.nome}
+              </button>
+            ))}
+          </div>
+          <p className="vz-dica">Todo mundo na voz ouve.</p>
+        </Balao>
+      )}
+    </>
+  );
+}
+const IcSoundboard = () => (
+  <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M9 18V5l12-2v13" />
+    <circle cx="6" cy="18" r="3" />
+    <circle cx="18" cy="16" r="3" />
+  </svg>
+);
+
+/** Há quanto tempo estou na call (como no Discord, embaixo do "Voz conectada"). */
+export function TempoCall({ desde }: { desde: number | null }) {
+  const [agora, setAgora] = useState(() => Date.now());
+  useEffect(() => {
+    if (!desde) return;
+    const t = setInterval(() => setAgora(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [desde]);
+  if (!desde) return null;
+  return <span className="vz-tempo"> · {duracao(Math.max(0, agora - desde))}</span>;
+}
+export const duracao = (ms: number) => {
+  const t = Math.floor(ms / 1000), h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), x = t % 60;
+  const dd = (n: number) => String(n).padStart(2, "0");
+  return h ? `${h}:${dd(m)}:${dd(x)}` : `${dd(m)}:${dd(x)}`;
+};
+
+/** Como o microfone abre: detecção de voz (com a sensibilidade) ou apertar para falar, como no Discord. */
+export function ModoEntrada() {
+  const m = useModoVoz();
+  const [gravando, setGravando] = useState(false);
+  const barra = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    let id = 0;
+    const anda = () => {
+      /* a barra em escala de 0 a 0.066 (o limiar máximo), para combinar com a marca da sensibilidade */
+      if (barra.current) barra.current.style.transform = `scaleX(${Math.min(1, nivelBruto() / 0.066)})`;
+      id = requestAnimationFrame(anda);
+    };
+    id = requestAnimationFrame(anda);
+    return () => cancelAnimationFrame(id);
+  }, []);
+  useEffect(() => {
+    if (!gravando) return;
+    const pega = (e: KeyboardEvent) => {
+      e.preventDefault();
+      if (e.code !== "Escape") mudarModoVoz({ tecla: e.code });
+      setGravando(false);
+    };
+    addEventListener("keydown", pega, { once: true, capture: true });
+    return () => removeEventListener("keydown", pega, { capture: true });
+  }, [gravando]);
+  return (
+    <div className="vz-modo">
+      <h4>Modo de entrada</h4>
+      <div role="radiogroup" aria-label="Modo de entrada">
+        {(["voz", "ptt"] as const).map((x) => (
+          <button key={x} type="button" role="radio" aria-checked={m.modo === x} className={"vz-item" + (m.modo === x ? " sel" : "")} onClick={() => mudarModoVoz({ modo: x })}>
+            <span>{x === "voz" ? "Detecção de voz" : "Apertar para falar"}</span>
+            <i className="vz-radio" aria-hidden="true" />
+          </button>
+        ))}
+      </div>
+      {m.modo === "ptt" ? (
+        <div className="vz-ptt">
+          <span>Tecla</span>
+          <button type="button" className={"btn soft sm" + (gravando ? " on" : "")} onClick={() => setGravando(true)}>
+            {gravando ? "Aperte uma tecla…" : nomeDaTecla(m.tecla)}
+          </button>
+          <p className="vz-dica">Segure para falar. Só funciona com o site na frente (o navegador não deixa ouvir teclas de outros programas).</p>
+        </div>
+      ) : (
+        <label className="vz-sensib">
+          <span>
+            Sensibilidade <b>{m.sensib <= 0 ? "sempre aberto" : `${Math.round(m.sensib * 100)}%`}</b>
+          </span>
+          <span className="vz-sensib-trilho" style={{ "--marca": `${(limiarDaSensib(m.sensib) / 0.066) * 100}%` } as React.CSSProperties}>
+            <span ref={barra} className="vz-sensib-nivel" />
+          </span>
+          <input aria-label="Sensibilidade do microfone" type="range" min={0} max={100} value={Math.round(m.sensib * 100)} onChange={(e) => mudarModoVoz({ sensib: Number(e.target.value) / 100 })} />
+          <small className="vz-dica">Fale: o microfone só abre quando a barra passa da marca. Em 0, fica sempre aberto.</small>
+        </label>
+      )}
+      <p className="vz-dica">Atalhos: Ctrl+Shift+M liga e desliga o microfone; Ctrl+Shift+D, o som.</p>
+    </div>
+  );
+}
+
 /* como mandar o som do jogo: depende do navegador e do sistema */
 function ComoSom() {
   if (!isChromium)
@@ -330,6 +442,7 @@ function MinhaTransmissao() {
           <small>
             {NOME_SUPERFICIE[LIVE.surface] ?? "Tela"}
             {qual && ` · ${qual}`}
+            <TempoCall desde={LIVE.desde} />
           </small>
         </button>
         <button type="button" className="vz-ib" aria-label="Trocar a qualidade da transmissão" data-dica="Qualidade" data-dica-fim="" onClick={() => setLive({ janelaTela: true })}>
@@ -392,6 +505,7 @@ export function VozPainel() {
   const cam = useApp((s) => !!s.myCamSid);
   const live = useApp((s) => !!s.myLiveSid);
   const ruido = useMidia((s) => s.ruido);
+  const desde = useVoz((s) => s.desde);
   const nome = nomeDaSala(minhaSala, salas);
   if (!minhaSala || !nome) return null;
   const sair = (
@@ -424,7 +538,10 @@ export function VozPainel() {
           <Sinal />
           <span className="vz-info">
             <b>Voz conectada</b>
-            <small>{nome}</small>
+            <small>
+              {nome}
+              <TempoCall desde={desde} />
+            </small>
           </span>
           <button
             type="button"
@@ -449,6 +566,7 @@ export function VozPainel() {
             </button>
           )}
           <BotaoReacoes />
+          <BotaoSoundboard />
           <button
             type="button"
             className="vz-acao"
@@ -506,6 +624,8 @@ export function MenuMic({ lugar, ancora, fechar }: { lugar: Lugar; ancora: HTMLE
       <div className="vz-sep" />
       <Chave rotulo="Supressão de ruído" ligado={m.ruido} onChange={(ruido) => salvarMidia({ ruido })} />
       <Chave rotulo="Cancelamento de eco" ligado={m.eco} onChange={(eco) => salvarMidia({ eco })} />
+      <div className="vz-sep" />
+      <ModoEntrada />
       <div className="vz-sep" />
       <button
         type="button"
@@ -703,7 +823,9 @@ function PreviaCamera() {
   const naGrade = useLive((s) => s.minhaCamNaGrade);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [erro, setErro] = useState("");
+  const [desfoque, setDesfoque] = useState(querDesfoque);
   const fechar = () => setLive({ previaCam: false });
+  const faixaPrevia = stream?.getVideoTracks()[0];
 
   /* abre a câmera só para a prévia (troca junto com o aparelho escolhido) e fecha ao sair */
   useEffect(() => {
@@ -715,6 +837,7 @@ function PreviaCamera() {
         if (!vivo) return st.getTracks().forEach((t) => t.stop());
         aberto = st;
         setErro("");
+        if (querDesfoque()) void aplicarDesfoque(st.getVideoTracks()[0], true);
         setStream(st);
         void listarAparelhos();
       })
@@ -767,6 +890,17 @@ function PreviaCamera() {
           local.set("cam-na-grade", v ? "1" : "0");
         }}
       />
+      {podeDesfocar(faixaPrevia) && (
+        <Chave
+          rotulo="Desfocar o fundo"
+          ligado={desfoque}
+          onChange={(v) => {
+            setDesfoque(v);
+            mudarDesfoque(v);
+            void aplicarDesfoque(faixaPrevia, v);
+          }}
+        />
+      )}
       <p className="vz-dica">Espelhar muda só o que você vê; os outros te veem do jeito certo.</p>
       <div className="vz-janela-pe">
         <button type="button" className="btn soft" onClick={fechar}>

@@ -1,4 +1,5 @@
 "use client";
+import { abrirCartao, PontoStatus, useSituacao } from "./CartaoPerfil";
 import { useEffect, useState, type ComponentType } from "react";
 import { IcAjustes, IcAoVivo, IcCassino, IcJogar, IcLoja, IcMidias, IcSeta, IcSitio, IcNanicadas, IcNanicos, IcAmigos, IcPerfil, IcTaca, IcTruco, IcVoltar } from "@/components/ui/icones";
 import { fecharSeletores } from "@/components/ui/FriendPicker";
@@ -167,13 +168,18 @@ function EuPainel() {
   const naAba = useApp((s) => s.aba === "perfil");
   const naConfig = useApp((s) => s.configAberto);
   const naVoz = useApp((s) => !!s.myVozSid);
+  const sitEu = useSituacao(eu?.id);
   if (!myName) return null;
   /* na voz a linha "eu" fica como a do Discord (rosto, microfone, fone, engrenagem) e as moedas descem uma linha */
   return (
     <>
       <div className="eu-painel">
-        <button type="button" className={"eu" + (naAba ? " on" : "")} aria-current={naAba ? "page" : undefined} title="Abrir o meu perfil" onClick={() => setApp({ aba: "perfil" })}>
+        {/* como no Discord: o rosto abre o meu cartão com o status; o nome abre o Perfil */}
+        <button type="button" className="eu-rosto" aria-label="Meu status" title="Mudar o status" onClick={(e) => abrirCartao(eu?.id, e)}>
           {eu ? <Avatar f={eu} /> : <span className="av">{myName[0]}</span>}
+          <PontoStatus sit={sitEu} />
+        </button>
+        <button type="button" className={"eu" + (naAba ? " on" : "")} aria-current={naAba ? "page" : undefined} title="Abrir o meu perfil" onClick={() => setApp({ aba: "perfil" })}>
           <span className="eu-txt">
             <b>{eu?.name ?? myName}</b>
             {temSalas && <small>{sala ?? "No lobby"}</small>}

@@ -12,7 +12,7 @@ import { getApp, MY_KEY, setApp } from "@/lib/store";
 import { local, newId } from "@/lib/util";
 import { ajustarSender, canCam, novaConexao, sendRtc, type MsgRtc } from "./rtc";
 import { abrirMic, type MicFiltrado } from "./ruido";
-import { somDaVoz } from "./sonsVoz";
+import { somDaVoz, somDoMudo } from "./sonsVoz";
 import { euOfereco, falandoAgora, LIMIAR_FALA, mesmaLista, volumeDe } from "./vozRegras";
 
 type Par = {
@@ -29,8 +29,41 @@ type Par = {
   to?: ReturnType<typeof setTimeout>;
 };
 
-/** Quem está falando agora (chaves da presença; a minha é MY_KEY). A tela só lê daqui. */
-export const useVoz = create<{ falando: string[] }>()(() => ({ falando: [] }));
+/**
+ * Quem está falando agora (chaves da presença; a minha é MY_KEY), desde quando estou na call e se um moderador me
+ * silenciou (seção 70). A tela só lê daqui.
+ */
+export const useVoz = create<{ falando: string[]; desde: number | null; silenciadoPorMod: boolean; apertando: boolean }>()(() => ({
+  falando: [],
+  desde: null,
+  silenciadoPorMod: false,
+  apertando: false,
+}));
+
+/* ---------- como o microfone abre (Configurações): detecção de voz com sensibilidade, ou apertar para falar ---------- */
+export type ModoVoz = {
+  /** "voz" = abre sozinho quando eu falo; "ptt" = só enquanto seguro a tecla */
+  modo: "voz" | "ptt";
+  /** a tecla do apertar para falar (KeyboardEvent.code) */
+  tecla: string;
+  /** sensibilidade da detecção de voz, de 0 (desligada: o microfone fica sempre aberto) a 1 (só voz alta abre) */
+  sensib: number;
+};
+const modoSalvo = local.json<Partial<ModoVoz>>("voz-modo") || {};
+export const useModoVoz = create<ModoVoz>()(() => ({
+  modo: modoSalvo.modo === "ptt" ? "ptt" : "voz",
+  tecla: typeof modoSalvo.tecla === "string" && /^[A-Za-z0-9]{1,24}$/.test(modoSalvo.tecla) ? modoSalvo.tecla : "KeyV",
+  sensib: typeof modoSalvo.sensib === "number" && modoSalvo.sensib >= 0 && modoSalvo.sensib <= 1 ? modoSalvo.sensib : 0,
+}));
+export function mudarModoVoz(p: Partial<ModoVoz>) {
+  useModoVoz.setState(p);
+  local.setJson("voz-modo", useModoVoz.getState());
+}
+/** O nome da tecla para mostrar ("KeyV" → "V", "Space" → "Espaço"). */
+export const nomeDaTecla = (code: string) =>
+  code.replace(/^Key/, "").replace(/^Digit/, "").replace(/^Numpad/, "Num ").replace("Space", "Espaço").replace("ShiftLeft", "Shift").replace("ControlLeft", "Ctrl").replace("AltLeft", "Alt").replace("Backquote", "'");
+/** A sensibilidade (0 a 1) vira o volume mínimo para abrir o microfone (mesma escala do medidor). */
+export const limiarDaSensib = (x: number) => (x <= 0 ? 0 : 0.004 + x * 0.06);
 
 const VOZ = {
   sid: null as string | null,
@@ -208,8 +241,13 @@ export async function entrarVoz() {
     VOZ.stream = st;
     VOZ.sid = newId();
     VOZ.mudoAntes = false;
-    setApp({ myVozSid: VOZ.sid, vozMudo: false, vozSurdo: false });
+    /* como no Discord: volta como eu deixei (mudo continua mudo); silenciado por um moderador entra mudo */
+    const mudo = local.get("voz-mudo") === "1" || useVoz.getState().silenciadoPorMod;
+    st.getAudioTracks().forEach((t) => (t.enabled = !mudo));
+    setApp({ myVozSid: VOZ.sid, vozMudo: mudo, vozSurdo: false });
+    useVoz.setState({ desde: Date.now() });
     medir(MY_KEY, st);
+    medirBruto(mic);
     ligarMedidor();
     syncVoz();
   } catch (e) {
@@ -237,6 +275,8 @@ export function sairVoz() {
   VOZ.naCall = null;
   somDaVoz("saiu", useAjustesVoz.getState().geral);
   esquecerMedidas();
+  soltarBruto();
+  useVoz.setState({ desde: null });
   setApp({ myVozSid: null, vozMudo: false, vozSurdo: false });
 }
 
@@ -265,7 +305,7 @@ async function trocarMicrofone() {
       mic.parar();
       return;
     }
-    faixa.enabled = !getApp().vozMudo;
+    faixa.enabled = !getApp().vozMudo && portaAberta !== false;
     mic.fonte?.addEventListener("ended", () => sairVoz());
     for (const par of VOZ.pares.values())
       for (const sd of par.pc.getSenders()) if (sd.track?.kind === "audio") await sd.replaceTrack(faixa).catch(() => {});
@@ -273,6 +313,8 @@ async function trocarMicrofone() {
     VOZ.mic = mic;
     VOZ.stream = mic.stream;
     medir(MY_KEY, mic.stream);
+    medirBruto(mic);
+    portaAberta = null;
   } catch (e) {
     console.warn(e);
     toast("Não deu para trocar o microfone. Confira se ele está ligado.");
@@ -284,10 +326,25 @@ export function alternarMudo() {
   if (!VOZ.sid) return;
   const s = getApp();
   const mudo = !s.vozMudo;
+  if (!mudo && useVoz.getState().silenciadoPorMod) return toast("Um moderador silenciou você na voz.");
   if (!mudo && s.vozSurdo) return alternarSurdo();
   VOZ.stream?.getAudioTracks().forEach((t) => (t.enabled = !mudo));
+  portaAberta = null;
   setApp({ vozMudo: mudo });
+  local.set("voz-mudo", mudo ? "1" : "0");
+  somDoMudo(mudo ? "mudo" : "falar", useAjustesVoz.getState().geral);
   if (!mudo) acordarMic();
+}
+/** Um moderador me silenciou (ou tirou): fica mudo e não dá para desmutar até ele tirar. */
+export function silenciarPorModerador(sim: boolean) {
+  if (useVoz.getState().silenciadoPorMod === sim) return;
+  useVoz.setState({ silenciadoPorMod: sim });
+  if (!VOZ.sid) return;
+  if (sim) {
+    VOZ.stream?.getAudioTracks().forEach((t) => (t.enabled = false));
+    setApp({ vozMudo: true });
+    toast("Um moderador silenciou você na voz.");
+  } else toast("O moderador liberou o seu microfone. Desmute quando quiser.");
 }
 
 /**
@@ -311,10 +368,13 @@ export function alternarSurdo() {
   if (!VOZ.sid) return;
   const s = getApp();
   const surdo = !s.vozSurdo;
-  const mudo = surdo ? true : VOZ.mudoAntes;
+  const mudo = surdo ? true : VOZ.mudoAntes || useVoz.getState().silenciadoPorMod;
   if (surdo) VOZ.mudoAntes = s.vozMudo;
   VOZ.stream?.getAudioTracks().forEach((t) => (t.enabled = !mudo));
+  portaAberta = null;
   setApp({ vozSurdo: surdo, vozMudo: mudo });
+  local.set("voz-mudo", mudo ? "1" : "0");
+  somDoMudo(surdo ? "surdo" : "ouvir", useAjustesVoz.getState().geral);
   for (const p of VOZ.pares.values()) aplicarVolume(p);
   if (!mudo) acordarMic();
 }
@@ -377,13 +437,14 @@ async function oferecer(key: string, tries = 0) {
 function falhou(par: Par) {
   if (VOZ.pares.get(par.key) !== par) return;
   fechar(par.key, true);
-  /* só quem oferece tenta de novo (o outro espera a nova oferta) */
-  if (par.ofereci && par.tries < 3)
+  /* só quem oferece tenta de novo (o outro espera a nova oferta), sem desistir, como no Discord: 5 s, 10 s, 20 s
+     e depois a cada 30 s, enquanto os dois estiverem na voz */
+  if (par.ofereci)
     setTimeout(() => {
       const p = getApp().onlineSala.find((x) => x.key === par.key);
       if (!VOZ.sid || VOZ.pares.has(par.key) || !p?.voz) return;
       oferecer(par.key, par.tries + 1);
-    }, 5000);
+    }, [5000, 10000, 20000, 30000][Math.min(par.tries, 3)]);
 }
 
 function fechar(key: string, silencioso: boolean) {
@@ -547,11 +608,89 @@ function esquecerMedidas() {
   useVoz.setState({ falando: [] });
 }
 
+/* o microfone cru (antes do filtro e da porta): uma cópia da faixa, para medir mesmo com a porta fechada ou mudo */
+let bruto: { faixa: MediaStreamTrack; fonte: MediaStreamAudioSourceNode; an: AnalyserNode; buf: Float32Array<ArrayBuffer> } | null = null;
+function medirBruto(mic: MicFiltrado) {
+  soltarBruto();
+  try {
+    const faixa = mic.fonte?.clone();
+    if (!faixa) return;
+    ctx ??= novoContexto();
+    const fonte = ctx.createMediaStreamSource(new MediaStream([faixa]));
+    const an = ctx.createAnalyser();
+    an.fftSize = 512;
+    fonte.connect(an);
+    bruto = { faixa, fonte, an, buf: new Float32Array(an.fftSize) };
+  } catch (e) {
+    console.warn("sem medidor do microfone", e);
+  }
+}
+function soltarBruto() {
+  if (!bruto) return;
+  try {
+    bruto.fonte.disconnect();
+  } catch {}
+  bruto.faixa.stop();
+  bruto = null;
+}
+/** O volume do microfone agora (cru), de 0 a 1, para a barrinha da sensibilidade. */
+export function nivelBruto(): number {
+  if (!bruto) return 0;
+  bruto.an.getFloatTimeDomainData(bruto.buf);
+  return volumeDe(bruto.buf);
+}
+
+/* a porta do microfone (detecção de voz e apertar para falar): null = ainda não decidida */
+let portaAberta: boolean | null = null;
+let ultimaVozAlta = 0;
+let falandoMudoDesde = 0;
+let silencioDesde = 0;
+let avisouMudo = 0;
+let avisouSemSom = false;
+function porta(agora: number) {
+  const st = VOZ.stream;
+  if (!st) return;
+  const mudo = getApp().vozMudo;
+  const nivel = nivelBruto();
+  const { modo, sensib } = useModoVoz.getState();
+  /* "Você está mudo": falando com o microfone desligado por mais de 1 s (um aviso a cada 30 s) */
+  if (mudo && !getApp().vozSurdo && !useVoz.getState().silenciadoPorMod && nivel > LIMIAR_FALA * 1.6) {
+    falandoMudoDesde ||= agora;
+    if (agora - falandoMudoDesde > 1000 && agora - avisouMudo > 30000) {
+      avisouMudo = agora;
+      toast("Você está mudo. Ctrl+Shift+M liga o microfone.");
+    }
+  } else falandoMudoDesde = 0;
+  /* "Microfone sem som": 20 s de silêncio absoluto com o microfone ligado (um aviso por call) */
+  if (!mudo && bruto && nivel < 0.0004) {
+    silencioDesde ||= agora;
+    if (!avisouSemSom && agora - silencioDesde > 20000) {
+      avisouSemSom = true;
+      toast("Seu microfone não está mandando som. Confira o aparelho nas Configurações (engrenagem).");
+    }
+  } else silencioDesde = 0;
+  if (mudo) return;
+  let aberta = true;
+  if (modo === "ptt") aberta = useVoz.getState().apertando;
+  else if (sensib > 0) {
+    if (nivel > limiarDaSensib(sensib)) ultimaVozAlta = agora;
+    /* segura aberta 400 ms depois da última sílaba, para não cortar o fim das palavras */
+    aberta = agora - ultimaVozAlta < 400;
+  }
+  if (aberta !== portaAberta) {
+    portaAberta = aberta;
+    st.getAudioTracks().forEach((t) => (t.enabled = aberta));
+  }
+}
+
 function ligarMedidor() {
   if (relogio) return;
+  avisouSemSom = false;
+  portaAberta = null;
   relogio = setInterval(() => {
     const agora = Date.now();
-    const mudo = getApp().vozMudo;
+    porta(agora);
+    const mudo = getApp().vozMudo || portaAberta === false;
     for (const [key, m] of medidores) {
       if (key === MY_KEY && mudo) continue;
       m.an.getFloatTimeDomainData(m.buf);
@@ -560,4 +699,34 @@ function ligarMedidor() {
     const falando = falandoAgora(ultimaFala, agora);
     if (!mesmaLista(falando, useVoz.getState().falando)) useVoz.setState({ falando });
   }, 120);
+}
+
+/* ---------- atalhos, como no Discord: Ctrl+Shift+M (mudo), Ctrl+Shift+D (surdo) e a tecla do apertar para falar ---------- */
+const digitando = (e: KeyboardEvent) => {
+  const el = e.target as HTMLElement | null;
+  return !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+};
+if (typeof window !== "undefined") {
+  addEventListener("keydown", (e) => {
+    if (!VOZ.sid) return;
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && !e.altKey && (e.code === "KeyM" || e.code === "KeyD")) {
+      e.preventDefault();
+      if (e.code === "KeyM") alternarMudo();
+      else alternarSurdo();
+      return;
+    }
+    const { modo, tecla } = useModoVoz.getState();
+    if (modo === "ptt" && e.code === tecla && !e.repeat && !digitando(e) && !useVoz.getState().apertando) {
+      useVoz.setState({ apertando: true });
+      porta(Date.now());
+    }
+  });
+  const soltou = () => {
+    if (!useVoz.getState().apertando) return;
+    useVoz.setState({ apertando: false });
+    porta(Date.now());
+  };
+  addEventListener("keyup", (e) => e.code === useModoVoz.getState().tecla && soltou());
+  /* trocou de janela segurando a tecla: o navegador não avisa que soltou */
+  addEventListener("blur", soltou);
 }

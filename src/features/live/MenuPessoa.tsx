@@ -11,8 +11,11 @@ import type { PresencaNanico } from "@/lib/presenca";
 import { MY_KEY, setApp, useApp } from "@/lib/store";
 import { useLive } from "./estado";
 import { Balao, Chave, lugarDe, type Lugar } from "./PainelVoz";
-import { LIVE, mudarVolumeTela, unwatch, watch } from "./tela";
+import { ouvirJunto, useOuvindo } from "./somTelas";
+import { infoDaTela, LIVE, mudarVolumeTela, unwatch, VOLUME_TELA_MAX, volumeDaTela, watch } from "./tela";
 import { ajustarVoz, silenciarNanico, useAjustesVoz, VOLUME_MAX } from "./voz";
+import { desconectarDaVoz, silenciarParaTodos, useVozMod } from "./vozMod";
+import { useStatus } from "@/features/status/status";
 
 /** Volume da voz (0 a 200%) e silenciar, de um nanico (friend id). */
 export function OpcoesVoz({ fid, nome }: { fid: string; nome: string }) {
@@ -46,12 +49,16 @@ export function OpcoesVoz({ fid, nome }: { fid: string; nome: string }) {
   );
 }
 
-/** A transmissão de quem está ao vivo: assistir, ouvir, volume e parar de assistir. */
+/** A transmissão de quem está ao vivo: assistir, volume (até 200%), ouvir junto, as informações e parar de assistir. */
 export function OpcoesTela({ chave, sala, nome, fechar }: { chave: string; sala: string | null; nome: string; fechar: () => void }) {
   useLive((s) => s.v);
-  const vol = useLive((s) => s.vol);
+  useLive((s) => s.volTelas);
+  const junto = useOuvindo((s) => s.junto);
   const vendo = LIVE.watching.has(chave);
   const principal = vendo && LIVE.main === chave;
+  const ouvindo = principal || junto.includes(chave);
+  const vol = volumeDaTela(chave);
+  const [info, setInfo] = useState<Awaited<ReturnType<typeof infoDaTela>> | "carregando" | null>(null);
   return (
     <>
       <h4>Transmissão</h4>
@@ -59,19 +66,87 @@ export function OpcoesTela({ chave, sala, nome, fechar }: { chave: string; sala:
         <button type="button" className="vz-item" onClick={() => (fechar(), assistirLive(chave, sala))}>
           <span>Assistir a tela de {nome}</span>
         </button>
-      ) : principal ? (
-        <label className="vz-vol">
-          <input className="vz-faixa" style={{ "--pct": `${Math.round(vol * 100)}%` } as React.CSSProperties} aria-label={`Volume da transmissão de ${nome}`} type="range" min={0} max={100} value={Math.round(vol * 100)} onChange={(e) => mudarVolumeTela(Number(e.target.value) / 100)} />
-          <b>{Math.round(vol * 100)}%</b>
-        </label>
       ) : (
-        <button type="button" className="vz-item" onClick={() => (fechar(), watch(chave, true))}>
-          <span>Ouvir esta transmissão</span>
-        </button>
+        <>
+          {ouvindo && (
+            <label className="vz-vol">
+              <input
+                className="vz-faixa"
+                style={{ "--pct": `${Math.round((vol / VOLUME_TELA_MAX) * 100)}%` } as React.CSSProperties}
+                aria-label={`Volume da transmissão de ${nome}`}
+                type="range"
+                min={0}
+                max={VOLUME_TELA_MAX * 100}
+                value={Math.round(vol * 100)}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  mudarVolumeTela((Math.abs(n - 100) <= 4 ? 100 : n) / 100, chave);
+                }}
+                onDoubleClick={() => mudarVolumeTela(1, chave)}
+              />
+              <b>{Math.round(vol * 100)}%</b>
+            </label>
+          )}
+          {!principal && (
+            <>
+              <Chave rotulo="Ouvir junto com a principal" ligado={junto.includes(chave)} onChange={(x) => ouvirJunto(chave, x)} />
+              <button type="button" className="vz-item" onClick={() => (fechar(), watch(chave, true))}>
+                <span>Pôr em destaque</span>
+              </button>
+            </>
+          )}
+          <button type="button" className="vz-item" onClick={() => (setInfo("carregando"), void infoDaTela(chave).then(setInfo))}>
+            <span>Informações da transmissão</span>
+          </button>
+          {info === "carregando" ? (
+            <p className="vz-dica">Medindo…</p>
+          ) : info ? (
+            <p className="vz-dica vz-info">
+              {info.res}
+              {info.fps != null ? ` · ${info.fps} fps` : ""}
+              {info.mbps != null ? ` · ${info.mbps} Mbps` : ""}
+              {info.codec ? ` · ${info.codec}` : ""}
+              <br />
+              {info.ping != null ? `Atraso ${info.ping} ms` : ""}
+              {info.perda != null ? ` · perda ${info.perda}%` : ""}
+            </p>
+          ) : null}
+          <button type="button" className="vz-item perigo" onClick={() => (fechar(), unwatch(chave))}>
+            <span>Parar de assistir</span>
+          </button>
+        </>
       )}
-      {vendo && (
-        <button type="button" className="vz-item perigo" onClick={() => (fechar(), unwatch(chave))}>
-          <span>Parar de assistir</span>
+    </>
+  );
+}
+
+/** Só para moderador (o banco confere de novo): silenciar na voz para todos e tirar da call. */
+function OpcoesModerador({ userId, naVoz, fechar }: { userId: string; naVoz: boolean; fechar: () => void }) {
+  const mods = useStatus((s) => s.mods);
+  const myFid = useApp((s) => s.myFid);
+  const silenciado = useVozMod((s) => s.silenciados.includes(userId));
+  const [certeza, setCerteza] = useState(false);
+  if (!myFid || !mods.includes(myFid)) return null;
+  return (
+    <>
+      <div className="vz-sep" />
+      <h4>Moderação</h4>
+      <Chave rotulo="Silenciar para todos na voz" ligado={silenciado} onChange={(x) => void silenciarParaTodos(userId, x)} />
+      {naVoz && (
+        <button
+          type="button"
+          className={"vz-item perigo" + (certeza ? " sure" : "")}
+          onClick={() => {
+            if (!certeza) {
+              setCerteza(true);
+              setTimeout(() => setCerteza(false), 3000);
+              return;
+            }
+            fechar();
+            void desconectarDaVoz(userId);
+          }}
+        >
+          <span>{certeza ? "Confirmar: tirar da voz" : "Desconectar da voz"}</span>
         </button>
       )}
     </>
@@ -101,6 +176,7 @@ export function MenuPessoa({ p, fid, nome, lugar, fechar }: { p: PresencaNanico 
           <OpcoesTela chave={p.key} sala={p.sala ?? null} nome={nome} fechar={fechar} />
         </>
       )}
+      {!eu && f?.user_id && <OpcoesModerador userId={f.user_id} naVoz={!!p?.voz} fechar={fechar} />}
       {fid && (
         <>
           <div className="vz-sep" />
