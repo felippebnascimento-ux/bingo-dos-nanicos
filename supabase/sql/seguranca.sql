@@ -7443,3 +7443,744 @@ begin
 end $$;
 revoke all on function public.mod_presente(uuid, integer) from public, anon;
 grant execute on function public.mod_presente(uuid, integer) to authenticated;
+
+-- 68) InstaNanico igual ao Instagram (04/11/2026, pedido do Henrique) ---------------------------------------------------
+--   Publicações: várias fotos (carrossel, `fotos` além da `midia`), pessoas marcadas (`marcados`), legenda editável pelo
+--   autor (`editado_em`), salvar (rede_salvos), responder (`resposta_a`) e curtir comentários (rede_comentario_curtidas).
+--   Stories: figurinha que se toca (enquete, pergunta, contagem ou publicação, em `figurinha`), respostas e votos
+--   (rede_story_respostas; a contagem dos votos por story_votos), melhores amigos (rede_proximos + `so_proximos`) e
+--   destaques no perfil (rede_destaques + rede_destaque_stories: o story em destaque continua visível depois das 24 h).
+--   Direct: foto e áudio (`midia`, na pasta rede/<uid>/), responder uma mensagem (`resposta_a`), reações
+--   (rede_msg_reacoes) e apagar a que eu mandei. Notas de 24 h (rede_notas) e a bio do perfil (rede_perfis).
+--   Tudo só para quem tem o Celular (tem_item) e é membro (nanico ou amigo); cada um mexe só no que é dele.
+
+-- o bucket também aceita o áudio do Direct (continua privado e até 5 MB)
+update storage.buckets
+   set allowed_mime_types = array['image/webp', 'image/png', 'image/jpeg', 'image/gif', 'audio/webm', 'audio/mp4', 'audio/ogg', 'audio/mpeg']
+ where id = 'midias';
+
+-- ---------- publicações: carrossel, marcados e editar a legenda ----------
+alter table public.rede_posts add column if not exists fotos text[] not null default '{}';
+alter table public.rede_posts add column if not exists marcados uuid[] not null default '{}';
+alter table public.rede_posts add column if not exists editado_em timestamptz;
+create index if not exists rede_posts_marcados on public.rede_posts using gin (marcados);
+grant insert (texto, midia, fotos, marcados) on public.rede_posts to authenticated;
+grant update (texto, marcados) on public.rede_posts to authenticated;
+drop policy if exists rede_posts_editar on public.rede_posts;
+create policy rede_posts_editar on public.rede_posts for update to authenticated
+  using (user_id = auth.uid() and public.tem_item('celular')) with check (user_id = auth.uid());
+
+create or replace function public.rede_post_extra() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  f text;
+begin
+  -- marcados: só membros de verdade, sem repetir, no máximo 20
+  new.marcados := coalesce((select array_agg(distinct m) from unnest(coalesce(new.marcados, '{}')) m
+                             where exists (select 1 from public.friends where user_id = m)), '{}');
+  if cardinality(new.marcados) > 20 then raise exception 'Marque no máximo 20 pessoas.' using errcode = 'P0001'; end if;
+  if tg_op = 'UPDATE' then
+    new.texto := btrim(regexp_replace(coalesce(new.texto, ''), '[\x00-\x09\x0B-\x1F\x7F]', ' ', 'g'));
+    if char_length(new.texto) = 0 and new.midia is null then raise exception 'Escreva alguma coisa.' using errcode = 'P0001'; end if;
+    if new.texto is distinct from old.texto then new.editado_em := now(); end if;
+    return new;
+  end if;
+  new.fotos := coalesce(new.fotos, '{}');
+  if cardinality(new.fotos) > 9 then raise exception 'No máximo 10 fotos por publicação.' using errcode = 'P0001'; end if;
+  if cardinality(new.fotos) > 0 and new.midia is null then raise exception 'Falta a primeira foto.' using errcode = 'P0001'; end if;
+  foreach f in array new.fotos loop
+    if f !~ '^rede/[0-9a-f-]{36}/[a-z0-9-]{6,40}\.(webp|gif)$' or split_part(f, '/', 2) <> auth.uid()::text then
+      raise exception 'A imagem tem que estar na sua pasta.' using errcode = 'P0001';
+    end if;
+    if not exists (select 1 from storage.objects where bucket_id = 'midias' and name = f) then
+      raise exception 'Uma das fotos não chegou. Tente de novo.' using errcode = 'P0001';
+    end if;
+  end loop;
+  return new;
+end $$;
+revoke all on function public.rede_post_extra() from public, anon, authenticated;
+drop trigger if exists rede_post_extra on public.rede_posts;
+create trigger rede_post_extra before insert or update on public.rede_posts for each row execute function public.rede_post_extra();
+
+-- ---------- salvar publicações (cada um vê só os próprios) ----------
+create table if not exists public.rede_salvos (
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  post_id bigint not null references public.rede_posts(id) on delete cascade,
+  em      timestamptz not null default now(),
+  primary key (user_id, post_id)
+);
+alter table public.rede_salvos enable row level security;
+revoke all on public.rede_salvos from public, anon, authenticated;
+grant select, delete on public.rede_salvos to authenticated;
+grant insert (post_id) on public.rede_salvos to authenticated;
+drop policy if exists rede_salvos_ler on public.rede_salvos;
+create policy rede_salvos_ler on public.rede_salvos for select to authenticated using (user_id = auth.uid());
+drop policy if exists rede_salvos_criar on public.rede_salvos;
+create policy rede_salvos_criar on public.rede_salvos for insert to authenticated
+  with check (user_id = auth.uid() and public.eh_membro() and public.tem_item('celular'));
+drop policy if exists rede_salvos_apagar on public.rede_salvos;
+create policy rede_salvos_apagar on public.rede_salvos for delete to authenticated using (user_id = auth.uid());
+
+-- ---------- comentários: responder e curtir ----------
+alter table public.rede_comentarios add column if not exists resposta_a bigint references public.rede_comentarios(id) on delete cascade;
+grant insert (post_id, texto, resposta_a) on public.rede_comentarios to authenticated;
+
+create or replace function public.rede_comentario_extra() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  v_post bigint;
+  v_pai  bigint;
+begin
+  if new.resposta_a is null then return new; end if;
+  select post_id, resposta_a into v_post, v_pai from public.rede_comentarios where id = new.resposta_a;
+  if v_post is null or v_post <> new.post_id then raise exception 'Esse comentário não está nesta publicação.' using errcode = 'P0001'; end if;
+  -- como no Instagram: a resposta de uma resposta fica no mesmo fio (um nível só)
+  if v_pai is not null then new.resposta_a := v_pai; end if;
+  return new;
+end $$;
+revoke all on function public.rede_comentario_extra() from public, anon, authenticated;
+drop trigger if exists rede_comentario_extra on public.rede_comentarios;
+create trigger rede_comentario_extra before insert on public.rede_comentarios for each row execute function public.rede_comentario_extra();
+
+create table if not exists public.rede_comentario_curtidas (
+  comentario_id bigint not null references public.rede_comentarios(id) on delete cascade,
+  user_id       uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  em            timestamptz not null default now(),
+  primary key (comentario_id, user_id)
+);
+alter table public.rede_comentario_curtidas enable row level security;
+revoke all on public.rede_comentario_curtidas from public, anon, authenticated;
+grant select, delete on public.rede_comentario_curtidas to authenticated;
+grant insert (comentario_id) on public.rede_comentario_curtidas to authenticated;
+drop policy if exists rede_ccurtidas_ler on public.rede_comentario_curtidas;
+create policy rede_ccurtidas_ler on public.rede_comentario_curtidas for select to authenticated using (public.eh_membro() and public.tem_item('celular'));
+drop policy if exists rede_ccurtidas_criar on public.rede_comentario_curtidas;
+create policy rede_ccurtidas_criar on public.rede_comentario_curtidas for insert to authenticated
+  with check (user_id = auth.uid() and public.eh_membro() and public.tem_item('celular'));
+drop policy if exists rede_ccurtidas_apagar on public.rede_comentario_curtidas;
+create policy rede_ccurtidas_apagar on public.rede_comentario_curtidas for delete to authenticated using (user_id = auth.uid());
+
+-- ---------- stories: figurinha que se toca, melhores amigos e destaques ----------
+alter table public.rede_stories add column if not exists figurinha jsonb;
+alter table public.rede_stories add column if not exists so_proximos boolean not null default false;
+alter table public.rede_stories drop constraint if exists rede_stories_figurinha_check;
+alter table public.rede_stories add constraint rede_stories_figurinha_check check (
+  figurinha is null or (jsonb_typeof(figurinha) = 'object'
+                        -- já com os tipos da seção 69, para rodar o arquivo de novo sem esbarrar nos stories que já usam eles
+                        and figurinha->>'tipo' in ('enquete', 'pergunta', 'contagem', 'post', 'quiz', 'barra', 'adicione', 'story')
+                        and char_length(figurinha::text) <= 1200));
+grant insert (midia, texto, fundo, figurinha, so_proximos) on public.rede_stories to authenticated;
+
+create table if not exists public.rede_proximos (
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  amigo   uuid not null references auth.users(id) on delete cascade,
+  primary key (user_id, amigo),
+  check (user_id <> amigo)
+);
+alter table public.rede_proximos enable row level security;
+revoke all on public.rede_proximos from public, anon, authenticated;
+grant select, delete on public.rede_proximos to authenticated;
+grant insert (amigo) on public.rede_proximos to authenticated;
+-- o dono vê a lista dele; quem está numa lista vê a própria linha (é assim que o story de melhores amigos aparece)
+drop policy if exists rede_proximos_ler on public.rede_proximos;
+create policy rede_proximos_ler on public.rede_proximos for select to authenticated using (user_id = auth.uid() or amigo = auth.uid());
+drop policy if exists rede_proximos_criar on public.rede_proximos;
+create policy rede_proximos_criar on public.rede_proximos for insert to authenticated
+  with check (user_id = auth.uid() and public.eh_membro() and public.tem_item('celular')
+              and exists (select 1 from public.friends where user_id = amigo));
+drop policy if exists rede_proximos_apagar on public.rede_proximos;
+create policy rede_proximos_apagar on public.rede_proximos for delete to authenticated using (user_id = auth.uid());
+
+create table if not exists public.rede_destaques (
+  id      bigint generated always as identity primary key,
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  nome    text not null check (char_length(nome) between 1 and 24),
+  em      timestamptz not null default now()
+);
+create table if not exists public.rede_destaque_stories (
+  destaque_id bigint not null references public.rede_destaques(id) on delete cascade,
+  story_id    bigint not null references public.rede_stories(id) on delete cascade,
+  em          timestamptz not null default now(),
+  primary key (destaque_id, story_id)
+);
+create index if not exists rede_destaque_stories_story on public.rede_destaque_stories (story_id);
+alter table public.rede_destaques        enable row level security;
+alter table public.rede_destaque_stories enable row level security;
+revoke all on public.rede_destaques, public.rede_destaque_stories from public, anon, authenticated;
+grant select, delete on public.rede_destaques, public.rede_destaque_stories to authenticated;
+grant insert (nome) on public.rede_destaques to authenticated;
+grant update (nome) on public.rede_destaques to authenticated;
+grant insert (destaque_id, story_id) on public.rede_destaque_stories to authenticated;
+drop policy if exists rede_destaques_ler on public.rede_destaques;
+create policy rede_destaques_ler on public.rede_destaques for select to authenticated using (public.eh_membro() and public.tem_item('celular'));
+drop policy if exists rede_destaques_criar on public.rede_destaques;
+create policy rede_destaques_criar on public.rede_destaques for insert to authenticated
+  with check (user_id = auth.uid() and public.eh_membro() and public.tem_item('celular'));
+drop policy if exists rede_destaques_mudar on public.rede_destaques;
+create policy rede_destaques_mudar on public.rede_destaques for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists rede_destaques_apagar on public.rede_destaques;
+create policy rede_destaques_apagar on public.rede_destaques for delete to authenticated using (user_id = auth.uid());
+drop policy if exists rede_dstories_ler on public.rede_destaque_stories;
+create policy rede_dstories_ler on public.rede_destaque_stories for select to authenticated using (public.eh_membro() and public.tem_item('celular'));
+drop policy if exists rede_dstories_criar on public.rede_destaque_stories;
+create policy rede_dstories_criar on public.rede_destaque_stories for insert to authenticated
+  with check (exists (select 1 from public.rede_destaques d where d.id = destaque_id and d.user_id = auth.uid())
+              and exists (select 1 from public.rede_stories s where s.id = story_id and s.user_id = auth.uid()));
+drop policy if exists rede_dstories_apagar on public.rede_destaque_stories;
+create policy rede_dstories_apagar on public.rede_destaque_stories for delete to authenticated
+  using (exists (select 1 from public.rede_destaques d where d.id = destaque_id and d.user_id = auth.uid()));
+
+-- quem vê um story: o dono sempre; os outros, nas 24 h ou se ele estiver num destaque, e o de melhores amigos só quem
+-- está na lista do dono
+drop policy if exists rede_stories_ler on public.rede_stories;
+create policy rede_stories_ler on public.rede_stories for select to authenticated
+  using (public.eh_membro() and public.tem_item('celular') and (
+    user_id = auth.uid()
+    or ((em > now() - interval '24 hours' or exists (select 1 from public.rede_destaque_stories d where d.story_id = rede_stories.id))
+        and (not so_proximos or exists (select 1 from public.rede_proximos p where p.user_id = rede_stories.user_id and p.amigo = auth.uid())))));
+
+-- respostas às figurinhas: o voto da enquete, a resposta da pergunta ou o "lembrar" da contagem (uma por pessoa)
+create table if not exists public.rede_story_respostas (
+  story_id bigint not null references public.rede_stories(id) on delete cascade,
+  user_id  uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  opcao    smallint check (opcao between 0 and 3),
+  texto    text check (char_length(texto) <= 200),
+  em       timestamptz not null default now(),
+  primary key (story_id, user_id)
+);
+alter table public.rede_story_respostas enable row level security;
+revoke all on public.rede_story_respostas from public, anon, authenticated;
+grant select, delete on public.rede_story_respostas to authenticated;
+grant insert (story_id, opcao, texto) on public.rede_story_respostas to authenticated;
+drop policy if exists rede_respostas_ler on public.rede_story_respostas;
+create policy rede_respostas_ler on public.rede_story_respostas for select to authenticated
+  using (user_id = auth.uid() or exists (select 1 from public.rede_stories s where s.id = story_id and s.user_id = auth.uid()));
+drop policy if exists rede_respostas_criar on public.rede_story_respostas;
+create policy rede_respostas_criar on public.rede_story_respostas for insert to authenticated
+  with check (user_id = auth.uid() and public.eh_membro() and public.tem_item('celular')
+              and exists (select 1 from public.rede_stories s where s.id = story_id and s.figurinha is not null));
+drop policy if exists rede_respostas_apagar on public.rede_story_respostas;
+create policy rede_respostas_apagar on public.rede_story_respostas for delete to authenticated using (user_id = auth.uid());
+
+-- os votos de uma enquete: só para o dono e para quem já votou (como no Instagram, o resultado aparece depois do voto)
+create or replace function public.story_votos(p_story bigint) returns jsonb
+language sql stable security definer set search_path = public as $$
+  select case when public.eh_membro() and public.tem_item('celular') and exists (
+      select 1 from public.rede_stories s where s.id = p_story
+         and (s.user_id = auth.uid() or exists (select 1 from public.rede_story_respostas r where r.story_id = p_story and r.user_id = auth.uid())))
+    then coalesce((select jsonb_object_agg(opcao::text, n)
+                     from (select opcao, count(*) as n from public.rede_story_respostas
+                            where story_id = p_story and opcao is not null group by opcao) x), '{}'::jsonb)
+    else null end;
+$$;
+revoke all on function public.story_votos(bigint) from public, anon;
+grant execute on function public.story_votos(bigint) to authenticated;
+
+-- ---------- Direct: foto, áudio, responder, reações e apagar ----------
+alter table public.rede_mensagens add column if not exists midia text;
+alter table public.rede_mensagens add column if not exists resposta_a bigint references public.rede_mensagens(id) on delete set null;
+alter table public.rede_mensagens drop constraint if exists rede_mensagens_midia_check;
+alter table public.rede_mensagens add constraint rede_mensagens_midia_check
+  check (midia is null or midia ~ '^rede/[0-9a-f-]{36}/[a-z0-9-]{6,40}\.(webp|gif|webm|m4a|ogg|mp4)$');
+grant insert (para, texto, story_id, post_id, midia, resposta_a) on public.rede_mensagens to authenticated;
+grant delete on public.rede_mensagens to authenticated;
+drop policy if exists rede_mensagens_apagar on public.rede_mensagens;
+create policy rede_mensagens_apagar on public.rede_mensagens for delete to authenticated using (de = auth.uid());
+
+create or replace function public.rede_mensagem_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.de := auth.uid();
+  new.em := now();
+  new.lida_em := null;
+  new.texto := btrim(regexp_replace(coalesce(new.texto, ''), '[\x00-\x09\x0B-\x1F\x7F]', ' ', 'g'));
+  if char_length(new.texto) = 0 and new.post_id is null and new.midia is null then
+    raise exception 'Escreva a mensagem.' using errcode = 'P0001';
+  end if;
+  if new.para = new.de then raise exception 'Escolha outro nanico.' using errcode = 'P0001'; end if;
+  if not exists (select 1 from public.friends where user_id = new.para) then
+    raise exception 'Esse nanico não existe.' using errcode = 'P0001';
+  end if;
+  if new.midia is not null then
+    if split_part(new.midia, '/', 2) <> new.de::text then raise exception 'O arquivo tem que estar na sua pasta.' using errcode = 'P0001'; end if;
+    if not exists (select 1 from storage.objects where bucket_id = 'midias' and name = new.midia) then
+      raise exception 'O arquivo não chegou. Tente de novo.' using errcode = 'P0001';
+    end if;
+  end if;
+  if new.resposta_a is not null and not exists (
+       select 1 from public.rede_mensagens m where m.id = new.resposta_a
+          and ((m.de = new.de and m.para = new.para) or (m.de = new.para and m.para = new.de))) then
+    new.resposta_a := null;
+  end if;
+  perform public.limitar('rede_mensagem', 30, interval '1 minute', 'Calma: mensagens demais em pouco tempo.');
+  return new;
+end $$;
+revoke all on function public.rede_mensagem_protecao() from public, anon, authenticated;
+
+create table if not exists public.rede_msg_reacoes (
+  mensagem_id bigint not null references public.rede_mensagens(id) on delete cascade,
+  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  emoji       text not null check (char_length(emoji) between 1 and 8),
+  em          timestamptz not null default now(),
+  primary key (mensagem_id, user_id)
+);
+alter table public.rede_msg_reacoes enable row level security;
+revoke all on public.rede_msg_reacoes from public, anon, authenticated;
+grant select, delete on public.rede_msg_reacoes to authenticated;
+grant insert (mensagem_id, emoji) on public.rede_msg_reacoes to authenticated;
+grant update (emoji) on public.rede_msg_reacoes to authenticated;
+drop policy if exists rede_reacoes_ler on public.rede_msg_reacoes;
+create policy rede_reacoes_ler on public.rede_msg_reacoes for select to authenticated
+  using (exists (select 1 from public.rede_mensagens m where m.id = mensagem_id and (m.de = auth.uid() or m.para = auth.uid())));
+drop policy if exists rede_reacoes_criar on public.rede_msg_reacoes;
+create policy rede_reacoes_criar on public.rede_msg_reacoes for insert to authenticated
+  with check (user_id = auth.uid() and public.tem_item('celular')
+              and exists (select 1 from public.rede_mensagens m where m.id = mensagem_id and (m.de = auth.uid() or m.para = auth.uid())));
+drop policy if exists rede_reacoes_mudar on public.rede_msg_reacoes;
+create policy rede_reacoes_mudar on public.rede_msg_reacoes for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists rede_reacoes_apagar on public.rede_msg_reacoes;
+create policy rede_reacoes_apagar on public.rede_msg_reacoes for delete to authenticated using (user_id = auth.uid());
+
+-- ---------- notas (o recadinho de 24 h em cima do Direct) e a bio do perfil ----------
+create table if not exists public.rede_notas (
+  user_id uuid primary key default auth.uid() references auth.users(id) on delete cascade,
+  texto   text not null check (char_length(texto) between 1 and 60),
+  em      timestamptz not null default now()
+);
+create table if not exists public.rede_perfis (
+  user_id uuid primary key default auth.uid() references auth.users(id) on delete cascade,
+  bio     text not null default '' check (char_length(bio) <= 150),
+  em      timestamptz not null default now()
+);
+alter table public.rede_notas  enable row level security;
+alter table public.rede_perfis enable row level security;
+revoke all on public.rede_notas, public.rede_perfis from public, anon, authenticated;
+grant select, delete on public.rede_notas to authenticated;
+grant insert (texto), update (texto) on public.rede_notas to authenticated;
+grant select on public.rede_perfis to authenticated;
+grant insert (bio), update (bio) on public.rede_perfis to authenticated;
+drop policy if exists rede_notas_ler on public.rede_notas;
+create policy rede_notas_ler on public.rede_notas for select to authenticated
+  using (user_id = auth.uid() or (public.eh_membro() and public.tem_item('celular') and em > now() - interval '24 hours'));
+drop policy if exists rede_notas_criar on public.rede_notas;
+create policy rede_notas_criar on public.rede_notas for insert to authenticated
+  with check (user_id = auth.uid() and public.eh_membro() and public.tem_item('celular'));
+drop policy if exists rede_notas_mudar on public.rede_notas;
+create policy rede_notas_mudar on public.rede_notas for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists rede_notas_apagar on public.rede_notas;
+create policy rede_notas_apagar on public.rede_notas for delete to authenticated using (user_id = auth.uid());
+drop policy if exists rede_perfis_ler on public.rede_perfis;
+create policy rede_perfis_ler on public.rede_perfis for select to authenticated using (public.eh_membro() and public.tem_item('celular'));
+drop policy if exists rede_perfis_criar on public.rede_perfis;
+create policy rede_perfis_criar on public.rede_perfis for insert to authenticated
+  with check (user_id = auth.uid() and public.eh_membro() and public.tem_item('celular'));
+drop policy if exists rede_perfis_mudar on public.rede_perfis;
+create policy rede_perfis_mudar on public.rede_perfis for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- ---------- limites e limpeza dos textos das tabelas novas ----------
+create or replace function public.rede_extra_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if tg_table_name = 'rede_comentario_curtidas' then
+    perform public.limitar('rede_ccurtida', 200, interval '1 hour', 'Calma: curtidas demais em pouco tempo.');
+  elsif tg_table_name = 'rede_story_respostas' then
+    new.texto := nullif(btrim(regexp_replace(coalesce(new.texto, ''), '[\x00-\x1F\x7F]', ' ', 'g')), '');
+    perform public.limitar('rede_resposta', 60, interval '1 hour', 'Calma: respostas demais em pouco tempo.');
+  elsif tg_table_name = 'rede_msg_reacoes' then
+    perform public.limitar('rede_reacao', 120, interval '1 hour', 'Calma: reações demais em pouco tempo.');
+  elsif tg_table_name = 'rede_destaques' then
+    new.nome := btrim(regexp_replace(coalesce(new.nome, ''), '[\x00-\x1F\x7F]', ' ', 'g'));
+    if tg_op = 'INSERT' then perform public.limitar('rede_destaque', 20, interval '1 hour', 'Calma: destaques demais.'); end if;
+  elsif tg_table_name = 'rede_notas' then
+    new.texto := btrim(regexp_replace(coalesce(new.texto, ''), '[\x00-\x1F\x7F]', ' ', 'g'));
+    new.em := now();
+    perform public.limitar('rede_nota', 20, interval '1 hour', 'Calma: notas demais em pouco tempo.');
+  elsif tg_table_name = 'rede_perfis' then
+    new.bio := btrim(regexp_replace(coalesce(new.bio, ''), '[\x00-\x09\x0B-\x1F\x7F]', ' ', 'g'));
+    new.em := now();
+  end if;
+  return new;
+end $$;
+revoke all on function public.rede_extra_protecao() from public, anon, authenticated;
+drop trigger if exists rede_extra_protecao on public.rede_comentario_curtidas;
+create trigger rede_extra_protecao before insert on public.rede_comentario_curtidas for each row execute function public.rede_extra_protecao();
+drop trigger if exists rede_extra_protecao on public.rede_story_respostas;
+create trigger rede_extra_protecao before insert on public.rede_story_respostas for each row execute function public.rede_extra_protecao();
+drop trigger if exists rede_extra_protecao on public.rede_msg_reacoes;
+create trigger rede_extra_protecao before insert or update on public.rede_msg_reacoes for each row execute function public.rede_extra_protecao();
+drop trigger if exists rede_extra_protecao on public.rede_destaques;
+create trigger rede_extra_protecao before insert or update on public.rede_destaques for each row execute function public.rede_extra_protecao();
+drop trigger if exists rede_extra_protecao on public.rede_notas;
+create trigger rede_extra_protecao before insert or update on public.rede_notas for each row execute function public.rede_extra_protecao();
+drop trigger if exists rede_extra_protecao on public.rede_perfis;
+create trigger rede_extra_protecao before insert or update on public.rede_perfis for each row execute function public.rede_extra_protecao();
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.rede_comentario_curtidas; exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.rede_story_respostas;     exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.rede_destaques;           exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.rede_destaque_stories;    exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.rede_msg_reacoes;         exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.rede_notas;               exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.rede_perfis;              exception when duplicate_object then null; end;
+end $$;
+
+-- confere: deve listar as 9 tabelas novas do InstaNanico e a função dos votos
+select tablename::text as nome, 'instanico 68' as parte from pg_tables
+ where schemaname = 'public' and tablename in ('rede_salvos', 'rede_comentario_curtidas', 'rede_proximos', 'rede_destaques', 'rede_destaque_stories',
+                                               'rede_story_respostas', 'rede_msg_reacoes', 'rede_notas', 'rede_perfis')
+union all
+select proname::text, 'instanico 68' from pg_proc where pronamespace = 'public'::regnamespace and proname = 'story_votos'
+order by 1;
+
+-- 69) InstaNanico, mais coisas do Instagram (04/11/2026, pedido do Henrique) --------------------------------------------
+--   Publicações: fixar até 3 no perfil (`fixado_em`), fixar um comentário (`comentario_fixo`), arquivar (`arquivado`: some
+--   para os outros, o dono ainda vê no Arquivo), desativar comentários (`sem_comentarios`), esconder as curtidas
+--   (`esconder_curtidas`, só na tela) e publicação em colaboração (`colaborador` convidado; aceita por aceitar_colab).
+--   Quem viu cada publicação (rede_post_vistos; só o dono conta). Silenciar alguém (rede_silenciados, só para mim).
+--   Stories: figurinhas de quiz, barrinha de emoji (`valor` de 0 a 100) e "Adicione o seu" (corrente pela `origem`),
+--   e repostar o story em que me mencionaram (figurinha 'story'). Direct: foto de visualização única (`unica`; quem
+--   recebe abre uma vez por abrir_unica, que tira a foto da mensagem) e grupos (rede_grupos + rede_grupo_membros;
+--   a mensagem do grupo vai com `grupo_id` e sem `para`). Tudo só para membros com o Celular.
+
+-- ---------- publicações ----------
+alter table public.rede_posts add column if not exists fixado_em timestamptz;
+alter table public.rede_posts add column if not exists comentario_fixo bigint references public.rede_comentarios(id) on delete set null;
+alter table public.rede_posts add column if not exists arquivado boolean not null default false;
+alter table public.rede_posts add column if not exists sem_comentarios boolean not null default false;
+alter table public.rede_posts add column if not exists esconder_curtidas boolean not null default false;
+alter table public.rede_posts add column if not exists colaborador uuid references auth.users(id) on delete set null;
+alter table public.rede_posts add column if not exists colab_aceito boolean not null default false;
+create index if not exists rede_posts_colaborador on public.rede_posts (colaborador) where colaborador is not null;
+grant insert (texto, midia, fotos, marcados, sem_comentarios, esconder_curtidas, colaborador) on public.rede_posts to authenticated;
+grant update (texto, marcados, fixado_em, comentario_fixo, arquivado, sem_comentarios, esconder_curtidas) on public.rede_posts to authenticated;
+
+-- o arquivado só aparece para o dono
+drop policy if exists rede_posts_ler on public.rede_posts;
+create policy rede_posts_ler on public.rede_posts for select to authenticated
+  using (public.eh_membro() and public.tem_item('celular') and (not arquivado or user_id = auth.uid()));
+
+create or replace function public.rede_post_dono() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if tg_op = 'INSERT' then
+    new.colab_aceito := false;
+    new.fixado_em := null;
+    new.comentario_fixo := null;
+    new.arquivado := false;
+    if new.colaborador is not null and (new.colaborador = auth.uid() or not exists (select 1 from public.friends where user_id = new.colaborador)) then
+      new.colaborador := null;
+    end if;
+    return new;
+  end if;
+  -- arquivar tira dos fixados
+  if new.arquivado then new.fixado_em := null; end if;
+  if new.fixado_em is not null and old.fixado_em is null then
+    new.fixado_em := now();
+    if (select count(*) from public.rede_posts where user_id = old.user_id and fixado_em is not null and id <> old.id) >= 3 then
+      raise exception 'Dá para fixar no máximo 3 publicações.' using errcode = 'P0001';
+    end if;
+  elsif new.fixado_em is not null then
+    new.fixado_em := old.fixado_em;
+  end if;
+  if new.comentario_fixo is not null and not exists (select 1 from public.rede_comentarios where id = new.comentario_fixo and post_id = old.id) then
+    raise exception 'Esse comentário não é desta publicação.' using errcode = 'P0001';
+  end if;
+  return new;
+end $$;
+revoke all on function public.rede_post_dono() from public, anon, authenticated;
+drop trigger if exists rede_post_dono on public.rede_posts;
+create trigger rede_post_dono before insert or update on public.rede_posts for each row execute function public.rede_post_dono();
+
+-- o colaborador aceita (aparece no perfil dele também) ou recusa o convite
+create or replace function public.aceitar_colab(p_post bigint, p_aceitar boolean) returns boolean
+language plpgsql security definer set search_path = public as $$
+begin
+  if not public.eh_membro() or not public.tem_item('celular') then return false; end if;
+  if p_aceitar then
+    update public.rede_posts set colab_aceito = true where id = p_post and colaborador = auth.uid();
+  else
+    update public.rede_posts set colaborador = null, colab_aceito = false where id = p_post and colaborador = auth.uid();
+  end if;
+  return found;
+end $$;
+revoke all on function public.aceitar_colab(bigint, boolean) from public, anon;
+grant execute on function public.aceitar_colab(bigint, boolean) to authenticated;
+
+-- comentários desativados: ninguém comenta (nem o dono, como no Instagram)
+create or replace function public.rede_comentario_extra() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  v_post bigint;
+  v_pai  bigint;
+begin
+  if exists (select 1 from public.rede_posts where id = new.post_id and sem_comentarios) then
+    raise exception 'Os comentários estão desativados nesta publicação.' using errcode = 'P0001';
+  end if;
+  if new.resposta_a is null then return new; end if;
+  select post_id, resposta_a into v_post, v_pai from public.rede_comentarios where id = new.resposta_a;
+  if v_post is null or v_post <> new.post_id then raise exception 'Esse comentário não está nesta publicação.' using errcode = 'P0001'; end if;
+  -- como no Instagram: a resposta de uma resposta fica no mesmo fio (um nível só)
+  if v_pai is not null then new.resposta_a := v_pai; end if;
+  return new;
+end $$;
+revoke all on function public.rede_comentario_extra() from public, anon, authenticated;
+
+-- quem viu cada publicação (cada um grava só o próprio; o dono lê para contar)
+create table if not exists public.rede_post_vistos (
+  post_id bigint not null references public.rede_posts(id) on delete cascade,
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  em      timestamptz not null default now(),
+  primary key (post_id, user_id)
+);
+alter table public.rede_post_vistos enable row level security;
+revoke all on public.rede_post_vistos from public, anon, authenticated;
+grant select on public.rede_post_vistos to authenticated;
+grant insert (post_id) on public.rede_post_vistos to authenticated;
+drop policy if exists rede_pvistos_ler on public.rede_post_vistos;
+create policy rede_pvistos_ler on public.rede_post_vistos for select to authenticated
+  using (user_id = auth.uid() or exists (select 1 from public.rede_posts p where p.id = post_id and p.user_id = auth.uid()));
+drop policy if exists rede_pvistos_criar on public.rede_post_vistos;
+create policy rede_pvistos_criar on public.rede_post_vistos for insert to authenticated
+  with check (user_id = auth.uid() and public.eh_membro() and public.tem_item('celular'));
+
+-- silenciar alguém (só para mim: os posts e/ou os stories dele somem do meu feed)
+create table if not exists public.rede_silenciados (
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  alvo    uuid not null references auth.users(id) on delete cascade,
+  posts   boolean not null default true,
+  stories boolean not null default true,
+  primary key (user_id, alvo),
+  check (user_id <> alvo)
+);
+alter table public.rede_silenciados enable row level security;
+revoke all on public.rede_silenciados from public, anon, authenticated;
+grant select, delete on public.rede_silenciados to authenticated;
+grant insert (alvo, posts, stories), update (posts, stories) on public.rede_silenciados to authenticated;
+drop policy if exists rede_silenciados_dono on public.rede_silenciados;
+create policy rede_silenciados_dono on public.rede_silenciados for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid() and public.tem_item('celular'));
+
+-- ---------- stories: quiz, barrinha de emoji, "Adicione o seu" e repostar ----------
+alter table public.rede_stories drop constraint if exists rede_stories_figurinha_check;
+alter table public.rede_stories add constraint rede_stories_figurinha_check check (
+  figurinha is null or (jsonb_typeof(figurinha) = 'object'
+                        and figurinha->>'tipo' in ('enquete', 'pergunta', 'contagem', 'post', 'quiz', 'barra', 'adicione', 'story')
+                        and char_length(figurinha::text) <= 1200));
+create index if not exists rede_stories_origem on public.rede_stories ((figurinha->>'origem')) where figurinha->>'tipo' = 'adicione';
+alter table public.rede_story_respostas add column if not exists valor smallint check (valor between 0 and 100);
+grant insert (story_id, opcao, texto, valor) on public.rede_story_respostas to authenticated;
+
+-- os votos: por opção (enquete e quiz) e a média da barrinha; só para o dono e para quem já respondeu
+create or replace function public.story_votos(p_story bigint) returns jsonb
+language sql stable security definer set search_path = public as $$
+  select case when public.eh_membro() and public.tem_item('celular') and exists (
+      select 1 from public.rede_stories s where s.id = p_story
+         and (s.user_id = auth.uid() or exists (select 1 from public.rede_story_respostas r where r.story_id = p_story and r.user_id = auth.uid())))
+    then coalesce((select jsonb_object_agg(opcao::text, n)
+                     from (select opcao, count(*) as n from public.rede_story_respostas
+                            where story_id = p_story and opcao is not null group by opcao) x), '{}'::jsonb)
+         || coalesce((select jsonb_build_object('media', round(avg(valor)), 'n', count(valor))
+                        from public.rede_story_respostas where story_id = p_story and valor is not null having count(valor) > 0), '{}'::jsonb)
+    else null end;
+$$;
+revoke all on function public.story_votos(bigint) from public, anon;
+grant execute on function public.story_votos(bigint) to authenticated;
+
+-- ---------- Direct: visualização única e grupos ----------
+alter table public.rede_mensagens add column if not exists unica boolean not null default false;
+alter table public.rede_mensagens add column if not exists aberta_em timestamptz;
+
+create table if not exists public.rede_grupos (
+  id         bigint generated always as identity primary key,
+  nome       text not null check (char_length(nome) between 1 and 40),
+  criado_por uuid references auth.users(id) on delete set null,
+  em         timestamptz not null default now()
+);
+create table if not exists public.rede_grupo_membros (
+  grupo_id bigint not null references public.rede_grupos(id) on delete cascade,
+  user_id  uuid not null references auth.users(id) on delete cascade,
+  lido_ate bigint not null default 0,
+  em       timestamptz not null default now(),
+  primary key (grupo_id, user_id)
+);
+create index if not exists rede_grupo_membros_user on public.rede_grupo_membros (user_id);
+alter table public.rede_grupos        enable row level security;
+alter table public.rede_grupo_membros enable row level security;
+revoke all on public.rede_grupos, public.rede_grupo_membros from public, anon, authenticated;
+grant select on public.rede_grupos, public.rede_grupo_membros to authenticated;
+grant update (nome) on public.rede_grupos to authenticated;
+grant delete on public.rede_grupo_membros to authenticated;
+
+-- sou do grupo? (security definer: a política dos membros não pode ler a própria tabela, senão entra em laço)
+create or replace function public.eh_do_grupo(p_grupo bigint) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.rede_grupo_membros where grupo_id = p_grupo and user_id = auth.uid());
+$$;
+revoke all on function public.eh_do_grupo(bigint) from public, anon;
+grant execute on function public.eh_do_grupo(bigint) to authenticated;
+
+drop policy if exists rede_grupos_ler on public.rede_grupos;
+create policy rede_grupos_ler on public.rede_grupos for select to authenticated using (public.eh_do_grupo(id) and public.tem_item('celular'));
+drop policy if exists rede_grupos_mudar on public.rede_grupos;
+create policy rede_grupos_mudar on public.rede_grupos for update to authenticated using (public.eh_do_grupo(id)) with check (public.eh_do_grupo(id));
+drop policy if exists rede_gmembros_ler on public.rede_grupo_membros;
+create policy rede_gmembros_ler on public.rede_grupo_membros for select to authenticated using (public.eh_do_grupo(grupo_id));
+-- sair do grupo (o próprio) ou quem criou tira alguém
+drop policy if exists rede_gmembros_sair on public.rede_grupo_membros;
+create policy rede_gmembros_sair on public.rede_grupo_membros for delete to authenticated
+  using (user_id = auth.uid() or exists (select 1 from public.rede_grupos g where g.id = grupo_id and g.criado_por = auth.uid()));
+
+create or replace function public.rede_grupo_nome() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.nome := btrim(regexp_replace(coalesce(new.nome, ''), '[\x00-\x1F\x7F]', ' ', 'g'));
+  if char_length(new.nome) = 0 then raise exception 'Dê um nome ao grupo.' using errcode = 'P0001'; end if;
+  return new;
+end $$;
+revoke all on function public.rede_grupo_nome() from public, anon, authenticated;
+drop trigger if exists rede_grupo_nome on public.rede_grupos;
+create trigger rede_grupo_nome before insert or update on public.rede_grupos for each row execute function public.rede_grupo_nome();
+
+-- cria o grupo comigo e com quem eu escolher (só membros do site; de 2 a 31 pessoas além de mim)
+create or replace function public.criar_grupo(p_nome text, p_membros uuid[]) returns bigint
+language plpgsql security definer set search_path = public as $$
+declare
+  v_id bigint;
+  v_uid uuid := auth.uid();
+begin
+  if v_uid is null or not public.eh_membro() or not public.tem_item('celular') then raise exception 'Só quem tem o Celular cria grupos.' using errcode = 'P0001'; end if;
+  perform public.limitar('rede_grupo', 10, interval '1 hour', 'Calma: grupos demais em pouco tempo.');
+  insert into public.rede_grupos (nome, criado_por) values (p_nome, v_uid) returning id into v_id;
+  insert into public.rede_grupo_membros (grupo_id, user_id)
+    select v_id, m from (select distinct unnest(coalesce(p_membros, '{}') || array[v_uid]) as m) x
+     where exists (select 1 from public.friends where user_id = m);
+  if (select count(*) from public.rede_grupo_membros where grupo_id = v_id) < 3 then
+    raise exception 'Um grupo precisa de pelo menos 3 pessoas.' using errcode = 'P0001';
+  end if;
+  if (select count(*) from public.rede_grupo_membros where grupo_id = v_id) > 32 then
+    raise exception 'No máximo 32 pessoas no grupo.' using errcode = 'P0001';
+  end if;
+  return v_id;
+end $$;
+revoke all on function public.criar_grupo(text, uuid[]) from public, anon;
+grant execute on function public.criar_grupo(text, uuid[]) to authenticated;
+
+-- quem está no grupo põe mais gente
+create or replace function public.grupo_adicionar(p_grupo bigint, p_membros uuid[]) returns int
+language plpgsql security definer set search_path = public as $$
+declare
+  n int;
+begin
+  if not public.eh_do_grupo(p_grupo) or not public.tem_item('celular') then raise exception 'Você não está nesse grupo.' using errcode = 'P0001'; end if;
+  insert into public.rede_grupo_membros (grupo_id, user_id)
+    select p_grupo, m from unnest(coalesce(p_membros, '{}')) m where exists (select 1 from public.friends where user_id = m)
+  on conflict do nothing;
+  get diagnostics n = row_count;
+  if (select count(*) from public.rede_grupo_membros where grupo_id = p_grupo) > 32 then
+    raise exception 'No máximo 32 pessoas no grupo.' using errcode = 'P0001';
+  end if;
+  return n;
+end $$;
+revoke all on function public.grupo_adicionar(bigint, uuid[]) from public, anon;
+grant execute on function public.grupo_adicionar(bigint, uuid[]) to authenticated;
+
+-- até onde eu li no grupo
+create or replace function public.grupo_lido(p_grupo bigint, p_ate bigint) returns void
+language sql security definer set search_path = public as $$
+  update public.rede_grupo_membros set lido_ate = greatest(lido_ate, p_ate) where grupo_id = p_grupo and user_id = auth.uid();
+$$;
+revoke all on function public.grupo_lido(bigint, bigint) from public, anon;
+grant execute on function public.grupo_lido(bigint, bigint) to authenticated;
+
+-- a mensagem vai para uma pessoa (para) ou para um grupo (grupo_id), nunca os dois
+alter table public.rede_mensagens alter column para drop not null;
+alter table public.rede_mensagens add column if not exists grupo_id bigint references public.rede_grupos(id) on delete cascade;
+create index if not exists rede_mensagens_grupo on public.rede_mensagens (grupo_id, id) where grupo_id is not null;
+alter table public.rede_mensagens drop constraint if exists rede_mensagens_destino_check;
+alter table public.rede_mensagens add constraint rede_mensagens_destino_check check ((para is null) <> (grupo_id is null));
+grant insert (para, texto, story_id, post_id, midia, resposta_a, unica, grupo_id) on public.rede_mensagens to authenticated;
+
+drop policy if exists rede_mensagens_ler on public.rede_mensagens;
+create policy rede_mensagens_ler on public.rede_mensagens for select to authenticated
+  using ((de = auth.uid() or para = auth.uid() or (grupo_id is not null and public.eh_do_grupo(grupo_id))) and public.eh_membro() and public.tem_item('celular'));
+drop policy if exists rede_mensagens_criar on public.rede_mensagens;
+create policy rede_mensagens_criar on public.rede_mensagens for insert to authenticated
+  with check (de = auth.uid() and public.eh_membro() and public.tem_item('celular') and (grupo_id is null or public.eh_do_grupo(grupo_id)));
+
+create or replace function public.rede_mensagem_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.de := auth.uid();
+  new.em := now();
+  new.lida_em := null;
+  new.aberta_em := null;
+  new.texto := btrim(regexp_replace(coalesce(new.texto, ''), '[\x00-\x09\x0B-\x1F\x7F]', ' ', 'g'));
+  if char_length(new.texto) = 0 and new.post_id is null and new.midia is null then
+    raise exception 'Escreva a mensagem.' using errcode = 'P0001';
+  end if;
+  if new.grupo_id is not null then
+    new.para := null;
+    if not public.eh_do_grupo(new.grupo_id) then raise exception 'Você não está nesse grupo.' using errcode = 'P0001'; end if;
+    -- visualização única é só de pessoa para pessoa
+    new.unica := false;
+  else
+    if new.para is null or new.para = new.de then raise exception 'Escolha outro nanico.' using errcode = 'P0001'; end if;
+    if not exists (select 1 from public.friends where user_id = new.para) then
+      raise exception 'Esse nanico não existe.' using errcode = 'P0001';
+    end if;
+  end if;
+  if new.unica and new.midia is null then new.unica := false; end if;
+  if new.midia is not null then
+    if split_part(new.midia, '/', 2) <> new.de::text then raise exception 'O arquivo tem que estar na sua pasta.' using errcode = 'P0001'; end if;
+    if not exists (select 1 from storage.objects where bucket_id = 'midias' and name = new.midia) then
+      raise exception 'O arquivo não chegou. Tente de novo.' using errcode = 'P0001';
+    end if;
+  end if;
+  if new.resposta_a is not null and not exists (
+       select 1 from public.rede_mensagens m where m.id = new.resposta_a
+          and ((new.grupo_id is not null and m.grupo_id = new.grupo_id)
+               or (new.grupo_id is null and ((m.de = new.de and m.para = new.para) or (m.de = new.para and m.para = new.de))))) then
+    new.resposta_a := null;
+  end if;
+  perform public.limitar('rede_mensagem', 30, interval '1 minute', 'Calma: mensagens demais em pouco tempo.');
+  return new;
+end $$;
+revoke all on function public.rede_mensagem_protecao() from public, anon, authenticated;
+
+-- abrir a foto de visualização única: some da mensagem (quem mandou apaga o arquivo depois)
+create or replace function public.abrir_unica(p_msg bigint) returns text
+language plpgsql security definer set search_path = public as $$
+declare
+  v_midia text;
+begin
+  select midia into v_midia from public.rede_mensagens where id = p_msg and para = auth.uid() and unica and aberta_em is null;
+  if v_midia is null then return null; end if;
+  update public.rede_mensagens set aberta_em = now(), midia = null where id = p_msg;
+  return v_midia;
+end $$;
+revoke all on function public.abrir_unica(bigint) from public, anon;
+grant execute on function public.abrir_unica(bigint) to authenticated;
+
+-- reações também nas mensagens de grupo
+drop policy if exists rede_reacoes_ler on public.rede_msg_reacoes;
+create policy rede_reacoes_ler on public.rede_msg_reacoes for select to authenticated
+  using (exists (select 1 from public.rede_mensagens m where m.id = mensagem_id));
+drop policy if exists rede_reacoes_criar on public.rede_msg_reacoes;
+create policy rede_reacoes_criar on public.rede_msg_reacoes for insert to authenticated
+  with check (user_id = auth.uid() and public.tem_item('celular') and exists (select 1 from public.rede_mensagens m where m.id = mensagem_id));
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.rede_grupos;        exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.rede_grupo_membros; exception when duplicate_object then null; end;
+end $$;
+
+-- confere: deve listar as 5 tabelas novas e as 6 funções novas do InstaNanico
+select tablename::text as nome, 'instanico 69' as parte from pg_tables
+ where schemaname = 'public' and tablename in ('rede_post_vistos', 'rede_silenciados', 'rede_grupos', 'rede_grupo_membros', 'rede_story_respostas')
+union all
+select proname::text, 'instanico 69' from pg_proc where pronamespace = 'public'::regnamespace
+   and proname in ('aceitar_colab', 'eh_do_grupo', 'criar_grupo', 'grupo_adicionar', 'grupo_lido', 'abrir_unica')
+order by 1;
