@@ -7,7 +7,7 @@
  * - na linha "eu", o microfone e o fone com a setinha (aparelho, barrinha de teste, ruído, eco, volume da voz);
  * - as janelas de escolher a transmissão (o que mostrar, resolução, fps, som do PC) e a prévia da câmera.
  */
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
   IcAjustes,
@@ -83,6 +83,28 @@ export function Balao({
       document.removeEventListener("keydown", esc);
     };
   }, [fechar, ancora]);
+  /* menu comprido (o da pessoa, com moderação): nunca sai pela borda de cima nem pela de baixo. Se não couber perto
+     do clique, encosta na borda e rola por dentro */
+  useLayoutEffect(() => {
+    const el = caixa.current;
+    if (!el) return;
+    const ajusta = () => {
+      el.style.maxHeight = `${window.innerHeight - 16}px`;
+      const r = el.getBoundingClientRect();
+      if (r.top < 8) {
+        el.style.bottom = "auto";
+        el.style.top = "8px";
+      } else if (r.bottom > window.innerHeight - 8) {
+        el.style.bottom = "auto";
+        el.style.top = `${Math.max(8, window.innerHeight - 8 - r.height)}px`;
+      }
+    };
+    ajusta();
+    /* as listas que abrem com a setinha (Cargos, Mover para, Castigo) mudam a altura */
+    const obs = new ResizeObserver(ajusta);
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [lugar]);
   return createPortal(
     <div ref={caixa} className={"vz-balao " + className} role="dialog" aria-label={rotulo} style={{ left: lugar.left, top: lugar.top, bottom: lugar.bottom }}>
       {children}

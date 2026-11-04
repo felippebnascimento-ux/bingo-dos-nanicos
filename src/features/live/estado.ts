@@ -51,6 +51,8 @@ export type LiveUi = {
   semNomes: boolean;
   /** nanicos (friend id) cuja câmera eu desliguei só para mim */
   semVideo: string[];
+  /** o chat e a cartela embaixo da call (a transmissão fica com a largura toda); desligado, ficam do lado */
+  chatEmbaixo: boolean;
 };
 
 const num = (k: string) => parseFloat(local.get(k) ?? "");
@@ -85,7 +87,13 @@ export const useLive = create<LiveUi>()(() => ({
   soVideo: local.get("cv-so-video") === "1",
   semNomes: local.get("cv-sem-nomes") === "1",
   semVideo: Array.isArray(semVideoSalvo) ? semVideoSalvo.filter((x): x is string => typeof x === "string") : [],
+  chatEmbaixo: local.get("cv-chat-lado") !== "1",
 }));
+/** Chat embaixo da call ou do lado (fica salvo). */
+export function chatEmbaixoDe(v: boolean) {
+  setLive({ chatEmbaixo: v });
+  local.set("cv-chat-lado", v ? "0" : "1");
+}
 
 export const setLive = (p: Partial<LiveUi>) => useLive.setState(p);
 export const getLive = () => useLive.getState();

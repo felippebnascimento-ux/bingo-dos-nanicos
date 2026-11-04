@@ -73,6 +73,8 @@ export type AppState = {
   membrosMin: boolean;
   railTab: RailTab;
   chatUnread: number;
+  /** o chat do Ao vivo está fechado na barrinha embaixo da call (não conta como lido) */
+  railFechado: boolean;
   /** mesas de truco esperando gente (contador no menu) */
   trucoAbertas: number;
   /** filtro da aba Nanicadas: null = todas, "gen" = genéricas, ou o id de um nanico */
@@ -131,6 +133,7 @@ export const useApp = create<AppState>()(() => ({
   membrosMin: false,
   railTab: "chat",
   chatUnread: 0,
+  railFechado: false,
   trucoAbertas: 0,
   nanicadasFiltro: null,
   nanicadasBusca: "",

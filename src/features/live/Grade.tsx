@@ -37,7 +37,7 @@ import { toast } from "@/lib/toast";
 import { local } from "@/lib/util";
 import type { Friend } from "@/lib/tipos";
 import { activeCams, camStreamOf, openCamPip } from "./camera";
-import { opcaoCall, setLive, useLive } from "./estado";
+import { chatEmbaixoDe, opcaoCall, setLive, useLive } from "./estado";
 import { Balao, botaoCamera, botaoTela, BotaoReacoes, BotaoSoundboard, Chave, lugarDe, MenuFone, MenuMic, useBalao, type Lugar } from "./PainelVoz";
 import { canShare } from "./rtc";
 import { CorpoPessoa } from "./MenuPessoa";
@@ -568,6 +568,7 @@ function MenuTransmissao({ lugar, ancora, fechar }: { lugar: Lugar; ancora: HTML
 function MenuMais({ lugar, ancora, fechar }: { lugar: Lugar; ancora: HTMLElement | null; fechar: () => void }) {
   const soVideo = useLive((s) => s.soVideo);
   const semNomes = useLive((s) => s.semNomes);
+  const chatEmbaixo = useLive((s) => s.chatEmbaixo);
   const ruido = useMidia((s) => s.ruido);
   const nCams = activeCams().length;
   const faz = (f: () => void) => () => (fechar(), f());
@@ -577,6 +578,7 @@ function MenuMais({ lugar, ancora, fechar }: { lugar: Lugar; ancora: HTMLElement
       <Chave rotulo="Mostrar quem está sem câmera" ligado={!soVideo} onChange={(v) => opcaoCall("soVideo", !v)} />
       <Chave rotulo="Mostrar os nomes" ligado={!semNomes} onChange={(v) => opcaoCall("semNomes", !v)} />
       <div className="vz-sep" />
+      <Chave rotulo="Chat embaixo da call" ligado={chatEmbaixo} onChange={chatEmbaixoDe} />
       <Chave rotulo="Supressão de ruído" ligado={ruido} onChange={(v) => salvarMidia({ ruido: v })} />
       <div className="vz-sep" />
       <button type="button" className="vz-item" disabled={!nCams} onClick={faz(() => openCamPip(null))}>
