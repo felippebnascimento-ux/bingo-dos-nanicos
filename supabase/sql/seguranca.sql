@@ -7216,6 +7216,38 @@ begin
   end loop;
 end $$;
 
+-- 65) presente dos moderadores (03/11/2026, pedido do Felippe) ----------------------------------------------------------
+--   Um comando escondido do chat do K-FOFO dá 5.000 moedas a um nanico. Só os moderadores (John, Pitoco, Gamer,
+--   Guiperino e Henry) conseguem: quem decide é a tabela `moderadores`, que ninguém lê nem grava pelo site. O dinheiro
+--   sai com o motivo 'admin' (ref 'mod:<friend id de quem deu>'). Não vai para o chat nem para o Log.
+create table if not exists public.moderadores (
+  friend_id uuid primary key references public.friends(id) on delete cascade
+);
+alter table public.moderadores enable row level security;
+revoke all on public.moderadores from anon, authenticated;
+insert into public.moderadores (friend_id)
+  select id from public.friends where name in ('John', 'Pitoco', 'Gamer', 'Guiperino', 'Henry')
+on conflict (friend_id) do nothing;
+
+create or replace function public.mod_presente(p_para uuid) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+  v_eu uuid;
+  v_alvo record;
+begin
+  select f.id into v_eu from public.friends f join public.moderadores m on m.friend_id = f.id where f.user_id = v_uid;
+  if v_uid is null or v_eu is null then raise exception 'Comando desconhecido.' using errcode = 'P0001'; end if;
+  select id, name, user_id into v_alvo from public.friends
+   where id = p_para and user_id is not null and coalesce(tipo, 'nanico') in ('nanico', 'amigo');
+  if not found then raise exception 'Não achei esse nanico.' using errcode = 'P0001'; end if;
+  perform public.limitar('mod_presente', 10, interval '1 minute', 'Calma: muitos presentes seguidos.');
+  perform public.creditar(v_alvo.user_id, 5000, 'admin', 'mod:' || v_eu);
+  return jsonb_build_object('nome', v_alvo.name);
+end $$;
+revoke all on function public.mod_presente(uuid) from public, anon;
+grant execute on function public.mod_presente(uuid) to authenticated;
+
 -- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo e as 2 tabelas e 3 funções do quarto próprio e as 2 tabelas e 3 funções do blackjack e as 4 tabelas e 6 funções do pôquer
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')

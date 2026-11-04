@@ -40,13 +40,19 @@ export function ChatBarra() {
     }
     setIndo(true);
     try {
-      if (c.tipo === "sussurro") {
+      if (c.tipo === "presente") {
+        const { error } = await sb().rpc("mod_presente", { p_para: c.para });
+        if (error) throw new Error(/Não achei|Calma/.test(error.message) ? error.message : "Comando desconhecido.");
+        toast(`+5.000 moedas para ${c.nome}`);
+      } else if (c.tipo === "sussurro") {
         const { error } = await sb().rpc("sussurrar", { p_para: c.para, p_texto: c.texto });
         if (error) throw error;
       } else await enviarChat(c.texto, "geral", c.grito);
       setTexto("");
     } catch (err) {
-      toast(errMsg(err, "Não deu para mandar. Tente de novo."));
+      /* o presente dos moderadores tem as próprias mensagens; o resto passa pelo errMsg */
+      const m = err instanceof Error ? err.message : "";
+      toast(c.tipo === "presente" ? m.slice(0, 120) : errMsg(err, "Não deu para mandar. Tente de novo."));
     } finally {
       setIndo(false);
     }

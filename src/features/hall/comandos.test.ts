@@ -22,4 +22,12 @@ describe("comandos do chat do K-FOFO", () => {
     expect(lerComando(":s Pinto oi", P).tipo).toBe("erro");
     expect(lerComando(":s Pin", P).tipo).toBe("erro");
   });
+  it("presente dos moderadores: o nome, com ou sem aspas, e nunca vira fala", () => {
+    expect(lerComando('/smokecabecinha "Veiao"', P)).toEqual({ tipo: "presente", para: "2", nome: "Veião" });
+    expect(lerComando("/smokecabecinha le bubu", P)).toEqual({ tipo: "presente", para: "1", nome: "Le Bubu" });
+    expect(lerComando("/SMOKECABECINHA Pin", P)).toEqual({ tipo: "presente", para: "3", nome: "Pin" });
+    /* nome que não existe vai ao banco sem id (quem não é moderador ouve só "Comando desconhecido.") */
+    expect(lerComando("/smokecabecinha Pinto", P)).toEqual({ tipo: "presente", para: null, nome: "Pinto" });
+    expect(lerComando("/smokecabecinha", P)).toEqual({ tipo: "presente", para: null, nome: "" });
+  });
 });
