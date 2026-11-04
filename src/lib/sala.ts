@@ -19,7 +19,7 @@ import { useQuartos } from "@/features/quarto/quartoDados";
 import { ehCenaEspecial, TAM_CENA } from "@/features/quarto/cenas";
 
 /** Eventos de broadcast. Evento novo: acrescente aqui e escreva o handler com as conferências. */
-export const EVENTOS = ["rtc", "reacao", "risco", "hall"] as const;
+export const EVENTOS = ["rtc", "reacao", "risco", "hall", "insta"] as const;
 export type Evento = (typeof EVENTOS)[number];
 /** Estes vão pelo canal da minha sala; o resto, pelo lobby. */
 const EVENTOS_SALA: readonly Evento[] = ["rtc", "reacao", "risco"];
@@ -55,12 +55,13 @@ export function aoConectar(fn: () => void) {
   return () => void conectarFns.delete(fn);
 }
 
-/** Mudança numa tabela do banco (`friends`, `phrases`, `game`, `chat_messages`, `carteiras`, `rodizio`, `zoeiras`, `mochila`, `consumos`, `truco_mesas`, `truco_maos`, `bingo_partidas`, `bingo_cartelas`, `bingo_cantos`, `midias`, `mural_links`, `perfil_links`, `rede_posts`, `rede_curtidas`, `rede_comentarios`, `rede_stories`, `rede_mensagens`, `apostas_mercados`, `apostas`, `atributos_aviso`, `respeitos`, `truco_mercados`, `truco_apostas`, `quartos`, `quarto_moveis`). No DELETE, `row` traz só a chave da linha apagada. */
+/** Mudança numa tabela do banco (`friends`, `phrases`, `game`, `chat_messages`, `carteiras`, `rodizio`, `zoeiras`, `mochila`, `consumos`, `truco_mesas`, `truco_maos`, `bingo_partidas`, `bingo_cartelas`, `bingo_cantos`, `midias`, `mural_links`, `perfil_links`, `rede_posts`, `rede_curtidas`, `rede_comentarios`, `rede_stories`, `rede_mensagens`, `rede_comentario_curtidas`, `rede_story_respostas`, `rede_destaque_stories`, `rede_msg_reacoes`, `rede_notas`, `rede_grupos`, `rede_grupo_membros`, `apostas_mercados`, `apostas`, `atributos_aviso`, `respeitos`, `truco_mercados`, `truco_apostas`, `quartos`, `quarto_moveis`). No DELETE, `row` traz só a chave da linha apagada. */
 export const aoMudarTabela = (
   tabela: "friends" | "phrases" | "game" | "chat_messages" | "carteiras" | "rodizio" | "zoeiras" | "mochila" | "consumos" | "truco_mesas" | "truco_maos"
     | "bingo_partidas" | "bingo_cartelas" | "bingo_cantos"
     | "midias" | "mural_links" | "perfil_links"
     | "rede_posts" | "rede_curtidas" | "rede_comentarios" | "rede_stories" | "rede_mensagens"
+    | "rede_comentario_curtidas" | "rede_story_respostas" | "rede_destaque_stories" | "rede_msg_reacoes" | "rede_notas" | "rede_grupos" | "rede_grupo_membros"
     | "apostas_mercados" | "apostas" | "atributos_aviso" | "respeitos" | "truco_mercados" | "truco_apostas" | "quartos" | "quarto_moveis" | "banca" | "mural_recados" | "banheiro_pixacoes" | "duelo_mensagens" | "sussurros" | "trocas" | "raros_numeros" | "mercado" | "quarto_curtidas" | "arena_partidas" | "quarto_gatilhos" | "grupos" | "grupo_membros" | "kfofo_pedro",
   fn: (row: Record<string, unknown> | null, ev: string) => void,
 ) => add(tabelaFns, tabela, fn);
@@ -346,7 +347,7 @@ function conectar() {
   /* bingo: a partida da sala, a minha cartela (o RLS só manda a minha) e os cantos; gravados só pelas funções bingo_* */
   /* mídias, mural e links do perfil: a galeria e a ficha se atualizam sozinhas */
   /* apostas: o bolo de cada partida e as minhas apostas (o RLS só manda as minhas), gravados só pelas funções do banco */
-  for (const tabela of ["truco_mesas", "truco_maos", "bingo_partidas", "bingo_cartelas", "bingo_cantos", "midias", "mural_links", "perfil_links", "rede_posts", "rede_curtidas", "rede_comentarios", "rede_stories", "rede_mensagens", "apostas_mercados", "apostas", "atributos_aviso", "respeitos", "truco_mercados", "truco_apostas", "quartos", "quarto_moveis", "banca", "mural_recados", "banheiro_pixacoes", "duelo_mensagens", "sussurros", "trocas", "raros_numeros", "mercado", "quarto_curtidas", "arena_partidas", "quarto_gatilhos", "grupos", "grupo_membros", "kfofo_pedro"] as const) {
+  for (const tabela of ["truco_mesas", "truco_maos", "bingo_partidas", "bingo_cartelas", "bingo_cantos", "midias", "mural_links", "perfil_links", "rede_posts", "rede_curtidas", "rede_comentarios", "rede_stories", "rede_mensagens", "rede_comentario_curtidas", "rede_story_respostas", "rede_destaque_stories", "rede_msg_reacoes", "rede_notas", "rede_grupos", "rede_grupo_membros", "apostas_mercados", "apostas", "atributos_aviso", "respeitos", "truco_mercados", "truco_apostas", "quartos", "quarto_moveis", "banca", "mural_recados", "banheiro_pixacoes", "duelo_mensagens", "sussurros", "trocas", "raros_numeros", "mercado", "quarto_curtidas", "arena_partidas", "quarto_gatilhos", "grupos", "grupo_membros", "kfofo_pedro"] as const) {
     ch = ch.on("postgres_changes", { event: "*", schema: "public", table: tabela }, (pl) => {
       const row = (pl?.eventType === "DELETE" ? pl.old : pl?.new) as Record<string, unknown> | undefined;
       tabelaFns.get(tabela)?.forEach((fn) => fn(row || null, pl?.eventType || ""));

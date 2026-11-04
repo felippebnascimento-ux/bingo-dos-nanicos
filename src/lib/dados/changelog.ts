@@ -815,6 +815,19 @@ export const CHANGELOG: EntradaLog[] = [
       "No menu de alguém: ver em destaque, ver a ficha e desligar o vídeo dele só para você",
     ],
   },
+  {
+    data: "04/11/2026",
+    itens: [
+      "InstaNanico: o story não fica mais cortado no celular (aparece inteiro, igual ao editor)",
+      "Consertos: Explorar e notificações não quebram depois de abrir um perfil, o perfil mostra todas as publicações, a curtida acende na hora e o story apagado não volta",
+      "Publicações: até 10 fotos (carrossel), filtros e ajustes, marcar pessoas, convidar colaborador, editar a legenda, salvar, fixar até 3, arquivar, esconder curtidas e desativar comentários",
+      "Comentários: responder, curtir e fixar um comentário; @menções viram link e o nome é sugerido enquanto você digita",
+      "Stories: enquete, perguntas, contagem, quiz, barrinha de emoji, \"Adicione o seu\", melhores amigos, destaques no perfil e repostar o story em que te mencionaram",
+      "Câmera dentro do app com boomerang, rascunhos, visualizações das suas publicações e silenciar alguém",
+      "Direct: foto, áudio, foto de ver uma vez, responder e reagir a uma mensagem, apagar a que você mandou, digitando…, Ativo agora, notas e grupos",
+      "Perfil com bio e links, notificações completas com a hora certa, busca de publicações, pesquisas recentes e tema claro",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

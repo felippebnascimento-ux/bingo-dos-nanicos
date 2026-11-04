@@ -4,6 +4,8 @@
  * então o que aparece no editor é exatamente o que sai na imagem.
  */
 
+import type { Figurinha } from "./insta";
+
 export const STORY_W = 1080;
 export const STORY_H = 1920;
 
@@ -29,7 +31,11 @@ export type ItemEmoji = Base & { tipo: "emoji"; emoji: string };
 export type ItemMencao = Base & { tipo: "mencao"; userId: string; nome: string };
 export type ItemHora = Base & { tipo: "hora"; texto: string };
 export type ItemLocal = Base & { tipo: "local"; texto: string };
-export type Item = ItemTexto | ItemEmoji | ItemMencao | ItemHora | ItemLocal;
+/** A figurinha que se toca (enquete, pergunta, contagem, publicação): não entra na imagem, vai por cima (seção 68). */
+export type FigSemLugar = DistributiveOmit<Figurinha, "x" | "y" | "escala" | "rot">;
+export type ItemInterativo = Base & { tipo: "interativo"; fig: FigSemLugar };
+export type Item = ItemTexto | ItemEmoji | ItemMencao | ItemHora | ItemLocal | ItemInterativo;
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 
 export type Pincel = "caneta" | "marca" | "neon" | "borracha";
 export type Traco = { pincel: Pincel; cor: number; tam: number; pontos: number[] };

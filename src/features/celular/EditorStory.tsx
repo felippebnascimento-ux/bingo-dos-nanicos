@@ -11,8 +11,10 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { Avatar } from "@/components/ui/Avatar";
 import { useApp } from "@/lib/store";
 import { toast } from "@/lib/toast";
-import { FUNDOS, recorte, type Fundo } from "./insta";
-import { enviarMensagem, postarStory, useRede } from "./rede";
+import { ajustarPixels, cssDoFiltro, FILTROS, FUNDOS, recorte, type Figurinha, type Fundo } from "./insta";
+import { Camera, temCamera } from "./Camera";
+import { FigurinhaVisual } from "./InstaPartes";
+import { enviarMensagem, MENCAO_STORY, postarStory, useRede } from "./rede";
 import {
   ALTURA_LINHA,
   encaixar,
@@ -31,7 +33,9 @@ import {
   type Alinhar,
   type CaixaTexto,
   type Fonte,
+  type FigSemLugar,
   type Item,
+  type ItemInterativo,
   type ItemTexto,
   type Pincel,
   type Traco,
@@ -210,6 +214,8 @@ function caixaArredondada(ctx: CanvasRenderingContext2D, x: number, y: number, w
 const ADESIVO = { mencao: 64, hora: 120, local: 60, emoji: 200 };
 
 function desenharItem(ctx: CanvasRenderingContext2D, it: Item, fam: Familias, medir: (f: string, t: string) => number, cor: (i: number) => string) {
+  /* a figurinha que se toca não entra na imagem: vai por cima, na hora de ver */
+  if (it.tipo === "interativo") return;
   ctx.save();
   ctx.translate(it.x * STORY_W, it.y * STORY_H);
   ctx.rotate(it.rot);
@@ -329,6 +335,12 @@ function ItemNaTela({
       </div>
     );
   } else if (it.tipo === "emoji") conteudo = <span className="se-emoji" style={{ fontSize: ADESIVO.emoji * k }}>{it.emoji}</span>;
+  else if (it.tipo === "interativo")
+    conteudo = (
+      <div className="se-fig" style={{ "--u": `${k}px` } as React.CSSProperties}>
+        <FigurinhaVisual f={{ ...it.fig, x: it.x, y: it.y, escala: it.escala, rot: it.rot } as Figurinha} story={null} />
+      </div>
+    );
   else
     conteudo = (
       <span className={"se-adesivo " + it.tipo} style={{ fontSize: ADESIVO[it.tipo] * k, fontFamily: it.tipo === "hora" ? fam.display : fam.body }}>
@@ -355,7 +367,7 @@ let seq = 1;
 const novoTexto = (): ItemTexto => ({ id: seq++, tipo: "texto", texto: "", fonte: "classica", cor: 0, caixa: "nada", alinhar: "center", tamanho: 84, x: 0.5, y: 0.42, escala: 1, rot: 0 });
 
 /** O editor inteiro (por cima da tela do app). `fechar` sai sem postar; `postou` depois de publicar. */
-export function EditorStory({ fechar, postou, irParaPost }: { fechar: () => void; postou: () => void; irParaPost?: () => void }) {
+export function EditorStory({ fechar, postou, irParaPost, figInicial = null }: { fechar: () => void; postou: () => void; irParaPost?: () => void; figInicial?: FigSemLugar | null }) {
   const eu = useApp((s) => s.myUid);
   const friends = useApp((s) => s.friends);
   const enviando = useRede((s) => s.enviando);
@@ -367,10 +379,15 @@ export function EditorStory({ fechar, postou, irParaPost }: { fechar: () => void
 
   const [W, setW] = useState(0);
   const k = W / STORY_W;
-  const [foto, setFoto] = useState<{ url: string; img: HTMLImageElement } | null>(null);
+  const [foto, setFoto] = useState<{ url: string; img: HTMLImageElement; arquivo: File } | null>(null);
+  /* filtro da foto (como deslizar o dedo no story do Instagram) e a câmera dentro do app (seção 69) */
+  const [filtro, setFiltro] = useState(0);
+  const [camera, setCamera] = useState(false);
   const [fotoPos, setFotoPos] = useState({ z: 1, dx: 0, dy: 0 });
   const [fundo, setFundo] = useState<Fundo>("roxo");
-  const [itens, setItens] = useState<Item[]>([]);
+  /* "Adicionar ao seu story": a publicação entra como figurinha no meio, sobre a cor de fundo (como no Instagram) */
+  /* "Adicionar ao seu story" (publicação ou story que me mencionou) e "Adicione o seu": a figurinha já vem no meio */
+  const [itens, setItens] = useState<Item[]>(() => (figInicial ? [{ id: seq++, tipo: "interativo", fig: figInicial, x: 0.5, y: 0.45, escala: figInicial.tipo === "post" || figInicial.tipo === "story" ? 1.25 : 1, rot: 0 }] : []));
   const [tracos, setTracos] = useState<Traco[]>([]);
   const [modo, setModo] = useState<"livre" | "texto" | "desenho" | "figurinhas" | "mencao">("livre");
   const [editando, setEditando] = useState<ItemTexto | null>(null);
@@ -378,6 +395,9 @@ export function EditorStory({ fechar, postou, irParaPost }: { fechar: () => void
   const [pincel, setPincel] = useState<{ tipo: Pincel; cor: number; tam: number }>({ tipo: "caneta", cor: 0, tam: 14 });
   const [descartar, setDescartar] = useState(false);
   const [vivo, setVivo] = useState<Traco | null>(null);
+  /* a figurinha que se toca sendo montada (enquete, pergunta, contagem) */
+  const [formFig, setFormFig] = useState<ItemInterativo | null>(null);
+
 
   /* tamanho da tela do story (9:16) */
   useEffect(() => {
@@ -403,8 +423,9 @@ export function EditorStory({ fechar, postou, irParaPost }: { fechar: () => void
     const url = URL.createObjectURL(f);
     const img = new Image();
     img.onload = () => {
-      setFoto({ url, img });
+      setFoto({ url, img, arquivo: f });
       setFotoPos({ z: 1, dx: 0, dy: 0 });
+      setFiltro(0);
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);
@@ -547,6 +568,7 @@ export function EditorStory({ fechar, postou, irParaPost }: { fechar: () => void
       else if (!g.moveu && e.timeStamp - g.t0 < 400) {
         const it = itensRef.current.find((x) => x.id === g.id);
         if (it?.tipo === "texto") abrirTexto(it);
+        else if (it?.tipo === "interativo" && it.fig.tipo !== "post") setFormFig(it);
       }
     } else if (!g.moveu && e.timeStamp - g.t0 < 400) abrirTexto(null);
   };
@@ -620,6 +642,15 @@ export function EditorStory({ fechar, postou, irParaPost }: { fechar: () => void
     setItens((l) => [...l, { ...it, id: seq++, x: 0.5, y: 0.45, escala: 1, rot: 0 } as Item]);
     setModo("livre");
   };
+  /* só uma figurinha que se toca por story (como no Instagram): a nova toma o lugar da antiga */
+  const novaInterativa = (fig: FigSemLugar) => {
+    setModo("livre");
+    setFormFig({ id: seq++, tipo: "interativo", fig, x: 0.5, y: 0.5, escala: 1, rot: 0 });
+  };
+  const guardarInterativa = (it: ItemInterativo) => {
+    setItens((l) => [...l.filter((x) => x.tipo !== "interativo" || x.id === it.id).filter((x) => x.id !== it.id), it]);
+    setFormFig(null);
+  };
 
   /* ---------- publicar ---------- */
   async function gerar(): Promise<File | null> {
@@ -635,6 +666,11 @@ export function EditorStory({ fechar, postou, irParaPost }: { fechar: () => void
       g.fillStyle = cor(1);
       g.fillRect(0, 0, STORY_W, STORY_H);
       g.drawImage(foto.img, r.x, r.y, r.largura, r.altura, 0, 0, STORY_W, STORY_H);
+      if (filtro > 0) {
+        const d = g.getImageData(0, 0, STORY_W, STORY_H);
+        ajustarPixels(d.data, FILTROS[filtro].a);
+        g.putImageData(d, 0, 0);
+      }
     } else {
       const cs = getComputedStyle(raiz.current);
       const p = pontasDegrade(160, STORY_W, STORY_H);
@@ -654,25 +690,31 @@ export function EditorStory({ fechar, postou, irParaPost }: { fechar: () => void
         g.drawImage(camada, 0, 0);
       }
     }
-    for (const it of itens) desenharItem(g, it, fam, medir, cor);
+    for (const it of itens) if (it.tipo !== "interativo") desenharItem(g, it, fam, medir, cor);
     const blob = await new Promise<Blob | null>((ok) => cv.toBlob(ok, "image/webp", 0.9));
     return blob ? new File([blob], "story.webp", { type: "image/webp" }) : null;
   }
 
-  async function publicar() {
+  async function publicar(soProximos = false) {
     if (enviando) return;
     if (!mexeu) {
       /* story só com a cor: ainda precisa de algo para mostrar */
       toast("Escreva algo, desenhe ou escolha uma foto.");
       return;
     }
-    const arquivo = await gerar();
+    /* boomerang (GIF) sem texto nem desenho por cima: sobe o próprio GIF, para continuar mexendo */
+    const soInterativas = !tracos.length && itens.every((x) => x.tipo === "interativo");
+    const gif = foto?.arquivo.type === "image/gif";
+    if (gif && !soInterativas) toast("Com texto, figurinha ou desenho, o boomerang vira foto parada.");
+    const arquivo = gif && soInterativas && foto ? foto.arquivo : await gerar();
     if (!arquivo) return toast("Não deu para montar o story.");
-    const id = await postarStory(arquivo, "", fundo);
+    const inter = itens.find((x): x is ItemInterativo => x.tipo === "interativo");
+    const figurinha = inter ? ({ ...inter.fig, x: inter.x, y: inter.y, escala: inter.escala, rot: inter.rot } as Figurinha) : null;
+    const id = await postarStory(arquivo, "", fundo, { figurinha, soProximos });
     if (id === null) return;
     /* quem foi mencionado fica sabendo pelo Direct, como no Instagram */
     const mencionados = [...new Set(itens.filter((x) => x.tipo === "mencao").map((x) => (x.tipo === "mencao" ? x.userId : "")))].filter((u) => u && u !== eu);
-    for (const u of mencionados) void enviarMensagem(u, "Mencionou você no story", id ? { storyId: id } : {});
+    for (const u of mencionados) void enviarMensagem(u, MENCAO_STORY, id ? { storyId: id } : {});
     postou();
   }
 
@@ -698,7 +740,7 @@ export function EditorStory({ fechar, postou, irParaPost }: { fechar: () => void
               src={foto.url}
               alt=""
               draggable={false}
-              style={{ width: foto.img.naturalWidth * rf.escala, height: foto.img.naturalHeight * rf.escala, transform: `translate(calc(-50% + ${rf.dx}px), calc(-50% + ${rf.dy}px))` }}
+              style={{ width: foto.img.naturalWidth * rf.escala, height: foto.img.naturalHeight * rf.escala, transform: `translate(calc(-50% + ${rf.dx}px), calc(-50% + ${rf.dy}px))`, filter: filtro > 0 ? cssDoFiltro(FILTROS[filtro].a) : undefined }}
             />
           )}
           <canvas ref={tela} className="se-tela" aria-hidden="true" />
@@ -811,6 +853,16 @@ export function EditorStory({ fechar, postou, irParaPost }: { fechar: () => void
               <IcGaleria />
             )}
           </button>
+          {temCamera() && (
+            <button type="button" className="se-galeria se-camera" aria-label="Abrir a câmera" onClick={() => setCamera(true)}>
+              📷
+            </button>
+          )}
+          {foto && foto.arquivo.type !== "image/gif" && (
+            <button type="button" className="se-tirar-foto" aria-label="Trocar o filtro" onClick={() => setFiltro((f) => (f + 1) % FILTROS.length)}>
+              ✨ {FILTROS[filtro].nome}
+            </button>
+          )}
           {foto && (
             <button type="button" className="se-tirar-foto" onClick={() => setFoto(null)}>
               Tirar a foto
@@ -820,6 +872,11 @@ export function EditorStory({ fechar, postou, irParaPost }: { fechar: () => void
           <button type="button" className="se-publicar" disabled={enviando} onClick={() => void publicar()}>
             {eu && <Avatar f={friends.find((f) => f.user_id === eu) ?? null} className="se-publicar-rosto" />}
             {enviando ? "Postando…" : "Seu story"}
+          </button>
+          {/* como no Instagram: o story só para a lista de melhores amigos (anel verde) */}
+          <button type="button" className="se-publicar proximos" disabled={enviando} aria-label="Postar para os melhores amigos" onClick={() => void publicar(true)}>
+            <span className="se-estrela" aria-hidden="true">★</span>
+            Melhores amigos
             <IcSeta />
           </button>
         </div>
@@ -835,6 +892,28 @@ export function EditorStory({ fechar, postou, irParaPost }: { fechar: () => void
         </div>
       )}
       <input ref={input} type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onChange={(e) => escolherFoto(e.target.files?.[0])} />
+      {camera && (
+        <Camera
+          proporcao={9 / 16}
+          fechar={() => setCamera(false)}
+          pronto={(f) => {
+            setCamera(false);
+            escolherFoto(f);
+          }}
+        />
+      )}
+      {formFig && (
+        <FormFigurinha
+          it={formFig}
+          k={k}
+          guardar={guardarInterativa}
+          cancelar={() => setFormFig(null)}
+          tirar={() => {
+            setItens((l) => l.filter((x) => x.id !== formFig.id));
+            setFormFig(null);
+          }}
+        />
+      )}
 
       {/* ---------- figurinhas ---------- */}
       {(modo === "figurinhas" || modo === "mencao") && (
@@ -868,6 +947,27 @@ export function EditorStory({ fechar, postou, irParaPost }: { fechar: () => void
                     📍 K-FOFO
                   </button>
                 </div>
+                {/* figurinhas que se tocam: quem vê o story vota, responde ou pede para lembrar */}
+                <div className="se-adesivos">
+                  <button type="button" className="se-adesivo enquete" onClick={() => novaInterativa({ tipo: "enquete", pergunta: "", opcoes: ["Sim", "Não"] })}>
+                    ▤ ENQUETE
+                  </button>
+                  <button type="button" className="se-adesivo pergunta" onClick={() => novaInterativa({ tipo: "pergunta", pergunta: "Me pergunte algo" })}>
+                    ? PERGUNTAS
+                  </button>
+                  <button type="button" className="se-adesivo contagem" onClick={() => novaInterativa({ tipo: "contagem", titulo: "", alvo: Date.now() + 24 * 3600_000 })}>
+                    ⏱ CONTAGEM
+                  </button>
+                  <button type="button" className="se-adesivo quiz" onClick={() => novaInterativa({ tipo: "quiz", pergunta: "", opcoes: ["", ""], certa: 0 })}>
+                    ✓ QUIZ
+                  </button>
+                  <button type="button" className="se-adesivo barra" onClick={() => novaInterativa({ tipo: "barra", pergunta: "", emoji: "😍" })}>
+                    😍 BARRINHA
+                  </button>
+                  <button type="button" className="se-adesivo adicione" onClick={() => novaInterativa({ tipo: "adicione", pergunta: "", origem: null })}>
+                    ⊕ ADICIONE O SEU
+                  </button>
+                </div>
                 <div className="se-emojis">
                   {EMOJIS.map((em) => (
                     <button key={em} type="button" aria-label={`Figurinha ${em}`} onClick={() => adicionar({ tipo: "emoji", emoji: em })}>
@@ -880,6 +980,106 @@ export function EditorStory({ fechar, postou, irParaPost }: { fechar: () => void
           </section>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ---------- montar a figurinha que se toca ---------- */
+const paraCampoData = (t: number) => {
+  const d = new Date(t - new Date(t).getTimezoneOffset() * 60_000);
+  return d.toISOString().slice(0, 16);
+};
+function FormFigurinha({ it, k, guardar, cancelar, tirar }: { it: ItemInterativo; k: number; guardar: (it: ItemInterativo) => void; cancelar: () => void; tirar: () => void }) {
+  const [fig, setFig] = useState<FigSemLugar>(it.fig);
+  const [abriuEm] = useState(() => Date.now());
+  const ok =
+    fig.tipo === "contagem"
+      ? fig.alvo > abriuEm && !!fig.titulo.trim()
+      : fig.tipo === "enquete"
+        ? fig.opcoes.every((o) => o.trim())
+        : fig.tipo === "pergunta" || fig.tipo === "adicione"
+          ? !!fig.pergunta.trim()
+          : fig.tipo === "quiz"
+            ? !!fig.pergunta.trim() && fig.opcoes.filter((o) => o.trim()).length >= 2 && !!fig.opcoes[fig.certa]?.trim()
+            : fig.tipo === "barra"
+              ? !!fig.emoji.trim()
+              : true;
+  return (
+    <div className="se-folha-fundo" onPointerDown={(e) => e.target === e.currentTarget && cancelar()}>
+      <section className="se-folha se-form-fig" aria-label="Figurinha">
+        <span className="se-alca" aria-hidden="true" />
+        <div className="se-fig-previa" style={{ "--u": `${Math.max(k, 0.3)}px` } as React.CSSProperties}>
+          <FigurinhaVisual f={{ ...fig, x: 0.5, y: 0.5, escala: 1, rot: 0 } as Figurinha} story={null} />
+        </div>
+        {fig.tipo === "enquete" && (
+          <>
+            <input aria-label="Pergunta da enquete" maxLength={80} placeholder="Faça uma pergunta…" value={fig.pergunta} onChange={(e) => setFig({ ...fig, pergunta: e.target.value })} autoFocus />
+            <div className="se-fig-opcoes">
+              {fig.opcoes.map((o, i) => (
+                <input
+                  key={i}
+                  aria-label={`Opção ${i + 1}`}
+                  maxLength={24}
+                  value={o}
+                  onChange={(e) => setFig({ ...fig, opcoes: (i ? [fig.opcoes[0], e.target.value] : [e.target.value, fig.opcoes[1]]) as [string, string] })}
+                />
+              ))}
+            </div>
+          </>
+        )}
+        {fig.tipo === "pergunta" && <input aria-label="Pergunta" maxLength={80} value={fig.pergunta} onChange={(e) => setFig({ ...fig, pergunta: e.target.value })} autoFocus />}
+        {fig.tipo === "adicione" && (
+          <input aria-label="Pergunta da corrente" maxLength={80} placeholder="Ex.: Mostre o seu setup" value={fig.pergunta} onChange={(e) => setFig({ ...fig, pergunta: e.target.value })} disabled={!!fig.origem} autoFocus />
+        )}
+        {fig.tipo === "quiz" && (
+          <>
+            <input aria-label="Pergunta do quiz" maxLength={80} placeholder="Faça uma pergunta…" value={fig.pergunta} onChange={(e) => setFig({ ...fig, pergunta: e.target.value })} autoFocus />
+            <p className="se-fig-dica">Toque na bolinha da resposta certa.</p>
+            {fig.opcoes.map((o, i) => (
+              <span key={i} className="se-fig-quiz-linha">
+                <button type="button" className={"se-fig-certa" + (fig.certa === i ? " on" : "")} aria-label={`A certa é a ${i + 1}`} aria-pressed={fig.certa === i} onClick={() => setFig({ ...fig, certa: i })}>
+                  {fig.certa === i ? "✓" : "ABCD"[i]}
+                </button>
+                <input aria-label={`Resposta ${i + 1}`} maxLength={24} placeholder={`Resposta ${i + 1}`} value={o} onChange={(e) => setFig({ ...fig, opcoes: fig.opcoes.map((x, k) => (k === i ? e.target.value : x)) })} />
+              </span>
+            ))}
+            {fig.opcoes.length < 4 && (
+              <button type="button" className="se-fig-mais" onClick={() => setFig({ ...fig, opcoes: [...fig.opcoes, ""] })}>
+                + Mais uma resposta
+              </button>
+            )}
+          </>
+        )}
+        {fig.tipo === "barra" && (
+          <>
+            <input aria-label="Pergunta da barrinha" maxLength={80} placeholder="Faça uma pergunta…" value={fig.pergunta} onChange={(e) => setFig({ ...fig, pergunta: e.target.value })} autoFocus />
+            <div className="se-fig-emojis" role="radiogroup" aria-label="Emoji da barrinha">
+              {["😍", "😂", "🔥", "😮", "😢", "👏", "💯", "🍻"].map((em) => (
+                <button key={em} type="button" role="radio" aria-checked={fig.emoji === em} className={fig.emoji === em ? "on" : undefined} onClick={() => setFig({ ...fig, emoji: em })}>
+                  {em}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+        {fig.tipo === "contagem" && (
+          <>
+            <input aria-label="Nome da contagem" maxLength={40} placeholder="Nome da contagem (ex.: Churrasco)" value={fig.titulo} onChange={(e) => setFig({ ...fig, titulo: e.target.value })} autoFocus />
+            <label className="se-fig-data">
+              <span>Termina em</span>
+              <input type="datetime-local" value={paraCampoData(fig.alvo)} min={paraCampoData(abriuEm)} onChange={(e) => setFig({ ...fig, alvo: Date.parse(e.target.value) || fig.alvo })} />
+            </label>
+          </>
+        )}
+        <div className="se-fig-bts">
+          <button type="button" className="se-fig-tirar" onClick={tirar}>
+            Tirar
+          </button>
+          <button type="button" className="se-concluir" disabled={!ok} onClick={() => guardar({ ...it, fig: fig.tipo === "quiz" ? { ...fig, opcoes: fig.opcoes.map((o) => o.trim()).filter(Boolean), certa: fig.opcoes.slice(0, fig.certa).filter((o) => o.trim()).length } : fig })}>
+            Concluir
+          </button>
+        </div>
+      </section>
     </div>
   );
 }
