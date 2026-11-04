@@ -287,6 +287,11 @@ export const IcHash = (p: P) => (
     <path d="M9 4L7 20M17 4l-2 16M4.5 9h16M3.5 15h16" />
   </Base>
 );
+export const IcChat = (p: P) => (
+  <Base {...p}>
+    <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H9l-4.2 3.6c-.3.3-.8 0-.8-.4z" />
+  </Base>
+);
 export const IcSeta = (p: P) => (
   <Base strokeWidth={2.4} {...p}>
     <path d="M6 9l6 6 6-6" />

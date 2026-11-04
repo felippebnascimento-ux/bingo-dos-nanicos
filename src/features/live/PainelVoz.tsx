@@ -91,7 +91,7 @@ export function Balao({
 }
 
 /** Abre e fecha um balão preso a um botão. */
-function useBalao() {
+export function useBalao() {
   const [aberto, setAberto] = useState<{ lugar: Lugar; el: HTMLElement } | null>(null);
   const alternar = (e: React.MouseEvent<HTMLElement>, largura?: number) => {
     const el = e.currentTarget;
@@ -483,7 +483,7 @@ function ListaAparelhos({ lista, valor, onChange, rotulo }: { lista: Dispositivo
   );
 }
 
-function MenuMic({ lugar, ancora, fechar }: { lugar: Lugar; ancora: HTMLElement | null; fechar: () => void }) {
+export function MenuMic({ lugar, ancora, fechar }: { lugar: Lugar; ancora: HTMLElement | null; fechar: () => void }) {
   const m = useMidia();
   const barra = useRef<HTMLSpanElement>(null);
   useEffect(() => {
@@ -522,7 +522,7 @@ function MenuMic({ lugar, ancora, fechar }: { lugar: Lugar; ancora: HTMLElement 
   );
 }
 
-function MenuFone({ lugar, ancora, fechar }: { lugar: Lugar; ancora: HTMLElement | null; fechar: () => void }) {
+export function MenuFone({ lugar, ancora, fechar }: { lugar: Lugar; ancora: HTMLElement | null; fechar: () => void }) {
   const m = useMidia();
   const geral = useAjustesVoz((s) => s.geral);
   useEffect(() => {

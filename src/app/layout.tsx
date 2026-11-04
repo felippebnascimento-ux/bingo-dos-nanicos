@@ -38,6 +38,7 @@ import "@/styles/35-voz.css";
 import "@/styles/36-mesas.css";
 import "@/styles/37-quarto.css";
 import "@/styles/38-habbo.css";
+import "@/styles/39-call.css";
 
 /* fontes servidas pelo próprio site (a CSP não precisa liberar o Google Fonts) */
 const unbounded = Unbounded({ subsets: ["latin"], weight: ["500", "700", "800"], variable: "--font-unbounded", display: "swap" });
