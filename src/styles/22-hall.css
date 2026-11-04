@@ -393,6 +393,9 @@
 .hall .s-cadl{stroke:var(--hall-cadl)}
 .hall .f-solchao{fill-opacity:.28}
 .hall .st-ceu0{stop-color:var(--hall-ceu0)} .hall .st-ceu1{stop-color:var(--hall-ceu1)} .hall .st-ceu2{stop-color:var(--hall-ceu2)}
+/* o degradê "macio" dos móveis (Sala.tsx), igual ao dos quartos */
+.hall{--hall-macio-brilho:rgba(255,255,255,.1);--hall-macio-escuro:rgba(0,0,0,.13);--hall-macio-escuro2:rgba(0,0,0,.2)}
+.hall .st-macio-brilho{stop-color:var(--hall-macio-brilho)} .hall .st-macio-escuro{stop-color:var(--hall-macio-escuro)} .hall .st-macio-nada{stop-color:var(--hall-macio-escuro);stop-opacity:0} .hall .st-macio-escuro2{stop-color:var(--hall-macio-escuro2)}
 
 /* ---------- zoeira: menu do boneco, chinelo/torta voando, PLAFT!, chantili e revidar (fase 18) ---------- */
 .boneco.balanca .boneco-img,.boneco.balanca .boneco-pino{transform:rotate(var(--balanco,0deg));transform-origin:50% 100%}

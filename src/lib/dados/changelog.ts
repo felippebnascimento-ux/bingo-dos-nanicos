@@ -746,6 +746,7 @@ export const CHANGELOG: EntradaLog[] = [
       "Pirapó 114 na planta certa: a porta de entrada no meio do corredor, o quarto com o PC e a cozinha embaixo dele, a sala grande à direita, aberta para o corredor, e a sacada para fora da sala",
     ],
   },
+  { data: "03/11/2026", itens: ["Móveis novos em todos os quartos e no K-FOFO: quinas arredondadas, sombra suave e mais capricho (almofadas no sofá, travesseiros e cobertor na cama, livros na estante, portas no guarda-roupa, monitores e teclado no PC)"] },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

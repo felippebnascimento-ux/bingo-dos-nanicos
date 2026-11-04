@@ -45,7 +45,9 @@ button.ficha-selo:hover{border-color:var(--accent)}
   --quarto-tapete0:#B08D57; --quarto-tapete1:#C4A06A; --quarto-madeira0:#8A6A39; --quarto-madeira1:#6B522C; --quarto-madeira2:#5A4424;
   --quarto-preto0:#262626; --quarto-preto1:#1E1E1E; --quarto-preto2:#1A1A1A; --quarto-teclado:#353535; --quarto-luz:#E0705A;
   --quarto-cadeira0:#3E4C59; --quarto-cadeira1:#2F3A44; --quarto-cadeira2:#27313A;
-  --quarto-planta0:#6F9A5A; --quarto-planta1:#557A44; --quarto-planta2:#4A6B3A; --quarto-linha:#262626;
+  --quarto-planta0:#6F9A5A; --quarto-planta1:#557A44; --quarto-planta2:#4A6B3A; --quarto-linha:rgba(40,28,18,.34);
+  /* o degradê "macio" por cima das faces dos móveis (Moveis.tsx) */
+  --quarto-brilho:rgba(255,255,255,.1); --quarto-escuro:rgba(0,0,0,.13); --quarto-escuro2:rgba(0,0,0,.2);
   /* itens da loja (fase 11) */
   --quarto-oliva1:#4A4E44; --quarto-oliva2:#565A4F; --quarto-ardosia1:#3E4C59; --quarto-ardosia2:#4A5967;
   --quarto-roxo0:#3E2C55; --quarto-roxo1:#7A57A3; --quarto-rift0:#4E7A44; --quarto-rift1:#5E8F52; --quarto-rift2:#C9B98A;
@@ -72,7 +74,8 @@ button.ficha-selo:hover{border-color:var(--accent)}
   --quarto-sol:rgb(255 226 160 / .2); --quarto-ceu-claro:#6F8497; --quarto-sombra-leve:rgb(0 0 0 / .12);
   --quarto-lencol0:#C9C6BF; --quarto-lencol1:#B2AEA5; --quarto-cinza0:#9A9EA3; --quarto-cinza1:#82868B; --quarto-cinza2:#6F7378;
 }
-.quarto .q-linha{stroke:var(--quarto-linha);stroke-width:1;stroke-linejoin:round}
+.quarto .q-linha{stroke:var(--quarto-linha);stroke-width:.7;stroke-linejoin:round}
+.quarto .q-st-brilho{stop-color:var(--quarto-brilho)} .quarto .q-st-escuro{stop-color:var(--quarto-escuro)} .quarto .q-st-nada{stop-color:var(--quarto-escuro);stop-opacity:0} .quarto .q-st-escuro2{stop-color:var(--quarto-escuro2)}
 .quarto .q-parede1{fill:var(--quarto-parede1)} .quarto .q-parede2{fill:var(--quarto-parede2)}
 .quarto .q-topo1{fill:var(--quarto-topo1)} .quarto .q-topo2{fill:var(--quarto-topo2)}
 .quarto .q-rodape1{fill:var(--quarto-rodape1)} .quarto .q-rodape2{fill:var(--quarto-rodape2)}

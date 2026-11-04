@@ -10,7 +10,7 @@ import { MOVEIS, NI, NJ, tela, WH, type Caixa2D, type Movel, type Piso } from ".
 
 type Pt = [number, number];
 type Forma =
-  | { t: "p"; q: Pt[]; f?: string; s?: string; sw?: number }
+  | { t: "p"; q: Pt[]; f?: string; s?: string; sw?: number; g?: "f" | "l" }
   | { t: "e"; cx: number; cy: number; rx: number; ry: number; f?: string; s?: string; sw?: number }
   | { t: "c"; cx: number; cy: number; r: number; f: string }
   | { t: "l"; a: Pt; b: Pt; s: string; sw: number }
@@ -22,13 +22,19 @@ const p = tela;
 const pts = (q: Pt[]) => q.map((v) => v.join(",")).join(" ");
 
 /* ---------- ajudantes (os mesmos do modelo, empurrando formas numa lista) ---------- */
-const poly = (L: Forma[], q: Pt[], f?: string, s?: string, sw = 1) => L.push({ t: "p", q, f, s, sw });
+const poly = (L: Forma[], q: Pt[], f?: string, s?: string, sw = 1, g?: "f" | "l") => L.push({ t: "p", q, f, s, sw, g });
 
-/** Caixa isométrica: canto (i, j), w em i, d em j, altura h, base z. */
+/** Caixa isométrica: canto (i, j), w em i, d em j, altura h, base z. No estilo "macio" (03/11/2026), como os
+    móveis dos quartos (Moveis.tsx): a quina de cima chanfrada e um degradê nas faces; peça fina fica reta. */
 function caixa(L: Forma[], i: number, j: number, w: number, d: number, h: number, topo: string, esq: string, dir: string, z = 0, linha = "madeiral") {
-  poly(L, [p(i, j + d, z), p(i + w, j + d, z), p(i + w, j + d, z + h), p(i, j + d, z + h)], esq, linha);
-  poly(L, [p(i + w, j, z), p(i + w, j + d, z), p(i + w, j + d, z + h), p(i + w, j, z + h)], dir, linha);
-  poly(L, [p(i, j, z + h), p(i + w, j, z + h), p(i + w, j + d, z + h), p(i, j + d, z + h)], topo, linha);
+  const ch = h >= 5 && w > 0.14 && d > 0.14 ? Math.min(0.06, w / 4, d / 4) : 0;
+  const zt = z + h, zb = ch ? zt - Math.min(h * 0.25, 5) : zt;
+  poly(L, [p(i, j + d, z), p(i + w, j + d, z), p(i + w, j + d, zb), p(i, j + d, zb)], esq, linha, 1, "f");
+  poly(L, [p(i + w, j, z), p(i + w, j + d, z), p(i + w, j + d, zb), p(i + w, j, zb)], dir, linha, 1, "l");
+  if (!ch) return poly(L, [p(i, j, zt), p(i + w, j, zt), p(i + w, j + d, zt), p(i, j + d, zt)], topo, linha);
+  poly(L, [p(i, j + d, zb), p(i + w, j + d, zb), p(i + w - ch, j + d - ch, zt), p(i, j + d - ch, zt)], topo, linha);
+  poly(L, [p(i + w, j, zb), p(i + w, j + d, zb), p(i + w - ch, j + d - ch, zt), p(i + w - ch, j, zt)], esq, linha);
+  poly(L, [p(i, j, zt), p(i + w - ch, j, zt), p(i + w - ch, j + d - ch, zt), p(i, j + d - ch, zt)], topo, linha);
 }
 
 /** Pontos de um retângulo numa parede: "dir" (j = 0, ao longo de i) ou "esq" (i = 0, ao longo de j). */
@@ -296,6 +302,13 @@ function Formas({ lista }: { lista: Forma[] }) {
   return lista.map((d, k) => {
     switch (d.t) {
       case "p":
+        if (d.g)
+          return (
+            <g key={k}>
+              <polygon points={pts(d.q)} className={cls(d.f, d.s)} fill={d.f ? undefined : "none"} strokeWidth={d.s ? d.sw : undefined} />
+              <polygon points={pts(d.q)} fill={`url(#hall-macio-${d.g})`} pointerEvents="none" />
+            </g>
+          );
         return <polygon key={k} points={pts(d.q)} className={cls(d.f, d.s)} fill={d.f ? undefined : "none"} strokeWidth={d.s ? d.sw : undefined} />;
       case "e":
         return <ellipse key={k} cx={d.cx} cy={d.cy} rx={d.rx} ry={d.ry} className={cls(d.f, d.s)} strokeWidth={d.s ? d.sw : undefined} />;
@@ -352,6 +365,15 @@ export const Fundo = memo(function Fundo({ aoVivo, vb }: { aoVivo: boolean; vb: 
         <clipPath id="hall-clip-janela">
           <polygon points={pts(VAO_JANELA)} />
         </clipPath>
+        {/* o degradê "macio" das faces dos móveis (caixa) */}
+        <linearGradient id="hall-macio-f" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" className="st-macio-brilho" />
+          <stop offset="1" className="st-macio-escuro" />
+        </linearGradient>
+        <linearGradient id="hall-macio-l" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" className="st-macio-nada" />
+          <stop offset="1" className="st-macio-escuro2" />
+        </linearGradient>
         <filter id="hall-sombra-borra" x="-20%" y="-20%" width="140%" height="140%">
           <feGaussianBlur stdDeviation="5" />
         </filter>
