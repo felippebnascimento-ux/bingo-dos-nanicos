@@ -7248,6 +7248,60 @@ end $$;
 revoke all on function public.mod_presente(uuid) from public, anon;
 grant execute on function public.mod_presente(uuid) to authenticated;
 
+-- 66) truco valendo não fecha no meio e a Bolsa conta o que está em jogo (04/11/2026) ----------------------------------
+--   Fechar a mesa devolve entradas e apostas: quem abriu e estava perdendo anulava a partida. Agora só fecha no meio se
+--   não houver nada valendo ou se a mesa estiver parada há 10 minutos (o relógio de 20 s mantém viva a que está em jogo).
+create or replace function public.truco_fechar(p_mesa text, p_user uuid)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  m public.truco_mesas;
+begin
+  select * into m from public.truco_mesas where id = p_mesa and criada_por = p_user for update;
+  if not found then raise exception 'Só quem abriu fecha a mesa.' using errcode = 'P0001'; end if;
+  if m.fase = 'jogo' and m.atualizada_em > now() - interval '10 minutes'
+     and (exists (select 1 from public.truco_bolos where mesa = p_mesa and estado = 'cobrado')
+          or exists (select 1 from public.truco_mercados k join public.truco_apostas a on a.mesa = k.mesa and a.partida = k.partida
+                      where k.mesa = p_mesa and k.estado in ('aberto', 'fechado'))) then
+    raise exception 'Partida valendo não fecha no meio. Termine a partida ou espere 10 minutos com ela parada.' using errcode = 'P0001';
+  end if;
+  perform public.truco_devolver(p_mesa);
+  delete from public.truco_mesas where id = p_mesa;
+end $$;
+
+--   Sair do jogo devolve as moedas: abrir um duelo com tudo, pedir a Bolsa e cancelar dava 5.000 a quem não precisava.
+--   Conta o que dá para recuperar sem jogar (duelo aberto, fichas do pôquer, aposta que ainda troca) ou quase (voo no ar,
+--   disputa de pênaltis, rodada aberta). Passar moedas a um amigo numa troca continua fora da conta.
+create or replace function public.pedir_bolsa() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid   uuid := auth.uid();
+  v_hoje  text := public.hoje_br()::text;
+  v_saldo int;
+  v_jogo  int;
+begin
+  if not public.eh_membro() then raise exception 'Só nanicos ganham a bolsa.' using errcode = 'P0001'; end if;
+  -- duas abas pedindo juntas: a segunda espera e já encontra a bolsa no extrato
+  perform pg_advisory_xact_lock(hashtext('bolsa:' || v_uid::text));
+  select saldo into v_saldo from public.carteiras where user_id = v_uid;
+  if v_saldo is null or v_saldo >= 100
+     or exists (select 1 from public.extrato where user_id = v_uid and motivo = 'bolsa' and ref = v_hoje) then
+    return jsonb_build_object('ganhou', 0, 'saldo', coalesce(v_saldo, 0));
+  end if;
+  select coalesce(sum(v), 0) into v_jogo from (
+    select aposta as v from public.duelos where criador = v_uid and estado = 'aberto'
+    union all select fichas from public.pk_lugares where user_id = v_uid
+    union all select aposta from public.mesa_apostas where user_id = v_uid and estado = 'aberta'
+    union all select m.aposta from public.bj_maos m join public.bj_rodadas r on r.id = m.rodada_id where m.user_id = v_uid and r.fase = 'apostas'
+    union all select aposta from public.penalti_jogos where user_id = v_uid and estado = 'ativa'
+    union all select aposta from public.aviao_voos where user_id = v_uid and estado = 'voando'
+  ) x;
+  if v_saldo + v_jogo >= 100 then
+    return jsonb_build_object('ganhou', 0, 'saldo', v_saldo, 'em_jogo', v_jogo);
+  end if;
+  v_saldo := public.creditar(v_uid, 5000, 'bolsa', v_hoje);
+  return jsonb_build_object('ganhou', 5000, 'saldo', v_saldo);
+end $$;
+
 -- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo e as 2 tabelas e 3 funções do quarto próprio e as 2 tabelas e 3 funções do blackjack e as 4 tabelas e 6 funções do pôquer
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')

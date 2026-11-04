@@ -4,7 +4,7 @@ import { useSure } from "@/components/ui/useSure";
 import { friendOf, useApp } from "@/lib/store";
 import { TR_ENV, TR_TEMPO_MS, TR_TRUCO, trOpcoes, trQuemDeve, trValido, type Carta as TCarta, type MesaPub } from "./engine";
 import { Carta, Costas } from "./Carta";
-import { fecharMesa, fimDaJogada, garantirTempo, levantar, meuLugar, revanche, trEnviar, trNaMesa, useTruco, voltarAoLobby } from "./mesa";
+import { fecharMesa, fimDaJogada, garantirTempo, levantar, meuLugar, revanche, trCartasDaMao, trEnviar, useTruco, voltarAoLobby } from "./mesa";
 import { ApostarTruco } from "./ApostarTruco";
 import { Lugar, Mesa, NaMesa } from "@/features/mesa/Pecas";
 import { BarraJogo, BarraTempo } from "@/features/mesa/Painel";
@@ -54,7 +54,9 @@ function useFalta(fim: number | null) {
 type Pos = "sul" | "leste" | "norte" | "oeste";
 /* onde fica cada lugar na mesa oval (em % da mesa) e para que lado a carta jogada vai, a partir do meio */
 const LUGAR_XY: Record<Pos, [number, number]> = { norte: [50, 12], oeste: [12, 46], leste: [88, 46], sul: [19, 84] };
-const JOGADA_XY: Record<Pos, [number, number, number]> = { norte: [50, 38, -4], oeste: [36, 48, -8], leste: [64, 48, 7], sul: [50, 60, 3] };
+const JOGADA_XY: Record<Pos, [number, number, number]> = { norte: [50, 34, -4], oeste: [31, 47, -8], leste: [69, 47, 7], sul: [50, 62, 3] };
+/* as cartas da mão ficam na mesa: cada vaza um passo, em fileira na frente de quem está em cima ou embaixo e em coluna nos lados */
+const VAZA_PASSO: Record<Pos, [number, number]> = { norte: [8, 0], oeste: [0, 8], leste: [0, 8], sul: [8, 0] };
 
 /** Os tentos em palitinhos, como no placar de papel (um por ponto, até o alvo). */
 function Tentos({ n, alvo }: { n: number; alvo: number }) {
@@ -101,7 +103,6 @@ export function MesaTela({ m }: { m: MesaPub }) {
   const rotulo = (t: number) => (eu >= 0 ? (t === meuTime ? "Nós" : "Eles") : nomeT(t));
   const op = eu >= 0 && h ? trOpcoes(m, eu) : null;
   const minhas = eu >= 0 && h && mao && mao.id === m.id && mao.n === h.n ? mao.cartas : [];
-  const naMesa = h ? trNaMesa(h) : null;
   const pode = !!op?.jogar && !!h && !h.fim;
   /* o relógio de 20 s: de quem é a vez de agir e até quando */
   const fim = fimDaJogada(m);
@@ -180,14 +181,22 @@ export function MesaTela({ m }: { m: MesaPub }) {
         </NaMesa>
       );
     }
-    if (!h || !naMesa) return null;
+    if (!h) return null;
     return (
       <>
-        {naMesa.cartas.map((x) => {
-          const [cx, cy, giro] = JOGADA_XY[pos(x.s)];
+        {trCartasDaMao(h).map((x) => {
+          const p = pos(x.s);
+          const [cx, cy, giro] = JOGADA_XY[p];
+          const [dx, dy] = VAZA_PASSO[p];
           return (
-            <NaMesa key={`${h.n}:${x.c}`} x={cx} y={cy} className={"tr-jogada" + (novas.includes(x.c) ? " novo" : "")} style={{ rotate: `${giro}deg` }}>
-              <Carta c={x.c} ganha={naMesa.vence !== null && naMesa.por === x.s} />
+            <NaMesa
+              key={`${h.n}:${x.c}`}
+              x={cx + dx * (x.vaza - 1)}
+              y={cy + dy * (x.vaza - 1)}
+              className={"tr-jogada" + (x.passou ? " passou" : "") + (novas.includes(x.c) ? " novo" : "")}
+              style={{ rotate: `${giro}deg` }}
+            >
+              <Carta c={x.c} ganha={x.ganha} />
             </NaMesa>
           );
         })}

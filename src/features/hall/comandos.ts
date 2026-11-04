@@ -16,6 +16,9 @@ export type Comando =
   | { tipo: "presente"; para: string | null; nome: string }
   | { tipo: "erro"; msg: string };
 
+/** O presente dos moderadores só existe na barra do K-FOFO; os outros chats usam isto para não publicar o comando. */
+export const ehComandoPresente = (texto: string) => /^\/smokecabecinha(?:\s|$)/i.test(texto.trim());
+
 const semAcento = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 
 /** Lê o que foi escrito. `pessoas` são os membros (id e nome) que podem receber um sussurro. */

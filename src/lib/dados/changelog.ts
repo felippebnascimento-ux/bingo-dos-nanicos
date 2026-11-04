@@ -772,6 +772,14 @@ export const CHANGELOG: EntradaLog[] = [
       "O anel e a barra do tempo andam lisos, sem pular de segundo em segundo",
     ],
   },
+  {
+    data: "04/11/2026",
+    itens: [
+      "Mesa de truco valendo não fecha mais no meio da partida: quem abriu termina o jogo ou espera 10 minutos com a mesa parada",
+      "A Bolsa Nanica agora conta as moedas que estão em jogo nas mesas e nos duelos",
+      "No truco, as cartas jogadas ficam na mesa até o fim da mão, para todo mundo ver",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

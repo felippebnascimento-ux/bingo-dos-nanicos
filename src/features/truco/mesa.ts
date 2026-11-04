@@ -75,6 +75,14 @@ export function trNaMesa(h: MaoBase): Vaza {
   return v.cartas.length || h.vazas.length < 2 ? v : h.vazas[h.vazas.length - 2];
 }
 
+/** Todas as cartas já jogadas na mão, para ficarem à vista: de qual vaza são, se ganharam a vaza e se a vaza já passou. */
+export function trCartasDaMao(h: MaoBase) {
+  const atual = h.vazas.indexOf(trNaMesa(h));
+  return h.vazas.flatMap((v, vaza) =>
+    v.cartas.map((x) => ({ ...x, vaza, ganha: v.vence !== null && v.por === x.s, passou: vaza < atual })),
+  );
+}
+
 /** Meu lugar na mesa (pela conta), ou -1. */
 export const meuLugar = (m: { lugares: MesaPub["lugares"] }, uid: string | null) =>
   uid ? m.lugares.findIndex((l) => !!l && l.key === uid) : -1;

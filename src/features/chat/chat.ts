@@ -3,6 +3,7 @@
  * O autor é sempre quem está logado (o banco garante); aqui só lista, conta as não lidas e envia.
  */
 import { create } from "zustand";
+import { ehComandoPresente } from "@/features/hall/comandos";
 import { aoMudarTabela } from "@/lib/sala";
 import { getApp, setApp, useApp } from "@/lib/store";
 import { q, sb } from "@/lib/supabase";
@@ -126,6 +127,7 @@ export function abrirCanalTexto(canal: string) {
 /** Envia uma mensagem (até 300 letras) para o chat de onde eu estou, ou para `sala`. Lança o erro do banco se não der. */
 /** Manda uma mensagem; `grito` (K-FOFO, seção 52) faz o balão sair grande. */
 export async function enviarChat(texto: string, sala = chatAtual(), grito = false) {
+  if (ehComandoPresente(texto)) return; /* sem aviso: o comando é escondido */
   const linha = comSalas() ? { text: texto.slice(0, 300), sala, ...(grito ? { grito: true } : {}) } : { text: texto.slice(0, 300) };
   const rows = await q<unknown[]>(sb().from("chat_messages").insert(linha).select(COLUNAS()));
   (rows || []).forEach(addChat);

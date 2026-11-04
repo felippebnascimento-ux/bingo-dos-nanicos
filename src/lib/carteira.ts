@@ -116,6 +116,8 @@ export async function pedirBolsa() {
   const c = useCarteira.getState().carteira;
   if (c) useCarteira.setState({ carteira: { ...c, saldo: num(r.saldo) } });
   if (!num(r.ganhou)) {
+    /* passageiro: não esconde o botão até amanhã, como o "já pegou" abaixo */
+    if (num(r.em_jogo)) return toast(`Você tem ${num(r.em_jogo).toLocaleString("pt-BR")} moedas em jogo. Termine a jogada antes de pedir a Bolsa Nanica.`);
     if (num(r.saldo) < BOLSA_ABAIXO_DE) useCarteira.setState({ bolsaPega: horaBr(new Date()).dia });
     return toast(num(r.saldo) < BOLSA_ABAIXO_DE ? "Você já pegou a Bolsa Nanica hoje. Amanhã tem de novo." : "A Bolsa Nanica é só para quem está com menos de 100 moedas.");
   }

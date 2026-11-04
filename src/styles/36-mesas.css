@@ -146,6 +146,7 @@
 .mesa-cartas .tr-mao .tc + .tc{margin-left:-1.4cqw}
 .mesa-cartas .tr-mao.pode .tc:hover,.mesa-cartas .tr-mao.pode .tc:focus-visible{transform:translateY(-1.4cqw) rotate(0deg)}
 .mesa-cartas .tr-jogada .tc{width:max(40px,5.6cqw)}
+.mesa-cartas .tr-jogada.passou .tc{filter:brightness(.8)}
 .mesa-cartas .tr-msg{display:grid;justify-items:center;gap:6px;padding:12px 18px;border-radius:16px;background:rgb(0 0 0 / .5);color:var(--mesa-texto);text-align:center}
 .mesa-cartas .tr-msg b{font:800 max(15px,1.8cqw) var(--display)}
 .mesa-cartas .tr-msg span{font-size:max(12px,1.2cqw);color:rgb(255 255 255 / .75)}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { lerComando } from "./comandos";
+import { ehComandoPresente, lerComando } from "./comandos";
 
 const P = [
   { id: "1", name: "Le Bubu" },
@@ -21,6 +21,12 @@ describe("comandos do chat do K-FOFO", () => {
     expect(lerComando(":s veiao segredo", P)).toEqual({ tipo: "sussurro", para: "2", texto: "segredo" });
     expect(lerComando(":s Pinto oi", P).tipo).toBe("erro");
     expect(lerComando(":s Pin", P).tipo).toBe("erro");
+  });
+  it("reconhece o comando do presente para os outros chats não publicarem", () => {
+    expect(ehComandoPresente("/smokecabecinha Pin")).toBe(true);
+    expect(ehComandoPresente("  /SMOKECABECINHA")).toBe(true);
+    expect(ehComandoPresente("/smokecabecinhas")).toBe(false);
+    expect(ehComandoPresente("olha o /smokecabecinha")).toBe(false);
   });
   it("presente dos moderadores: o nome, com ou sem aspas, e nunca vira fala", () => {
     expect(lerComando('/smokecabecinha "Veiao"', P)).toEqual({ tipo: "presente", para: "2", nome: "Veião" });
