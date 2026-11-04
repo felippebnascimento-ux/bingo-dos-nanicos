@@ -1,4 +1,4 @@
-import type { Rosto } from "../tipos";
+﻿import type { Rosto } from "../tipos";
 import { norm } from "../util";
 
 /** Quem é quem: nome do nanico (como está no Supabase) → número da arte em `public/arte/nanicos/`. */
@@ -58,6 +58,12 @@ export function bonecoOf(f: Rosto | null | undefined): string | null {
   if (amigo) return `/arte/bonecos/${amigo.boneco}`;
   const n = f ? NAN_MAP[norm(f.name)] : 0;
   return n && BONECO_ARQ[n] ? `/arte/bonecos/${BONECO_ARQ[n]}` : null;
+}
+
+/** A folha de poses desenhadas (sentar, acenar, deitar, dançar, emotes; hall/poses.ts) de quem já tem, ou null. */
+export function posesOf(f: Rosto | null | undefined): string | null {
+  const n = f && !AMIGOS[norm(f.name)] ? NAN_MAP[norm(f.name)] : 0;
+  return n && BONECO_ARQ[n] ? `/arte/bonecos/poses/${BONECO_ARQ[n]}` : null;
 }
 
 /** Foto da turma (1100 px de largura, fundo transparente). */

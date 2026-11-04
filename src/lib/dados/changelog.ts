@@ -780,6 +780,13 @@ export const CHANGELOG: EntradaLog[] = [
       "No truco, as cartas jogadas ficam na mesa até o fim da mão, para todo mundo ver",
     ],
   },
+  {
+    data: "04/11/2026",
+    itens: [
+      "Os bonecos ganharam poses desenhadas: sentar no sofá, acenar, deitar e dançar agora mudam o boneco inteiro, de frente e de costas",
+      "Novas ações no K-FOFO: rir, joinha, pular e sentar no chão (também pelo chat: :rir, :joinha, :pular e :sentar)",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

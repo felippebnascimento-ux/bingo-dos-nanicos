@@ -1,9 +1,9 @@
 /* Um boneco no hall: o quadro da spritesheet (ou o rosto num pino) e a placa com o nome.
    Tocar num boneco abre o cartão do perfil no canto (e, no de outra pessoa, o menu de chinelada e torta); não anda.
    `rot` é o cambaleio de quem levou uma chinelada (graus). */
-import { memo, type CSSProperties } from "react";
+import { memo, useEffect, useState, type CSSProperties } from "react";
 import { Avatar } from "@/components/ui/Avatar";
-import { bonecoOf } from "@/lib/dados/nanicos";
+import { bonecoOf, posesOf } from "@/lib/dados/nanicos";
 import type { Rosto } from "@/lib/tipos";
 import type { Boneco as B } from "./bonecos";
 import { ANCORA, assentoDe, CEL_H, CEL_W, quadroSprite, tela, type Caixa2D } from "./hall";
@@ -14,6 +14,22 @@ import { Acessorio, noAlto, tipoAcessorio } from "@/features/loja/Acessorio";
 import { useEquipados } from "@/features/loja/lojaDados";
 import type { Enfeite } from "@/features/trofeus/trofeus";
 import { iconeAcao, useAcaoDe } from "./acoes";
+import { posicaoPose, quadroPose, sequenciaPose, type Pose } from "./poses";
+import { reduzMovimento } from "@/lib/util";
+
+/** O quadro da folha de poses, andando pelos quadros da pose no tempo dela (parado com menos movimento). */
+export function usePoseQuadro(pose: Pose | null, costas: boolean) {
+  /* relógio contínuo: o quadro sai do tempo corrido, então não precisa zerar ao trocar de pose */
+  const [t, setT] = useState(() => performance.now());
+  const s = pose ? sequenciaPose(pose, costas) : null;
+  const anima = !!s && s.q.length > 1 && s.ms > 0 && !reduzMovimento();
+  useEffect(() => {
+    if (!anima || !s) return;
+    const id = setInterval(() => setT(performance.now()), s.ms);
+    return () => clearInterval(id);
+  }, [anima, s]);
+  return pose ? quadroPose(pose, costas, anima ? t : 0) : null;
+}
 
 const pct = (v: number) => `${v * 100}%`;
 
@@ -29,6 +45,11 @@ export const Boneco = memo(function Boneco({
   /* acessório da loja (boné, óculos…): o enfeite dos troféus tem prioridade no alto da cabeça */
   /* acenar, dançar ou deitar (acoes.ts) */
   const acao = useAcaoDe(b.key);
+  /* com a folha de poses (poses.ts): a ação e o sentar viram o desenho; sem ela, o balanço e o corte de antes */
+  const poses = posesOf(f);
+  const pose: Pose | null = poses ? (acao ?? (a ? "sentar" : null)) : null;
+  const costas = olha.startsWith("costas");
+  const quadroPoseAgora = usePoseQuadro(pose, costas);
   const equip = useEquipados(f.user_id);
   const cabeca = tipoAcessorio(equip.cabeca?.dados.cor);
   /* efeito comprado na loja (seção 61): brilho, fogo, fantasma ou arco-íris */
@@ -43,7 +64,12 @@ export const Boneco = memo(function Boneco({
     zIndex: z,
     ...(rot ? { ["--balanco" as string]: `${rot.toFixed(2)}deg` } : {}),
   };
-  const corpo = folha ? (
+  const corpo = poses && pose && quadroPoseAgora ? (
+    <span
+      className={"boneco-pose pose-" + pose + (q.espelha ? " espelha" : "")}
+      style={{ backgroundImage: `url(${poses})`, backgroundPosition: posicaoPose(quadroPoseAgora) }}
+    />
+  ) : folha ? (
     <span
       className={"boneco-img" + (q.espelha ? " espelha" : "")}
       style={{ backgroundImage: `url(${folha})`, backgroundPosition: `${(-q.x / CEL_W) * 25}% ${(-q.y / CEL_H) * 100}%` }}
@@ -54,7 +80,7 @@ export const Boneco = memo(function Boneco({
     </span>
   );
   return (
-    <div className={"boneco" + (eu ? " eu" : "") + (a ? " sentado" : "") + (rot ? " balanca" : "") + (enfeite ? " chapeu-" + enfeite : "") + (acess ? " acess-" + acess : "") + (acao ? " acao-" + acao : "") + (efeito ? " efeito-" + efeito : "")} style={caixa}>
+    <div className={"boneco" + (eu ? " eu" : "") + (a ? " sentado" : "") + (rot ? " balanca" : "") + (enfeite ? " chapeu-" + enfeite : "") + (acess ? " acess-" + acess : "") + (acao ? " acao-" + acao : "") + (pose ? " com-pose" : "") + (efeito ? " efeito-" + efeito : "")} style={caixa}>
       <span className="boneco-nome">{b.name}</span>
       {acao && (
         <span className="boneco-acao" aria-hidden="true">

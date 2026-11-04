@@ -87,7 +87,7 @@ src/
                        do Hall da Fama; o antigo QuadroTrofeus.tsx saiu), Lupa.tsx (a lupa: zoom de 100% a 200% da cena, em
                        `hall-zoom`, com a cena rolando e arrastando dentro de `ZoomCaixa`), o menu da porta de vidro ("Rua · Salas":
                        a rua, o corredor dos quartos e as salas da lan house) e Chapeu.tsx
-                       (chapéu de burro, coroa dourada e coroa de moedas na cabeça do boneco); acoes.ts (acenar, dançar, deitar), comandos.ts (o/, :g, :s Nome; puro e testado) e seguir.ts (Ir até: vai para a cena e o piso da pessoa pela presença); o Pedro (seção 64): Pedro.tsx (a caixa com o botão vermelho na parede da esquerda, entre o baú e a porta de vidro,
+                       (chapéu de burro, coroa dourada e coroa de moedas na cabeça do boneco); acoes.ts (acenar, dançar, deitar, rir, joinha, pular, sentar no chão), poses.ts (qual quadro da folha de poses mostrar para cada ação, de frente ou de costas, no tempo; puro e testado; o Boneco e o quarto usam `usePoseQuadro`), comandos.ts (o/, :g, :s Nome; puro e testado) e seguir.ts (Ir até: vai para a cena e o piso da pessoa pela presença); o Pedro (seção 64): Pedro.tsx (a caixa com o botão vermelho na parede da esquerda, entre o baú e a porta de vidro,
                        a janelinha que confirma os 200 e a `DiscoCamada`: bola espelhada, luzes e todo mundo dançando, classe `disco` no
                        palco) e pedroDados.ts (`usePedro`, `tocarPedro`, `iniciarPedro`: o tempo real de `kfofo_pedro` e o `pedro_agora()`
                        ao entrar; toca só para quem está no K-FOFO, no ponto certo da música; não pode se chamar pedro.ts por causa do
@@ -605,6 +605,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 - **Tamanhos:** o rosto tem 160×160 e o corpo, 440 px de altura. Use `artOf(friend)`.
 - **`amigos/{slug}-rosto.webp` e `{slug}-corpo.webp`:** a arte dos amigos dos nanicos (o primeiro é o Lightzin), pelo mapa `AMIGOS` de `nanicos.ts`; o boneco fica em `bonecos/{slug}.webp`, no mesmo formato. `artOf` e `bonecoOf` já caem nele.
 - **`bonecos/*.webp`:** uma spritesheet por nanico para o hall (células de 84×134 nas medidas do código; desde a v1.68 a folha está em 3x, 252×402 px por célula, para ficar nítida ampliada; linhas `frente`/`costas`, colunas `parado` + 4 de andar; os lados esquerdos são o espelho). O formato está em `bonecos/bonecos.json`. Use `bonecoOf(friend)`; quem não tem boneco aparece com o rosto num pino.
+- **`bonecos/poses/*.webp`:** a folha de poses de cada nanico (04/11/2026, desenhada a partir do boneco): 4×4 quadros de 336×402 px (112×134 no código, o pé no mesmo ponto); linhas: sentar, acenar 1 e 2, deitar / os 4 da dança / rir, joinha, pular, sentar no chão / de costas: sentar, acenar e 2 da dança. Use `posesOf(friend)` (null para amigo); o mapa dos quadros fica em `hall/poses.ts`.
 - **`carros/<id>.svg`:** os 14 veículos da garagem (desenhados das fotos, 03/11/2026), na projeção das cenas (46 × 23 por piso, o ponto (0, 0, 0) do veículo em (80, 110), 240 × 220). Gerados fora do repositório; a cena usa `VEICULOS` (cenas.ts) para o nome e o tamanho.
 - **`turma.webp`:** foto da turma. **`marca.png`:** bola de bingo. **`reacoes/`:** os Picarétezzi.
 

@@ -646,3 +646,14 @@
 .hall-palco.disco .boneco > .boneco-toque,.hall-palco.disco .boneco > .boneco-img,.hall-palco.disco .boneco > .boneco-pino{transform-origin:50% 100%;animation:boneco-danca .5s ease-in-out infinite}
 @media (max-width:760px){.disco-aviso{font-size:10px;padding:4px 10px}}
 @media (prefers-reduced-motion:reduce){.disco-bola,.disco-luz,.hall-palco.disco .boneco > .boneco-toque,.hall-palco.disco .boneco > .boneco-img,.hall-palco.disco .boneco > .boneco-pino{animation:none}}
+
+/* poses desenhadas (hall/poses.ts): a célula da folha de poses é 112×134 contra 84×134 do andar, com o pé no mesmo
+   ponto; por isso ela sai um terço mais larga, metade para cada lado. A ação e o sentar trocam o balanço e o corte de antes */
+.boneco-pose{position:absolute;bottom:0;left:-16.667%;width:133.334%;height:100%;background-repeat:no-repeat;background-size:400% 400%}
+.boneco-pose.espelha{transform:scaleX(-1)}
+.boneco.com-pose > .boneco-toque,.boneco.com-pose > .boneco-pose{animation:none;rotate:none;translate:none}
+.boneco.sentado.com-pose{transform:translateY(9%)}
+.boneco-pose.pose-pula{animation:boneco-pula .9s cubic-bezier(.3,0,.4,1) infinite}
+@keyframes boneco-pula{0%,100%{translate:0 0}45%{translate:0 -14%}}
+@media (prefers-reduced-motion:reduce){.boneco-pose.pose-pula{animation:none}}
+.quarto-boneco.com-pose .quarto-corpo{animation:none;rotate:none;translate:none}

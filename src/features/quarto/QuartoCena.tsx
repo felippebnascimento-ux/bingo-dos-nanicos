@@ -10,6 +10,8 @@ import { memo, useId, useMemo } from "react";
 import { ANCORA, caixaDoBoneco, CEL_H, CEL_W, ordemZ, quadroSprite, type Caixa, type Sentido } from "@/features/hall/hall";
 import { BaloesSvg } from "@/features/hall/ChatHabbo";
 import { iconeAcao, type Acao } from "@/features/hall/acoes";
+import { usePoseQuadro } from "@/features/hall/Boneco";
+import { POSE_ANCORA, POSE_COLS, POSE_H, POSE_LINHAS, POSE_W, type Pose } from "@/features/hall/poses";
 import { EstadoNoMovel, TintaQuarto } from "./EstadoMovel";
 import { useEquipados } from "@/features/loja/lojaDados";
 import { corDoQuarto, ehInterativo, type EstadoMovel } from "./interativo";
@@ -27,6 +29,8 @@ export type BonecoCena = {
   key: string;
   nome: string;
   folha: string | null;
+  /** a folha de poses desenhadas (hall/poses.ts), de quem já tem */
+  poses?: string | null;
   i: number;
   j: number;
   sentido: Sentido;
@@ -493,17 +497,32 @@ function BonecoNoQuarto({ b, p }: { b: BonecoCena; p: (i: number, j: number, z?:
   /* efeito comprado na loja (seção 61) */
   const efeito = useEquipados(b.uid).efeito?.dados.cor;
   const [x, y0] = b.sentado ? p(b.sentado.i, b.sentado.j) : p(b.i + 0.5, b.j + 0.5);
-  /* sentado, o quadril desce para o estofado (como o .boneco.sentado do hall) */
-  const y = y0 + (b.sentado ? CEL_H * ESCALA_VISITA * 0.19 : 0);
+  /* com a folha de poses, a ação e o sentar viram o desenho (hall/poses.ts); sem ela, o balanço e o corte de antes */
+  const pose: Pose | null = b.poses ? (b.acao ?? (b.sentado ? "sentar" : null)) : null;
+  const quadroPose = usePoseQuadro(pose, b.sentido.startsWith("costas"));
+  /* sentado, o quadril desce para o estofado (como o .boneco.sentado do hall); com a pose desenhada, desce menos */
+  const y = y0 + (b.sentado ? CEL_H * ESCALA_VISITA * (pose ? 0.09 : 0.19) : 0);
   const q = quadroSprite(b.sentido, b.sentado ? 0 : b.quadro);
   const w = CEL_W * ESCALA_VISITA, h = CEL_H * ESCALA_VISITA;
   const vx = -q.x, vy = -q.y;
   /* sentado, as pernas somem dentro do estofado (como no K-FOFO): a janela do quadro corta o terço de baixo */
-  const corte = b.sentado ? 0.68 : 1;
+  const corte = b.sentado && !pose ? 0.68 : 1;
   return (
-    <g className={"quarto-boneco" + (b.eu ? " eu" : "") + (b.acao ? " acao-" + b.acao : "") + (efeito ? " efeito-" + efeito : "")} pointerEvents="none">
+    <g className={"quarto-boneco" + (b.eu ? " eu" : "") + (b.acao ? " acao-" + b.acao : "") + (pose ? " com-pose" : "") + (efeito ? " efeito-" + efeito : "")} pointerEvents="none">
       <g className="quarto-corpo">
-      {b.folha ? (
+      {b.poses && quadroPose ? (
+        <svg
+          x={x - POSE_ANCORA.x * ESCALA_VISITA}
+          y={y - POSE_ANCORA.y * ESCALA_VISITA}
+          width={POSE_W * ESCALA_VISITA}
+          height={POSE_H * ESCALA_VISITA}
+          viewBox={`${quadroPose[0] * POSE_W} ${quadroPose[1] * POSE_H} ${POSE_W} ${POSE_H}`}
+        >
+          <g transform={q.espelha ? `translate(${2 * quadroPose[0] * POSE_W + POSE_W} 0) scale(-1 1)` : undefined}>
+            <image href={b.poses} width={POSE_W * POSE_COLS} height={POSE_H * POSE_LINHAS} />
+          </g>
+        </svg>
+      ) : b.folha ? (
         <svg x={x - ANCORA.x * ESCALA_VISITA} y={y - ANCORA.y * ESCALA_VISITA} width={w} height={h * corte} viewBox={`${vx} ${vy} ${CEL_W} ${CEL_H * corte}`}>
           <g transform={q.espelha ? `translate(${2 * vx + CEL_W} 0) scale(-1 1)` : undefined}>
             <image href={b.folha} width={CEL_W * 5} height={CEL_H * 2} />
