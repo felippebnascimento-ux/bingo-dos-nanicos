@@ -62,7 +62,10 @@ export const useChat = create<{
  * pessoa na caixa de texto.
  */
 export function mencionarNoChat(nome: string) {
-  if (getApp().minhaSala) setApp({ aba: "live", railTab: "chat" });
+  if (getApp().minhaSala) {
+    setApp({ aba: "live", railTab: "chat" });
+    window.dispatchEvent(new Event("abrir-chat-live"));
+  }
   else abrirCanalTexto("geral");
   /* espera a tela do chat aparecer (trocar de aba é um render) */
   setTimeout(() => {
@@ -158,7 +161,7 @@ export function silenciarCanal(canal: string, sim: boolean) {
 /** O chat da minha sala está na tela agora (aba Ao vivo, painel Chat, janela visível)? */
 export const chatVisivel = () => {
   const s = getApp();
-  return s.aba === "live" && s.railTab === "chat" && !document.hidden;
+  return s.aba === "live" && s.railTab === "chat" && !s.railFechado && !document.hidden;
 };
 
 /** Este canal de texto está na tela agora (aba Chat nele, ou o painel do Ao vivo, se for o da minha sala)? */
@@ -379,7 +382,7 @@ export async function carregarChat(): Promise<void> {
     aoReceber("chat", onChatEvento);
     /* abriu o chat (aba ou painel) ou voltou para a janela: zera as não lidas */
     useApp.subscribe((s, p) => {
-      if (s.aba !== p.aba || s.railTab !== p.railTab || s.canalTexto !== p.canalTexto) zerarSeVisivel();
+      if (s.aba !== p.aba || s.railTab !== p.railTab || s.canalTexto !== p.canalTexto || s.railFechado !== p.railFechado) zerarSeVisivel();
       /* trocou de sala: o chat passa a ser o da sala nova */
       if (s.minhaSala !== p.minhaSala) {
         setApp({ chatUnread: 0 });

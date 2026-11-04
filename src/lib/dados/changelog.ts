@@ -862,6 +862,13 @@ export const CHANGELOG: EntradaLog[] = [
       "Moderadores: Mover para outro canal, Silenciar voz e Desativar áudio no servidor, Desconectar e Castigo (sem chat e sem voz de 1 minuto a 1 dia)",
     ],
   },
+  {
+    data: "04/11/2026",
+    itens: [
+      "O chat fica fechado numa barrinha embaixo da call, com a última mensagem: toque para abrir e digitar, e a transmissão fica com quase a tela toda (no ⋯ da call dá para voltar o chat para o lado)",
+      "O menu do clique direito nunca mais sai da tela: se for comprido, rola por dentro",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

@@ -444,7 +444,7 @@ export function ChatPainel({ canal, placeholder = "Mensagem para a sala" }: { ca
   const myUid = useApp((s) => s.myUid);
   const myFid = useApp((s) => s.myFid);
   const mods = useStatus((s) => s.mods);
-  const visivel = useApp((s) => (canal ? s.aba === "chat" && s.canalTexto === canal : s.aba === "live" && s.railTab === "chat"));
+  const visivel = useApp((s) => (canal ? s.aba === "chat" && s.canalTexto === canal : s.aba === "live" && s.railTab === "chat" && !s.railFechado));
   const [texto, setTexto] = useState("");
   const [resposta, setResposta] = useState<MsgChat | null>(null);
   const [editando, setEditando] = useState<string | number | null>(null);
