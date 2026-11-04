@@ -7,6 +7,7 @@ import { ehAmigo, soAmigos, soNanicos } from "@/lib/dados/nanicos";
 import { CamNaSala } from "@/features/live/CamNaSala";
 import { setLive } from "@/features/live/estado";
 import { assistir } from "@/features/live/live";
+import { MenuPessoa, useMenuDeToque } from "@/features/live/MenuPessoa";
 import { nomeDaSala } from "@/features/salas/trocar";
 import { bingoLines } from "@/lib/bingo";
 import { umPorNanico, type PresencaNanico } from "@/lib/presenca";
@@ -118,6 +119,8 @@ function Membro({ p, f }: { p: PresencaNanico | null; f: Friend | undefined }) {
     else if (f) setApp({ fichaAberta: f.id });
   };
   const onde = !p ? null : p.sala ? (nomeDaSala(p.sala, salas) ?? "Numa sala") : salas.length ? "No lobby" : null;
+  /* como no Discord: clique direito (ou segurar o dedo) abre o volume, silenciar, a transmissão e a ficha */
+  const menu = useMenuDeToque();
   const pic = f ? (
     <Avatar f={f} />
   ) : (
@@ -134,6 +137,7 @@ function Membro({ p, f }: { p: PresencaNanico | null; f: Friend | undefined }) {
       tabIndex={f || assiste ? 0 : undefined}
       aria-label={f || assiste ? titulo : undefined}
       onClick={f || assiste ? abrir : undefined}
+      {...(f ? menu.props : {})}
       onKeyDown={(e) => {
         if ((f || assiste) && (e.key === "Enter" || e.key === " ")) {
           e.preventDefault();
@@ -177,6 +181,7 @@ function Membro({ p, f }: { p: PresencaNanico | null; f: Friend | undefined }) {
         </span>
       )}
       {!!p?.lines && <span className="bingo-pill">BINGO{p.lines > 1 ? " ×" + p.lines : ""}</span>}
+      {menu.lugar && <MenuPessoa p={p} fid={f?.id ?? null} nome={nome} lugar={menu.lugar} fechar={menu.fechar} />}
     </li>
   );
 }

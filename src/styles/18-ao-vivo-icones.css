@@ -25,3 +25,20 @@
 .opt-pop label{display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer;white-space:nowrap}
 .opt-pop input{accent-color:var(--accent);width:16px;height:16px;margin:0}
 @media (max-width:640px){.stage-bar .q{display:none}.ib{width:34px;height:34px}.stage-bar{padding:28px 8px 8px}.stage-bar .who{font-size:13px}}
+/* parar de assistir, como no Discord: o botão vermelho no fim da barra */
+.ib.parar{width:auto;padding:0 12px 0 9px;gap:6px;grid-auto-flow:column;background:var(--live);font:600 13px var(--body);white-space:nowrap}
+.ib.parar:hover{background:color-mix(in srgb,var(--live) 82%,var(--ink))}
+@media (max-width:640px){.ib.parar span{display:none}.ib.parar{padding:0;width:34px}}
+/* palco estreito (com o chat aberto ao lado, ou no celular): a barra encolhe para o "Parar de assistir" caber sempre */
+.stage{container-type:inline-size}
+@container (max-width:640px){
+  .stage-bar .q,.stage-bar .who .live-pill{display:none}
+  .stage-bar{gap:4px;padding-left:8px;padding-right:8px}
+  .stage-bar .ib{width:32px;height:32px}
+  .stage-bar .ib.vol{width:auto;padding:0 6px}
+  .ib.parar{width:32px;padding:0}.ib.parar span{display:none}
+}
+@container (max-width:440px){
+  .stage-bar .who{display:none}
+  #pipBtn,.sb-tools > .pop-wrap:has(#optBtn){display:none}
+}
