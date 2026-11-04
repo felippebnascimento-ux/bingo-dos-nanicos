@@ -10,7 +10,7 @@ import { umPorNanico, type PresencaNanico } from "@/lib/presenca";
 import { local, reduzMovimento } from "@/lib/util";
 import { assentoDe, caminho, entradaDe, entradaSorteada, livre, posHall, posValida, sentido, suavizar, type Piso, type Sentido } from "./hall";
 import { assentoDoQuarto, pisoLivreMaisPerto, posQuarto, type Grade } from "@/features/quarto/grade";
-import { PORTA } from "@/features/quarto/quarto";
+import { portaDaCena } from "@/features/quarto/cenas";
 import { iniciarQuartos, useQuartos } from "@/features/quarto/quartoDados";
 import { gradeDe } from "@/features/quarto/visita";
 import { iniciarLoja } from "@/features/loja/lojaDados";
@@ -72,7 +72,7 @@ function posCena(v: unknown) {
   return g ? posQuarto(v, g) : null;
 }
 /** Onde aparece quem chega à cena sem piso: a porta do quarto ou uma entrada do K-FOFO. */
-const chegadaCena = (id: string): Piso => (cena() ? { ...PORTA } : entradaDe(id));
+const chegadaCena = (id: string): Piso => (cena() ? { ...portaDaCena(cena()) } : entradaDe(id));
 
 function brilhar(lista: Brilho[]) {
   if (!lista.length || reduzMovimento()) return;

@@ -740,6 +740,12 @@ export const CHANGELOG: EntradaLog[] = [
       "Para entrar é preciso a Chave da Pirapó 114, um raro de 5.000 moedas na Loja (só 14 no mundo). As chaves da casa do Alemão, da casa do Gordão e da baia da Vó Lia chegam junto com as casas",
     ],
   },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Pirapó 114 na planta certa: a porta de entrada no meio do corredor, o quarto com o PC e a cozinha embaixo dele, a sala grande à direita, aberta para o corredor, e a sacada para fora da sala",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

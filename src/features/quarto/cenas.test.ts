@@ -29,3 +29,18 @@ describe("cenas especiais", () => {
     }
   });
 });
+
+describe("Pirapó 114 (planta do João)", () => {
+  it("da porta do meio do corredor dá para andar até cada cômodo", async () => {
+    const { caminho } = await import("@/features/hall/hall");
+    const { portaDaCena } = await import("./cenas");
+    const g = gradeEspecial("pirapo");
+    const porta = portaDaCena("pirapo");
+    expect(porta).toEqual({ i: 5, j: 0 });
+    expect(g.livre(porta.i, porta.j)).toBe(true);
+    /* quarto, cozinha, sala e sacada */
+    for (const alvo of [{ i: 1, j: 11 }, { i: 6, j: 12 }, { i: 11, j: 14 }, { i: 15, j: 6 }]) expect(caminho(porta, alvo, g.livre).length).toBeGreaterThan(1);
+    /* o lado de fora do prédio não se pisa */
+    expect(g.livre(15, 10)).toBe(false);
+  });
+});

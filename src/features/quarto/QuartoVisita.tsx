@@ -24,7 +24,7 @@ import { useArena } from "./arena";
 import { ArenaPainel } from "./ArenaPainel";
 import { GatilhosPainel } from "./GatilhosPainel";
 import { irParaQuarto, paraCena } from "./visita";
-import { CORES_PIXO, ehCenaEspecial, gradeEspecial, GOL_RUA, moveisDaCena, NOME_CENA, portasDoCorredor, TAM_CENA, type CorPixo } from "./cenas";
+import { CORES_PIXO, portaDaCena, ehCenaEspecial, gradeEspecial, GOL_RUA, moveisDaCena, NOME_CENA, portasDoCorredor, TAM_CENA, type CorPixo } from "./cenas";
 import { iniciarPixacoes, pixar, usePixacoes } from "./pixacoes";
 import { abrirDuelo } from "@/features/cassino/dueloDados";
 import { soNanicos } from "@/lib/dados/nanicos";
@@ -138,6 +138,7 @@ export function QuartoVisita({ dono }: { dono: string }) {
         portas={portas}
         aoTocarPorta={(fid) => (portas?.find((p) => p.fid === fid)?.aberta ? irParaQuarto(fid) : toast("Esse nanico ainda não comprou o quarto: a porta está fechada."))}
         aoTocarSaida={especial ? () => irParaQuarto(null) : undefined}
+        porta={portaDaCena(dono)}
         pixos={especial === "banheiro" ? pixos : undefined}
         pisosCor={especial === "arena" ? pisosArena : undefined}
       />

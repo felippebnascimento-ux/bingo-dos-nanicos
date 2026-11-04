@@ -138,6 +138,8 @@ const DESENHO_QUARTO: Record<string, Desenho> = {
     k.box(r.i, r.j, r.w, r.d, 4, "pp-branco0", "pp-branco1", "pp-branco2");
     k.box(r.i + 0.1, r.j + 0.1, r.w - 0.2, r.d - 0.2, 2, "pp-sanca", "pp-sanca", "pp-sanca", 34);
   },
+  /* o lado de fora do prédio: só bloqueia o andar (o chão escuro vem do fundo) */
+  fora: () => {},
   /* cozinha */
   "mesa-branca": (k, r) => {
     for (const [a, b] of [[0.12, 0.12], [r.w - 0.2, 0.12], [0.12, r.d - 0.2], [r.w - 0.2, r.d - 0.2]]) k.box(r.i + a, r.j + b, 0.08, 0.08, 26, "pp-branco1", "pp-branco1", "pp-branco2");

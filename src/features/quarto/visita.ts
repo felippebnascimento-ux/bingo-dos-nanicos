@@ -8,10 +8,10 @@ import { useLoja } from "@/features/loja/lojaDados";
 import type { ItemLoja } from "@/features/loja/loja";
 import { getApp, setApp } from "@/lib/store";
 import { toast } from "@/lib/toast";
-import { ehCenaEspecial, gradeEspecial } from "./cenas";
+import { ehCenaEspecial, gradeEspecial, portaDaCena } from "./cenas";
 import { gradeDoQuarto, type Grade, type MovelGrade } from "./grade";
 import { desenhoDo } from "./Moveis";
-import { pisoDo, PORTA, type MovelNoQuarto } from "./quarto";
+import { pisoDo, type MovelNoQuarto } from "./quarto";
 import { iniciarQuartos, moveisDe, useQuartos } from "./quartoDados";
 
 /** Os móveis de alguém prontos para desenhar e para a grade (com o piso do item e o giro). */
@@ -65,5 +65,5 @@ export function irParaQuarto(dono: string | null) {
   const chave = dono ? CHAVE_DA_CENA[dono] : undefined;
   if (chave && !useLoja.getState().linhas.some((l) => l.userId === s.myUid && l.itemId === chave && l.qtd > 0))
     return toast("A porta está trancada: compre a chave na Loja (Chaves das casas).");
-  setApp({ aba: "hall", fichaAberta: null, meuQuarto: dono, hallPos: dono ? { ...PORTA } : entradaSorteada() });
+  setApp({ aba: "hall", fichaAberta: null, meuQuarto: dono, hallPos: dono ? { ...portaDaCena(dono) } : entradaSorteada() });
 }

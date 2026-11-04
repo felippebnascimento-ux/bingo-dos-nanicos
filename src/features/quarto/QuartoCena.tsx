@@ -110,9 +110,11 @@ function Pixos({ lista, p }: { lista: readonly Pixo[]; p: (i: number, j: number,
 }
 
 /**
- * A Pirapó 114 (das fotos): paredes bege com rodapé branco; no corredor (fundo), o piso claro com a faixa de granito
- * preto, as portas brancas de almofada, o quadro do gato e os armários espelhados; na cozinha, a parede de pastilha
- * preta com a janela de cortina; o porcelanato brilhante da sala, a cerâmica da sacada e o taco em espinha do quarto.
+ * A Pirapó 114 (das fotos e da planta do João): paredes bege com moldura e rodapé brancos; a porta de entrada no meio
+ * do corredor; no corredor, as portas brancas de almofada, o quadro do gato e os armários espelhados; no quarto, a
+ * janela com grade e persiana; o ar-condicionado da sala; e os pisos de cada cômodo: o claro com a faixa de granito
+ * no corredor, o claro da cozinha, o taco em espinha do quarto, o porcelanato brilhante da sala e a cerâmica da sacada,
+ * com a mureta de madeira e a grade. Fora do prédio fica escuro.
  */
 function fundoPirapo(n: number, p: (i: number, j: number, z?: number) => Pt): Poly[] {
   const L: Poly[] = [];
@@ -120,54 +122,62 @@ function fundoPirapo(n: number, p: (i: number, j: number, z?: number) => Pt): Po
   const ret = (i0: number, j0: number, i1: number, j1: number, c: string, linha = false) => poly([p(i0, j0), p(i1, j0), p(i1, j1), p(i0, j1)], c, linha);
   const naDir = (i0: number, i1: number, z0: number, z1: number, c: string, linha = false) => poly([p(i0, 0, z0), p(i1, 0, z0), p(i1, 0, z1), p(i0, 0, z1)], c, linha);
   const naEsq = (j0: number, j1: number, z0: number, z1: number, c: string, linha = false) => poly([p(0, j0, z0), p(0, j1, z0), p(0, j1, z1), p(0, j0, z1)], c, linha);
+  const ate = 14; /* a parede da direita vai até a sala; a sacada fica para fora */
   poly([p(0, 0), p(0, n), p(0, n, WH), p(0, 0, WH)], "pp-parede1");
-  poly([p(0, 0), p(n, 0), p(n, 0, WH), p(0, 0, WH)], "pp-parede2");
+  poly([p(0, 0), p(ate, 0), p(ate, 0, WH), p(0, 0, WH)], "pp-parede2");
   poly([p(0, 0, WH), p(0, n, WH), p(0, n, WH + 10), p(0, 0, WH + 10)], "pp-branco1");
-  poly([p(0, 0, WH), p(n, 0, WH), p(n, 0, WH + 10), p(0, 0, WH + 10)], "pp-branco2");
-  /* a moldura de gesso no alto e o rodapé branco */
+  poly([p(0, 0, WH), p(ate, 0, WH), p(ate, 0, WH + 10), p(0, 0, WH + 10)], "pp-branco2");
   naEsq(0, n, WH - 8, WH, "pp-branco0");
-  naDir(0, n, WH - 8, WH, "pp-branco0");
+  naDir(0, ate, WH - 8, WH, "pp-branco0");
   naEsq(0, n, 0, 9, "pp-branco1");
-  naDir(0, n, 0, 9, "pp-branco0");
-  /* a porta de entrada (piso 0, 0) e as portas brancas de almofada do corredor */
-  naDir(0.12, 0.88, 0, 104, "pp-branco0", true);
-  for (const i0 of [4.2, 10.2]) {
+  naDir(0, ate, 0, 9, "pp-branco0");
+  /* a porta de entrada, no meio do corredor (piso 5, 0) */
+  naDir(5.08, 5.92, 0, 108, "pp-branco0", true);
+  naDir(5.18, 5.82, 56, 100, "pp-branco1", true);
+  naDir(5.18, 5.82, 10, 48, "pp-branco1", true);
+  naDir(5.76, 5.82, 52, 56, "pp-macaneta");
+  /* as portas brancas de almofada do lado direito do corredor e o quadro do gato */
+  for (const i0 of [1.2, 3.1]) {
     naDir(i0, i0 + 0.8, 0, 108, "pp-branco0", true);
     naDir(i0 + 0.1, i0 + 0.7, 54, 98, "pp-branco1", true);
     naDir(i0 + 0.1, i0 + 0.7, 10, 46, "pp-branco1", true);
     naDir(i0 + 0.66, i0 + 0.72, 50, 54, "pp-macaneta");
   }
-  /* o quadro do gato (moldura escura, gato bege e dourado) */
-  naDir(7.1, 8.3, 66, 128, "pp-moldura", true);
-  naDir(7.25, 8.15, 72, 122, "pp-branco0");
-  naDir(7.4, 8.0, 78, 116, "pp-gato0");
-  naDir(7.55, 7.85, 96, 110, "pp-gato1");
+  naDir(6.25, 7.45, 66, 128, "pp-moldura", true);
+  naDir(6.4, 7.3, 72, 122, "pp-branco0");
+  naDir(6.55, 7.15, 78, 116, "pp-gato0");
+  naDir(6.7, 7.0, 96, 110, "pp-gato1");
   /* os armários espelhados na parede da esquerda do corredor */
-  naEsq(0.15, 1.85, 8, 128, "pp-branco1", true);
-  naEsq(0.25, 0.98, 14, 122, "pp-espelho", true);
-  naEsq(1.02, 1.75, 14, 122, "pp-espelho", true);
-  /* a cozinha: pastilha preta embaixo da janela de cortina branca */
-  naEsq(10, 13.6, 34, 104, "pp-pastilha");
-  for (let a = 10.2; a < 13.6; a += 0.2) naEsq(a, a + 0.015, 34, 104, "pp-rejunte");
-  for (let z = 40; z < 104; z += 7) naEsq(10, 13.6, z, z + 0.8, "pp-rejunte");
-  naEsq(10.6, 13, 60, 102, "pp-janela", true);
-  naEsq(10.6, 13, 88, 102, "pp-cortina");
-  /* pisos: corredor claro com a faixa de granito, cozinha clara, sala de porcelanato, sacada de cerâmica, quarto de taco */
+  naEsq(0.15, 2.85, 8, 128, "pp-branco1", true);
+  naEsq(0.25, 1.45, 14, 122, "pp-espelho", true);
+  naEsq(1.55, 2.75, 14, 122, "pp-espelho", true);
+  /* a janela do quarto, com a grade e a persiana branca enrolada no alto */
+  naEsq(10, 13, 56, 112, "pp-janela", true);
+  for (let jj = 10.25; jj < 13; jj += 0.25) naEsq(jj, jj + 0.03, 56, 112, "pp-grade");
+  naEsq(10, 13, 98, 112, "pp-cortina");
+  /* o ar-condicionado da sala */
+  naDir(10.9, 12.5, 112, 128, "pp-branco0", true);
+  naDir(11, 12.4, 113, 116, "pp-branco2");
+  /* pisos: cada cômodo com o seu (quarto de taco em espinha) e o lado de fora do prédio escuro */
   for (let i = 0; i < n; i++)
     for (let j = 0; j < n; j++) {
-      const sala = i >= 4 && i <= 8 && j >= 3 && j <= 10, sacada = i >= 4 && i <= 8 && j >= 12, quarto = i >= 10 && j >= 3;
+      const corredor = j <= 2 && i <= 8, quarto = i <= 2 && j >= 4, sala = i >= 9 && i <= 13, sacada = i >= 14 && j >= 4 && j <= 7, fora = i >= 14 && !sacada && i !== 14;
       if (quarto) {
-        /* taco em espinha de peixe: 4 réguas por piso, alternando o sentido */
         for (let k = 0; k < 4; k++) {
           const a = k / 4, b = (k + 1) / 4;
           if ((i + j) % 2) ret(i + a, j, i + b, j + 1, k % 2 ? "pp-taco0" : "pp-taco1", true);
           else ret(i, j + a, i + 1, j + b, k % 2 ? "pp-taco1" : "pp-taco0", true);
         }
-      } else ret(i, j, i + 1, j + 1, sala ? ((i + j) % 2 ? "pp-porc0" : "pp-porc1") : sacada ? "pp-sacada" : (i + j) % 2 ? "pp-piso0" : "pp-piso1", true);
+      } else
+        ret(i, j, i + 1, j + 1, fora ? "pp-fora" : sala ? ((i + j) % 2 ? "pp-porc0" : "pp-porc1") : sacada ? "pp-sacada" : corredor || (i + j) % 2 ? "pp-piso0" : "pp-piso1", !fora);
     }
   /* o brilho do porcelanato da sala e a faixa de granito do corredor */
-  poly([p(5, 4), p(5.6, 4), p(7.6, 9), p(7, 9)], "pp-reflexo");
-  ret(0.3, 0.7, n - 1, 1.3, "pp-granito");
+  poly([p(10, 3), p(10.7, 3), p(12.8, 11), p(12.1, 11)], "pp-reflexo");
+  ret(0.3, 0.7, 8.6, 1.3, "pp-granito");
+  /* a sacada: a mureta de madeira com a grade, na beirada de fora */
+  poly([p(n, 4), p(n, 8), p(n, 8, 40), p(n, 4, 40)], "pp-mureta1", true);
+  for (let jj = 4.2; jj < 8; jj += 0.3) poly([p(n, jj, 40), p(n, jj + 0.04, 40), p(n, jj + 0.04, 62), p(n, jj, 62)], "preto1");
+  poly([p(n, 4, 60), p(n, 8, 60), p(n, 8, 63), p(n, 4, 63)], "preto0");
   return L;
 }
 
@@ -248,6 +258,7 @@ export const QuartoCena = memo(function QuartoCena({
   portas,
   aoTocarPorta,
   aoTocarSaida,
+  porta = { i: 0, j: 0 },
   pixos,
   pisosCor,
 }: {
@@ -272,6 +283,8 @@ export const QuartoCena = memo(function QuartoCena({
   aoTocarPorta?: (fid: string) => void;
   /** a porta do piso (0, 0): na rua e no corredor, volta ao K-FOFO */
   aoTocarSaida?: () => void;
+  /** o piso da porta na parede da direita (j = 0): o 0,0 de sempre, ou o da cena (portaDaCena) */
+  porta?: { i: number; j: number };
 }) {
   const n = tamanho;
   const { p, largura, altura } = useMemo(() => projecao(n), [n]);
@@ -309,7 +322,7 @@ export const QuartoCena = memo(function QuartoCena({
         </text>
       )}
       {aoTocarSaida && (
-        <polygon className="quarto-alvo-porta" points={[p(0.12, 0), p(0.88, 0), p(0.88, 0, 104), p(0.12, 0, 104)].map((v) => v.join(",")).join(" ")} onClick={aoTocarSaida}>
+        <polygon className="quarto-alvo-porta" points={[p(porta.i + 0.12, 0), p(porta.i + 0.88, 0), p(porta.i + 0.88, 0, 104), p(porta.i + 0.12, 0, 104)].map((v) => v.join(",")).join(" ")} onClick={aoTocarSaida}>
           <title>Voltar ao K-FOFO</title>
         </polygon>
       )}
@@ -330,7 +343,7 @@ export const QuartoCena = memo(function QuartoCena({
       </defs>
       <g className="quarto-sombras" filter={`url(#${sombraId})`} pointerEvents="none">
         {moveis
-          .filter((m) => !m.desenho.startsWith("tapete"))
+          .filter((m) => !m.desenho.startsWith("tapete") && m.desenho !== "fora")
           .map((m) => (
             <polygon
               key={m.id}

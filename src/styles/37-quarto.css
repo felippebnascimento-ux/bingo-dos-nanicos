@@ -156,3 +156,7 @@
 .quarto .q-pp-gato0{fill:var(--pp-gato0)} .quarto .q-pp-gato1{fill:var(--pp-gato1)} .quarto .q-pp-macaneta{fill:var(--pp-macaneta)}
 .quarto .q-pp-vidro{fill:var(--pp-vidro)} .quarto .q-pp-cinza-azul{fill:var(--pp-cinza-azul)} .quarto .q-pp-almofada{fill:var(--pp-almofada)}
 .quarto .q-pp-guitarra{fill:var(--pp-guitarra)} .quarto .q-pp-guitarra2{fill:var(--pp-guitarra2)}
+
+/* Pirapó 114, planta nova: o lado de fora do prédio e a grade da janela */
+.quarto-vars{--pp-fora:#15181D; --pp-grade:#EDEBE5}
+.quarto .q-pp-fora{fill:var(--pp-fora)} .quarto .q-pp-grade{fill:var(--pp-grade)}
