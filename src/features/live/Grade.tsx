@@ -38,9 +38,10 @@ import { local } from "@/lib/util";
 import type { Friend } from "@/lib/tipos";
 import { activeCams, camStreamOf, openCamPip } from "./camera";
 import { opcaoCall, semVideoDe, setLive, useLive } from "./estado";
-import { Balao, botaoCamera, botaoTela, BotaoReacoes, Chave, lugarDe, MenuFone, MenuMic, useBalao, type Lugar } from "./PainelVoz";
+import { Balao, botaoCamera, botaoTela, BotaoReacoes, BotaoSoundboard, Chave, lugarDe, MenuFone, MenuMic, useBalao, type Lugar } from "./PainelVoz";
 import { canShare } from "./rtc";
-import { OpcoesVoz } from "./MenuPessoa";
+import { OpcoesEu, OpcoesModerador, OpcoesVoz } from "./MenuPessoa";
+import { abrirCartao } from "@/components/shell/CartaoPerfil";
 import { ativarSomTelas, ouvirJunto, useOuvindo } from "./somTelas";
 import { LIVE, mudarVolumeTela, stopLive, unwatch, VOLUME_TELA_MAX, volumeDaTela, watch } from "./tela";
 import { VideoMudo } from "./Video";
@@ -205,6 +206,17 @@ function MenuQuadro({
           {!principal && <Chave rotulo="Ouvir junto com a principal" ligado={junto} onChange={(x) => ouvirJunto(q.key, x)} />}
         </>
       )}
+      {q.tipo === "pessoa" && q.f && (
+        <button type="button" className="vz-item" onClick={(e) => (fechar(), abrirCartao(q.f!.id, e))}>
+          <span>Perfil</span>
+        </button>
+      )}
+      {q.tipo === "pessoa" && q.eu && (
+        <>
+          <div className="vz-sep" />
+          <OpcoesEu fechar={fechar} />
+        </>
+      )}
       {q.tipo === "pessoa" && !q.eu && fid && (
         <>
           <div className="vz-sep" />
@@ -234,6 +246,7 @@ function MenuQuadro({
           />
         </>
       )}
+      {q.tipo === "pessoa" && !q.eu && q.f?.user_id && <OpcoesModerador userId={q.f.user_id} naVoz={!!q.p.voz} fechar={fechar} />}
       {q.f && (
         <>
           <div className="vz-sep" />
@@ -517,6 +530,7 @@ export function BarraCanal() {
           )}
           <span className="cv-reacoes">
             <BotaoReacoes />
+            <BotaoSoundboard />
           </span>
           {mic.lugar && <MenuMic lugar={mic.lugar} ancora={mic.ancora} fechar={mic.fechar} />}
           {fone.lugar && <MenuFone lugar={fone.lugar} ancora={fone.ancora} fechar={fone.fechar} />}

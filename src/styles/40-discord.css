@@ -285,3 +285,9 @@
   .mini-player.dir-baixo,.mini-player.esq-baixo{bottom:84px}
   .mini-fechar{opacity:1}
 }
+
+/* a barra de baixo da call: reações e soundboard lado a lado (no celular a barra esconde os dois, como antes) */
+@media (min-width:861px){.cv-call .cv-reacoes{display:flex;gap:8px}}
+.cartao-voz h4{margin:0 0 4px;font:700 10.5px var(--display);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.cartao-voz .vz-vol{padding:2px 0 6px}
+.cartao-voz .vz-chave{padding-inline:0}

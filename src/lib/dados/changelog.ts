@@ -850,6 +850,14 @@ export const CHANGELOG: EntradaLog[] = [
       "Moderadores podem silenciar alguém na voz para todos, tirar da call e apagar mensagens do chat",
     ],
   },
+  {
+    data: "04/11/2026",
+    itens: [
+      "Call como no Discord: clicar em alguém do canal de voz abre o perfil com o volume dele; o clique direito abre o menu com volume, silenciar e perfil",
+      "No seu próprio nome (no canal e no seu quadrado da call): ligar e desligar o microfone, parar de ouvir e as configurações de voz",
+      "Moderadores também silenciam e tiram da call pelo menu do quadrado; a soundboard ganhou um botão na barra de baixo da call",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

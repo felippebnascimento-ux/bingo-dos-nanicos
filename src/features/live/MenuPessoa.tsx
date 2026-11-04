@@ -13,7 +13,8 @@ import { useLive } from "./estado";
 import { Balao, Chave, lugarDe, type Lugar } from "./PainelVoz";
 import { ouvirJunto, useOuvindo } from "./somTelas";
 import { infoDaTela, LIVE, mudarVolumeTela, unwatch, VOLUME_TELA_MAX, volumeDaTela, watch } from "./tela";
-import { ajustarVoz, silenciarNanico, useAjustesVoz, VOLUME_MAX } from "./voz";
+import { abrirCartao } from "@/components/shell/CartaoPerfil";
+import { ajustarVoz, alternarMudo, alternarSurdo, silenciarNanico, useAjustesVoz, VOLUME_MAX } from "./voz";
 import { desconectarDaVoz, silenciarParaTodos, useVozMod } from "./vozMod";
 import { useStatus } from "@/features/status/status";
 
@@ -121,7 +122,7 @@ export function OpcoesTela({ chave, sala, nome, fechar }: { chave: string; sala:
 }
 
 /** Só para moderador (o banco confere de novo): silenciar na voz para todos e tirar da call. */
-function OpcoesModerador({ userId, naVoz, fechar }: { userId: string; naVoz: boolean; fechar: () => void }) {
+export function OpcoesModerador({ userId, naVoz, fechar }: { userId: string; naVoz: boolean; fechar: () => void }) {
   const mods = useStatus((s) => s.mods);
   const myFid = useApp((s) => s.myFid);
   const silenciado = useVozMod((s) => s.silenciados.includes(userId));
@@ -153,6 +154,26 @@ function OpcoesModerador({ userId, naVoz, fechar }: { userId: string; naVoz: boo
   );
 }
 
+/** No meu próprio nome, como no Discord: microfone, som e o meu status (o volume é dos outros). */
+export function OpcoesEu({ fechar }: { fechar: () => void }) {
+  const naVoz = useApp((s) => !!s.myVozSid);
+  const mudo = useApp((s) => s.vozMudo);
+  const surdo = useApp((s) => s.vozSurdo);
+  return (
+    <>
+      {naVoz && (
+        <>
+          <Chave rotulo="Silenciar o microfone" ligado={mudo} onChange={() => alternarMudo()} />
+          <Chave rotulo="Ensurdecer (parar de ouvir)" ligado={surdo} onChange={() => alternarSurdo()} />
+        </>
+      )}
+      <button type="button" className="vz-item" onClick={() => (fechar(), setApp({ configAberto: true }))}>
+        <span>Configurações de voz</span>
+      </button>
+    </>
+  );
+}
+
 /** O menu inteiro de uma pessoa (nome, voz, transmissão e ficha). */
 export function MenuPessoa({ p, fid, nome, lugar, fechar }: { p: PresencaNanico | null; fid: string | null; nome: string; lugar: Lugar; fechar: () => void }) {
   const eu = !!p?.chaves.includes(MY_KEY);
@@ -169,7 +190,19 @@ export function MenuPessoa({ p, fid, nome, lugar, fechar }: { p: PresencaNanico 
         <b>{nome}</b>
         {p?.live && <span className="live-pill">AO VIVO</span>}
       </div>
-      {!eu && fid && <OpcoesVoz fid={fid} nome={nome} />}
+      {fid && (
+        <button
+          type="button"
+          className="vz-item"
+          onClick={(e) => {
+            fechar();
+            abrirCartao(fid, e);
+          }}
+        >
+          <span>Perfil</span>
+        </button>
+      )}
+      {eu ? <OpcoesEu fechar={fechar} /> : fid && <OpcoesVoz fid={fid} nome={nome} />}
       {!eu && p?.live && (
         <>
           <div className="vz-sep" />
@@ -236,5 +269,6 @@ export function useMenuDeToque(largura = 280) {
       e.stopPropagation();
     },
   };
+
   return { lugar, fechar, props };
 }

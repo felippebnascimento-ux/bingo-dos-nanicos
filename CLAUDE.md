@@ -182,7 +182,8 @@ src/
                        estado; menu do quadrado no clique direito; o Palco fica montado também na grade, escondido,
                        para a tela principal seguir com som; "Parar de assistir" na barra do Palco e no X do quadrado) e
                        MenuPessoa.tsx (o menu de uma pessoa, como no Discord: clique direito ou segurar o dedo, `useMenuDeToque`,
-                       no canal de voz, nos membros e nos quadrados; `OpcoesVoz`: volume de 0 a 200% (acima de 100% o som passa
+                       no canal de voz, nos membros e nos quadrados; o clique normal na lista da call abre o cartão de perfil; no meu
+                       nome, `OpcoesEu` (microfone, som, configurações); `OpcoesModerador` (silenciar para todos, tirar da call); `OpcoesVoz`: volume de 0 a 200% (acima de 100% o som passa
                        por um ganho do Web Audio) e silenciar; `OpcoesTela`: assistir, ouvir, volume e parar; a ficha). O volume de
                        cada transmissão fica em `volTelas` (estado.ts, guardado em `live-vol-por`) e muda por `mudarVolumeTela`.
                        Visual da call como no Discord (04/11/2026, 39-call.css): `.cv-call` ocupa a altura da tela, fundo

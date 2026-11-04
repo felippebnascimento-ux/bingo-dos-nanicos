@@ -221,7 +221,7 @@ export function BotaoReacoes() {
 }
 
 /* ---------- soundboard (sons curtos que todo mundo da voz ouve) ---------- */
-function BotaoSoundboard() {
+export function BotaoSoundboard() {
   const b = useBalao();
   return (
     <>
