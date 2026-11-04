@@ -7,6 +7,7 @@
 import { aoMudarPresenca, aoReceber, naMinhaSala, limitePorPessoa, sidValido } from "@/lib/sala";
 import { getApp, MY_KEY, useApp } from "@/lib/store";
 import { toast } from "@/lib/toast";
+import { ajuste } from "@/features/config/ajustes";
 import { camOnAnswer, camOnBye, camOnIce, camOnOffer, camOnWatch, closeAllCams, fecharSaidasCam, stopCam, syncCams } from "./camera";
 import { onRisco, pintar } from "./desenho";
 import { onReacao } from "./reacoes";
@@ -114,7 +115,7 @@ function avisarLives() {
   const novo = onlineSala.find((p) => p.live && p.fid && !antes.fids.has(p.fid) && p.fid !== myFid);
   if (!novo) return;
   toast(`${novo.name} entrou ao vivo`);
-  somDeLive(useAjustesVoz.getState().geral);
+  if (ajuste("somLive")) somDeLive(useAjustesVoz.getState().geral);
 }
 
 /** Para a minha transmissão, as que estou assistindo, as câmeras e a voz (ao sair do site ou trocar de sala). */

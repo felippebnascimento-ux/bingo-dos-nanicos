@@ -869,6 +869,18 @@ export const CHANGELOG: EntradaLog[] = [
       "O menu do clique direito nunca mais sai da tela: se for comprido, rola por dentro",
     ],
   },
+  {
+    data: "04/11/2026",
+    itens: [
+      "Configurações novas, como as do Discord: a engrenagem abre uma caixa por cima do site com as seções Minha conta, Perfil, Privacidade, Voz e vídeo, Notificações, Aparência, Acessibilidade, Texto e imagens, Atalhos de teclado, Novidades e Sobre, com busca; fecha no X, no Esc ou tocando fora",
+      "Tema claro, escuro ou do sistema, tamanho do texto do chat e mensagens compactas",
+      "Ligar e desligar cada som (menção, entrar e sair da voz, mutar, live, soundboard e chamada) e o aviso do computador quando alguém te menciona",
+      "Reduzir movimento, tirar o destaque de quem fala, esconder os vídeos e as imagens do chat, spoilers sempre abertos e escolher se Enter envia",
+      "Sair dos outros aparelhos, a lista de quem você bloqueou e ignorou e as suas notas, tudo num lugar só",
+      "Voz e vídeo igual ao do Discord: volume de entrada (até 200%) e de saída, teste de microfone, sensibilidade automática, atraso para soltar o pressione para falar, testar vídeo ali mesmo, fundo do vídeo, supressão de ruído forte, padrão ou nenhuma, controle automático de ganho e redefinir tudo",
+      "O botão das Configurações agora é uma engrenagem, e o \"Configurações de voz\" dos menus já abre direto em Voz e vídeo",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

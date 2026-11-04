@@ -11,7 +11,14 @@ export type PrefsMidia = {
   saida: string;
   cam: string;
   eco: boolean;
+  /** supressão de ruído forte (a RNNoise); desligada, vale a do navegador se `ruidoNav` */
   ruido: boolean;
+  /** a supressão de ruído do próprio navegador (o "Padrão" do Discord), quando a forte está desligada */
+  ruidoNav: boolean;
+  /** controle automático de ganho (o navegador ajusta o volume do microfone sozinho) */
+  agc: boolean;
+  /** volume de entrada, de 0 a 2 (100% = como o microfone manda) */
+  volEntrada: number;
 };
 
 export type Dispositivo = { id: string; nome: string };
@@ -25,6 +32,9 @@ export const useMidia = create<PrefsMidia & { mics: Dispositivo[]; saidas: Dispo
   cam: texto(salvo.cam),
   eco: salvo.eco !== false,
   ruido: salvo.ruido !== false,
+  ruidoNav: salvo.ruidoNav !== false,
+  agc: salvo.agc !== false,
+  volEntrada: typeof salvo.volEntrada === "number" && salvo.volEntrada >= 0 && salvo.volEntrada <= 2 ? salvo.volEntrada : 1,
   mics: [],
   saidas: [],
   cams: [],
@@ -34,8 +44,8 @@ export const useMidia = create<PrefsMidia & { mics: Dispositivo[]; saidas: Dispo
 
 export function salvarMidia(p: Partial<PrefsMidia>) {
   useMidia.setState(p);
-  const { mic, saida, cam, eco, ruido } = useMidia.getState();
-  local.setJson("midia", { mic, saida, cam, eco, ruido });
+  const { mic, saida, cam, eco, ruido, ruidoNav, agc, volEntrada } = useMidia.getState();
+  local.setJson("midia", { mic, saida, cam, eco, ruido, ruidoNav, agc, volEntrada });
 }
 
 /** O navegador deixa escolher a saída de som (setSinkId)? Hoje só Chrome e Edge. */
@@ -51,8 +61,8 @@ export function restricoesMic(p: PrefsMidia = useMidia.getState()): MediaTrackCo
   return {
     ...(p.mic ? { deviceId: { ideal: p.mic } } : {}),
     echoCancellation: p.eco,
-    noiseSuppression: p.ruido && !forte,
-    autoGainControl: true,
+    noiseSuppression: p.ruido ? !forte : p.ruidoNav,
+    autoGainControl: p.agc,
   };
 }
 

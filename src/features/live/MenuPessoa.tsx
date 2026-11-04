@@ -4,6 +4,7 @@
  * voz, na lista de membros e nos quadrados do Ao vivo. Volume da voz (até 200%), silenciar, a transmissão dela
  * (assistir, ouvir, volume e parar de assistir) e a ficha. Tudo só no meu aparelho.
  */
+import { abrirConfiguracoes } from "@/features/config/ajustes";
 import { useCallback, useRef, useState } from "react";
 import { assistirLive } from "@/components/shell/People";
 import { Avatar } from "@/components/ui/Avatar";
@@ -327,7 +328,7 @@ export function OpcoesEu({ fechar }: { fechar: () => void }) {
           <Chave caixa rotulo="Ensurdecer" ligado={surdo} onChange={() => alternarSurdo()} />
         </>
       )}
-      <button type="button" className="vz-item" onClick={() => (fechar(), setApp({ configAberto: true }))}>
+      <button type="button" className="vz-item" onClick={() => (fechar(), abrirConfiguracoes("voz"))}>
         <span>Configurações de voz</span>
       </button>
       {naVoz && (

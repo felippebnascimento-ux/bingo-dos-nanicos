@@ -1,7 +1,7 @@
 "use client";
 import { abrirCartao, PontoStatus, useSituacao } from "./CartaoPerfil";
 import { useEffect, useState, type ComponentType } from "react";
-import { IcAjustes, IcAoVivo, IcCassino, IcJogar, IcLoja, IcMidias, IcSeta, IcSitio, IcNanicadas, IcNanicos, IcAmigos, IcPerfil, IcTaca, IcTruco, IcVoltar } from "@/components/ui/icones";
+import { IcEngrenagem, IcAoVivo, IcCassino, IcJogar, IcLoja, IcMidias, IcSeta, IcSitio, IcNanicadas, IcNanicos, IcAmigos, IcPerfil, IcTaca, IcTruco, IcVoltar } from "@/components/ui/icones";
 import { fecharSeletores } from "@/components/ui/FriendPicker";
 import { Avatar } from "@/components/ui/Avatar";
 import { CamBotoes } from "@/features/live/CamBotoes";
@@ -188,7 +188,7 @@ function EuPainel() {
         <BotoesVozEu />
         {!naVoz && <CarteiraChip />}
         <button type="button" className={"eu-cfg" + (naConfig ? " on" : "")} aria-label="Configurações" data-dica="Configurações" data-dica-fim="" aria-expanded={naConfig} onClick={() => setApp({ configAberto: true })}>
-          <IcAjustes />
+          <IcEngrenagem />
         </button>
       </div>
       {naVoz && (

@@ -8,6 +8,7 @@ import { enviar, aoReceber, limitePorPessoa, naMinhaSala } from "@/lib/sala";
 import { getApp, MY_KEY } from "@/lib/store";
 import { tocarSom } from "@/lib/sons";
 import { toast } from "@/lib/toast";
+import { ajuste } from "@/features/config/ajustes";
 import { useAjustesVoz } from "./voz";
 
 export const SONS = [
@@ -116,6 +117,6 @@ export function ligarSoundboard() {
     /* só de quem está na voz, e não de quem eu silenciei */
     const aj = useAjustesVoz.getState();
     if (!p?.voz || (p.fid && (aj.silenciados.includes(p.fid) || aj.semSoundboard.includes(p.fid)))) return;
-    tocarSoundboard(m.s as IdSom, useAjustesVoz.getState().geral);
+    if (ajuste("somSoundboard")) tocarSoundboard(m.s as IdSom, useAjustesVoz.getState().geral);
   });
 }

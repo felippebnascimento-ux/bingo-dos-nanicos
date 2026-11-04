@@ -7,6 +7,7 @@
  * Clique direito (ou o botão ⋯) abre o menu do quadrado: destaque, janela flutuante, tela cheia, volumes e silenciar.
  * Só a tela principal toca som (o Palco continua montado, escondido na grade); as outras abertas vão sem som.
  */
+import { abrirConfiguracoes } from "@/features/config/ajustes";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import {
@@ -587,7 +588,7 @@ function MenuMais({ lugar, ancora, fechar }: { lugar: Lugar; ancora: HTMLElement
       <button type="button" className="vz-item" onClick={faz(() => telaCheiaDe(document.getElementById("liveWrap")))}>
         <span>Tela cheia</span>
       </button>
-      <button type="button" className="vz-item" onClick={faz(() => setApp({ configAberto: true }))}>
+      <button type="button" className="vz-item" onClick={faz(() => abrirConfiguracoes("voz"))}>
         <span>Configurações de voz e vídeo</span>
       </button>
     </Balao>

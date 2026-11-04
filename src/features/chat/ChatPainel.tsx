@@ -21,6 +21,7 @@ import {
 } from "./chat";
 import { dia, embedDe, formatar, linksDe, meMenciona, type Trecho } from "./formato";
 import { useNotas } from "@/features/status/notas";
+import { ajuste, useAjustes } from "@/features/config/ajustes";
 
 const SEM_MSGS: MsgChat[] = [];
 const RAPIDAS = ["👍", "😂", "❤️", "🔥", "😮", "😢"];
@@ -51,7 +52,7 @@ function Trechos({ l, meuAt }: { l: Trecho[]; meuAt: string }): ReactNode {
   });
 }
 function Spoiler({ children }: { children: ReactNode }) {
-  const [ver, setVer] = useState(false);
+  const [ver, setVer] = useState(() => ajuste("spoilersAbertos"));
   return (
     <span className={"chat-spoiler" + (ver ? " ver" : "")} role="button" tabIndex={0} aria-label={ver ? undefined : "Spoiler: toque para ver"} onClick={() => setVer(true)} onKeyDown={(e) => e.key === "Enter" && setVer(true)}>
       {children}
@@ -82,7 +83,8 @@ export function TextoChat({ texto, meuAt }: { texto: string; meuAt: string }) {
 function Embeds({ texto }: { texto: string }) {
   const vids = useMemo(() => linksDe(texto).map(embedDe).filter((e) => !!e).slice(0, 2), [texto]);
   const [abertos, setAbertos] = useState<string[]>([]);
-  if (!vids.length) return null;
+  const mostrar = useAjustes((s) => s.videosLinks);
+  if (!vids.length || !mostrar) return null;
   return (
     <>
       {vids.map((e) => {
@@ -152,6 +154,8 @@ function Mensagem({ m, primeira, eu, mod, meuAt, acoes, editando, fimEdicao, cit
   const bloqueado = useNotas((st) => !!f && st.bloqueados.includes(f.id));
   const escondida = useNotas((st) => !!f && (st.ignorados.includes(f.id) || st.bloqueados.includes(f.id)));
   const [mostrar, setMostrar] = useState(false);
+  const imagensChat = useAjustes((st) => st.imagensChat);
+  const [verFoto, setVerFoto] = useState(false);
   const autorCitada = citada ? friends.find((x) => x.user_id === citada.user_id) : undefined;
   const novo = chatNovo();
   const mencionaMe = !eu && meMenciona(m.text, meuAt);
@@ -252,10 +256,15 @@ function Mensagem({ m, primeira, eu, mod, meuAt, acoes, editando, fimEdicao, cit
             {m.fixadaEm && <small className="msg-fixada" title="Fixada no canal"> 📌</small>}
           </>
         )}
-        {m.midia && (
+        {m.midia && (imagensChat || verFoto) && (
           <span className="msg-foto">
             <Imagem caminho={m.midia} alt="Imagem no chat" />
           </span>
+        )}
+        {m.midia && !imagensChat && !verFoto && (
+          <button type="button" className="link msg-foto-mostrar" onClick={() => setVerFoto(true)}>
+            🖼 Imagem · Mostrar
+          </button>
         )}
         {m.text && <Embeds texto={m.text} />}
         {lista.length > 0 && (
@@ -445,6 +454,7 @@ export function ChatPainel({ canal, placeholder = "Mensagem para a sala" }: { ca
   const myFid = useApp((s) => s.myFid);
   const mods = useStatus((s) => s.mods);
   const visivel = useApp((s) => (canal ? s.aba === "chat" && s.canalTexto === canal : s.aba === "live" && s.railTab === "chat" && !s.railFechado));
+  const enterEnvia = useAjustes((s) => s.enterEnvia);
   const [texto, setTexto] = useState("");
   const [resposta, setResposta] = useState<MsgChat | null>(null);
   const [editando, setEditando] = useState<string | number | null>(null);
@@ -708,8 +718,10 @@ export function ChatPainel({ canal, placeholder = "Mensagem para a sala" }: { ca
             if (e.target.value.trim()) avisarDigitandoChat(chave);
           }}
           onKeyDown={(e) => {
-            /* Enter manda; Shift+Enter pula linha; seta para cima edita a minha última (como no Discord) */
-            if (e.key === "Enter" && !e.shiftKey) {
+            /* Enter manda; Shift+Enter pula linha (ao contrário, se a pessoa desligou "Enter envia");
+               seta para cima edita a minha última (como no Discord) */
+            const manda = ajuste("enterEnvia") ? !e.shiftKey : e.shiftKey || e.ctrlKey || e.metaKey;
+            if (e.key === "Enter" && manda) {
               e.preventDefault();
               void enviar();
             } else if (e.key === "ArrowUp" && !texto && chatNovo()) {
@@ -748,7 +760,7 @@ export function ChatPainel({ canal, placeholder = "Mensagem para a sala" }: { ca
         </button>
         <input ref={arquivo} type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onChange={(e) => (setFoto(e.target.files?.[0] ?? null), (e.target.value = ""))} />
       </form>
-      <small className="chat-ajuda">**negrito** *itálico* ~~riscado~~ ||spoiler|| `código` &gt; citação · Shift+Enter pula linha</small>
+      <small className="chat-ajuda">**negrito** *itálico* ~~riscado~~ ||spoiler|| `código` &gt; citação · {enterEnvia ? "Shift+Enter pula linha" : "Shift+Enter envia"}</small>
     </div>
   );
 }

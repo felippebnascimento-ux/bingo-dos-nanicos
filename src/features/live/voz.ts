@@ -49,12 +49,19 @@ export type ModoVoz = {
   tecla: string;
   /** sensibilidade da detecção de voz, de 0 (desligada: o microfone fica sempre aberto) a 1 (só voz alta abre) */
   sensib: number;
+  /** "Determinar automaticamente a sensibilidade", como no Discord: o site mede o barulho do ambiente e abre acima dele */
+  sensAuto: boolean;
+  /** "Atraso para soltar" do apertar para falar, em ms (o microfone fecha um pouco depois de soltar a tecla) */
+  atrasoPtt: number;
 };
 const modoSalvo = local.json<Partial<ModoVoz>>("voz-modo") || {};
 export const useModoVoz = create<ModoVoz>()(() => ({
   modo: modoSalvo.modo === "ptt" ? "ptt" : "voz",
   tecla: typeof modoSalvo.tecla === "string" && /^[A-Za-z0-9]{1,24}$/.test(modoSalvo.tecla) ? modoSalvo.tecla : "KeyV",
   sensib: typeof modoSalvo.sensib === "number" && modoSalvo.sensib >= 0 && modoSalvo.sensib <= 1 ? modoSalvo.sensib : 0,
+  /* quem já tinha escolhido uma sensibilidade à mão continua com ela */
+  sensAuto: typeof modoSalvo.sensAuto === "boolean" ? modoSalvo.sensAuto : !(typeof modoSalvo.sensib === "number" && modoSalvo.sensib > 0),
+  atrasoPtt: typeof modoSalvo.atrasoPtt === "number" && modoSalvo.atrasoPtt >= 0 && modoSalvo.atrasoPtt <= 2000 ? modoSalvo.atrasoPtt : 0,
 }));
 export function mudarModoVoz(p: Partial<ModoVoz>) {
   useModoVoz.setState(p);
@@ -297,7 +304,12 @@ function ligarPrefs() {
   if (prefsLigadas) return;
   prefsLigadas = true;
   useMidia.subscribe((s, p) => {
-    if (s.mic !== p.mic || s.eco !== p.eco || s.ruido !== p.ruido) trocarMicrofone();
+    if (s.mic !== p.mic || s.eco !== p.eco || s.ruido !== p.ruido || s.ruidoNav !== p.ruidoNav || s.agc !== p.agc) trocarMicrofone();
+    /* o volume de entrada muda na hora no ganho; se o microfone abriu sem ganho (estava em 100%), reabre com ele */
+    else if (s.volEntrada !== p.volEntrada) {
+      if (VOZ.mic?.ganho) VOZ.mic.ganho.gain.value = s.volEntrada;
+      else trocarMicrofone();
+    }
     if (s.saida !== p.saida) {
       for (const par of VOZ.pares.values()) aplicarSaida(par.audio);
       sinkDoReforco();
@@ -664,6 +676,10 @@ export function nivelBruto(): number {
 /* a porta do microfone (detecção de voz e apertar para falar): null = ainda não decidida */
 let portaAberta: boolean | null = null;
 let ultimaVozAlta = 0;
+/* o barulho do ambiente, para a sensibilidade automática: desce rápido para o silêncio e sobe devagar */
+let piso = 0.004;
+/** O volume mínimo para abrir o microfone na sensibilidade automática (bem acima do barulho do ambiente). */
+export const limiarAuto = () => Math.max(0.006, piso * 3.5);
 let falandoMudoDesde = 0;
 let silencioDesde = 0;
 let avisouMudo = 0;
@@ -673,7 +689,8 @@ function porta(agora: number) {
   if (!st) return;
   const mudo = getApp().vozMudo;
   const nivel = nivelBruto();
-  const { modo, sensib } = useModoVoz.getState();
+  const { modo, sensib, sensAuto } = useModoVoz.getState();
+  piso = nivel < piso ? piso + (nivel - piso) * 0.2 : piso + (nivel - piso) * 0.003;
   /* "Você está mudo": falando com o microfone desligado por mais de 1 s (um aviso a cada 30 s) */
   if (mudo && !getApp().vozSurdo && !useVoz.getState().silenciadoPorMod && nivel > LIMIAR_FALA * 1.6) {
     falandoMudoDesde ||= agora;
@@ -693,10 +710,10 @@ function porta(agora: number) {
   if (mudo) return;
   let aberta = true;
   if (modo === "ptt") aberta = useVoz.getState().apertando;
-  else if (sensib > 0) {
-    if (nivel > limiarDaSensib(sensib)) ultimaVozAlta = agora;
-    /* segura aberta 400 ms depois da última sílaba, para não cortar o fim das palavras */
-    aberta = agora - ultimaVozAlta < 400;
+  else if (sensAuto || sensib > 0) {
+    if (nivel > (sensAuto ? limiarAuto() : limiarDaSensib(sensib))) ultimaVozAlta = agora;
+    /* segura aberta um pouco depois da última sílaba, para não cortar o fim das palavras */
+    aberta = agora - ultimaVozAlta < (sensAuto ? 600 : 400);
   }
   if (aberta !== portaAberta) {
     portaAberta = aberta;
@@ -728,6 +745,7 @@ const digitando = (e: KeyboardEvent) => {
   return !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
 };
 if (typeof window !== "undefined") {
+  let atraso: ReturnType<typeof setTimeout> | undefined;
   addEventListener("keydown", (e) => {
     if (!VOZ.sid) return;
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && !e.altKey && (e.code === "KeyM" || e.code === "KeyD")) {
@@ -737,15 +755,20 @@ if (typeof window !== "undefined") {
       return;
     }
     const { modo, tecla } = useModoVoz.getState();
-    if (modo === "ptt" && e.code === tecla && !e.repeat && !digitando(e) && !useVoz.getState().apertando) {
+    if (modo === "ptt" && e.code === tecla && !e.repeat && !digitando(e)) {
+      clearTimeout(atraso);
+      if (useVoz.getState().apertando) return;
       useVoz.setState({ apertando: true });
       porta(Date.now());
     }
   });
   const soltou = () => {
     if (!useVoz.getState().apertando) return;
-    useVoz.setState({ apertando: false });
-    porta(Date.now());
+    clearTimeout(atraso);
+    atraso = setTimeout(() => {
+      useVoz.setState({ apertando: false });
+      porta(Date.now());
+    }, useModoVoz.getState().atrasoPtt);
   };
   addEventListener("keyup", (e) => e.code === useModoVoz.getState().tecla && soltou());
   /* trocou de janela segurando a tecla: o navegador não avisa que soltou */
