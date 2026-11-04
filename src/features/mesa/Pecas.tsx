@@ -71,10 +71,11 @@ export function Lugar({ f, nome, info, vez = null, fora, etiqueta, fala, eu, urg
   );
 }
 
-/* cores das fichas por valor, como num cassino: 5 vermelha, 10 azul, 25 verde, 100 preta, 500 roxa, 1000 dourada */
+/* cores das fichas por valor, como num cassino: 5 vermelha, 10 azul, 25 verde, 100 preta, 200 laranja, 500 roxa, 1000 dourada */
 const COR_FICHA: [number, string][] = [
   [1000, "ouro"],
   [500, "roxa"],
+  [200, "laranja"],
   [100, "preta"],
   [25, "verde"],
   [10, "azul"],

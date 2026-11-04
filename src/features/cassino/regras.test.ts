@@ -108,10 +108,15 @@ describe("roleta de mesa", () => {
     m = porFicha(m, "numero", 32, 25);
     m = porFicha(m, "cor", 0, 50);
     expect(m).toEqual([{ tipo: "numero", valor: 32, aposta: 50 }, { tipo: "cor", valor: 0, aposta: 50 }]);
-    expect(porFicha(m, "numero", 32, 100)[0].aposta).toBe(100);
+    expect(porFicha(m, "numero", 32, 100)[0].aposta).toBe(150);
+    /* juntando fichas, um lugar vai até o saldo, sem teto (seção 64) */
+    let alto = porFicha([], "cor", 0, 1000);
+    for (let k = 0; k < 24; k++) alto = porFicha(alto, "cor", 0, 1000);
+    expect(alto[0].aposta).toBe(25000);
+    expect(mesaValida(alto)).toBeNull();
     expect(totalMesa(dobrarMesa(m))).toBe(200);
     expect(mesaValida([])).toMatch(/pelo menos/);
-    expect(mesaValida(Array.from({ length: 11 }, (_, k) => ({ tipo: "numero" as const, valor: k, aposta: 100 })))).toMatch(/1.000/);
+    expect(mesaValida(Array.from({ length: 31 }, (_, k) => ({ tipo: "numero" as const, valor: k, aposta: 5 })))).toMatch(/30 fichas/);
     expect(mesaValida(m)).toBeNull();
   });
 

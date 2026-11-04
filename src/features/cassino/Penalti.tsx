@@ -15,8 +15,8 @@ import { local, reduzMovimento } from "@/lib/util";
 import { carregar, msgDe } from "./estado";
 import { membro, type Ponto } from "./goleiro";
 import { MAX_GOLS, multPenalti } from "./mesa";
-import { FICHAS } from "./regras";
-import { FichaVisual } from "./RoletaMesa";
+import { ValorAposta } from "./ValorAposta";
+import { APOSTA_MIN } from "./regras";
 
 const ZONAS = [0, 1, 2, 3, 4, 5];
 const NOME_ZONA = ["alto à esquerda", "alto no meio", "alto à direita", "baixo à esquerda", "baixo no meio", "baixo à direita"];
@@ -184,7 +184,8 @@ export function Penalti() {
 
   const chutar = async (zona: number) => {
     if (ocupado) return;
-    if (!disputa && saldo !== undefined && saldo < ficha) return toast("Sem moedas para essa ficha.");
+    if (!disputa && ficha < APOSTA_MIN) return toast(`A aposta mínima é ${APOSTA_MIN} moedas.`);
+    if (!disputa && saldo !== undefined && saldo < ficha) return toast("Sem moedas para essa aposta.");
     setOcupado(true);
     setPlaca(null);
     setFim(null);
@@ -256,7 +257,7 @@ export function Penalti() {
   /* a bola: na marca, voando até o canto, dentro da rede ou espirrando para fora (para o lado do canto) */
   /* defendeu: a bola fica na luva do goleiro, que pulou exatamente naquele canto */
   const classeBola = !lance ? "" : lance.fase === "rebateu" ? ` z${lance.zona} pega` : ` z${lance.zona}`;
-  const semSaldo = !disputa && saldo !== undefined && saldo < ficha;
+  const semSaldo = !disputa && ((saldo !== undefined && saldo < ficha) || ficha < APOSTA_MIN);
 
   return (
     <div className="rm penalti">
@@ -317,7 +318,7 @@ export function Penalti() {
         )}
         {!lance && (
           <p className="pn-dica" aria-live="polite">
-            {disputa ? `Escolha o canto do ${gols + 1}º chute` : "Escolha a ficha e toque num canto do gol"}
+            {disputa ? `Escolha o canto do ${gols + 1}º chute` : "Monte a aposta e toque num canto do gol"}
           </p>
         )}
       </div>
@@ -346,14 +347,10 @@ export function Penalti() {
           ) : (
             <>
               <p className="rm-rotulo">Sua aposta</p>
-              <div className="rm-fichas" role="radiogroup" aria-label="Valor da aposta">
-                {FICHAS.map((v) => (
-                  <button key={v} type="button" role="radio" aria-checked={ficha === v} className={ficha === v ? "sel" : undefined} onClick={() => setFicha(v)}>
-                    <FichaVisual v={v} />
-                  </button>
-                ))}
-              </div>
-              <p className="pn-agora">{semSaldo ? "Sem moedas para essa ficha." : `Toque num canto do gol para apostar ${ficha} e chutar.`}</p>
+              <ValorAposta valor={ficha} onValor={setFicha} saldo={saldo} />
+              <p className="pn-agora">
+                {ficha < APOSTA_MIN ? `Toque nas fichas para montar a aposta (a partir de ${APOSTA_MIN}).` : semSaldo ? "Sem moedas para essa aposta." : `Toque num canto do gol para apostar ${formatarMoedas(ficha)} e chutar.`}
+              </p>
             </>
           )}
           {fim && <p className={"av-res " + (fim.bom ? "bom" : "ruim")}>{fim.texto}</p>}

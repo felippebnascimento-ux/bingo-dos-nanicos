@@ -37,12 +37,14 @@ type VoaProps = {
   giro?: number;
   /** começa menor (a carta sai do baralho pequena) */
   escala?: number;
+  /** sobe esses px no meio do caminho e assenta com um tranco (a carta jogada pelo dealer); 0 = reto */
+  arco?: number;
   className?: string;
   children: ReactNode;
 };
 
 /** A peça nasce voando do ponto `de` até onde ela fica. */
-export function Voa({ de, atraso = 0, duracao = 420, giro = -12, escala = 0.7, className = "", children }: VoaProps) {
+export function Voa({ de, atraso = 0, duracao = 420, giro = -12, escala = 0.7, arco = 0, className = "", children }: VoaProps) {
   const ref = useRef<HTMLSpanElement>(null);
   const liberado = useLiberado();
   useLayoutEffect(() => {
@@ -55,12 +57,21 @@ export function Voa({ de, atraso = 0, duracao = 420, giro = -12, escala = 0.7, c
     /* termina exatamente como o CSS deixa a peça (a carta do leque fica inclinada), sem pulo no fim */
     const fim = getComputedStyle(el).transform;
     const base = fim && fim !== "none" ? fim : "";
+    const quadros: Keyframe[] = arco
+      ? [
+          { transform: `translate(${dx}px, ${dy}px) rotate(${giro}deg) scale(${escala}) ${base}`, opacity: 0 },
+          { opacity: 1, offset: 0.12 },
+          { transform: `translate(${dx * 0.45}px, ${dy * 0.45 - arco}px) rotate(${giro * 0.4}deg) scale(${(escala + 1) / 2 + 0.1}) ${base}`, offset: 0.5 },
+          { transform: `translateY(${arco * 0.08}px) scale(.97) ${base}`, offset: 0.86 },
+          { transform: base || "none", opacity: 1 },
+        ]
+      : [
+          { transform: `translate(${dx}px, ${dy}px) rotate(${giro}deg) scale(${escala}) ${base}`, opacity: 0 },
+          { opacity: 1, offset: 0.15 },
+          { transform: base || "none", opacity: 1 },
+        ];
     const anim = el.animate(
-      [
-        { transform: `translate(${dx}px, ${dy}px) rotate(${giro}deg) scale(${escala}) ${base}`, opacity: 0 },
-        { opacity: 1, offset: 0.15 },
-        { transform: base || "none", opacity: 1 },
-      ],
+      quadros,
       { duration: duracao, delay: atraso, easing: "cubic-bezier(.2,.8,.25,1)", fill: "backwards" },
     );
     return () => anim.cancel();
@@ -164,6 +175,40 @@ export function Aparece({ atraso, children }: { atraso: number; children: ReactN
     return () => anim.cancel();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  return (
+    <span ref={ref} className="mesa-voa">
+      {children}
+    </span>
+  );
+}
+
+/**
+ * Quando `ir` liga, a peça desliza até o ponto `para` e some (no fim da rodada o dealer recolhe as cartas para o
+ * descarte). Antes disso, fica parada onde está.
+ */
+export function Vai({ para, ir, atraso = 0, duracao = 520, children }: { para: string; ir: boolean; atraso?: number; duracao?: number; children: ReactNode }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const liberado = useLiberado();
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || !ir) return;
+    const alvo = el.closest(".mesa-cartas")?.querySelector(para);
+    if (!alvo || !liberado()) {
+      el.style.opacity = "0";
+      return () => void (el.style.opacity = "");
+    }
+    const a = centro(el.getBoundingClientRect()), b = centro(alvo.getBoundingClientRect());
+    const anim = el.animate(
+      [
+        { transform: "none", opacity: 1 },
+        { transform: `translate(${(b.x - a.x) * 0.15}px, ${(b.y - a.y) * 0.15 - 6}px) scale(1.03)`, opacity: 1, offset: 0.25 },
+        { transform: `translate(${b.x - a.x}px, ${b.y - a.y}px) rotate(-8deg) scale(.6)`, opacity: 0 },
+      ],
+      { duration: duracao, delay: atraso, easing: "cubic-bezier(.45,0,.3,1)", fill: "forwards" },
+    );
+    return () => anim.cancel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ir]);
   return (
     <span ref={ref} className="mesa-voa">
       {children}

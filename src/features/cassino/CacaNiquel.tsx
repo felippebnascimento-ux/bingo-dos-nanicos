@@ -15,8 +15,8 @@ import { toast } from "@/lib/toast";
 import { getApp } from "@/lib/store";
 import { local, reduzMovimento } from "@/lib/util";
 import { carregar, msgDe, useCassino } from "./estado";
-import { comboSlot, FICHAS } from "./regras";
-import { FichaVisual } from "./RoletaMesa";
+import { comboSlot } from "./regras";
+import { ValorAposta, apostaOk } from "./ValorAposta";
 
 type Rolo = { tira: string[]; y: number; dur: number; fase: "parado" | "loop" | "parando" };
 type Res = { simbolos: string[]; pagou: number; aposta: number; combo: string | null };
@@ -141,7 +141,7 @@ export function CacaNiquel() {
   const simbolos = rolos.length ? rolos.map((r) => r.simbolo) : ["n1", "n2", "bola", "moeda"];
   const qualquer = () => simbolos[Math.floor(Math.random() * simbolos.length)];
   const mudar = (k: number, r: Partial<Rolo>) => setMaq((m) => m.map((x, i) => (i === k ? { ...x, ...r } : x)));
-  const semSaldo = saldo !== undefined && saldo < aposta;
+  const semSaldo = !apostaOk(aposta, saldo);
 
   /** Um giro inteiro. Devolve false se não deu para girar (sem saldo, erro). */
   const girar = async (): Promise<boolean> => {
@@ -319,13 +319,7 @@ export function CacaNiquel() {
       </div>
 
       <div className="rm-controles">
-        <div className="rm-fichas" role="radiogroup" aria-label="Valor da aposta">
-          {FICHAS.map((v) => (
-            <button key={v} type="button" role="radio" aria-checked={aposta === v} className={aposta === v ? "sel" : undefined} disabled={jogando || auto > 0} onClick={() => setAposta(v)}>
-              <FichaVisual v={v} />
-            </button>
-          ))}
-        </div>
+        <ValorAposta valor={aposta} onValor={setAposta} saldo={saldo} disabled={jogando || auto > 0} />
         <div className="rm-botoes">
           <button type="button" className={"btn soft sm cn-auto" + (auto ? " on" : "")} disabled={(!auto && (jogando || semSaldo)) || !rolos.length} onClick={() => void automatico()}>
             {auto ? `Parar automático (${auto})` : "Giro automático ×10"}
@@ -336,7 +330,7 @@ export function CacaNiquel() {
         </div>
       </div>
       <button type="button" className="rm-girar" disabled={jogando || semSaldo || auto > 0 || !rolos.length} onClick={() => void girar()}>
-        {jogando ? "GIRANDO…" : semSaldo ? "Sem moedas" : `GIRAR · ${aposta} MOEDAS`}
+        {jogando ? "GIRANDO…" : aposta < 5 ? "MONTE A APOSTA" : semSaldo ? "Sem moedas" : `GIRAR · ${formatarMoedas(aposta)} MOEDAS`}
       </button>
     </div>
   );

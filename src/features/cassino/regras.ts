@@ -8,8 +8,6 @@ export type TipoAposta = "numero" | "cor" | "paridade" | "metade" | "duzia" | "c
 export type Cor = "vermelho" | "preto" | "verde";
 
 export const APOSTA_MIN = 5;
-export const APOSTA_MAX = 100;
-export const FICHAS = [5, 10, 25, 50, 100] as const;
 
 /** Casas vermelhas da roleta europeia. */
 export const VERMELHAS: ReadonlySet<number> = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
@@ -35,23 +33,24 @@ export function pagamentoRoleta(tipo: TipoAposta, valor: number, casa: number, a
 
 /* ---------- mesa: várias fichas na mesma rodada (apostar_roleta_mesa) ---------- */
 export type Ficha = { tipo: TipoAposta; valor: number; aposta: number };
-export const MESA_MAX = 1000;
+/* desde a seção 64: sem teto, até o saldo (num lugar e na rodada); as fichas de 500 e 1.000 entram na roleta */
+export const LUGAR_MAX = Number.MAX_SAFE_INTEGER;
 export const MESA_FICHAS_MAX = 30;
+export const FICHAS_ROLETA = [5, 10, 25, 50, 100, 500, 1000] as const;
 
-/** Põe uma ficha num lugar da mesa: soma com o que já tinha ali (cada lugar até 100). */
+/** Põe uma ficha num lugar da mesa: soma com o que já tinha ali. */
 export function porFicha(mesa: readonly Ficha[], tipo: TipoAposta, valor: number, aposta: number): Ficha[] {
   const i = mesa.findIndex((f) => f.tipo === tipo && f.valor === valor);
-  if (i < 0) return [...mesa, { tipo, valor, aposta: Math.min(APOSTA_MAX, aposta) }];
-  return mesa.map((f, k) => (k === i ? { ...f, aposta: Math.min(APOSTA_MAX, f.aposta + aposta) } : f));
+  if (i < 0) return [...mesa, { tipo, valor, aposta: Math.min(LUGAR_MAX, aposta) }];
+  return mesa.map((f, k) => (k === i ? { ...f, aposta: Math.min(LUGAR_MAX, f.aposta + aposta) } : f));
 }
 export const totalMesa = (mesa: readonly Ficha[]) => mesa.reduce((s, f) => s + f.aposta, 0);
-/** Dobra todas as fichas (cada lugar até 100). */
-export const dobrarMesa = (mesa: readonly Ficha[]) => mesa.map((f) => ({ ...f, aposta: Math.min(APOSTA_MAX, f.aposta * 2) }));
+/** Dobra todas as fichas. */
+export const dobrarMesa = (mesa: readonly Ficha[]) => mesa.map((f) => ({ ...f, aposta: Math.min(LUGAR_MAX, f.aposta * 2) }));
 /** Dá para girar? (o banco confere de novo) */
 export function mesaValida(mesa: readonly Ficha[]): string | null {
   if (!mesa.length) return "Ponha pelo menos uma ficha na mesa.";
   if (mesa.length > MESA_FICHAS_MAX) return "No máximo 30 fichas por rodada.";
-  if (totalMesa(mesa) > MESA_MAX) return "No máximo 1.000 moedas por rodada.";
   return null;
 }
 

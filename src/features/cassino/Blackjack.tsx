@@ -1,33 +1,38 @@
 "use client";
 /*
- * Blackjack ao vivo, no jeito dos cassinos online (o padrão das mesas de cartas): a barra de cima com o que está
- * acontecendo, o tempo, a carteira e quanto tenho na mesa; as últimas somas do dealer; a mesa em meia-lua com o dealer,
- * o sapato e a bandeja, e os 5 lugares com o círculo de aposta numerado (o meu dourado). No celular, os outros ficam
+ * Blackjack ao vivo, no jeito dos cassinos ao vivo de verdade: a barra de cima com o que está acontecendo, o tempo, a
+ * carteira e quanto tenho na mesa; as últimas somas do dealer; o estúdio com o Veião de dealer atrás da mesa em
+ * perspectiva (BjEstudio.tsx: ele dá as cartas com a mão, fala com a mesa e reage), o sapato, o descarte, a bandeja e
+ * os 5 lugares com o círculo de aposta numerado (o meu dourado). No celular, os outros ficam
  * numa fileira e a minha mão fica grande no meio. Embaixo, o painel: fichas para montar a aposta (Desfazer, Repetir,
  * Dobrar) ou os botões redondos da vez (Pedir, Parar, Dobrar, Dividir). Quem dá as cartas, conta e paga é o banco
  * (seção 43); aqui só mostra.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useApp } from "@/lib/store";
 import { formatarMoedas } from "@/lib/moedas";
 import { useCarteira } from "@/lib/carteira";
 import { local } from "@/lib/util";
 import { CartaFrancesa } from "@/features/mesa/CartaFrancesa";
-import { Ficha, Lugar, Mesa, NaMesa, Pilha } from "@/features/mesa/Pecas";
-import { Aparece, Pula, Some, Vira, Voa } from "@/features/mesa/Animar";
+import { Ficha, Lugar, NaMesa, Pilha } from "@/features/mesa/Pecas";
+import { AnimarMesa, Aparece, Pula, Some, Vai, Vira, Voa } from "@/features/mesa/Animar";
 import { BarraJogo, BotaoMini, BotaoRedondo, EscolherFichas, Faixa, Historico, Soma } from "@/features/mesa/Painel";
-import { APOSTA_MAX, APOSTA_MIN, carta, hashBate, LUGARES, opcoes, resultado, sapato, TEMPO_APOSTAS_MS, TEMPO_VEZ_MS, type MaoBj } from "./bjRegras";
+import { APOSTA_MIN, carta, hashBate, LUGARES, opcoes, resultado, sapato, TEMPO_APOSTAS_MS, TEMPO_VEZ_MS, type MaoBj } from "./bjRegras";
 import { useBlackjack } from "./bjDados";
+import { EstudioBj } from "./BjEstudio";
 
 /* onde fica cada lugar no arco do computador (em % da mesa); no celular, 36-mesas.css muda (bj-eu, bj-o0…) */
 const LUGAR_XY: [number, number][] = [
-  [15, 60],
-  [32, 74],
-  [50, 80],
-  [68, 74],
-  [85, 60],
+  [14, 62],
+  [31, 72],
+  [50, 78],
+  [69, 72],
+  [86, 62],
 ];
-const FICHAS = [5, 10, 25, 50, 100, 200];
+/* uma carta sai do sapato a cada DAR_MS na primeira distribuição (a mão do Veião acompanha, 36-mesas.css) */
+const DAR_MS = 280;
+/* aposta de 5 até o saldo (seção 64): as fichas somam e o TUDO põe a carteira inteira */
+const FICHAS = [5, 10, 25, 50, 100, 500, 1000];
 const fmt = (n: number) => n.toLocaleString("pt-BR");
 
 /** O relógio do banco, andando de 1/4 em 1/4 de segundo (para as contagens). */
@@ -55,9 +60,9 @@ function Cartas({ cartas, rodada, atraso }: { cartas: string[]; rodada: number; 
         const k = carta(c);
         const t = atraso?.(i) ?? 0;
         return (
-          <Voa key={`${rodada}-${i}`} de=".bj-sapato" atraso={t} giro={-18} escala={0.55}>
+          <Voa key={`${rodada}-${i}`} de=".bj-sapato" atraso={t} giro={-24} escala={0.5} arco={34} duracao={520}>
             {k ? (
-              <Vira key={c} atraso={t + 360}>
+              <Vira key={c} atraso={t + 440}>
                 <CartaFrancesa v={k.v} n={k.n} />
               </Vira>
             ) : (
@@ -80,7 +85,7 @@ const SELO: Record<string, { txt: (m: MaoBj) => string; cls: string }> = {
 
 const REGRAS = (
   <>
-    <p>Todos contra o mesmo dealer. Aposte de {APOSTA_MIN} a {APOSTA_MAX}; a primeira aposta abre a rodada, com 10 s para os outros entrarem.</p>
+    <p>Todos contra o mesmo dealer. Aposte de {APOSTA_MIN} moedas até tudo o que tem; a primeira aposta abre a rodada, com 10 s para os outros entrarem.</p>
     <p>Blackjack paga 3 para 2. O dealer pede até 16 e para em todos os 17. Empate devolve a aposta.</p>
     <p>Dobrar com as duas primeiras cartas; dividir um par uma vez (ases recebem uma carta só). 15 s por decisão: acabou o tempo, para.</p>
   </>
@@ -118,7 +123,7 @@ export function Blackjack({ ativa = true }: { ativa?: boolean }) {
   /* a primeira distribuição: uma carta para cada lugar, uma para o dealer, e de novo */
   const lugaresNaRodada = [...lugaresOcupados].sort((a, b) => a - b);
   const darAtraso = (lugar: number | "dealer") => (i: number) =>
-    i < 2 ? (i * (lugaresNaRodada.length + 1) + (lugar === "dealer" ? lugaresNaRodada.length : Math.max(0, lugaresNaRodada.indexOf(lugar)))) * 120 : 0;
+    i < 2 ? (i * (lugaresNaRodada.length + 1) + (lugar === "dealer" ? lugaresNaRodada.length : Math.max(0, lugaresNaRodada.indexOf(lugar)))) * DAR_MS : 0;
   const urgente = (segVez !== null && segVez <= 5) || (segApostas !== null && segApostas <= 3);
   const naMesa = minhas.reduce((s, m) => s + m.aposta, 0);
   const montado = pilha.reduce((s, v) => s + v, 0);
@@ -136,14 +141,14 @@ export function Blackjack({ ativa = true }: { ativa?: boolean }) {
             : `Vez de ${nome(vez.userId)} · ${segVez} s`
           : "O dealer joga"
         : "Rodada paga";
-  const falta = r?.fase === "apostas" ? (r.fechaEm - agora) / TEMPO_APOSTAS_MS : r?.fase === "jogo" && vez && segVez !== null ? segVez / (TEMPO_VEZ_MS / 1000) : null;
+  const falta = r?.fase === "apostas" ? (r.fechaEm - agora) / TEMPO_APOSTAS_MS : r?.fase === "jogo" && vez && r.vezAte ? Math.max(0, (r.vezAte - agora) / TEMPO_VEZ_MS) : null;
   const meuTotal = minhas.reduce((s, m) => s + (m.pagou ?? 0), 0) - naMesa;
   const meuBj = minhas.some((m) => m.estado === "blackjack" && (m.pagou ?? 0) > m.aposta);
   const dealerTxt = r && r.dealerPontos > 21 ? `o dealer estourou com ${r.dealerPontos}` : `o dealer fez ${r?.dealerPontos ?? 0}`;
   const faixa = !r ? (
     <Faixa titulo="MESA PARADA" sub="A primeira aposta abre a rodada" />
   ) : r.fase === "apostas" ? (
-    <Faixa titulo="FAÇAM SUAS APOSTAS" sub={`${segApostas} s · de ${APOSTA_MIN} a ${APOSTA_MAX}`} falta={falta} />
+    <Faixa titulo="FAÇAM SUAS APOSTAS" sub={`${segApostas} s · de ${APOSTA_MIN} até o seu saldo`} falta={falta} />
   ) : r.fase === "jogo" && minhaVez && vez ? (
     <Faixa titulo="SUA VEZ" sub={op?.dividir ? `${vez.pontos} · dá para dividir` : op?.dobrar && vez.pontos >= 9 && vez.pontos <= 11 ? `${vez.pontos} · boa hora para dobrar` : `${vez.pontos} · ${segVez} s`} />
   ) : r.fase === "jogo" && !vez ? (
@@ -160,10 +165,46 @@ export function Blackjack({ ativa = true }: { ativa?: boolean }) {
     <Faixa titulo={r.dealerPontos > 21 ? "O DEALER ESTOUROU" : `DEALER ${r.dealerPontos}`} />
   ) : null;
 
+  /* ---------- o Veião ---------- */
+  const fimFalta = fim ? (r?.fimEm ?? 0) - agora : Infinity;
+  /* no último segundo do resultado, ele recolhe as cartas para o descarte */
+  const recolher = fim && fimFalta < 1100;
+  const dealerBj = !!r && r.dealer.length === 2 && r.dealerPontos === 21 && !r.dealer.includes("X");
+  const algumBj = maos.some((m) => m.estado === "blackjack");
+  const fala = !r
+    ? "Mesa aberta! Quem vai?"
+    : r.fase === "apostas"
+      ? (segApostas ?? 0) > 3
+        ? "Façam suas apostas!"
+        : "Últimas apostas…"
+      : r.fase === "jogo"
+        ? vez
+          ? minhaVez
+            ? vez.pontos >= 9 && vez.pontos <= 11 && op?.dobrar
+              ? `${vez.pontos}… dobra?`
+              : "Sua vez! Pede ou para?"
+            : `E aí, ${nome(vez.userId)}?`
+          : r.dealerPontos > 21
+            ? "Estourei!"
+            : "Minha vez…"
+        : r.dealerPontos > 21
+          ? "Estourei! Pago a mesa"
+          : dealerBj
+            ? "Blackjack da casa!"
+            : algumBj
+              ? "Blackjack! Parabéns"
+              : `Dealer fez ${r.dealerPontos}`;
+  const olha = vez ? (vez.lugar - 3) / 2 : 0;
+  const gesto = !fim ? undefined : r && r.dealerPontos > 21 ? "estourou" : dealerBj ? "comemora" : "paga";
+  /* a mão que dá as cartas: um lote por mudança no número de cartas na mesa */
+  const naMesaCartas = (r?.dealer.length ?? 0) + maos.reduce((s, m) => s + m.cartas.length, 0);
+  const primeiraMao = maos.every((m) => m.cartas.length <= 2) && (r?.dealer.length ?? 0) <= 2;
+  const dar = r && r.fase !== "apostas" ? { chave: `${r.id}-${naMesaCartas}`, n: primeiraMao ? naMesaCartas : 1 } : undefined;
+
   /* no celular, os outros vão numa fileira (bj-o0…) e o meu lugar fica grande no meio (bj-eu) */
   const outros = Array.from({ length: LUGARES }, (_, i) => i + 1).filter((l) => l !== meuLugar);
 
-  const somarFicha = (v: number) => setPilha((p) => (p.reduce((s, x) => s + x, 0) + v <= APOSTA_MAX ? [...p, v] : p));
+  const somarFicha = (v: number) => setPilha((p) => (p.reduce((s, x) => s + x, 0) + v <= saldo ? [...p, v] : p));
   const enviarAposta = async (v: number) => {
     if (v < APOSTA_MIN) return;
     if (await apostar(v)) {
@@ -195,23 +236,32 @@ export function Blackjack({ ativa = true }: { ativa?: boolean }) {
         rotulo="Últimas do dealer:"
         itens={(estado?.historico ?? []).map((h) => (h.bj ? { txt: "BJ", tom: "o" as const } : h.pontos > 21 ? { txt: String(h.pontos), tom: "p" as const, dica: "estourou" } : { txt: String(h.pontos) }))}
       />
-      <Mesa forma="meia-lua" className={meuLugar ? "bj-comigo" : "bj-sem-mim"}>
-        <NaMesa x={50} y={6}>
+      <AnimarMesa>
+      <div className={"mesa-cartas meia-lua bj-3d " + (meuLugar ? "bj-comigo" : "bj-sem-mim")}>
+        <EstudioBj fala={fala} olha={olha} gesto={gesto} dar={dar} />
+        <NaMesa x={50} y={41.5} className="bj-bandeja-pos">
           <div className="bj-bandeja" aria-hidden="true">
-            {[1000, 500, 100, 25, 10, 5].map((v) => (
+            {[500, 100, 25, 10, 5].map((v) => (
               <span key={v}>
+                <Ficha valor={v} tam={22} />
                 <Ficha valor={v} tam={22} />
                 <Ficha valor={v} tam={22} />
               </span>
             ))}
           </div>
         </NaMesa>
-        <NaMesa x={88} y={12} className="bj-sapato-pos">
-          <span className="bj-sapato" aria-hidden="true" />
+        <NaMesa x={67.5} y={42} className="bj-sapato-pos">
+          <span className="bj-sapato" aria-hidden="true">
+            <i />
+          </span>
+        </NaMesa>
+        <NaMesa x={32.5} y={42} className="bj-descarte-pos">
+          <span className="bj-descarte" aria-hidden="true" />
         </NaMesa>
         {/* o dealer */}
-        <NaMesa x={50} y={22} className="bj-topo">
+        <NaMesa x={50} y={51.5} className="bj-topo">
           {r && r.dealer.length > 0 && (
+            <Vai para=".bj-descarte" ir={recolher}>
             <div className="bj-dealer">
               <Cartas cartas={r.dealer} rodada={r.id} atraso={darAtraso("dealer")} />
               <Aparece atraso={darAtraso("dealer")(1) + 500}>
@@ -220,6 +270,7 @@ export function Blackjack({ ativa = true }: { ativa?: boolean }) {
                 </Pula>
               </Aparece>
             </div>
+            </Vai>
           )}
           {vez && !minhaVez && (
             <span className="mesa-aviso" key={vez.id}>
@@ -228,11 +279,8 @@ export function Blackjack({ ativa = true }: { ativa?: boolean }) {
             </span>
           )}
         </NaMesa>
-        <NaMesa x={50} y={34} className="bj-regras-pos">
-          <span className="bj-regras">BLACKJACK PAGA 3 PARA 2 · O DEALER PARA EM 17</span>
-        </NaMesa>
         {faixa && (
-          <NaMesa x={50} y={44} className={"bj-faixa-pos" + (r?.fase === "jogo" ? " no-jogo" : fim ? " no-fim" : "")} key={`${r?.id}-${r?.fase}-${minhaVez}`}>
+          <NaMesa x={22} y={19} className={"bj-faixa-pos" + (r?.fase === "jogo" ? " no-jogo" : fim ? " no-fim" : "")} key={`${r?.id}-${r?.fase}-${minhaVez}`}>
             {faixa}
           </NaMesa>
         )}
@@ -252,17 +300,20 @@ export function Blackjack({ ativa = true }: { ativa?: boolean }) {
             );
           const uid = dele[0].userId;
           const naVez = !!vez && vez.userId === uid;
-          const fVez = naVez && segVez !== null ? segVez / (TEMPO_VEZ_MS / 1000) : null;
+          /* o anel do tempo pelo relógio em ms (pelos segundos inteiros ele andava aos saltos) */
+          const fVez = naVez && r?.vezAte ? Math.max(0, Math.min(1, (r.vezAte - agora) / TEMPO_VEZ_MS)) : null;
           const aposta = dele.reduce((s, m) => s + m.aposta, 0);
           const pago = dele.reduce((s, m) => s + (m.pagou ?? 0), 0);
           return (
             <NaMesa key={lugar} x={x} y={y} className={`bj-lugar bj-l${lugar} ${posCel}`}>
+              {naVez && <span className="bj-holofote" aria-hidden="true" />}
               <div className="bj-maos">
                 {dele.map((m) => {
                   const res = resultado(m);
                   return (
-                    <div key={m.id} className={"bj-uma" + (vez?.id === m.id ? " vez" : "")}>
+                    <div key={m.id} className={"bj-uma" + (vez?.id === m.id ? " vez" : "") + (m.estado === "estourou" ? " estourou" : "")}>
                       {m.cartas.length > 0 && (
+                        <Vai para=".bj-descarte" ir={recolher}>
                         <div className="bj-linha">
                           <Cartas cartas={m.cartas} rodada={r?.id ?? 0} atraso={m.mao === 1 ? darAtraso(lugar) : undefined} />
                           <Aparece atraso={m.mao === 1 ? darAtraso(lugar)(1) + 500 : 0}>
@@ -271,6 +322,7 @@ export function Blackjack({ ativa = true }: { ativa?: boolean }) {
                             </Pula>
                           </Aparece>
                         </div>
+                        </Vai>
                       )}
                       {res && (fim || res === "estourou") && res !== "blackjack" && <span className={"mesa-res " + SELO[res].cls}>{SELO[res].txt(m)}</span>}
                     </div>
@@ -280,6 +332,8 @@ export function Blackjack({ ativa = true }: { ativa?: boolean }) {
               <div className="bj-aposta">
                 <span className={"mesa-spot" + (uid === eu ? " meu" : "")}>
                   <span className="mesa-spot-num">{lugar}</span>
+                  {/* a aposta chegou ou mudou: uma onda de luz no círculo */}
+                  <span className="bj-onda" key={"onda-" + aposta} aria-hidden="true" />
                   {fim && pago === 0 ? (
                     /* perdeu: a aposta vai para a banca do dealer */
                     <Some key={"perdeu-" + lugar} para=".bj-bandeja" atraso={500}>
@@ -293,6 +347,14 @@ export function Blackjack({ ativa = true }: { ativa?: boolean }) {
                     </Voa>
                   )}
                 </span>
+                {/* ganhou: uma chuva de moedas (maior com blackjack) */}
+                {fim && pago > aposta && (
+                  <span className={"bj-moedas" + (dele.some((m) => m.estado === "blackjack") ? " muitas" : "")} aria-hidden="true">
+                    {Array.from({ length: 14 }, (_, k) => (
+                      <i key={k} style={{ "--k": k } as CSSProperties} />
+                    ))}
+                  </span>
+                )}
                 {/* ganhou: o pagamento sai da banca */}
                 {fim && pago > aposta && (
                   <Voa key={"paga-" + lugar} de=".bj-bandeja" giro={0} escala={1} duracao={700} atraso={500}>
@@ -312,7 +374,8 @@ export function Blackjack({ ativa = true }: { ativa?: boolean }) {
             </NaMesa>
           );
         })}
-      </Mesa>
+      </div>
+      </AnimarMesa>
 
       {/* o painel de baixo: montar a aposta, jogar a vez ou esperar */}
       {minhaVez && op && vez ? (
@@ -330,14 +393,15 @@ export function Blackjack({ ativa = true }: { ativa?: boolean }) {
         </div>
       ) : podeApostar && !cheia ? (
         <div className="mesa-painel" key="apostas">
-          <EscolherFichas valores={FICHAS} onFicha={somarFicha} desligadas={(v) => montado + v > APOSTA_MAX || montado + v > saldo} />
+          <EscolherFichas valores={FICHAS} onFicha={somarFicha} desligadas={(v) => montado + v > saldo} />
           <div className="mesa-linha">
             <BotaoMini icone="↶" rotulo="Desfazer" onClick={() => setPilha((p) => p.slice(0, -1))} disabled={!pilha.length} />
             <BotaoMini icone="↻" rotulo={ultima ? `Repetir ${ultima}` : "Repetir"} onClick={() => setPilha([ultima])} disabled={!ultima || ultima > saldo} />
-            <BotaoMini icone="×2" rotulo="Dobrar" onClick={() => setPilha((p) => (montado * 2 <= Math.min(APOSTA_MAX, saldo) ? [...p, ...p] : p))} disabled={!montado || montado * 2 > Math.min(APOSTA_MAX, saldo)} />
+            <BotaoMini icone="×2" rotulo="Dobrar" onClick={() => setPilha((p) => (montado * 2 <= saldo ? [...p, ...p] : p))} disabled={!montado || montado * 2 > saldo} />
+            <BotaoMini icone="∞" rotulo="Tudo" onClick={() => setPilha([saldo])} disabled={saldo < APOSTA_MIN || montado === saldo} />
             <button className="mesa-bt ouro" type="button" disabled={enviando || montado < APOSTA_MIN || saldo < montado} onClick={() => void enviarAposta(montado)}>
               {minhas.length && r?.fase === "apostas" ? "Trocar aposta" : "Apostar"}
-              <small>{montado ? formatarMoedas(montado) : `toque nas fichas (${APOSTA_MIN} a ${APOSTA_MAX})`}</small>
+              <small>{montado ? formatarMoedas(montado) : `toque nas fichas (de ${APOSTA_MIN} até o saldo)`}</small>
             </button>
           </div>
         </div>

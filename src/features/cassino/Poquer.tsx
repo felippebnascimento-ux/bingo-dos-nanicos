@@ -53,7 +53,7 @@ function chanceGuardada(minhas: string[], mesa: string[], oponentes: number) {
 const REGRAS = (
   <>
     <p>Texas Hold&apos;em: 2 cartas para cada um e 5 na mesa (flop, turn e river). Vence a melhor mão de 5 das 7 cartas.</p>
-    <p>Até 6 por mesa. Senta com 20 a 100 big blinds da carteira; ao levantar, o que sobrou volta. 20 s por jogada: acabou o tempo, passa se puder, senão desiste.</p>
+    <p>Até 6 por mesa. Senta com pelo menos 20 big blinds, até tudo o que tem na carteira; ao levantar, o que sobrou volta. 20 s por jogada: acabou o tempo, passa se puder, senão desiste.</p>
     <p>All-in divide o pote certinho entre quem pôs. A casa leva 3% do pote, só do flop em diante.</p>
   </>
 );
@@ -132,7 +132,7 @@ function Salao({ p }: { p: ReturnType<typeof usePoquer> }) {
             ))}
           </div>
           <button className="mesa-bt ouro" type="button" disabled={p.enviando} onClick={() => void p.abrir(blind)}>
-            Abrir mesa<small>senta com {fmt(compraMin(blind))} a {fmt(compraMax(blind))}</small>
+            Abrir mesa<small>senta com {fmt(compraMin(blind))} ou mais</small>
           </button>
         </div>
       )}
@@ -186,6 +186,8 @@ export function Poquer({ ativa = true }: { ativa?: boolean }) {
   const vezJ = h && !fim && h.vez != null ? jog(h.vez) : undefined;
   const minhaVez = !!vezJ && vezJ.userId === eu;
   const seg = h?.vezAte && !fim ? Math.max(0, Math.ceil((h.vezAte - agora) / 1000)) : null;
+  /* quanto falta da vez (0 a 1), pelo relógio em ms: o anel e as barras andam lisos, não de segundo em segundo */
+  const fracVez = h?.vezAte && !fim ? Math.max(0, Math.min(1, (h.vezAte - agora) / TEMPO_VEZ_PK_MS)) : null;
   const eu_j = meu ? jog(meu.lugar) : undefined;
   /* as cartas saem do baralho uma de cada vez, a partir de quem está depois do botão (duas voltas) */
   const naMao = h ? [...h.jogadores].sort((a, b) => ((a.lugar - h.botao + 5) % 6) - ((b.lugar - h.botao + 5) % 6)).map((j) => j.lugar) : [];
@@ -258,7 +260,7 @@ export function Poquer({ ativa = true }: { ativa?: boolean }) {
         nome="Texas Hold'em"
         sub={`Mesa ${e.mesa.id} · Blinds ${bb / 2}/${bb}${h ? ` · Mão ${h.id}` : ""}`}
         status={!h ? (e.lugares.length < 2 ? "Esperando jogadores" : "A mão já vai começar") : fim ? "Fim da mão" : minhaVez ? `Sua vez · ${seg} s` : vezJ ? `Vez de ${nome(vezJ.userId)} · ${seg} s` : NOME_FASE[h.fase]}
-        falta={vezJ && seg !== null ? seg / (TEMPO_VEZ_PK_MS / 1000) : null}
+        falta={vezJ && fracVez !== null ? fracVez : null}
         urgente={urgente}
         carteira={saldo}
         naMesa={meu ? meu.fichas : null}
@@ -326,7 +328,7 @@ export function Poquer({ ativa = true }: { ativa?: boolean }) {
                 f={rosto(l.userId)}
                 nome={nome(l.userId)}
                 eu={souEu}
-                vez={naVez && seg !== null ? seg / (TEMPO_VEZ_PK_MS / 1000) : null}
+                vez={naVez && fracVez !== null ? fracVez : null}
                 urgente={naVez && urgente}
                 ganhou={ganhou > 0}
                 fora={j?.estado === "desistiu" || (!j && !!h && !fim)}
@@ -334,7 +336,7 @@ export function Poquer({ ativa = true }: { ativa?: boolean }) {
                 info={naVez && seg !== null ? `${fmt(l.fichas)} · ${seg} s` : fmt(l.fichas)}
               />
               {naVez && seg !== null && (
-                <span className={"mesa-tb" + (urgente ? " urgente" : "")} style={{ ["--p" as string]: `${Math.round((seg / (TEMPO_VEZ_PK_MS / 1000)) * 100)}%` }} aria-hidden="true">
+                <span className={"mesa-tb" + (urgente ? " urgente" : "")} style={{ ["--p" as string]: `${((fracVez ?? 0) * 100).toFixed(2)}%` }} aria-hidden="true">
                   <i />
                 </span>
               )}
@@ -540,6 +542,9 @@ export function Poquer({ ativa = true }: { ativa?: boolean }) {
               +
             </button>
             <output>{fmt(compra)}</output>
+            <button type="button" className="mesa-tudo" onClick={() => setCompra(Math.max(compraMin(bb), saldo))} disabled={saldo < compraMin(bb) || compra >= saldo}>
+              Tudo
+            </button>
           </div>
           <div className="mesa-linha">
             <button className="mesa-bt" type="button" onClick={() => setSentarEm(null)}>

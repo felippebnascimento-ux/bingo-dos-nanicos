@@ -4,7 +4,6 @@
 export type Lado = 100 | 200;
 export const CASA = 0.05;
 export const APOSTA_MIN = 5;
-export const APOSTA_MAX = 100;
 /** as apostas fecham 5 minutos depois do início */
 export const JANELA_MS = 5 * 60_000;
 

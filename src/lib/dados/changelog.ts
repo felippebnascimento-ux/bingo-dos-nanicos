@@ -761,6 +761,17 @@ export const CHANGELOG: EntradaLog[] = [
     ],
   },
   { data: "03/11/2026", itens: ["A rua virou uma praça só de grama: a árvore foi para o canto de cima, à esquerda, com os bancos em volta"] },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Blackjack ao vivo de verdade: estúdio com luzes, mesa em perspectiva e o Veião de crupiê, que dá as cartas, paga, comemora e fala com a mesa",
+      "As cartas do blackjack ficam deitadas no feltro, viradas para cada jogador, e caem do sapato num arco; quem ganha recebe uma chuva de moedas",
+      "Roleta ao vivo com o Henry de crupiê: ele chama as apostas, lança a bola e a câmera chega perto da roda em 3D",
+      "Em todos os jogos dá para apostar até tudo o que você tem: fichas de 500 e 1.000, valor escrito à mão e o botão TUDO",
+      "A ficha de 200 virou laranja, diferente da de 100",
+      "O anel e a barra do tempo andam lisos, sem pular de segundo em segundo",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

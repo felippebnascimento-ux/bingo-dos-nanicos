@@ -2,7 +2,7 @@
 /*
  * Roleta de mesa (aba Cassino): no feltro, a roda e o painel do resultado (número, cor, o que ganhou, últimos
  * números e as cores das últimas rodadas); embaixo, a mesa para espalhar fichas (número, dúzia, coluna, cor,
- * par/ímpar, metade), as fichas de 5 a 100 e os botões de desfazer, limpar, dobrar e repetir.
+ * par/ímpar, metade), as fichas de 5 a 1.000 (dá para juntar até o saldo) e os botões de desfazer, limpar, dobrar e repetir.
  * O banco sorteia uma vez e paga todas as fichas (apostar_roleta_mesa); a roda só anima até a casa que ele mandou.
  * No celular a mesa fica em pé (3 colunas de números), com as mesmas posições calculadas.
  */
@@ -14,8 +14,9 @@ import { msgDe } from "./estado";
 import { conferirRodada, faltam, JANELA_MS, passouDaJanela, type Fase, type JogoMesa, type Pessoa, type Rodada } from "./mesa";
 import { chamarMesa, useMesa } from "./mesaDados";
 import {
-  APOSTA_MAX, casaDaRoleta, cobre, corDa, detalhesDaCasa, dobrarMesa, FICHAS, mesaValida, nomeLugar, porFicha, totalMesa, type Cor, type Ficha, type TipoAposta,
+  LUGAR_MAX, casaDaRoleta, cobre, corDa, detalhesDaCasa, dobrarMesa, FICHAS_ROLETA, mesaValida, nomeLugar, porFicha, totalMesa, type Cor, type Ficha, type TipoAposta,
 } from "./regras";
+import { EstudioRoleta } from "./RoletaEstudio";
 import { RodaRoleta, type Giro } from "./RodaRoleta";
 
 const NOME_COR: Record<Cor, string> = { vermelho: "VERMELHO", preto: "PRETO", verde: "VERDE" };
@@ -23,10 +24,10 @@ const NOME_COR: Record<Cor, string> = { vermelho: "VERMELHO", preto: "PRETO", ve
 /** Uma ficha de cassino desenhada em CSS (cor pelo valor). */
 export function FichaVisual({ v, mini }: { v: number; mini?: boolean }) {
   /* a cor é a da maior ficha que cabe no valor */
-  const cor = [...FICHAS].reverse().find((x) => x <= v) ?? 5;
+  const cor = [...FICHAS_ROLETA].reverse().find((x) => x <= v) ?? 5;
   return (
     <span className={"rm-ficha f" + cor + (mini ? " mini" : "")} aria-hidden="true">
-      <i>{v}</i>
+      <i>{v >= 1000 ? `${(v / 1000).toLocaleString("pt-BR")}k` : v}</i>
     </span>
   );
 }
@@ -74,6 +75,8 @@ export function RoletaMesa({ ativa = true }: { ativa?: boolean }) {
   const [mostrandoRes, setMostrandoRes] = useState<number | null>(null);
   const [fechouZoom, setFechouZoom] = useState<number | null>(null);
   const [conferida, setConferida] = useState<Record<number, string>>({});
+  /* a câmera desce para a roda 0,9 s depois que ela começa a girar (dá para ver o Henry lançar a bola) */
+  const [zoomDe, setZoomDe] = useState<number | null>(null);
   const relogio = useRelogio(ativa);
 
   const r = estado?.rodada ?? null;
@@ -85,6 +88,12 @@ export function RoletaMesa({ ativa = true }: { ativa?: boolean }) {
   const parada = fase === "parada";
   const giro: Giro | null = useMemo(() => (rid !== null && res !== null && !parada ? { id: rid, casa: res } : null), [rid, res, parada]);
   const girando = giro !== null && parouEm !== giro.id;
+  useEffect(() => {
+    if (!giro) return;
+    const id = giro.id;
+    const t = setTimeout(() => setZoomDe(id), 900);
+    return () => clearTimeout(t);
+  }, [giro]);
   const fimDoGiro = () => {
     if (giro) {
       const id = giro.id;
@@ -153,9 +162,22 @@ export function RoletaMesa({ ativa = true }: { ativa?: boolean }) {
   const vencedoras = resultadoNaTela !== null ? minhas.filter((f) => cobre(f.tipo, f.valor, resultadoNaTela)) : [];
   const corRes = resultadoNaTela !== null ? corDa(resultadoNaTela) : null;
   void relogio;
-  /* câmera: a roda vai para o meio da tela enquanto gira e fica uns 2 s mostrando o resultado */
+  /* câmera: o Henry lança a bola na mesa e, um instante depois, a roda vai para o meio da tela (vista de cima)
+     enquanto gira e fica uns 2 s mostrando o resultado */
   const zoom =
-    ativa && giro !== null && fechouZoom !== giro.id && (girando || mostrandoRes === giro.id);
+    ativa && giro !== null && zoomDe === giro.id && fechouZoom !== giro.id && (girando || mostrandoRes === giro.id);
+  /* o que o Henry fala e faz */
+  const falaHenry =
+    resultadoNaTela !== null && corRes
+      ? resultadoNaTela === 0
+        ? "Zero! Deu verde!"
+        : `${resultadoNaTela}, ${NOME_COR[corRes].toLowerCase()}!`
+      : girando || fase === "jogo"
+        ? "Nada mais vai!"
+        : fase === "apostas" && segundos <= 3
+          ? "Últimas apostas…"
+          : "Façam suas apostas!";
+  const gestoHenry = girando ? "lanca" : fase === "apostas" ? "acena" : undefined;
   useEffect(() => {
     if (!zoom || !giro) return;
     const esc = (e: KeyboardEvent) => e.key === "Escape" && setFechouZoom(giro.id);
@@ -169,7 +191,9 @@ export function RoletaMesa({ ativa = true }: { ativa?: boolean }) {
     <div className="roleta rm">
       <div className={"rm-topo" + (zoom ? " zoom" : "")}>
         {zoom && giro && <div className="rr-palco" aria-hidden="true" onClick={() => setFechouZoom(giro.id)} />}
-        <RodaRoleta giro={giro} onFim={fimDoGiro} tema="luxo" semSom={!ativa} />
+        <EstudioRoleta fala={falaHenry} gesto={gestoHenry} olhaRoda={girando}>
+          <RodaRoleta giro={giro} onFim={fimDoGiro} tema="luxo" semSom={!ativa} />
+        </EstudioRoleta>
         {zoom && resultadoNaTela !== null && corRes && (
           <div className="rr-zoom-res" aria-hidden="true">
             <span className={"rm-bola rm-" + corRes}>{resultadoNaTela}</span>
@@ -259,7 +283,7 @@ export function RoletaMesa({ ativa = true }: { ativa?: boolean }) {
 
       <div className="rm-controles">
         <div className="rm-fichas" role="radiogroup" aria-label="Valor da ficha">
-          {FICHAS.map((v) => (
+          {FICHAS_ROLETA.map((v) => (
             <button key={v} type="button" role="radio" aria-checked={ficha === v} className={ficha === v ? "sel" : undefined} onClick={() => setFicha(v)}>
               <FichaVisual v={v} />
             </button>
@@ -272,7 +296,7 @@ export function RoletaMesa({ ativa = true }: { ativa?: boolean }) {
           <button type="button" className="btn soft sm" disabled={fechada || !mesa.length} onClick={() => mudar(() => [])}>
             Limpar
           </button>
-          <button type="button" className="btn soft sm" disabled={fechada || !mesa.length || mesa.every((f) => f.aposta >= APOSTA_MAX)} onClick={() => mudar(dobrarMesa)}>
+          <button type="button" className="btn soft sm" disabled={fechada || !mesa.length || mesa.every((f) => f.aposta >= LUGAR_MAX)} onClick={() => mudar(dobrarMesa)}>
             ×2 Dobrar
           </button>
           <button type="button" className="btn soft sm" disabled={fechada || !ultima.length} onClick={() => mudar(() => ultima)}>
@@ -298,7 +322,7 @@ export function RoletaMesa({ ativa = true }: { ativa?: boolean }) {
                 : `APOSTAR · ${formatarMoedas(total)} MOEDAS`}
       </button>
       <p className="hint rm-pe">
-        Mesa ao vivo: a primeira aposta abre a rodada e todo mundo tem {JANELA_MS.roleta / 1000} s para entrar · Número paga 35× · Dúzia e coluna pagam 2× · Cor, par/ímpar e metade pagam 1× · O 0 perde nas apostas de fora · Até 1.000 por rodada
+        Mesa ao vivo: a primeira aposta abre a rodada e todo mundo tem {JANELA_MS.roleta / 1000} s para entrar · Número paga 35× · Dúzia e coluna pagam 2× · Cor, par/ímpar e metade pagam 1× · O 0 perde nas apostas de fora · Aposte até tudo o que você tem
       </p>
     </div>
   );
