@@ -11,7 +11,7 @@ describe("cenas especiais", () => {
   it("na rua dá para chegar da porta até os bancos, e o portão da garagem e a árvore bloqueiam", () => {
     const g = gradeEspecial("rua");
     expect(g.livre(0, 0)).toBe(true);
-    expect(g.livre(5, 5)).toBe(false);
+    expect(g.livre(2, 4)).toBe(false);
     expect(g.livre(11, 9)).toBe(false);
     expect(g.assentos.length).toBeGreaterThanOrEqual(6);
     expect(g.assentos.every((a) => g.livre(a.chegar.i, a.chegar.j))).toBe(true);

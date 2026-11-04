@@ -760,6 +760,7 @@ export const CHANGELOG: EntradaLog[] = [
       "Botão do Pedro na parede do K-FOFO: por 200 moedas, toca \"pedro pedro pedro\" para todo mundo no K-FOFO, com discoteca",
     ],
   },
+  { data: "03/11/2026", itens: ["A rua virou uma praça só de grama: a árvore foi para o canto de cima, à esquerda, com os bancos em volta"] },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
