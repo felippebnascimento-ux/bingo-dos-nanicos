@@ -747,6 +747,7 @@ export const CHANGELOG: EntradaLog[] = [
     ],
   },
   { data: "03/11/2026", itens: ["Móveis novos em todos os quartos e no K-FOFO: quinas arredondadas, sombra suave e mais capricho (almofadas no sofá, travesseiros e cobertor na cama, livros na estante, portas no guarda-roupa, monitores e teclado no PC)"] },
+  { data: "03/11/2026", itens: ["O corredor dos quartos virou corredor de hotel: papel de parede listrado, lambri de madeira, carpete vinho, portas com almofadas e maçaneta dourada e uma arandela acesa ao lado de cada porta"] },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

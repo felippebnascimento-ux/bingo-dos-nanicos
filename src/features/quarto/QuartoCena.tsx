@@ -182,19 +182,59 @@ function fundoPirapo(n: number, p: (i: number, j: number, z?: number) => Pt): Po
 }
 
 /** O corredor: as duas paredes sem janela nem pôster, o carpete comprido e a saída para o K-FOFO no piso (0, 0). */
+/** O corredor no jeito de hotel (opção 1, escolhida em 03/11/2026): papel de parede listrado, lambri de madeira
+    com friso dourado, sanca no alto, piso de tábuas escuras e o carpete vinho com losangos dourados. */
 function fundoCorredor(n: number, p: (i: number, j: number, z?: number) => Pt): Poly[] {
   const L: Poly[] = [];
   const poly = (q: Pt[], c: string, linha = false) => L.push({ q, c, linha });
-  poly([p(0, 0), p(0, n), p(0, n, WH), p(0, 0, WH)], "parede1");
-  poly([p(0, 0), p(n, 0), p(n, 0, WH), p(0, 0, WH)], "parede2");
+  const esq = (a: number, b: number, z0: number, z1: number, c: string) => poly([p(0, a, z0), p(0, b, z0), p(0, b, z1), p(0, a, z1)], c);
+  const dir = (a: number, b: number, z0: number, z1: number, c: string) => poly([p(a, 0, z0), p(b, 0, z0), p(b, 0, z1), p(a, 0, z1)], c);
+  esq(0, n, 0, WH, "hotel-papel1");
+  dir(0, n, 0, WH, "hotel-papel2");
+  for (let a = 0.25; a < n; a += 0.5) {
+    esq(a, a + 0.08, 48, WH - 12, "hotel-listra");
+    dir(a, a + 0.08, 48, WH - 12, "hotel-listra");
+  }
+  /* o lambri: tábuas verticais, o friso dourado em cima e o rodapé escuro */
+  esq(0, n, 0, 46, "hotel-lambri1");
+  dir(0, n, 0, 46, "hotel-lambri2");
+  for (let a = 0.5; a < n; a += 0.5) {
+    esq(a, a + 0.02, 8, 44, "hotel-lambri-junta");
+    dir(a, a + 0.02, 8, 44, "hotel-lambri-junta");
+  }
+  esq(0, n, 44, 49, "hotel-friso");
+  dir(0, n, 44, 49, "hotel-friso");
+  esq(0, n, 0, 8, "hotel-rodape");
+  dir(0, n, 0, 8, "hotel-rodape");
+  /* a sanca no alto, com o friso dourado embaixo */
+  esq(0, n, WH - 12, WH, "hotel-sanca1");
+  dir(0, n, WH - 12, WH, "hotel-sanca2");
+  esq(0, n, WH - 14, WH - 12, "hotel-friso");
+  dir(0, n, WH - 14, WH - 12, "hotel-friso");
   poly([p(0, 0, WH), p(0, n, WH), p(0, n, WH + 10), p(0, 0, WH + 10)], "topo1");
   poly([p(0, 0, WH), p(n, 0, WH), p(n, 0, WH + 10), p(0, 0, WH + 10)], "topo2");
-  poly([p(0, 0), p(0, n), p(0, n, 8), p(0, 0, 8)], "rodape1");
-  poly([p(0, 0), p(n, 0), p(n, 0, 8), p(0, 0, 8)], "rodape2");
-  poly([p(0.12, 0), p(0.88, 0), p(0.88, 0, 104), p(0.12, 0, 104)], "porta", true);
-  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) poly([p(i, j), p(i + 1, j), p(i + 1, j + 1), p(i, j + 1)], (i + j) % 2 ? "piso0" : "piso1");
-  poly([p(1.2, 1.2), p(n - 0.6, 1.2), p(n - 0.6, n - 0.6), p(1.2, n - 0.6)], "carpete0");
-  poly([p(1.5, 1.5), p(n - 0.9, 1.5), p(n - 0.9, n - 0.9), p(1.5, n - 0.9)], "carpete1");
+  /* a saída para o K-FOFO: batente e porta de duas folhas com almofadas */
+  dir(0.06, 0.94, 0, 108, "batente");
+  dir(0.12, 0.88, 0, 104, "porta");
+  dir(0.495, 0.505, 0, 104, "batente");
+  for (const [a, b] of [[0.18, 0.44], [0.56, 0.82]]) {
+    dir(a, b, 54, 96, "hotel-almofada");
+    dir(a, b, 8, 46, "hotel-almofada");
+  }
+  /* piso de tábuas escuras, compridas no sentido de i, com as emendas desencontradas */
+  for (let j = 0; j < n; j += 0.5) {
+    const s = Math.round(j * 2) % 2 ? 0.5 : 0;
+    for (let i = -s; i < n; i += 1) {
+      const a = Math.max(0, i), b = Math.min(n, i + 1);
+      poly([p(a, j), p(b, j), p(b, j + 0.5), p(a, j + 0.5)], Math.round(i + j * 2) % 2 ? "hotel-piso0" : "hotel-piso1", true);
+    }
+  }
+  /* o carpete: borda dourada, miolo vinho e os losangos */
+  poly([p(1.1, 1.1), p(n - 0.5, 1.1), p(n - 0.5, n - 0.5), p(1.1, n - 0.5)], "hotel-friso");
+  poly([p(1.18, 1.18), p(n - 0.58, 1.18), p(n - 0.58, n - 0.58), p(1.18, n - 0.58)], "carpete0");
+  poly([p(1.45, 1.45), p(n - 0.85, 1.45), p(n - 0.85, n - 0.85), p(1.45, n - 0.85)], "carpete1");
+  for (let a = 1.9; a < n - 1; a += 1.1)
+    for (let b = 1.9; b < n - 1; b += 1.1) poly([p(a, b + 0.3), p(a + 0.3, b), p(a + 0.6, b + 0.3), p(a + 0.3, b + 0.6)], "hotel-losango");
   return L;
 }
 
@@ -488,15 +528,26 @@ function PortaNaParede({ d, p, aoTocar }: { d: PortaCorredor; p: (i: number, j: 
       role="button"
       aria-label={d.aberta ? `Entrar no quarto de ${d.nome}` : `Quarto de ${d.nome}: porta fechada`}
     >
-      <polygon points={ret(d.a - 0.05, d.b + 0.05, 0, 100)} className="q-batente q-linha" />
+      <polygon points={ret(d.a - 0.07, d.b + 0.07, 0, 102)} className="q-batente q-linha" />
       {d.aberta ? (
         <>
           <polygon points={ret(d.a, d.b, 0, 96)} className="q-porta-dentro" />
           <polygon points={ret(d.a, d.a + (d.b - d.a) * 0.35, 0, 96)} className="q-porta q-linha" />
         </>
       ) : (
-        <polygon points={ret(d.a, d.b, 0, 96)} className="q-porta q-linha" />
+        <>
+          <polygon points={ret(d.a, d.b, 0, 96)} className="q-porta q-linha" />
+          {/* as almofadas da porta, a maçaneta e o olho mágico */}
+          <polygon points={ret(d.a + 0.1, d.b - 0.1, 54, 88)} className="q-hotel-almofada" />
+          <polygon points={ret(d.a + 0.1, d.b - 0.1, 8, 46)} className="q-hotel-almofada" />
+          <polygon points={ret(d.b - 0.16, d.b - 0.09, 46, 52)} className="q-ouro0" />
+          <polygon points={ret(meio - 0.02, meio + 0.02, 74, 77)} className="q-ouro1" />
+        </>
       )}
+      {/* a arandela ao lado da porta, com a luz na parede */}
+      <ellipse className="q-hotel-luz" cx={ponto(d.b + 0.17, 110)[0]} cy={ponto(d.b + 0.17, 110)[1]} rx="18" ry="16" />
+      <polygon points={ret(d.b + 0.14, d.b + 0.2, 98, 104)} className="q-hotel-arandela" />
+      <polygon points={ret(d.b + 0.12, d.b + 0.22, 104, 114)} className="q-hotel-cupula" />
       <polygon points={ret(meio - 0.42, meio + 0.42, 104, 120)} className="q-placa-nome q-linha" />
       <text className="quarto-placa-nome" {...placa}>
         {d.nome.length > 9 ? d.nome.slice(0, 8) + "…" : d.nome}

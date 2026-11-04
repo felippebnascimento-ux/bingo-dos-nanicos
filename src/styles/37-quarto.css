@@ -81,6 +81,19 @@
 .quarto .q-carpete0{fill:var(--corredor-carpete0)} .quarto .q-carpete1{fill:var(--corredor-carpete1)}
 .quarto .q-batente{fill:var(--corredor-batente)} .quarto .q-porta-dentro{fill:var(--corredor-dentro)} .quarto .q-placa-nome{fill:var(--corredor-placa)}
 .quarto-placa-nome{font:700 9px var(--display);fill:var(--corredor-placa-texto);pointer-events:none}
+/* o corredor de hotel (fundoCorredor) */
+.quarto-vars{--hotel-papel1:#D6C9AB;--hotel-papel2:#E0D4B8;--hotel-listra:rgb(120 90 40 / .12);--hotel-lambri1:#6B4A2B;--hotel-lambri2:#7A5532;
+  --hotel-junta:rgb(0 0 0 / .18);--hotel-friso:#B08D57;--hotel-rodape:#3F2A18;--hotel-sanca1:#EDE5D2;--hotel-sanca2:#F4EEDF;
+  --hotel-piso0:#5B3A22;--hotel-piso1:#66432A;--hotel-losango:rgb(176 141 87 / .55);--hotel-almofada:rgb(255 255 255 / .1);
+  --hotel-arandela:#8F713F;--hotel-cupula:#F3DFA8;--hotel-luz:rgb(255 217 138 / .45)}
+.quarto .q-hotel-papel1{fill:var(--hotel-papel1)} .quarto .q-hotel-papel2{fill:var(--hotel-papel2)} .quarto .q-hotel-listra{fill:var(--hotel-listra)}
+.quarto .q-hotel-lambri1{fill:var(--hotel-lambri1)} .quarto .q-hotel-lambri2{fill:var(--hotel-lambri2)} .quarto .q-hotel-lambri-junta{fill:var(--hotel-junta)}
+.quarto .q-hotel-friso{fill:var(--hotel-friso)} .quarto .q-hotel-rodape{fill:var(--hotel-rodape)}
+.quarto .q-hotel-sanca1{fill:var(--hotel-sanca1)} .quarto .q-hotel-sanca2{fill:var(--hotel-sanca2)}
+.quarto .q-hotel-piso0{fill:var(--hotel-piso0)} .quarto .q-hotel-piso1{fill:var(--hotel-piso1)} .quarto .q-hotel-losango{fill:var(--hotel-losango)}
+.quarto .q-hotel-almofada{fill:var(--hotel-almofada);pointer-events:none}
+.quarto .q-hotel-arandela{fill:var(--hotel-arandela)} .quarto .q-hotel-cupula{fill:var(--hotel-cupula)}
+.quarto .q-hotel-luz{fill:var(--hotel-luz);filter:blur(6px);pointer-events:none}
 .quarto-porta-nanico{cursor:pointer}
 .quarto-porta-nanico:hover .q-porta,.quarto-porta-nanico:focus-visible .q-porta{filter:brightness(1.15)}
 .quarto-porta-nanico.aberta:hover .q-porta-dentro{filter:brightness(1.6)}
