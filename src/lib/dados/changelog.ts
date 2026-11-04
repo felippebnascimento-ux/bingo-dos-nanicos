@@ -749,6 +749,7 @@ export const CHANGELOG: EntradaLog[] = [
   { data: "03/11/2026", itens: ["Móveis novos em todos os quartos e no K-FOFO: quinas arredondadas, sombra suave e mais capricho (almofadas no sofá, travesseiros e cobertor na cama, livros na estante, portas no guarda-roupa, monitores e teclado no PC)"] },
   { data: "03/11/2026", itens: ["O corredor dos quartos virou corredor de hotel: papel de parede listrado, lambri de madeira, carpete vinho, portas com almofadas e maçaneta dourada e uma arandela acesa ao lado de cada porta"] },
   { data: "03/11/2026", itens: ["Garagem nova ao ar livre, pelo portão da rua: os 14 veículos da turma desenhados das fotos, cada um na sua vaga, com guarita, cancela e postes (toque num carro para ver qual é)"] },
+  { data: "03/11/2026", itens: ["No K-FOFO, junto do aviso de quem entrou, agora aparece também quem saiu do site"] },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
