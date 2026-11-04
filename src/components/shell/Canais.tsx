@@ -10,9 +10,10 @@
  */
 import { useMemo, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/ui/Avatar";
-import { IcFoneDesligado, IcHash, IcMicDesligado, IcSeta, IcVolume } from "@/components/ui/icones";
+import { IcFoneDesligado, IcHash, IcMicDesligado, IcSemSom, IcSeta, IcVolume } from "@/components/ui/icones";
 import { abrirCanalTexto, useChat } from "@/features/chat/chat";
-import { entrarVoz, useVoz } from "@/features/live/voz";
+import { MenuPessoa, useMenuDeToque } from "@/features/live/MenuPessoa";
+import { entrarVoz, useAjustesVoz, useVoz } from "@/features/live/voz";
 import { entrarSala } from "@/features/salas/trocar";
 import type { PresencaNanico } from "@/lib/presenca";
 import { friendDaPresenca, getApp, MY_KEY, setApp, useApp } from "@/lib/store";
@@ -48,8 +49,16 @@ function PessoaCanal({ p, falando }: { p: PresencaNanico; falando: boolean }) {
   const nome = f?.name ?? p.name;
   const eu = p.chaves.includes(MY_KEY);
   const naVoz = !!p.voz;
+  /* como no Discord: clique direito (ou segurar o dedo) abre o volume, silenciar, a transmissão e a ficha */
+  const menu = useMenuDeToque();
+  const silenciei = useAjustesVoz((s) => !eu && !!p.fid && s.silenciados.includes(p.fid));
+  const vol = useAjustesVoz((s) => (p.fid ? (s.por[p.fid] ?? 1) : 1));
   return (
-    <li className={"canal-pessoa" + (naVoz ? "" : " sem-voz") + (falando ? " falando" : "") + (eu ? " me" : "")} title={naVoz ? nome : `${nome}: na sala, fora da voz`}>
+    <li
+      className={"canal-pessoa" + (naVoz ? "" : " sem-voz") + (falando ? " falando" : "") + (eu ? " me" : "") + (menu.lugar ? " menu" : "")}
+      title={naVoz ? nome : `${nome}: na sala, fora da voz`}
+      {...menu.props}
+    >
       {f ? <Avatar f={f} size="xs" /> : <span className="av xs">{nome[0]}</span>}
       <span className="nm">{nome}</span>
       {/* um clique assiste: de outra sala, entra nela só para ver (sem voz) e abre a tela da pessoa */}
@@ -59,11 +68,19 @@ function PessoaCanal({ p, falando }: { p: PresencaNanico; falando: boolean }) {
           <span className="b">▶ ASSISTIR</span>
         </button>
       )}
+      {/* o volume que eu mudei e quem eu silenciei (só para mim, como no Discord) */}
+      {!eu && !silenciei && vol !== 1 && (
+        <small className="canal-vol" title={`Você deixou a voz de ${nome} em ${Math.round(vol * 100)}%`}>
+          {Math.round(vol * 100)}%
+        </small>
+      )}
+      {silenciei && <IcSemSom tam={14} className="canal-silenciei" aria-label={`Você silenciou ${nome}`} role="img" />}
       {naVoz && p.surdo ? (
         <IcFoneDesligado tam={14} aria-label="Sem ouvir" role="img" />
       ) : naVoz && p.mudo ? (
         <IcMicDesligado tam={14} aria-label="Microfone desligado" role="img" />
       ) : null}
+      {menu.lugar && <MenuPessoa p={p} fid={p.fid ?? null} nome={nome} lugar={menu.lugar} fechar={menu.fechar} />}
     </li>
   );
 }

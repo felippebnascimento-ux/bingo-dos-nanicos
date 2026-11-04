@@ -5,8 +5,8 @@
 import { toast } from "@/lib/toast";
 import { getApp, MY_KEY, setApp } from "@/lib/store";
 import type { Presence } from "@/lib/tipos";
-import { newId } from "@/lib/util";
-import { avisar, getLive } from "./estado";
+import { local, newId } from "@/lib/util";
+import { avisar, getLive, setLive } from "./estado";
 import { ajustarSender, canShare, hiBitrate, novaConexao, preferH264, sendRtc, stereo, type MsgRtc } from "./rtc";
 
 export type Viewer = { pc: RTCPeerConnection; queue: RTCIceCandidateInit[]; at: number };
@@ -265,6 +265,31 @@ export function closeAllWatches() {
   avisar();
 }
 
+/* ---------- o volume de cada transmissão (só no meu aparelho, guardado por nanico) ---------- */
+/** O nanico (friend id) de quem transmite nesta chave. */
+export const fidDaTela = (key: string | null) => (key ? (getApp().onlineSala.find((x) => x.key === key)?.fid ?? null) : null);
+/** O volume que guardei para a transmissão desta chave (100% se nunca mudei). */
+export const volumeDaTela = (key: string | null) => {
+  const fid = fidDaTela(key);
+  return fid ? (getLive().volTelas[fid] ?? 1) : getLive().vol;
+};
+/** Muda o volume da tela principal e guarda para quem está nela. */
+export function mudarVolumeTela(v: number) {
+  const vol = Math.max(0, Math.min(1, v));
+  const fid = fidDaTela(LIVE.main);
+  const volTelas = fid ? { ...getLive().volTelas, [fid]: vol } : getLive().volTelas;
+  setLive({ vol, volTelas });
+  local.set("live-vol", String(vol));
+  local.setJson("live-vol-por", volTelas);
+  if (LIVE.mainVideo) LIVE.mainVideo.volume = vol;
+}
+/** A tela principal mudou: o volume passa a ser o guardado para quem está nela. */
+function acertarVolume() {
+  const vol = volumeDaTela(LIVE.main);
+  if (getLive().vol !== vol) setLive({ vol });
+  if (LIVE.mainVideo) LIVE.mainVideo.volume = vol;
+}
+
 /** Abre a tela de quem está ao vivo; `asMain` = vira a tela principal, com som. */
 export function watch(key: string, asMain: boolean) {
   const p = getApp().onlineSala.find((x) => x.key === key && x.live);
@@ -276,11 +301,14 @@ export function watch(key: string, asMain: boolean) {
   }
   if (!w) openWatch(p);
   if (asMain || !LIVE.main) LIVE.main = key;
+  acertarVolume();
   avisar();
 }
 
+/** Parar de assistir a tela de alguém (a próxima aberta vira a principal; sem nenhuma, volta para a grade). */
 export function unwatch(key: string) {
   closeWatch(key);
+  acertarVolume();
   avisar();
 }
 

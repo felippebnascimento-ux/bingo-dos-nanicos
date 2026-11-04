@@ -22,6 +22,8 @@ type Par = {
   pc: RTCPeerConnection;
   queue: RTCIceCandidateInit[];
   audio: HTMLAudioElement;
+  /** acima de 100%, o som passa pelo Web Audio com um ganho (o <audio> só vai até 1) e o <audio> fica mudo */
+  reforco?: { fonte: MediaStreamAudioSourceNode; ganho: GainNode };
   ofereci: boolean;
   tries: number;
   to?: ReturnType<typeof setTimeout>;
@@ -49,16 +51,18 @@ export const naVoz = () => !!VOZ.sid;
 type Ajustes = {
   /** volume de toda a voz, de 0 a 1 */
   geral: number;
-  /** volume de cada nanico (friend id), de 0 a 1 */
+  /** volume de cada nanico (friend id), de 0 a 2 (até 200%, como no Discord) */
   por: Record<string, number>;
   /** nanicos que eu silenciei (só eu deixo de ouvir) */
   silenciados: string[];
 };
 const ajSalvo = local.json<Partial<Ajustes>>("voz-ajustes") || {};
-const vol01 = (v: unknown, padrao = 1) => (typeof v === "number" && v >= 0 && v <= 1 ? v : padrao);
+const vol01 = (v: unknown, padrao = 1, max = 1) => (typeof v === "number" && v >= 0 && v <= max ? v : padrao);
+/** o volume de cada pessoa vai até 200% */
+export const VOLUME_MAX = 2;
 export const useAjustesVoz = create<Ajustes>()(() => ({
   geral: vol01(ajSalvo.geral),
-  por: Object.fromEntries(Object.entries(ajSalvo.por && typeof ajSalvo.por === "object" ? ajSalvo.por : {}).map(([k, v]) => [k, vol01(v)])),
+  por: Object.fromEntries(Object.entries(ajSalvo.por && typeof ajSalvo.por === "object" ? ajSalvo.por : {}).map(([k, v]) => [k, vol01(v, 1, VOLUME_MAX)])),
   silenciados: Array.isArray(ajSalvo.silenciados) ? ajSalvo.silenciados.filter((x): x is string => typeof x === "string") : [],
 }));
 export function ajustarVoz(p: Partial<Ajustes>) {
@@ -71,12 +75,74 @@ export function silenciarNanico(fid: string, sim: boolean) {
   ajustarVoz({ silenciados: sim ? [...l, fid] : l });
 }
 
+/* a saída do reforço (acima de 100%): um AudioContext só, na saída de som escolhida nas Configurações */
+let saidaCtx: AudioContext | null = null;
+let reforcoEspera = false;
+function ctxDoReforco(): AudioContext | null {
+  try {
+    if (!saidaCtx) saidaCtx = new AudioContext();
+    sinkDoReforco();
+    /* o navegador só deixa o som do Web Audio sair depois de um toque na página: até lá, fica nos 100% do <audio> e,
+       quando liberar, aplica o volume de novo */
+    if (saidaCtx.state !== "running") {
+      saidaCtx
+        .resume()
+        .then(() => {
+          for (const par of VOZ.pares.values()) aplicarVolume(par);
+        })
+        .catch(() => {});
+      if (!reforcoEspera) {
+        reforcoEspera = true;
+        document.addEventListener("pointerdown", () => ((reforcoEspera = false), void ctxDoReforco()), { once: true });
+      }
+      return null;
+    }
+    return saidaCtx;
+  } catch {
+    return null;
+  }
+}
+function sinkDoReforco() {
+  const id = useMidia.getState().saida;
+  const c = saidaCtx as (AudioContext & { setSinkId?: (id: string) => Promise<void> }) | null;
+  if (c?.setSinkId) c.setSinkId(id || "").catch(() => {});
+}
+function soltarReforco(par: Par) {
+  if (!par.reforco) return;
+  try {
+    par.reforco.fonte.disconnect();
+    par.reforco.ganho.disconnect();
+  } catch {}
+  par.reforco = undefined;
+}
+
 /** O volume e o "silenciado" de um par, pelo nanico dele (a chave é da aba; o ajuste vale para o nanico). */
 function aplicarVolume(par: Par) {
   const fid = getApp().onlineSala.find((x) => x.key === par.key)?.fid ?? null;
   const a = useAjustesVoz.getState();
-  par.audio.volume = Math.min(1, Math.max(0, a.geral * volumeDoNanico(fid)));
-  par.audio.muted = getApp().vozSurdo || (!!fid && a.silenciados.includes(fid));
+  const v = Math.min(VOLUME_MAX, Math.max(0, a.geral * volumeDoNanico(fid)));
+  const mudo = getApp().vozSurdo || (!!fid && a.silenciados.includes(fid));
+  const st = par.audio.srcObject as MediaStream | null;
+  /* acima de 100%: o ganho do Web Audio aumenta o som (o <audio> continua tocando, mudo, senão o Chrome não
+     entrega o áudio da conexão ao Web Audio) */
+  if (v > 1 && st) {
+    const c = ctxDoReforco();
+    if (c) {
+      if (!par.reforco) {
+        const fonte = c.createMediaStreamSource(st);
+        const ganho = c.createGain();
+        fonte.connect(ganho).connect(c.destination);
+        par.reforco = { fonte, ganho };
+      }
+      par.reforco.ganho.gain.value = mudo ? 0 : v;
+      par.audio.volume = 1;
+      par.audio.muted = true;
+      return;
+    }
+  }
+  soltarReforco(par);
+  par.audio.volume = Math.min(1, v);
+  par.audio.muted = mudo;
 }
 useAjustesVoz.subscribe(() => {
   for (const par of VOZ.pares.values()) aplicarVolume(par);
@@ -182,7 +248,10 @@ function ligarPrefs() {
   prefsLigadas = true;
   useMidia.subscribe((s, p) => {
     if (s.mic !== p.mic || s.eco !== p.eco || s.ruido !== p.ruido) trocarMicrofone();
-    if (s.saida !== p.saida) for (const par of VOZ.pares.values()) aplicarSaida(par.audio);
+    if (s.saida !== p.saida) {
+      for (const par of VOZ.pares.values()) aplicarSaida(par.audio);
+      sinkDoReforco();
+    }
   });
 }
 
@@ -262,6 +331,8 @@ function novoPar(key: string, sid: string, ofereci: boolean, tries = 0): Par {
   pc.ontrack = (e) => {
     const st = (e.streams && e.streams[0]) || new MediaStream([e.track]);
     audio.srcObject = st;
+    soltarReforco(par);
+    aplicarVolume(par);
     tocar(audio);
     medir(key, st);
     clearTimeout(par.to);
@@ -323,6 +394,7 @@ function fechar(key: string, silencioso: boolean) {
   try {
     par.pc.close();
   } catch {}
+  soltarReforco(par);
   par.audio.srcObject = null;
   esquecer(key);
   VOZ.pares.delete(key);

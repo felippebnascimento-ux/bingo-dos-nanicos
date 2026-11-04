@@ -21,7 +21,10 @@ export type LiveUi = {
   unmute: boolean;
   fps: Fps;
   res: Res;
+  /** o volume da tela principal agora (o de quem está nela, guardado em `volTelas`) */
   vol: number;
+  /** o volume da transmissão de cada nanico (friend id), de 0 a 1, como no Discord */
+  volTelas: Record<string, number>;
   reacoesVer: boolean;
   voando: Voo[];
   desenhoOn: boolean;
@@ -48,6 +51,7 @@ const num = (k: string) => parseFloat(local.get(k) ?? "");
 const fpsSalvo = num("live-fps"),
   resSalvo = num("live-res"),
   volSalvo = num("live-vol");
+const volTelasSalvo = local.json<Record<string, unknown>>("live-vol-por") || {};
 const des = local.json<{ cor?: unknown; esp?: unknown; ver?: unknown }>("desenho") || {};
 
 export const useLive = create<LiveUi>()(() => ({
@@ -56,6 +60,7 @@ export const useLive = create<LiveUi>()(() => ({
   fps: fpsSalvo === 30 ? 30 : 60,
   res: resSalvo === 1440 || resSalvo === 720 ? resSalvo : 1080,
   vol: volSalvo >= 0 && volSalvo <= 1 ? volSalvo : 1,
+  volTelas: Object.fromEntries(Object.entries(volTelasSalvo).filter((e): e is [string, number] => typeof e[1] === "number" && e[1] >= 0 && e[1] <= 1)),
   reacoesVer: local.get("reacoes-ver") !== "0",
   voando: [],
   desenhoOn: false,

@@ -1,9 +1,8 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { IcAjustes, IcJanela, IcLapis, IcReagir, IcTelaCheia, IcVolume } from "@/components/ui/icones";
+import { IcAjustes, IcFechar, IcJanela, IcLapis, IcReagir, IcTelaCheia, IcVolume } from "@/components/ui/icones";
 import { useApp } from "@/lib/store";
 import { toast } from "@/lib/toast";
-import { local } from "@/lib/util";
 import { getLive, setLive, useLive } from "./estado";
 import {
   alternarLapis,
@@ -23,7 +22,7 @@ import {
 } from "./desenho";
 import { REACOES, REACOES_FOTO, reagir, setReacoesVer } from "./reacoes";
 import { canShare } from "./rtc";
-import { LIVE, liveStreams, watch } from "./tela";
+import { LIVE, liveStreams, mudarVolumeTela, unwatch, watch } from "./tela";
 import { Rosto } from "./Rosto";
 import { Voos } from "./Voos";
 
@@ -376,12 +375,7 @@ export function Palco() {
               step="0.05"
               value={vol}
               aria-label="Volume"
-              onChange={(e) => {
-                const v = +e.target.value;
-                setLive({ vol: v });
-                local.set("live-vol", String(v));
-                if (LIVE.mainVideo) LIVE.mainVideo.volume = v;
-              }}
+              onChange={(e) => mudarVolumeTela(+e.target.value)}
             />
           </label>
           <div className="pop-wrap">
@@ -429,6 +423,13 @@ export function Palco() {
           >
             <IcTelaCheia />
           </button>
+          {/* como no Discord: parar de assistir esta tela (a próxima aberta vira a grande; sem nenhuma, volta à grade) */}
+          {w && LIVE.main && (
+            <button className="ib parar" type="button" title="Parar de assistir" aria-label={`Parar de assistir a tela de ${w.name}`} onClick={() => LIVE.main && unwatch(LIVE.main)}>
+              <IcFechar />
+              <span>Parar de assistir</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

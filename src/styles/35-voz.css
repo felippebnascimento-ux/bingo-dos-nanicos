@@ -312,3 +312,5 @@
 .vz-ib.sair{color:var(--live)}
 .vz-ib.sair:hover,.vz-parar-ic:hover{background:color-mix(in srgb,var(--live) 22%,transparent);color:var(--live)}
 .vz-topo{gap:2px}
+.qd-ctrl-b.parar{color:var(--live)}
+.qd-ctrl-b.parar:hover{background:color-mix(in srgb,var(--live) 18%,transparent)}

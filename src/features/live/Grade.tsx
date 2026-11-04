@@ -12,6 +12,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import {
   IcCamera,
   IcDesligar,
+  IcFechar,
   IcFoneDesligado,
   IcGrade,
   IcMais3,
@@ -34,9 +35,10 @@ import { camStreamOf, openCamPip } from "./camera";
 import { setLive, useLive } from "./estado";
 import { Balao, botaoCamera, botaoTela, BotaoReacoes, Chave, lugarDe, type Lugar } from "./PainelVoz";
 import { canShare } from "./rtc";
-import { LIVE, unwatch, watch } from "./tela";
+import { OpcoesVoz } from "./MenuPessoa";
+import { LIVE, mudarVolumeTela, unwatch, watch } from "./tela";
 import { VideoMudo } from "./Video";
-import { ajustarVoz, alternarMudo, entrarVoz, silenciarNanico, useAjustesVoz, useVoz } from "./voz";
+import { alternarMudo, entrarVoz, useAjustesVoz, useVoz } from "./voz";
 
 type Quadro =
   | { tipo: "pessoa"; id: string; p: PresencaNanico; f?: Friend; nome: string; eu: boolean; cam: MediaStream | null; fala: boolean }
@@ -133,8 +135,6 @@ function MenuQuadro({
   const vol = useLive((s) => s.vol);
   const espelho = useLive((s) => s.espelho);
   const naGrade = useLive((s) => s.minhaCamNaGrade);
-  const por = useAjustesVoz((s) => s.por);
-  const silenciados = useAjustesVoz((s) => s.silenciados);
   const fid = q.tipo === "pessoa" ? q.p.fid : null;
   const faz = (f: () => void) => () => {
     fechar();
@@ -169,12 +169,7 @@ function MenuQuadro({
               min={0}
               max={100}
               value={Math.round(vol * 100)}
-              onChange={(e) => {
-                const v = Number(e.target.value) / 100;
-                setLive({ vol: v });
-                local.set("live-vol", String(v));
-                if (LIVE.mainVideo) LIVE.mainVideo.volume = v;
-              }}
+              onChange={(e) => mudarVolumeTela(Number(e.target.value) / 100)}
             />
             <b>{Math.round(vol * 100)}%</b>
           </label>
@@ -183,19 +178,7 @@ function MenuQuadro({
       {q.tipo === "pessoa" && !q.eu && fid && (
         <>
           <div className="vz-sep" />
-          <h4>Volume da voz</h4>
-          <label className="vz-vol">
-            <input
-              aria-label={`Volume da voz de ${q.nome}`}
-              type="range"
-              min={0}
-              max={100}
-              value={Math.round((por[fid] ?? 1) * 100)}
-              onChange={(e) => ajustarVoz({ por: { ...por, [fid]: Number(e.target.value) / 100 } })}
-            />
-            <b>{Math.round((por[fid] ?? 1) * 100)}%</b>
-          </label>
-          <Chave rotulo={`Silenciar ${q.nome}`} ligado={silenciados.includes(fid)} onChange={(v) => silenciarNanico(fid, v)} />
+          <OpcoesVoz fid={fid} nome={q.nome} />
         </>
       )}
       {q.eu && q.tipo === "pessoa" && (
@@ -233,11 +216,7 @@ function MenuQuadro({
 
 /* ---------- volume da tela (só a principal toca som) ---------- */
 let volAntesDoMudo = 1;
-function mudarVolume(v: number) {
-  setLive({ vol: v });
-  local.set("live-vol", String(v));
-  if (LIVE.mainVideo) LIVE.mainVideo.volume = v;
-}
+const mudarVolume = mudarVolumeTela;
 
 /** Em cima da tela, como no Discord: alto-falante (tira e põe o som), a barrinha do volume e a tela cheia. */
 function ControlesTela({ q, principal, el }: { q: Quadro; principal: boolean; el: React.RefObject<HTMLDivElement | null> }) {
@@ -272,6 +251,12 @@ function ControlesTela({ q, principal, el }: { q: Quadro; principal: boolean; el
       <button type="button" className="qd-ctrl-b" aria-label="Tela cheia" title="Tela cheia" onClick={() => telaCheiaDe(el.current)}>
         <IcTelaCheia tam={18} />
       </button>
+      {/* como no Discord: parar de assistir sem precisar abrir o menu */}
+      {!q.eu && LIVE.watching.has(q.key) && (
+        <button type="button" className="qd-ctrl-b parar" aria-label={`Parar de assistir a tela de ${q.nome}`} title="Parar de assistir" onClick={() => unwatch(q.key)}>
+          <IcFechar tam={18} />
+        </button>
+      )}
     </div>
   );
 }

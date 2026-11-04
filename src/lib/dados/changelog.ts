@@ -795,6 +795,15 @@ export const CHANGELOG: EntradaLog[] = [
       "O Veião e o Henry se mexem com quadros desenhados, como num desenho animado: dar carta, pagar, recolher, chamar as apostas e lançar a bolinha",
     ],
   },
+  {
+    data: "04/11/2026",
+    itens: [
+      "Botão \"Parar de assistir\" na tela que você está vendo, como no Discord",
+      "Clique direito (ou segure o dedo no celular) em alguém no canal de voz ou nos membros: volume da voz, silenciar, a transmissão e a ficha",
+      "O volume de cada pessoa vai até 200%, e o volume de cada transmissão fica guardado por pessoa",
+      "No canal de voz aparece o volume que você mudou e quem você silenciou (só você vê)",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
