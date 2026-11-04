@@ -6,7 +6,7 @@
 import { toast } from "@/lib/toast";
 import { friendDaPresenca, getApp, MY_KEY, setApp } from "@/lib/store";
 import type { Presence } from "@/lib/tipos";
-import { newId } from "@/lib/util";
+import { local, newId } from "@/lib/util";
 import { avisar } from "./estado";
 import { ajustarSender, canCam, novaConexao, sendRtc, type MsgRtc } from "./rtc";
 import { naVoz } from "./voz";
@@ -58,6 +58,7 @@ function ligarPrefs() {
       const faixa = novo.getVideoTracks()[0];
       if (!CAM.stream || !faixa) return novo.getTracks().forEach((t) => t.stop());
       faixa.addEventListener("ended", () => stopCam());
+      if (querDesfoque()) void aplicarDesfoque(faixa, true);
       for (const o of CAM.out.values())
         for (const sd of o.pc.getSenders()) if (sd.track?.kind === "video") await sd.replaceTrack(faixa).catch(() => {});
       CAM.stream.getTracks().forEach((t) => t.stop());
@@ -70,6 +71,28 @@ function ligarPrefs() {
   });
 }
 
+/* ---------- desfoque do fundo: só o do próprio aparelho (Windows 11 e Mac com o efeito do sistema), sem modelo no site ---------- */
+type ComDesfoque = MediaTrackCapabilities & { backgroundBlur?: boolean[] };
+/** O aparelho deixa o site ligar e desligar o desfoque do fundo nesta câmera? */
+export const podeDesfocar = (t: MediaStreamTrack | null | undefined) => {
+  try {
+    const c = t?.getCapabilities?.() as ComDesfoque | undefined;
+    return !!c?.backgroundBlur && c.backgroundBlur.includes(true) && c.backgroundBlur.includes(false);
+  } catch {
+    return false;
+  }
+};
+export const querDesfoque = () => local.get("cam-desfoque") === "1";
+export async function aplicarDesfoque(t: MediaStreamTrack | null | undefined, sim: boolean) {
+  if (!t || !podeDesfocar(t)) return;
+  await t.applyConstraints({ advanced: [{ backgroundBlur: sim } as MediaTrackConstraintSet] }).catch(() => {});
+}
+/** Liga ou desliga o desfoque e guarda (vale para a câmera ligada agora e para as próximas). */
+export function mudarDesfoque(sim: boolean) {
+  local.set("cam-desfoque", sim ? "1" : "0");
+  void aplicarDesfoque(CAM.stream?.getVideoTracks()[0], sim);
+}
+
 export async function startCam() {
   if (!canCam) return toast("Seu navegador não liberou a câmera.");
   try {
@@ -77,6 +100,7 @@ export async function startCam() {
     ligarPrefs();
     const t = st.getVideoTracks()[0];
     if (t) t.addEventListener("ended", () => stopCam());
+    if (querDesfoque()) void aplicarDesfoque(t, true);
     CAM.stream = st;
     CAM.sid = newId();
     setApp({ myCamSid: CAM.sid });

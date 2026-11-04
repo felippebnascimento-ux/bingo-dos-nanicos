@@ -41,7 +41,8 @@ import { opcaoCall, semVideoDe, setLive, useLive } from "./estado";
 import { Balao, botaoCamera, botaoTela, BotaoReacoes, Chave, lugarDe, MenuFone, MenuMic, useBalao, type Lugar } from "./PainelVoz";
 import { canShare } from "./rtc";
 import { OpcoesVoz } from "./MenuPessoa";
-import { LIVE, mudarVolumeTela, stopLive, unwatch, watch } from "./tela";
+import { ativarSomTelas, ouvirJunto, useOuvindo } from "./somTelas";
+import { LIVE, mudarVolumeTela, stopLive, unwatch, VOLUME_TELA_MAX, volumeDaTela, watch } from "./tela";
 import { VideoMudo } from "./Video";
 import { alternarMudo, alternarSurdo, entrarVoz, useAjustesVoz, useVoz } from "./voz";
 
@@ -141,7 +142,10 @@ function MenuQuadro({
   el: React.RefObject<HTMLDivElement | null>;
   video: HTMLVideoElement | null;
 }) {
-  const vol = useLive((s) => s.vol);
+  useLive((s) => s.volTelas);
+  const chaveTela = q.tipo === "tela" ? q.key : null;
+  const junto = useOuvindo((s) => !!chaveTela && s.junto.includes(chaveTela));
+  const volQ = volumeDaTela(chaveTela);
   const semVideo = useLive((s) => s.semVideo);
   const espelho = useLive((s) => s.espelho);
   const naGrade = useLive((s) => s.minhaCamNaGrade);
@@ -176,23 +180,29 @@ function MenuQuadro({
       <button type="button" className="vz-item" onClick={faz(() => telaCheiaDe(el.current))}>
         <span>Tela cheia</span>
       </button>
-      {principal && (
+      {assistindo && (
         <>
           <div className="vz-sep" />
-          <h4>Volume da transmissão</h4>
-          <label className="vz-vol">
-            <input
-              className="vz-faixa"
-              style={{ "--pct": `${Math.round(vol * 100)}%` } as React.CSSProperties}
-              aria-label="Volume da transmissão"
-              type="range"
-              min={0}
-              max={100}
-              value={Math.round(vol * 100)}
-              onChange={(e) => mudarVolumeTela(Number(e.target.value) / 100)}
-            />
-            <b>{Math.round(vol * 100)}%</b>
-          </label>
+          <h4>Som da transmissão</h4>
+          {(principal || junto) && (
+            <label className="vz-vol">
+              <input
+                className="vz-faixa"
+                style={{ "--pct": `${Math.round((volQ / VOLUME_TELA_MAX) * 100)}%` } as React.CSSProperties}
+                aria-label="Volume da transmissão"
+                type="range"
+                min={0}
+                max={VOLUME_TELA_MAX * 100}
+                value={Math.round(volQ * 100)}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  mudarVolumeTela((Math.abs(n - 100) <= 4 ? 100 : n) / 100, q.key);
+                }}
+              />
+              <b>{Math.round(volQ * 100)}%</b>
+            </label>
+          )}
+          {!principal && <Chave rotulo="Ouvir junto com a principal" ligado={junto} onChange={(x) => ouvirJunto(q.key, x)} />}
         </>
       )}
       {q.tipo === "pessoa" && !q.eu && fid && (
@@ -278,7 +288,7 @@ function ControlesTela({ q, principal, el }: { q: Quadro; principal: boolean; el
           >
             {vol ? <IcVolume tam={18} /> : <IcSemSom tam={18} />}
           </button>
-          <input className="qd-vol" type="range" min={0} max={100} value={Math.round(vol * 100)} aria-label={`Volume da tela de ${q.nome}`} onChange={(e) => mudarVolume(Number(e.target.value) / 100)} />
+          <input className="qd-vol" type="range" min={0} max={VOLUME_TELA_MAX * 100} value={Math.round(vol * 100)} aria-label={`Volume da tela de ${q.nome}`} onChange={(e) => mudarVolume(Number(e.target.value) / 100)} />
         </>
       ) : (
         /* só a tela em destaque toca som: tocar aqui passa o som para esta */
@@ -300,14 +310,7 @@ function ControlesTela({ q, principal, el }: { q: Quadro; principal: boolean; el
 }
 
 /* ---------- um quadrado ---------- */
-function ativarSom() {
-  const v = LIVE.mainVideo;
-  if (!v) return;
-  v.muted = false;
-  v.play()
-    .then(() => setLive({ unmute: false }))
-    .catch(() => {});
-}
+const ativarSom = ativarSomTelas;
 
 function QuadroCanal({ q, pequeno, grande }: { q: Quadro; pequeno?: boolean; grande?: boolean }) {
   useLive((s) => s.v);

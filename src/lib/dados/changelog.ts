@@ -828,6 +828,28 @@ export const CHANGELOG: EntradaLog[] = [
       "Perfil com bio e links, notificações completas com a hora certa, busca de publicações, pesquisas recentes e tema claro",
     ],
   },
+  {
+    data: "04/11/2026",
+    itens: [
+      "Chat como o do Discord: responder, reagir com emoji, editar e apagar a sua mensagem, fixar, buscar e copiar (passe o mouse na mensagem ou segure o dedo)",
+      "Mensagens agrupadas com o rosto grande, separador de dia, a linha \"Novas mensagens\" e o botão para pular para as mais novas",
+      "@menções com sugestão enquanto digita (e @todos): quem é mencionado vê a mensagem em amarelo e uma bolinha vermelha no canal",
+      "Mande foto ou GIF no chat (também colando), e vídeos do YouTube, da Twitch e do Medal tocam ali mesmo",
+      "Formatação: **negrito**, *itálico*, ~~riscado~~, ||spoiler||, `código` e > citação; Enter manda e Shift+Enter pula linha; seta para cima edita a sua última",
+      "Quem está digitando aparece embaixo do chat; as mensagens antigas carregam ao rolar para cima e o chat guarda um ano de conversa",
+      "Canais: clique direito para marcar como lido ou silenciar o canal",
+      "Status como no Discord: Online, Ausente (sozinho depois de 10 min parado), Não perturbe e Invisível, com recado e hora para sumir; toque no seu rosto embaixo do menu",
+      "Cartão de perfil ao tocar no nome ou no rosto de alguém: status, recado, o que está jogando no LoL, onde está, cargos e mandar mensagem",
+      "Cargos com cor: os moderadores aparecem com o nome dourado; e a lista de membros mostra o recado e o \"Jogando LoL\"",
+      "Som da live na saída de som escolhida, volume até 200% e dá para ouvir duas transmissões juntas",
+      "Mudar a qualidade da sua transmissão sem cair, qualidade que se adapta à internet e as informações da transmissão (resolução, quadros, atraso)",
+      "Voz: reconecta sozinha, lembra se você estava mudo, sons ao mutar e desmutar, e atalhos Ctrl+Shift+M (microfone) e Ctrl+Shift+D (som)",
+      "Modo de entrada: detecção de voz com sensibilidade ou apertar para falar com a tecla que quiser; avisa se você fala mudo ou se o microfone está sem som",
+      "Aviso quando alguém entra ao vivo no seu canal, o tempo de call e de live, e a tela continua num quadrinho no canto ao sair do Ao vivo",
+      "Soundboard na voz, a câmera de quem transmite numa bolinha em cima da tela e desfocar o fundo da câmera (onde o aparelho deixa)",
+      "Moderadores podem silenciar alguém na voz para todos, tirar da call e apagar mensagens do chat",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

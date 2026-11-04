@@ -6,7 +6,7 @@ import { toast } from "@/lib/toast";
 import { getApp, MY_KEY, setApp } from "@/lib/store";
 import type { Presence } from "@/lib/tipos";
 import { local, newId } from "@/lib/util";
-import { avisar, getLive, setLive } from "./estado";
+import { avisar, getLive, setLive, useLive } from "./estado";
 import { ajustarSender, canShare, hiBitrate, novaConexao, preferH264, sendRtc, stereo, type MsgRtc } from "./rtc";
 
 export type Viewer = { pc: RTCPeerConnection; queue: RTCIceCandidateInit[]; at: number };
@@ -27,6 +27,8 @@ export const LIVE = {
   myStream: null as MediaStream | null,
   hasAudio: false,
   surface: "",
+  /** quando a minha transmissão começou (o tempo ao vivo no painel) */
+  desde: null as number | null,
   viewers: new Map<string, Viewer>(),
   watching: new Map<string, Watch>(),
   main: null as string | null,
@@ -106,6 +108,7 @@ export async function startLive() {
   }
   LIVE.myStream = stream;
   LIVE.mySid = newId();
+  LIVE.desde = Date.now();
   LIVE.hasAudio = stream.getAudioTracks().length > 0;
   try {
     LIVE.surface = String((vt?.getSettings?.() as { displaySurface?: string } | undefined)?.displaySurface || "");
@@ -115,6 +118,69 @@ export async function startLive() {
   setApp({ myLiveSid: LIVE.mySid });
   avisar();
   toast(LIVE.hasAudio || !somPc ? "Você está ao vivo" : "Você está ao vivo, mas sem som");
+}
+
+/** Mudou a resolução ou os quadros com a transmissão no ar: troca na hora, sem derrubar quem está assistindo. */
+export async function mudarQualidade() {
+  const vt = LIVE.myStream?.getVideoTracks()[0];
+  if (!vt || !LIVE.mySid) return;
+  const { res, fps } = getLive();
+  const R = RES[res];
+  try {
+    await vt.applyConstraints({ frameRate: { ideal: fps, max: fps }, width: { ideal: R.w, max: R.w }, height: { ideal: R.h, max: R.h } });
+  } catch (e) {
+    console.warn("qualidade", e);
+  }
+  tuneSenders();
+  toast(`Transmitindo em ${RES[res].nome.split(" ")[0]} ${fps} fps`);
+}
+if (typeof window !== "undefined")
+  useLive.subscribe((s, p) => {
+    if (s.res !== p.res || s.fps !== p.fps) void mudarQualidade();
+  });
+
+/** Como está a transmissão que eu assisto: resolução, quadros, internet e atraso (as "informações da transmissão"). */
+export async function infoDaTela(key: string): Promise<{ res: string; fps: number | null; mbps: number | null; ping: number | null; perda: number | null; codec: string } | null> {
+  const w = LIVE.watching.get(key);
+  if (!w) return null;
+  const um = async () => {
+    const out = { w: 0, h: 0, fps: null as number | null, bytes: 0, t: 0, ping: null as number | null, perdidos: 0, recebidos: 0, codec: "" };
+    const st = await w.pc.getStats();
+    const codecs = new Map<string, string>();
+    st.forEach((r) => {
+      if (r.type === "codec") codecs.set(r.id, String(r.mimeType ?? "").replace(/^video\//, ""));
+    });
+    st.forEach((r) => {
+      if (r.type === "inbound-rtp" && r.kind === "video") {
+        out.w = r.frameWidth ?? 0;
+        out.h = r.frameHeight ?? 0;
+        out.fps = typeof r.framesPerSecond === "number" ? Math.round(r.framesPerSecond) : null;
+        out.bytes = r.bytesReceived ?? 0;
+        out.t = r.timestamp;
+        out.perdidos = r.packetsLost ?? 0;
+        out.recebidos = r.packetsReceived ?? 0;
+        out.codec = codecs.get(r.codecId) ?? "";
+      }
+      if (r.type === "candidate-pair" && r.nominated && typeof r.currentRoundTripTime === "number") out.ping = Math.round(r.currentRoundTripTime * 1000);
+    });
+    return out;
+  };
+  try {
+    const a = await um();
+    await new Promise((ok) => setTimeout(ok, 1000));
+    const b = await um();
+    const dt = (b.t - a.t) / 1000;
+    return {
+      res: b.w ? `${b.w}×${b.h}` : "—",
+      fps: b.fps,
+      mbps: dt > 0 ? Math.round(((b.bytes - a.bytes) * 8) / dt / 1e5) / 10 : null,
+      ping: b.ping,
+      perda: b.recebidos + b.perdidos > 0 ? Math.round((b.perdidos / (b.recebidos + b.perdidos)) * 1000) / 10 : null,
+      codec: b.codec,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function stopLive() {
@@ -129,6 +195,7 @@ export function stopLive() {
   LIVE.myStream?.getTracks().forEach((t) => t.stop());
   LIVE.myStream = null;
   LIVE.mySid = null;
+  LIVE.desde = null;
   LIVE.hasAudio = false;
   setApp({ myLiveSid: null });
   avisar();
@@ -146,6 +213,8 @@ function closeViewer(key: string, silent?: boolean) {
   avisar();
 }
 
+/* qualidade que se adapta: com a internet ruim, o navegador baixa um pouco a resolução e os quadros juntos
+   ("balanced"), em vez de travar a imagem; quando melhora, volta sozinho */
 function tuneSenders() {
   /* por pessoa: 1080p até 12 Mbps (60 fps) ou 8 (30); 1440p até 20 ou 13. Com muita gente, divide o upload.
      A rede ainda ajusta sozinha para baixo se a internet não aguentar. */
@@ -160,7 +229,7 @@ function tuneSenders() {
         ajustarSender(
           sd,
           { maxBitrate: br, maxFramerate: fps, scaleResolutionDownBy: 1, priority: "high", networkPriority: "high" },
-          { degradationPreference: "maintain-resolution" },
+          { degradationPreference: "balanced" },
         );
       else ajustarSender(sd, { maxBitrate: 192000, priority: "high", networkPriority: "high" });
     }
@@ -273,21 +342,21 @@ export const volumeDaTela = (key: string | null) => {
   const fid = fidDaTela(key);
   return fid ? (getLive().volTelas[fid] ?? 1) : getLive().vol;
 };
-/** Muda o volume da tela principal e guarda para quem está nela. */
-export function mudarVolumeTela(v: number) {
-  const vol = Math.max(0, Math.min(1, v));
-  const fid = fidDaTela(LIVE.main);
+/** O volume da transmissão vai até 200%, como no Discord (o som toca pelo somTelas.ts). */
+export const VOLUME_TELA_MAX = 2;
+/** Muda o volume de uma tela (a principal, se não disser qual) e guarda para quem está nela. */
+export function mudarVolumeTela(v: number, key: string | null = LIVE.main) {
+  const vol = Math.max(0, Math.min(VOLUME_TELA_MAX, v));
+  const fid = fidDaTela(key);
   const volTelas = fid ? { ...getLive().volTelas, [fid]: vol } : getLive().volTelas;
-  setLive({ vol, volTelas });
-  local.set("live-vol", String(vol));
+  setLive(key === LIVE.main ? { vol, volTelas } : { volTelas });
+  if (key === LIVE.main) local.set("live-vol", String(vol));
   local.setJson("live-vol-por", volTelas);
-  if (LIVE.mainVideo) LIVE.mainVideo.volume = vol;
 }
 /** A tela principal mudou: o volume passa a ser o guardado para quem está nela. */
 function acertarVolume() {
   const vol = volumeDaTela(LIVE.main);
   if (getLive().vol !== vol) setLive({ vol });
-  if (LIVE.mainVideo) LIVE.mainVideo.volume = vol;
 }
 
 /** Abre a tela de quem está ao vivo; `asMain` = vira a tela principal, com som. */

@@ -90,7 +90,7 @@ export function iniciarMissoes() {
   setInterval(() => void atualizar(), 2 * 60_000);
   /* minhas mensagens, minhas nanicadas, zoeira comigo, roleta e ganhos (truco, bingo) contam: pergunta de novo */
   const s = () => getApp();
-  aoMudarTabela("chat_messages", (row) => row?.user_id === s().myUid && missoesDepois());
+  aoMudarTabela("chat_messages", (row, ev) => ev === "INSERT" && row?.user_id === s().myUid && missoesDepois());
   aoMudarTabela("phrases", () => missoesDepois());
   aoMudarTabela("zoeiras", (row) => (row?.de === s().myFid || row?.para === s().myFid) && missoesDepois());
   aoMudarTabela("rodizio", (row) => row?.sorteado_por === s().myUid && missoesDepois());

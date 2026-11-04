@@ -15,6 +15,9 @@ import { entrarSala } from "@/features/salas/trocar";
 import { friendDaPresenca, getApp, MY_KEY, setApp, useApp } from "@/lib/store";
 import type { Friend, Presence } from "@/lib/tipos";
 import { ehCelular, hueOf, initials, local, rolarAte } from "@/lib/util";
+import { riotEmJogo, useRiot } from "@/features/jogar/riot";
+import { corDoNome, recadoValido, situacao, useStatus } from "@/features/status/status";
+import { abrirCartao, PontoStatus, useSituacao } from "./CartaoPerfil";
 
 /**
  * Assistir a live de alguém com um clique, de onde estiver: se a pessoa está em outra sala, entra nela só
@@ -113,11 +116,18 @@ function Membro({ p, f }: { p: PresencaNanico | null; f: Friend | undefined }) {
   const online = !!p;
   /* quem está ao vivo: um clique assiste, de qualquer sala (entra só para ver, sem voz) */
   const assiste = !!p?.live;
-  const titulo = assiste ? (eu ? "Ver a sua transmissão" : `Assistir a tela de ${nome}`) : `Ver a ficha de ${nome}`;
-  const abrir = () => {
-    if (assiste && p) assistirLive(p.key, p.sala);
-    else if (f) setApp({ fichaAberta: f.id });
+  const titulo = `Ver o perfil de ${nome}`;
+  /* como no Discord: tocar abre o cartão do perfil (o AO VIVO continua assistindo direto) */
+  const abrir = (e: { clientX: number; clientY: number }) => {
+    if (f) abrirCartao(f.id, e);
+    else if (assiste && p) assistirLive(p.key, p.sala);
   };
+  const sit = useSituacao(f?.id);
+  const mods = useStatus((s) => s.mods);
+  const st = useStatus((s) => (f?.user_id ? s.porUser[f.user_id] : undefined));
+  const jogos = useRiot((s) => s.jogos);
+  const campeao = f ? riotEmJogo(jogos).get(f.id) : undefined;
+  const sub = campeao !== undefined ? `Jogando LoL${campeao ? ` · ${campeao}` : ""}` : recadoValido(st) ? `${st!.emoji} ${st!.texto}`.trim() : null;
   const onde = !p ? null : p.sala ? (nomeDaSala(p.sala, salas) ?? "Numa sala") : salas.length ? "No lobby" : null;
   /* como no Discord: clique direito (ou segurar o dedo) abre o volume, silenciar, a transmissão e a ficha */
   const menu = useMenuDeToque();
@@ -131,29 +141,33 @@ function Membro({ p, f }: { p: PresencaNanico | null; f: Friend | undefined }) {
   return (
     <li
       data-key={p?.key}
-      className={(eu ? "me" : "") + (p?.live ? " live" : "") + (online ? "" : " offline")}
+      className={(eu ? "me" : "") + (p?.live ? " live" : "") + (online && sit !== "off" ? "" : " offline")}
       title={titulo}
       role={f || assiste ? "button" : undefined}
       tabIndex={f || assiste ? 0 : undefined}
       aria-label={f || assiste ? titulo : undefined}
-      onClick={f || assiste ? abrir : undefined}
+      onClick={f || assiste ? (e) => abrir(e) : undefined}
       {...(f ? menu.props : {})}
       onKeyDown={(e) => {
         if ((f || assiste) && (e.key === "Enter" || e.key === " ")) {
           e.preventDefault();
-          abrir();
+          const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+          abrir({ clientX: r.left, clientY: r.top });
         }
       }}
     >
-      {p ? (
-        <CamNaSala personKey={p.chaveCam ?? p.key} nome={nome}>
-          {pic}
-        </CamNaSala>
-      ) : (
-        pic
-      )}
+      <span className="membro-rosto">
+        {p ? (
+          <CamNaSala personKey={p.chaveCam ?? p.key} nome={nome}>
+            {pic}
+          </CamNaSala>
+        ) : (
+          pic
+        )}
+        {f && <PontoStatus sit={sit} />}
+      </span>
       <span className="who">
-        <span className="nm">
+        <span className={"nm " + corDoNome(f, mods)}>
           {nome}
           <ChamaNome fid={f?.id} />
           {eu && (
@@ -163,7 +177,8 @@ function Membro({ p, f }: { p: PresencaNanico | null; f: Friend | undefined }) {
             </>
           )}
         </span>
-        {onde && (
+        {sub && <small className="membro-sub">{sub}</small>}
+        {onde && !sub && (
           <small className="onde">
             {dono && (
               <span className="membro-quarto" title={`No quarto do ${dono.name}`}>
@@ -175,7 +190,7 @@ function Membro({ p, f }: { p: PresencaNanico | null; f: Friend | undefined }) {
         )}
       </span>
       {p?.live && (
-        <span className="live-pill vira">
+        <span className="live-pill vira" role="button" tabIndex={-1} onClick={(e) => (e.stopPropagation(), assistirLive(p.key, p.sala))}>
           <span className="a">AO VIVO</span>
           <span className="b">▶ ASSISTIR</span>
         </span>
@@ -223,9 +238,11 @@ export function Membros() {
   /* eu primeiro; depois quem está online em ordem de nome */
   const ordenadas = linhas.sort((a, b) => (a.p.chaves.includes(MY_KEY) ? -1 : b.p.chaves.includes(MY_KEY) ? 1 : porNome(a, b)));
   /* os 14 em cima; os amigos dos nanicos numa categoria própria embaixo (inativo não aparece) */
-  const online = ordenadas.filter((l) => !ehAmigo(l.f) && l.f?.tipo !== "inativo");
+  /* o invisível aparece com os offline (como no Discord), menos para ele mesmo */
+  const visivel = (l: { p: PresencaNanico; f: Friend | undefined }) => l.p.chaves.includes(MY_KEY) || situacao(l.f?.user_id, l.p, false) !== "off";
+  const online = ordenadas.filter((l) => !ehAmigo(l.f) && l.f?.tipo !== "inativo" && visivel(l));
   const offline = soNanicos(friends)
-    .filter((f) => !linhas.some((l) => l.f?.id === f.id))
+    .filter((f) => !linhas.some((l) => l.f?.id === f.id && visivel(l)))
     .map((f) => ({ p: null, f, nome: f.name }))
     .sort(porNome);
   const amigos = [

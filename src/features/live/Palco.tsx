@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { IcAjustes, IcFechar, IcJanela, IcLapis, IcReagir, IcTelaCheia, IcVolume } from "@/components/ui/icones";
 import { useApp } from "@/lib/store";
 import { toast } from "@/lib/toast";
-import { getLive, setLive, useLive } from "./estado";
+import { useLive } from "./estado";
 import {
   alternarLapis,
   DCORES,
@@ -21,12 +21,15 @@ import {
   setEsp,
 } from "./desenho";
 import { REACOES, REACOES_FOTO, reagir, setReacoesVer } from "./reacoes";
+import { camStreamOf } from "./camera";
 import { canShare } from "./rtc";
-import { LIVE, liveStreams, mudarVolumeTela, unwatch, watch } from "./tela";
+import { VideoMudo } from "./Video";
+import { ativarSomTelas } from "./somTelas";
+import { LIVE, liveStreams, mudarVolumeTela, unwatch, VOLUME_TELA_MAX, watch } from "./tela";
 import { Rosto } from "./Rosto";
 import { Voos } from "./Voos";
 
-/** O vídeo da tela principal: com som (se o navegador bloquear, aparece "Ativar som"). */
+/** O vídeo da tela principal: só a imagem (o som toca pelo somTelas.ts, na saída escolhida e até 200%). */
 function VideoPrincipal({ stream, live }: { stream: MediaStream | null; live: boolean }) {
   const ref = useRef<HTMLVideoElement | null>(null);
   const prende = useCallback((v: HTMLVideoElement | null) => {
@@ -43,21 +46,29 @@ function VideoPrincipal({ stream, live }: { stream: MediaStream | null; live: bo
     const v = ref.current;
     if (!v) return;
     if (v.srcObject !== stream) v.srcObject = stream;
-    v.volume = getLive().vol;
-    if (!live) return;
-    v.muted = false;
-    v.play()
-      .then(() => setLive({ unmute: false }))
-      .catch(() => {
-        v.muted = true;
-        v.play().catch(() => {});
-        setLive({ unmute: true });
-      });
+    v.muted = true;
+    if (live) v.play().catch(() => {});
   }, [stream, live]);
 
-  useEffect(() => () => setLive({ unmute: false }), []);
-
   return <video ref={prende} autoPlay muted playsInline />;
+}
+
+/** Como no Discord: a câmera de quem transmite numa bolinha no canto da tela (dá para esconder). */
+function BolhaCam({ fid }: { fid: string | null }) {
+  useLive((s) => s.v);
+  const online = useApp((s) => s.onlineSala);
+  const [escondida, setEscondida] = useState(false);
+  const p = fid ? online.find((x) => x.fid === fid && x.cam) : undefined;
+  const st = p ? camStreamOf(p.key) : null;
+  if (!st || escondida) return null;
+  return (
+    <div className="stage-cam">
+      <VideoMudo stream={st} />
+      <button type="button" aria-label="Esconder a câmera" title="Esconder a câmera" onClick={() => setEscondida(true)}>
+        <IcFechar tam={12} />
+      </button>
+    </div>
+  );
 }
 
 type Pop = null | "react" | "opt";
@@ -166,14 +177,7 @@ export function Palco() {
     }
   }
 
-  function ativarSom() {
-    const v = LIVE.mainVideo;
-    if (!v) return;
-    v.muted = false;
-    v.play()
-      .then(() => setLive({ unmute: false }))
-      .catch(() => {});
-  }
+  const ativarSom = ativarSomTelas;
 
   const ls = liveStreams(online);
   let vazio: React.ReactNode = null;
@@ -233,6 +237,7 @@ export function Palco() {
       <div className="stage-slot" id="stageSlot">
         {w && <VideoPrincipal key={w.key} stream={w.stream} live={w.state === "live"} />}
       </div>
+      {w && w.state === "live" && <BolhaCam key={w.key} fid={w.fid} />}
       <div className="stage-empty" id="stageEmpty" hidden={!!w && w.state === "live"}>
         {vazio}
       </div>
@@ -371,7 +376,7 @@ export function Palco() {
               type="range"
               id="vol"
               min="0"
-              max="1"
+              max={VOLUME_TELA_MAX}
               step="0.05"
               value={vol}
               aria-label="Volume"
