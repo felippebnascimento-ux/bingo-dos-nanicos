@@ -226,7 +226,9 @@ src/
                        blackjack ao vivo: bjRegras.ts (pontos, dobrar/dividir, ler o estado, refazer o sapato pelo
                        segredo; puro e testado), bjDados.ts (`useBlackjack`: pergunta bj_estado, aposta e joga) e
                        Blackjack.tsx (a mesa em perspectiva, como nos cassinos ao vivo: as cartas deitadas no feltro em escada, cada mão
-                       girada para o seu jogador, fileiras no celular; fichas de 5 a 1.000 e o Tudo) e BjEstudio.tsx (o estúdio: parede com
+                       girada para o seu jogador, fileiras no celular; fichas de 5 a 1.000 e o Tudo; as cartas saem uma a cada `DAR_MS`, o
+                       resultado espera o dealer tirar as dele e, no fim, `recolherMao` junta cada mão, vira de costas e leva ao descarte,
+                       passando um pouco do `fim_em` do banco (já dá para apostar enquanto ele recolhe)) e BjEstudio.tsx (o estúdio: parede com
                        as luzes, a placa, a mesa desenhada em SVG, uma para o computador e outra para o celular, e o Veião de crupiê com
                        o `Crupie`, que fala com a mesa),
                        pôquer entre nanicos: pkRegras.ts (força e nome da mão, igual ao pk_valor5 do banco; o que dá para
@@ -272,9 +274,11 @@ src/
                        (o jeito dos cassinos online: `BarraJogo` em cima com o status, a barra do tempo, a carteira, o "na mesa" e o
                        "?" das regras; `Historico`; `Faixa`, o aviso grande no feltro; `Soma`; `BotaoRedondo`; `EscolherFichas`;
                        `BotaoMini`; a barra e o anel do tempo deslizam a cada quadro) e Crupie.tsx (o crupiê dos jogos ao vivo, o Veião e o
-                       Henry: o corpo e as mãos parados na mesa, a cabeça respira, vira e acena, e os gestos com pose trocam para outra
-                       arte, encaixada pelo colete e pela calça, por um cruzamento suave; as artes ficam em `public/arte/cassino/`,
-                       recortadas das que o grupo fez); estilos em 36-mesas.css (as cores de lá ficam em `.mesa-jogo`)
+                       Henry: o corpo parado na mesa e a cabeça (sempre a da arte parada, por cima de tudo) respira, vira e acena; os
+                       gestos com pose tocam uma sequência de quadros desenhados, como num desenho animado (`Pose.quadros`, `ms` e `volta`;
+                       com `vezes`, o começo se repete), encaixados pelo colete e pela calça, com um cruzamento curto entre um quadro e o
+                       próximo; a arte parada fica em `public/arte/cassino/` e os quadros em `public/arte/cassino/quadros/`, recortados das
+                       folhas que o grupo fez); estilos em 36-mesas.css (as cores de lá ficam em `.mesa-jogo`)
     truco/             engine.ts (regras, puro e testado; a função truco-mesa usa uma cópia; relógio de 20 s por
                        jogada: `desde`, trQuemDeve, trRestante, trTempoEsgotado), valida.ts (confere a mesa pública),
                        mesa.ts (pede cada ação à função truco-mesa e recebe a mesa e a minha mão pelo tempo real;

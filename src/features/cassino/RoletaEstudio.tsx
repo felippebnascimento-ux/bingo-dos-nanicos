@@ -12,11 +12,22 @@ import { Crupie, type Gesto, type Pose } from "@/features/mesa/Crupie";
 
 /* a arte do Henry de crupiê (colete, camisa, gravata-borboleta), feita pelo grupo no estilo das outras */
 const ARTE = "/arte/cassino/henry-crupie.webp";
-/* as poses do Henry (também do grupo), encaixadas na arte parada pelo colete e pela calça; elas saíram sem o bigode,
-   então a cabeça é a da arte parada */
+/* as poses do Henry: quadros de animação desenhados pelo grupo (cassino/quadros/), encaixados na arte parada pelo
+   colete e pela calça; a cabeça é sempre a da arte parada */
 const POSES: Record<string, Pose> = {
-  lanca: { arte: "/arte/cassino/henry-lanca.webp", x: -1, y: 4, w: 269.6, h: 434.5, ms: 1100, cabecaFixa: true },
-  acena: { arte: "/arte/cassino/henry-acena.webp", x: -75, y: 3, w: 339, h: 434.4, ms: 1500, cabecaFixa: true },
+  lanca: { quadros: [
+    { arte: "/arte/cassino/quadros/henry-lanca-2.webp", x: -37, y: 0, w: 299.2, h: 440.1 },
+    { arte: "/arte/cassino/quadros/henry-lanca-3.webp", x: -55, y: -1, w: 246.6, h: 442.2 },
+    { arte: "/arte/cassino/quadros/henry-lanca-4.webp", x: -27, y: 1, w: 218.0, h: 437.0 },
+    { arte: "/arte/cassino/quadros/henry-lanca-5.webp", x: 9, y: 1, w: 248.7, h: 437.0 },
+    { arte: "/arte/cassino/quadros/henry-lanca-6.webp", x: -3, y: 1, w: 193.9, h: 437.0 },
+  ], ms: 1300, volta: 1 },
+  acena: { quadros: [
+    { arte: "/arte/cassino/quadros/henry-acena-2.webp", x: -44, y: 0, w: 277.5, h: 438.3 },
+    { arte: "/arte/cassino/quadros/henry-acena-3.webp", x: -49, y: 0, w: 286.7, h: 438.3 },
+    { arte: "/arte/cassino/quadros/henry-acena-4.webp", x: -75, y: 0, w: 340.2, h: 438.7 },
+    { arte: "/arte/cassino/quadros/henry-acena-5.webp", x: -6, y: 0, w: 200.9, h: 439.9 },
+  ], ms: 1500, volta: 1 },
 };
 type Props = {
   /** a roda (a RodaRoleta), que fica deitada na mesa */
@@ -89,7 +100,7 @@ export function EstudioRoleta({ children, fala, gesto, olhaRoda }: Props) {
       </div>
       {/* o Henry por cima da mesa, com as mãos apoiadas no feltro; ele olha para a roda (à esquerda dele) enquanto gira */}
       <div className="rl-henry">
-        <Crupie arte={ARTE} w={189} mesa={300} maos={{ ate: 331, esq: 40, dir: 150 }} pescoco={[96, 151]} olha={olhaRoda ? 1 : 0} gesto={g} poses={POSES} />
+        <Crupie arte={ARTE} w={189} mesa={300} maos={{ ate: 331, esq: 40, dir: 150 }} pescoco={[96, 151]} rosto={[24, 162]} olha={olhaRoda ? 1 : 0} gesto={g} poses={POSES} />
       </div>
       {fala && (
         <span className="rl-fala" key={fala} role="status">

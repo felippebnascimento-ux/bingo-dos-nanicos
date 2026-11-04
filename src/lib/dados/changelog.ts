@@ -787,6 +787,14 @@ export const CHANGELOG: EntradaLog[] = [
       "Novas ações no K-FOFO: rir, joinha, pular e sentar no chão (também pelo chat: :rir, :joinha, :pular e :sentar)",
     ],
   },
+  {
+    data: "04/11/2026",
+    itens: [
+      "Blackjack com mais calma: as cartas saem uma de cada vez, o dealer tira as dele devagar e o resultado só aparece depois",
+      "No fim da rodada o Veião recolhe as cartas mão por mão, junta num montinho, vira de costas e põe no descarte",
+      "O Veião e o Henry se mexem com quadros desenhados, como num desenho animado: dar carta, pagar, recolher, chamar as apostas e lançar a bolinha",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

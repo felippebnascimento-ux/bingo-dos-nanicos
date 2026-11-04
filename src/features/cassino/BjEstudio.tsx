@@ -3,20 +3,42 @@
  * O estúdio do blackjack ao vivo, como nos cassinos ao vivo de verdade: a parede do estúdio com as luzes, a placa
  * da mesa, o Veião de dealer em pé atrás da mesa (a arte dele de crupiê, `cassino/veiao-crupie.webp`) e a mesa em perspectiva:
  * feltro em meia-lua com as frases impressas, o acolchoado de couro, a lateral de madeira e a sombra no chão.
- * As mãos do Veião são recortes da arte, por cima do feltro, e se mexem: a da direita dá as cartas do sapato, a da
- * esquerda paga e recolhe. Só desenho: as cartas, as fichas e os lugares continuam nos `NaMesa` do Blackjack.tsx.
+ * O Veião é o Crupie: dá as cartas, paga, recolhe e comemora com os quadros desenhados (POSES). Só desenho: as cartas,
+ * as fichas e os lugares continuam nos `NaMesa` do Blackjack.tsx.
  * Duas mesas: a do computador (1600 × 950) e a do celular (1000 × 1350), cada uma no formato da tela (36-mesas.css).
  */
 import { Crupie, type Gesto, type Pose } from "@/features/mesa/Crupie";
 
 /* a arte do Veião de crupiê (colete, camisa, gravata-borboleta), feita pelo grupo no estilo das outras */
 const ARTE = "/arte/cassino/veiao-crupie.webp";
-/* as poses do Veião (também do grupo), encaixadas na arte parada pelo colete e pela calça */
+/* as poses do Veião: quadros de animação desenhados pelo grupo (cassino/quadros/), encaixados na arte parada pelo
+   colete e pela calça; a cabeça é sempre a da arte parada. O "dar" dura o tempo de uma carta (DAR_MS do
+   Blackjack.tsx) e se repete a cada carta do lote; o "recolhe" acompanha as cartas indo para o descarte */
+const PAGA: Pose["quadros"] = [
+    { arte: "/arte/cassino/quadros/veiao-paga-2.webp", x: -9, y: 0, w: 211.9, h: 441.2 },
+    { arte: "/arte/cassino/quadros/veiao-paga-3.webp", x: -34, y: 0, w: 236.8, h: 441.2 },
+    { arte: "/arte/cassino/quadros/veiao-paga-4.webp", x: -39, y: -1, w: 242.9, h: 443.5 },
+    { arte: "/arte/cassino/quadros/veiao-paga-5.webp", x: -5, y: -1, w: 209.0, h: 443.5 },
+    { arte: "/arte/cassino/quadros/veiao-paga-6.webp", x: -3, y: -1, w: 207.8, h: 443.5 },
+  ];
 const POSES: Record<string, Pose> = {
-  dar: { arte: "/arte/cassino/veiao-dar.webp", x: -47, y: 3, w: 246.3, h: 435.6, ms: 280 },
-  paga: { arte: "/arte/cassino/veiao-paga.webp", x: -26, y: 3, w: 253.1, h: 435.6, ms: 1300 },
-  estourou: { arte: "/arte/cassino/veiao-paga.webp", x: -26, y: 3, w: 253.1, h: 435.6, ms: 1300 },
-  comemora: { arte: "/arte/cassino/veiao-comemora.webp", x: -55, y: 2, w: 314.3, h: 435.6, ms: 1400 },
+  dar: { quadros: [
+    { arte: "/arte/cassino/quadros/veiao-dar-2.webp", x: -5, y: 4, w: 209.7, h: 440.5 },
+    { arte: "/arte/cassino/quadros/veiao-dar-3.webp", x: -6, y: 4, w: 214.2, h: 440.5 },
+    { arte: "/arte/cassino/quadros/veiao-dar-4.webp", x: 12, y: 1, w: 286.7, h: 443.7 },
+    { arte: "/arte/cassino/quadros/veiao-dar-5.webp", x: 12, y: 1, w: 224.9, h: 443.7 },
+    { arte: "/arte/cassino/quadros/veiao-dar-6.webp", x: 13, y: 1, w: 192.1, h: 443.7 },
+  ], ms: 620 * 5 / 4, volta: 1 },
+  paga: { quadros: PAGA, ms: 1500, volta: 2 },
+  estourou: { quadros: PAGA, ms: 1500, volta: 2 },
+  recolhe: { quadros: [
+    { arte: "/arte/cassino/quadros/veiao-recolhe-2.webp", x: 13, y: 0, w: 228.8, h: 442.9 },
+    { arte: "/arte/cassino/quadros/veiao-recolhe-3.webp", x: 4, y: -1, w: 225.4, h: 442.9 },
+    { arte: "/arte/cassino/quadros/veiao-recolhe-4.webp", x: 3, y: -4, w: 194.7, h: 443.0 },
+    { arte: "/arte/cassino/quadros/veiao-recolhe-5.webp", x: 5, y: -2, w: 193.7, h: 440.7 },
+    { arte: "/arte/cassino/quadros/veiao-recolhe-6.webp", x: -5, y: -3, w: 210.7, h: 443.0 },
+  ], ms: 2600, volta: 1 },
+  comemora: { quadros: [{ arte: "/arte/cassino/veiao-comemora.webp", x: -55, y: 2, w: 314.3, h: 435.6 }], ms: 1400 },
 };
 
 /* bx, by: a largura do acolchoado dos lados e na frente (na frente é mais grosso: está mais perto da câmera); lado: a lateral de madeira */
@@ -146,7 +168,7 @@ export function EstudioBj({ fala, olha = 0, gesto, dar }: EstudioProps) {
       <span className="bj-veiao-luz" />
       {/* o Veião: o corpo e as mãos parados na mesa, a cabeça vira para quem joga, acena, acompanha as cartas e reage */}
       <div className="bj-veiao">
-        <Crupie arte={ARTE} w={201} mesa={288} maos={{ ate: 334, esq: 42, dir: 160 }} pescoco={[103, 144]} olha={olha} gesto={gestoCabeca} poses={POSES} />
+        <Crupie arte={ARTE} w={201} mesa={288} maos={{ ate: 334, esq: 42, dir: 160 }} pescoco={[103, 144]} rosto={[27, 162]} olha={olha} gesto={gestoCabeca} poses={POSES} />
         <span className="bj-veiao-nome">Veião · dealer</span>
       </div>
       {fala && (

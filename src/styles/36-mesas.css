@@ -729,3 +729,10 @@ button.pk-livre:hover,.pk-livre.on{background:rgb(210 174 106 / .22)}
 .va-campo input{width:100%;border:0;background:none;color:var(--ink);font:800 18px var(--display);padding:0;outline:none}
 .va-campo:focus-within{border-color:var(--accent)}
 @media (prefers-reduced-motion:reduce){.va-bt{transition:none}}
+/* no fim, a soma e o selo de cada mão somem quando o Veião recolhe as cartas dela (--sai = quando chega a vez dela) */
+.bj-sai{display:inline-block;transition:opacity .3s ease var(--sai,0ms)}
+.bj-sai.sai{opacity:0}
+/* o verso que aparece quando o Veião vira a carta no ar, recolhendo (Blackjack.tsx, recolherMao) */
+.bj-mao > .mesa-voa{position:relative}
+.bj-verso-sai{position:absolute;inset:0;opacity:0;pointer-events:none}
+.bj-verso-sai .cfr{width:100% !important;min-width:0 !important;height:100%;margin:0 !important}
