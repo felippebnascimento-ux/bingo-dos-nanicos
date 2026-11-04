@@ -50,7 +50,6 @@ button.eu .av{width:34px;height:34px}
 @media (max-width:860px){.side-rolagem{display:grid;gap:12px}.side-base{border-top:0;padding-top:0}.eu-painel .eu{display:none}}
 
 /* ---------- Ao vivo: o nome da sala (canal de voz) em destaque ---------- */
-.sala-kicker{display:flex;align-items:center;gap:6px;font:700 12px var(--display);letter-spacing:.04em;text-transform:uppercase;color:var(--accent-text)}
 
 /* ---------- engrenagem e Configurações ---------- */
 .eu-cfg{flex:none;display:grid;place-items:center;width:34px;height:34px;border:0;border-radius:10px;background:none;color:var(--muted);cursor:pointer}

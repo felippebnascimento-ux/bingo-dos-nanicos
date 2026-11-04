@@ -804,6 +804,17 @@ export const CHANGELOG: EntradaLog[] = [
       "No canal de voz aparece o volume que você mudou e quem você silenciou (só você vê)",
     ],
   },
+  {
+    data: "04/11/2026",
+    itens: [
+      "Visual novo da call, como no Discord: ocupa a tela toda, fundo escuro e os quadrados crescem até preencher",
+      "Borda verde em quem está falando, nos quadrados e nas listas",
+      "Barra de botões flutuando embaixo (some com o mouse parado): microfone, fone, câmera e tela com a setinha de opções",
+      "Botão ⋯ com mais opções: esconder quem está sem câmera, esconder os nomes, ruído, câmeras numa janela e tela cheia",
+      "Passe o mouse no olhinho da sua live para ver quem está assistindo",
+      "No menu de alguém: ver em destaque, ver a ficha e desligar o vídeo dele só para você",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

@@ -6,8 +6,9 @@
  */
 import { useCallback, useRef, useState } from "react";
 import { assistirLive } from "@/components/shell/People";
+import { Avatar } from "@/components/ui/Avatar";
 import type { PresencaNanico } from "@/lib/presenca";
-import { MY_KEY, setApp } from "@/lib/store";
+import { MY_KEY, setApp, useApp } from "@/lib/store";
 import { useLive } from "./estado";
 import { Balao, Chave, lugarDe, type Lugar } from "./PainelVoz";
 import { LIVE, mudarVolumeTela, unwatch, watch } from "./tela";
@@ -23,6 +24,8 @@ export function OpcoesVoz({ fid, nome }: { fid: string; nome: string }) {
       <h4>Volume da voz</h4>
       <label className="vz-vol">
         <input
+          className="vz-faixa"
+          style={{ "--pct": `${(v / VOLUME_MAX) * 100}%` } as React.CSSProperties}
           aria-label={`Volume da voz de ${nome}`}
           type="range"
           min={0}
@@ -58,7 +61,7 @@ export function OpcoesTela({ chave, sala, nome, fechar }: { chave: string; sala:
         </button>
       ) : principal ? (
         <label className="vz-vol">
-          <input aria-label={`Volume da transmissão de ${nome}`} type="range" min={0} max={100} value={Math.round(vol * 100)} onChange={(e) => mudarVolumeTela(Number(e.target.value) / 100)} />
+          <input className="vz-faixa" style={{ "--pct": `${Math.round(vol * 100)}%` } as React.CSSProperties} aria-label={`Volume da transmissão de ${nome}`} type="range" min={0} max={100} value={Math.round(vol * 100)} onChange={(e) => mudarVolumeTela(Number(e.target.value) / 100)} />
           <b>{Math.round(vol * 100)}%</b>
         </label>
       ) : (
@@ -78,13 +81,19 @@ export function OpcoesTela({ chave, sala, nome, fechar }: { chave: string; sala:
 /** O menu inteiro de uma pessoa (nome, voz, transmissão e ficha). */
 export function MenuPessoa({ p, fid, nome, lugar, fechar }: { p: PresencaNanico | null; fid: string | null; nome: string; lugar: Lugar; fechar: () => void }) {
   const eu = !!p?.chaves.includes(MY_KEY);
+  const f = useApp((s) => (fid ? s.friends.find((x) => x.id === fid) : undefined));
   /* o balão vai para o corpo da página, mas os eventos do React sobem pela árvore: sem isto, tocar no menu contaria
      como tocar na linha da pessoa (abrir a ficha, entrar no canal) */
   const parar = (e: React.SyntheticEvent) => e.stopPropagation();
   return (
     <span className="menu-pessoa" onClick={parar} onPointerDown={parar} onContextMenu={parar} onKeyDown={parar}>
     <Balao lugar={lugar} fechar={fechar} rotulo={`Opções de ${nome}`}>
-      <h4>{nome}</h4>
+      {/* cabeçalho como o do Discord: o rosto grande e o nome */}
+      <div className="mp-cab">
+        {f ? <Avatar f={f} size="lg" /> : <span className="av lg">{nome[0]}</span>}
+        <b>{nome}</b>
+        {p?.live && <span className="live-pill">AO VIVO</span>}
+      </div>
       {!eu && fid && <OpcoesVoz fid={fid} nome={nome} />}
       {!eu && p?.live && (
         <>

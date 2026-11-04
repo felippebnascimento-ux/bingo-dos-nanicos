@@ -45,6 +45,12 @@ export type LiveUi = {
   espelho: boolean;
   /** mostrar a minha câmera no meu quadrado da grade */
   minhaCamNaGrade: boolean;
+  /** como no Discord: esconder da grade quem está sem câmera (as telas ao vivo continuam) */
+  soVideo: boolean;
+  /** esconder os nomes nos quadrados (aparecem ao passar o mouse) */
+  semNomes: boolean;
+  /** nanicos (friend id) cuja câmera eu desliguei só para mim */
+  semVideo: string[];
 };
 
 const num = (k: string) => parseFloat(local.get(k) ?? "");
@@ -52,6 +58,7 @@ const fpsSalvo = num("live-fps"),
   resSalvo = num("live-res"),
   volSalvo = num("live-vol");
 const volTelasSalvo = local.json<Record<string, unknown>>("live-vol-por") || {};
+const semVideoSalvo = local.json<unknown[]>("cv-sem-video");
 const des = local.json<{ cor?: unknown; esp?: unknown; ver?: unknown }>("desenho") || {};
 
 export const useLive = create<LiveUi>()(() => ({
@@ -75,10 +82,26 @@ export const useLive = create<LiveUi>()(() => ({
   previaCam: false,
   espelho: local.get("cam-espelho") !== "0",
   minhaCamNaGrade: local.get("cam-na-grade") !== "0",
+  soVideo: local.get("cv-so-video") === "1",
+  semNomes: local.get("cv-sem-nomes") === "1",
+  semVideo: Array.isArray(semVideoSalvo) ? semVideoSalvo.filter((x): x is string => typeof x === "string") : [],
 }));
 
 export const setLive = (p: Partial<LiveUi>) => useLive.setState(p);
 export const getLive = () => useLive.getState();
+
+/** Liga ou desliga uma opção da call e guarda no aparelho. */
+export function opcaoCall(k: "soVideo" | "semNomes", v: boolean) {
+  setLive({ [k]: v });
+  local.set(k === "soVideo" ? "cv-so-video" : "cv-sem-nomes", v ? "1" : "0");
+}
+/** Desliga (ou volta) a câmera de um nanico só para mim. */
+export function semVideoDe(fid: string, sim: boolean) {
+  const l = getLive().semVideo.filter((x) => x !== fid);
+  const semVideo = sim ? [...l, fid] : l;
+  setLive({ semVideo });
+  local.setJson("cv-sem-video", semVideo);
+}
 
 /** Avisa o React que algo no WebRTC mudou (equivale ao renderLive()/renderCamPip() do site antigo). */
 export const avisar = () => useLive.setState((s) => ({ v: s.v + 1 }));
