@@ -36,6 +36,8 @@ import { Destaque, emPorcento, FeltroTruco, Fundo, MovelCamada, tvCaixa } from "
 import { BotaoMeuQuarto, QuartoVisita, TopoQuarto } from "@/features/quarto/QuartoVisita";
 import { BaloesHall, ChatBarra, HistoricoChat } from "./ChatHabbo";
 import { BotaoMural, MuralJanela, QuadroMural } from "./Mural";
+import { BotaoPedro, DiscoCamada, QuadroPedro } from "./Pedro";
+import { festaAtiva, usePedro } from "./pedroDados";
 import { abrirMural } from "./muralDados";
 import { CampeoesSelados } from "./CampeoesSelados";
 import { useRef } from "react";
@@ -183,6 +185,8 @@ export function HallView({ hidden }: { hidden: boolean }) {
     else setApp({ aba: "loja" });
   };
   const tv = tvCaixa(vb);
+  /* o Pedro tocando: a discoteca acende e todo mundo dança */
+  const disco = usePedro((s) => festaAtiva(s.festa));
 
   return (
     <section id="view-hall" className="inner" hidden={hidden}>
@@ -201,7 +205,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
           <QuartoVisita dono={quarto} />
         ) : (
         <div
-          className="hall-palco"
+          className={"hall-palco" + (disco ? " disco" : "")}
           style={{ aspectRatio: `${vb.w} / ${vb.h}` }}
           tabIndex={0}
           role="group"
@@ -217,6 +221,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
         >
           <Fundo aoVivo={aoVivo} vb={vb} />
           <QuadroMural vb={vb} />
+          <QuadroPedro vb={vb} />
           <Destaque piso={destaque} vb={vb} pisca={pisca} />
           {MOVEIS.map((m, k) => (
             <MovelCamada key={m.id} id={m.id} z={z[k]} vb={vb} />
@@ -251,6 +256,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
           <ConsumoCamada bonecos={vistos} vb={vb} />
           <BaloesHall bonecos={vistos} vb={vb} />
           <LuzHappy />
+          <DiscoCamada />
           {/* o brilho do teletransporte de quem foi para um quarto ou voltou */}
           {brilhos.map((b) => {
             const pos = emPorcento(vb, b.i + 0.5, b.j + 0.5, 50);
@@ -268,6 +274,7 @@ export function HallView({ hidden }: { hidden: boolean }) {
             }}
           />
           <BotaoMural vb={vb} />
+          <BotaoPedro vb={vb} />
           <PlacaChurrasco vb={vb} />
           {CLICAVEIS.map((c) => {
             const pos = emPorcento(vb, c.rotulo.i, c.rotulo.j, c.rotulo.z);

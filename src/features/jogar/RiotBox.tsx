@@ -122,7 +122,7 @@ function Apostas({ g, aberto, times }: { g: RiotPartida; aberto: boolean; times:
       </div>
       {!minha && pode && (
         <>
-          {/* de 5 até o saldo (seção 63) */}
+          {/* de 5 até o saldo (seção 64) */}
           <ValorAposta valor={valor} onValor={setValor} saldo={saldo ?? undefined} />
           <div className="aposta-fim">
             <span className="hint">

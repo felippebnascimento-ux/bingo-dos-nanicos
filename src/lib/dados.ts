@@ -12,6 +12,8 @@ import { VERSION } from "./dados/changelog";
 import { juntarVisto, lerVisto, temNovidade, ULTIMA } from "./dados/novidades";
 import { carregarChat } from "@/features/chat/chat";
 import { iniciarCarteira } from "./carteira";
+import { iniciarSomPremio } from "@/features/cassino/somPremio";
+import { iniciarPedro } from "@/features/hall/pedroDados";
 import { iniciarHall } from "@/features/hall/bonecos";
 import { iniciarTrofeus } from "@/features/trofeus/trofeusDados";
 import { iniciarLoja } from "@/features/loja/lojaDados";
@@ -265,6 +267,9 @@ export function enterApp() {
   joinRoom(recarregar);
   carregarChat();
   iniciarCarteira();
+  /* o som do dinheiro nos prêmios grandes do cassino e o Pedro do K-FOFO (pelo tempo real) */
+  iniciarSomPremio();
+  iniciarPedro();
   /* o boneco aparece no Sítio para todo mundo mesmo sem abrir a aba */
   iniciarHall();
   setTimeout(iniciarRiot, 1500);

@@ -3,7 +3,7 @@
  * O valor da aposta, como nos cassinos online: as fichas de atalho (tocar soma a ficha ao valor), o valor escrito à
  * mão e os botões ½, 2×, TUDO (o saldo inteiro) e ↺ (zera, para montar de novo com as fichas). Vai até o que a pessoa
  * tem (0 = ainda montando; o jogo só deixa apostar com 5 ou mais); quem confere de verdade é o banco
- * (seção 63 do seguranca.sql: sem teto, só o saldo). Usado no aviãozinho, no pênalti e no caça-níquel.
+ * (seção 64 do seguranca.sql: sem teto, só o saldo). Usado no aviãozinho, no pênalti e no caça-níquel.
  */
 import { useState } from "react";
 import { formatarMoedas } from "@/lib/moedas";

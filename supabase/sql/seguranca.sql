@@ -2890,7 +2890,7 @@ end $$;
 -- fichas e 1.000 moedas por rodada. Dúzia e coluna pagam 2 para 1 (3× com a aposta); número 36×; o resto 2×.
 -- Fica guardada como uma aposta 'roleta' com escolha {fichas: [...]}, então a conferência continua igual (resultado.casa).
 alter table public.cassino_apostas drop constraint if exists cassino_apostas_aposta_check;
-alter table public.cassino_apostas add constraint cassino_apostas_aposta_check check (aposta >= 5); -- sem teto desde a seção 63 (apostas até o saldo): rodar o arquivo de novo não pode recusar as apostas grandes que já existem
+alter table public.cassino_apostas add constraint cassino_apostas_aposta_check check (aposta >= 5); -- sem teto desde a seção 64 (apostas até o saldo): rodar o arquivo de novo não pode recusar as apostas grandes que já existem
 
 create or replace function public.apostar_roleta_mesa(p_fichas jsonb) returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -7091,7 +7091,63 @@ insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem,
 on conflict (id) do update set nome = excluded.nome, descricao = excluded.descricao, espaco = excluded.espaco,
   preco = excluded.preco, dados = excluded.dados, ordem = excluded.ordem, estoque = excluded.estoque;
 
--- 63) apostas até o saldo, como num cassino de verdade (03/11/2026, pedido do grupo) --------------------------------
+-- 63) Pedro no K-FOFO (03/11/2026, pedido do Felippe) ------------------------------------------------------------------
+--   Um botão na parede do K-FOFO: por 200 moedas, toca "pedro pedro pedro" para todo mundo que está no K-FOFO, com
+--   a discoteca acesa enquanto a música dura (~12 s). Uma música por vez: enquanto toca, ninguém paga outra.
+--   O site só toca o som: quem decide, cobra e avisa é o banco (a linha nova chega a todos pelo tempo real).
+create table if not exists public.kfofo_pedro (
+  id      bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  em      timestamptz not null default now()
+);
+alter table public.kfofo_pedro enable row level security;
+revoke all on public.kfofo_pedro from anon, authenticated;
+grant select on public.kfofo_pedro to authenticated;
+drop policy if exists "membros veem o pedro" on public.kfofo_pedro;
+create policy "membros veem o pedro" on public.kfofo_pedro for select to authenticated using (public.eh_membro());
+
+/** quanto dura a música (com folga): enquanto isso, não dá para tocar outra */
+create or replace function public.pedro_tocar() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+  v_id bigint;
+  v_saldo int;
+begin
+  if v_uid is null or not public.eh_membro() then raise exception 'Só os membros tocam o Pedro.' using errcode = 'P0001'; end if;
+  perform pg_advisory_xact_lock(hashtext('kfofo_pedro'));
+  if exists (select 1 from public.kfofo_pedro where em > now() - interval '13 seconds') then
+    raise exception 'O Pedro já está tocando. Espere acabar.' using errcode = 'P0001';
+  end if;
+  perform public.limitar('pedro', 6, interval '10 minutes', 'Calma: muito Pedro seguido. Espere uns minutos.');
+  v_saldo := public.creditar(v_uid, -200, 'loja', 'pedro');
+  insert into public.kfofo_pedro (user_id) values (v_uid) returning id into v_id;
+  delete from public.kfofo_pedro where em < now() - interval '1 day';
+  return jsonb_build_object('id', v_id, 'saldo', v_saldo);
+end $$;
+revoke all on function public.pedro_tocar() from public, anon;
+grant execute on function public.pedro_tocar() to authenticated;
+
+/** o Pedro que está tocando agora (para quem chega no meio): id, quem pagou e há quantos ms começou */
+create or replace function public.pedro_agora() returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  r record;
+begin
+  if not public.eh_membro() then return null; end if;
+  select id, user_id, em into r from public.kfofo_pedro where em > now() - interval '13 seconds' order by id desc limit 1;
+  if not found then return null; end if;
+  return jsonb_build_object('id', r.id, 'user_id', r.user_id, 'passou_ms', (extract(epoch from now() - r.em) * 1000)::int);
+end $$;
+revoke all on function public.pedro_agora() from public, anon;
+grant execute on function public.pedro_agora() to authenticated;
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.kfofo_pedro; exception when duplicate_object then null; end;
+end $$;
+
+-- 64) apostas até o saldo, como num cassino de verdade (03/11/2026, pedido do grupo) --------------------------------
 -- Em todos os jogos com aposta dá para apostar de 5 moedas até tudo o que a pessoa tem: o teto é o saldo, que o
 -- creditar() já confere (sem saldo, falha com 'Saldo insuficiente.' e nada muda). Antes: 100 por aposta (aviãozinho,
 -- pênalti, caça-níquel, apostas no LoL e no truco), 200 no blackjack, 100 por ficha e 1.000 por rodada na roleta e
@@ -7151,11 +7207,11 @@ begin
       if v_novo <> v_def then
         execute v_novo;
       elsif v_lista[i][2] = 's' and v_def !~ '(p_aposta < 5|p_valor < 5|v_ap < 5|p_fichas < m\.blind \* 20 then)' then
-        raise exception 'Seção 63: não achei o limite em %(): confira se a função mudou.', v_fn;
+        raise exception 'Seção 64: não achei o limite em %(): confira se a função mudou.', v_fn;
       end if;
     end loop;
     if not v_achou and v_lista[i][2] = 's' then
-      raise exception 'Seção 63: a função %() não existe no banco.', v_fn;
+      raise exception 'Seção 64: a função %() não existe no banco.', v_fn;
     end if;
   end loop;
 end $$;

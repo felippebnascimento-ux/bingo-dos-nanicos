@@ -57,7 +57,6 @@ function fundoRua(n: number, p: (i: number, j: number, z?: number) => Pt): Poly[
   poly([p(0.12, 0), p(0.88, 0), p(0.88, 0, 104), p(0.12, 0, 104)], "porta", true);
   poly([p(2.2, 0, 112), p(6.4, 0, 112), p(6.4, 0, 138), p(2.2, 0, 138)], "placa-kfofo", true);
   for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) poly([p(i, j), p(i + 1, j), p(i + 1, j + 1), p(i, j + 1)], (i + j) % 2 ? "grama0" : "grama1");
-  for (let k = 0; k < 4; k++) poly([p(0.2 + k, 0.25 + k), p(1.0 + k, 0.25 + k), p(1.0 + k, 1.0 + k), p(0.2 + k, 1.0 + k)], "terra");
   poly([p(MARCA_PENALTI.i - 0.12, MARCA_PENALTI.j - 0.12), p(MARCA_PENALTI.i + 0.12, MARCA_PENALTI.j - 0.12), p(MARCA_PENALTI.i + 0.12, MARCA_PENALTI.j + 0.12), p(MARCA_PENALTI.i - 0.12, MARCA_PENALTI.j + 0.12)], "cal");
   poly([p(9.2, 1.4), p(n, 1.4), p(n, 5.6), p(9.2, 5.6)], "cal-area", true);
   return L;

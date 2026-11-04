@@ -31,7 +31,7 @@ const LUGAR_XY: [number, number][] = [
 ];
 /* uma carta sai do sapato a cada DAR_MS na primeira distribuição (a mão do Veião acompanha, 36-mesas.css) */
 const DAR_MS = 280;
-/* aposta de 5 até o saldo (seção 63): as fichas somam e o TUDO põe a carteira inteira */
+/* aposta de 5 até o saldo (seção 64): as fichas somam e o TUDO põe a carteira inteira */
 const FICHAS = [5, 10, 25, 50, 100, 500, 1000];
 const fmt = (n: number) => n.toLocaleString("pt-BR");
 

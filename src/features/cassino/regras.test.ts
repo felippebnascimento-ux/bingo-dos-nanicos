@@ -109,7 +109,7 @@ describe("roleta de mesa", () => {
     m = porFicha(m, "cor", 0, 50);
     expect(m).toEqual([{ tipo: "numero", valor: 32, aposta: 50 }, { tipo: "cor", valor: 0, aposta: 50 }]);
     expect(porFicha(m, "numero", 32, 100)[0].aposta).toBe(150);
-    /* juntando fichas, um lugar vai até o saldo, sem teto (seção 63) */
+    /* juntando fichas, um lugar vai até o saldo, sem teto (seção 64) */
     let alto = porFicha([], "cor", 0, 1000);
     for (let k = 0; k < 24; k++) alto = porFicha(alto, "cor", 0, 1000);
     expect(alto[0].aposta).toBe(25000);

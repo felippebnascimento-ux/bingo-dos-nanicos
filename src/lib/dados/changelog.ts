@@ -753,6 +753,17 @@ export const CHANGELOG: EntradaLog[] = [
   {
     data: "03/11/2026",
     itens: [
+      "Sons novos: um \"ding\" quando alguém entra no seu canal de voz e um vento quando alguém sai",
+      "Clique do Minecraft ao trocar de aba no menu",
+      "Som de dinheiro quando você ganha mais de 500 numa jogada do cassino",
+      "Pênalti x1: tema de faroeste quando os dois aceitam o duelo",
+      "Botão do Pedro na parede do K-FOFO: por 200 moedas, toca \"pedro pedro pedro\" para todo mundo no K-FOFO, com discoteca",
+    ],
+  },
+  { data: "03/11/2026", itens: ["A rua virou uma praça só de grama: a árvore foi para o canto de cima, à esquerda, com os bancos em volta"] },
+  {
+    data: "03/11/2026",
+    itens: [
       "Blackjack ao vivo de verdade: estúdio com luzes, mesa em perspectiva e o Veião de crupiê, que dá as cartas, paga, comemora e fala com a mesa",
       "As cartas do blackjack ficam deitadas no feltro, viradas para cada jogador, e caem do sapato num arco; quem ganha recebe uma chuva de moedas",
       "Roleta ao vivo com o Henry de crupiê: ele chama as apostas, lança a bola e a câmera chega perto da roda em 3D",

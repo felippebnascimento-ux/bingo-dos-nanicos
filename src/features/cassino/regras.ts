@@ -33,7 +33,7 @@ export function pagamentoRoleta(tipo: TipoAposta, valor: number, casa: number, a
 
 /* ---------- mesa: várias fichas na mesma rodada (apostar_roleta_mesa) ---------- */
 export type Ficha = { tipo: TipoAposta; valor: number; aposta: number };
-/* desde a seção 63: sem teto, até o saldo (num lugar e na rodada); as fichas de 500 e 1.000 entram na roleta */
+/* desde a seção 64: sem teto, até o saldo (num lugar e na rodada); as fichas de 500 e 1.000 entram na roleta */
 export const LUGAR_MAX = Number.MAX_SAFE_INTEGER;
 export const MESA_FICHAS_MAX = 30;
 export const FICHAS_ROLETA = [5, 10, 25, 50, 100, 500, 1000] as const;

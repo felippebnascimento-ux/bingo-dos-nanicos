@@ -12,6 +12,7 @@ import { CREW, MARCA, ehAmigo, soAmigos, soNanicos } from "@/lib/dados/nanicos";
 import { friendOf, MY_KEY, setApp, useApp } from "@/lib/store";
 import type { Aba } from "@/lib/tipos";
 import { local } from "@/lib/util";
+import { tocarSom } from "@/lib/sons";
 import { nomeDaSala } from "@/features/salas/trocar";
 import { BotaoCelular } from "@/features/celular/Celular";
 import { BotoesVozEu, JanelasVoz, VozPainel } from "@/features/live/PainelVoz";
@@ -112,6 +113,8 @@ function Nav() {
       }
       title={t}
       onClick={() => {
+        /* o clique do Minecraft em cada aba do menu (pedido do Felippe, 03/11/2026) */
+        tocarSom("clique", 0.7);
         setApp({ aba: a });
         fecharSeletores();
       }}

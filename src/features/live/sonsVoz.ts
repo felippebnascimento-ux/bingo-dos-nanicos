@@ -1,9 +1,11 @@
 /*
- * Sons da voz, como no Discord: dois tons subindo quando alguém entra no canal em que eu estou (e quando eu entro),
- * e descendo quando alguém sai. Desenhados com o AudioContext (sem arquivo de som). Surdo não ouve; o volume segue o
- * volume geral da voz. Quem decide quando tocar é o syncVoz (voz.ts), pela presença da sala.
+ * Sons da voz: o "ding" quando alguém entra no canal em que eu estou (e quando eu entro) e o vento ("whoosh") quando
+ * alguém sai (arquivos em public/sons/, pedido do Felippe em 03/11/2026; antes eram dois tons desenhados). Surdo não
+ * ouve; o volume segue o volume geral da voz. Quem decide quando tocar é o syncVoz (voz.ts), pela presença da sala.
+ * A campainha de chegada no K-FOFO continua desenhada com o AudioContext.
  */
 import { getApp } from "@/lib/store";
+import { tocarSom } from "@/lib/sons";
 
 let ctx: AudioContext | null = null;
 
@@ -32,13 +34,8 @@ function tom(c: AudioContext, freq: number, ini: number, dur: number, vol: numbe
 
 export function somDaVoz(tipo: "entrou" | "saiu", volumeGeral: number) {
   if (getApp().vozSurdo || volumeGeral <= 0) return;
-  const c = contexto();
-  if (!c) return;
-  const vol = 0.12 * volumeGeral;
-  /* entrou: ré → lá (sobe); saiu: lá → ré (desce) */
-  const [a, b] = tipo === "entrou" ? [587.33, 880] : [880, 587.33];
-  tom(c, a, 0, 0.16, vol);
-  tom(c, b, 0.09, 0.22, vol);
+  /* o ding é alto: fica a 35% do volume geral; o vento, a 60% */
+  tocarSom(tipo, (tipo === "entrou" ? 0.35 : 0.6) * Math.min(1, volumeGeral));
 }
 
 /** Campainha de quando alguém abre o site e chega no K-FOFO (Chegadas.tsx): três notas subindo, mais suave que a da voz. */

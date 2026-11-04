@@ -21,12 +21,15 @@ export const MOVEIS_BANHEIRO: readonly MovelGrade[] = [
   { id: -21, desenho: "pia", ret: { i: 1, j: 4, w: 1, d: 1 }, giro: false },
 ];
 
-/** A rua: a árvore no meio com 3 bancos, o gol do pênalti x1 e o portão da garagem (os carros moram lá agora). */
+/**
+ * A rua é uma praça só de grama (escolha do João, 03/11/2026): uma árvore deslocada para cima e para a esquerda (perto
+ * da parede da esquerda), com bancos em volta, o gol do pênalti x1 e o portão da garagem (os carros moram lá agora).
+ */
 export const MOVEIS_RUA: readonly MovelGrade[] = [
-  { id: -1, desenho: "arvore", ret: { i: 5, j: 5, w: 2, d: 2 }, giro: false },
-  { id: -2, desenho: "banco-praca", ret: { i: 5, j: 3, w: 2, d: 1 }, giro: false },
-  { id: -3, desenho: "banco-praca", ret: { i: 3, j: 5, w: 1, d: 2 }, giro: true },
-  { id: -4, desenho: "banco-praca", ret: { i: 5, j: 8, w: 2, d: 1 }, giro: false },
+  { id: -1, desenho: "arvore", ret: { i: 1, j: 3, w: 2, d: 2 }, giro: false },
+  { id: -2, desenho: "banco-praca", ret: { i: 1, j: 1, w: 2, d: 1 }, giro: false },
+  { id: -3, desenho: "banco-praca", ret: { i: 4, j: 3, w: 1, d: 2 }, giro: true },
+  { id: -4, desenho: "banco-praca", ret: { i: 1, j: 6, w: 2, d: 1 }, giro: false },
   { id: -10, desenho: "gol", ret: { i: 11, j: 2, w: 1, d: 3 }, giro: true },
   { id: -11, desenho: "portao-garagem", ret: { i: 11, j: 9, w: 1, d: 2 }, giro: true },
 ];

@@ -11,6 +11,7 @@ import { useCarteira } from "@/lib/carteira";
 import { formatarMoedas } from "@/lib/moedas";
 import { useApp } from "@/lib/store";
 import { reduzMovimento } from "@/lib/util";
+import { pararSom, tocarSom } from "@/lib/sons";
 import {
   apostaValida,
   APOSTA_MIN,
@@ -368,8 +369,35 @@ function Relogio({ fracao, segundos }: { fracao: number; segundos: number }) {
   );
 }
 
+/* duelos em que o tema de faroeste já tocou (não repete ao trocar de aba e voltar) */
+const FAROESTE_TOCOU = new Set<number>();
+
+/**
+ * O tema de faroeste quando os dois aceitaram o desafio (pedido do Felippe, 03/11/2026): toca uma vez, no começo do
+ * duelo (já em jogo e sem nenhuma cobrança resolvida), para quem está na tela, jogadores e plateia. Para ao sair da
+ * tela ou quando o duelo acaba.
+ */
+function useFaroeste(d: Rede["duelo"]) {
+  const som = useRef<HTMLAudioElement | null>(null);
+  const id = d?.id ?? 0, estado = d?.estado, resolvidas = d?.chutes.length ?? 0;
+  useEffect(() => {
+    if (!id || estado !== "jogando" || resolvidas > 0 || FAROESTE_TOCOU.has(id)) return;
+    FAROESTE_TOCOU.add(id);
+    pararSom(som.current);
+    som.current = tocarSom("faroeste", 0.55);
+  }, [id, estado, resolvidas]);
+  useEffect(() => {
+    if (estado === "fim" || estado === "cancelado") {
+      pararSom(som.current);
+      som.current = null;
+    }
+  }, [estado]);
+  useEffect(() => () => pararSom(som.current), []);
+}
+
 function Partida({ r }: { r: Rede }) {
   const d = r.duelo;
+  useFaroeste(d);
   const eu = useApp((s) => s.myUid);
   const quem = useNome();
   const agora = useAgora(r.agoraBanco);
