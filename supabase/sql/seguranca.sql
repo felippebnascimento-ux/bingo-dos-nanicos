@@ -7091,6 +7091,62 @@ insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem,
 on conflict (id) do update set nome = excluded.nome, descricao = excluded.descricao, espaco = excluded.espaco,
   preco = excluded.preco, dados = excluded.dados, ordem = excluded.ordem, estoque = excluded.estoque;
 
+-- 63) Pedro no K-FOFO (03/11/2026, pedido do Felippe) ------------------------------------------------------------------
+--   Um botão na parede do K-FOFO: por 200 moedas, toca "pedro pedro pedro" para todo mundo que está no K-FOFO, com
+--   a discoteca acesa enquanto a música dura (~12 s). Uma música por vez: enquanto toca, ninguém paga outra.
+--   O site só toca o som: quem decide, cobra e avisa é o banco (a linha nova chega a todos pelo tempo real).
+create table if not exists public.kfofo_pedro (
+  id      bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  em      timestamptz not null default now()
+);
+alter table public.kfofo_pedro enable row level security;
+revoke all on public.kfofo_pedro from anon, authenticated;
+grant select on public.kfofo_pedro to authenticated;
+drop policy if exists "membros veem o pedro" on public.kfofo_pedro;
+create policy "membros veem o pedro" on public.kfofo_pedro for select to authenticated using (public.eh_membro());
+
+/** quanto dura a música (com folga): enquanto isso, não dá para tocar outra */
+create or replace function public.pedro_tocar() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+  v_id bigint;
+  v_saldo int;
+begin
+  if v_uid is null or not public.eh_membro() then raise exception 'Só os membros tocam o Pedro.' using errcode = 'P0001'; end if;
+  perform pg_advisory_xact_lock(hashtext('kfofo_pedro'));
+  if exists (select 1 from public.kfofo_pedro where em > now() - interval '13 seconds') then
+    raise exception 'O Pedro já está tocando. Espere acabar.' using errcode = 'P0001';
+  end if;
+  perform public.limitar('pedro', 6, interval '10 minutes', 'Calma: muito Pedro seguido. Espere uns minutos.');
+  v_saldo := public.creditar(v_uid, -200, 'loja', 'pedro');
+  insert into public.kfofo_pedro (user_id) values (v_uid) returning id into v_id;
+  delete from public.kfofo_pedro where em < now() - interval '1 day';
+  return jsonb_build_object('id', v_id, 'saldo', v_saldo);
+end $$;
+revoke all on function public.pedro_tocar() from public, anon;
+grant execute on function public.pedro_tocar() to authenticated;
+
+/** o Pedro que está tocando agora (para quem chega no meio): id, quem pagou e há quantos ms começou */
+create or replace function public.pedro_agora() returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  r record;
+begin
+  if not public.eh_membro() then return null; end if;
+  select id, user_id, em into r from public.kfofo_pedro where em > now() - interval '13 seconds' order by id desc limit 1;
+  if not found then return null; end if;
+  return jsonb_build_object('id', r.id, 'user_id', r.user_id, 'passou_ms', (extract(epoch from now() - r.em) * 1000)::int);
+end $$;
+revoke all on function public.pedro_agora() from public, anon;
+grant execute on function public.pedro_agora() to authenticated;
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.kfofo_pedro; exception when duplicate_object then null; end;
+end $$;
+
 -- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo e as 2 tabelas e 3 funções do quarto próprio e as 2 tabelas e 3 funções do blackjack e as 4 tabelas e 6 funções do pôquer
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger
  where tgname in ('chat_protecao', 'chat_sala_protecao', 'nanicada_protecao', 'nanicada_remocao', 'escalacao_protecao', 'perfil_protecao')

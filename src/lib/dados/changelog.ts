@@ -750,6 +750,16 @@ export const CHANGELOG: EntradaLog[] = [
   { data: "03/11/2026", itens: ["O corredor dos quartos virou corredor de hotel: papel de parede listrado, lambri de madeira, carpete vinho, portas com almofadas e maçaneta dourada e uma arandela acesa ao lado de cada porta"] },
   { data: "03/11/2026", itens: ["Garagem nova ao ar livre, pelo portão da rua: os 14 veículos da turma desenhados das fotos, cada um na sua vaga, com guarita, cancela e postes (toque num carro para ver qual é)"] },
   { data: "03/11/2026", itens: ["No K-FOFO, junto do aviso de quem entrou, agora aparece também quem saiu do site"] },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Sons novos: um \"ding\" quando alguém entra no seu canal de voz e um vento quando alguém sai",
+      "Clique do Minecraft ao trocar de aba no menu",
+      "Som de dinheiro quando você ganha mais de 500 numa jogada do cassino",
+      "Pênalti x1: tema de faroeste quando os dois aceitam o duelo",
+      "Botão do Pedro na parede do K-FOFO: por 200 moedas, toca \"pedro pedro pedro\" para todo mundo no K-FOFO, com discoteca",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
