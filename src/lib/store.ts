@@ -85,7 +85,8 @@ export type AppState = {
   /** parado há um tempo (fica "Ausente" sozinho, como no Discord; vai na presença) */
   ausente: boolean;
   /** o cartão de perfil aberto (friend id e onde abrir na tela) */
-  cartao: { fid: string; x: number; y: number } | null;
+  /** o cartão de perfil aberto (`nota` = já abre escrevendo a nota) */
+  cartao: { fid: string; x: number; y: number; nota?: boolean } | null;
   /** "novidades" = abriu sozinho depois de uma atualização; "tudo" = botão Log do rodapé */
   logModo: "novidades" | "tudo";
   /** índice da última entrada do CHANGELOG que a pessoa viu (conta, com o navegador de reserva) */

@@ -13,6 +13,9 @@ import { aoMudarTabela, aoReceber, enviar, estaNaSala, limitePorPessoa } from "@
 import { getApp, setApp, useApp } from "@/lib/store";
 import { q, sb } from "@/lib/supabase";
 import { local, newId } from "@/lib/util";
+import { toast } from "@/lib/toast";
+import { somDeLive } from "@/features/live/sonsVoz";
+import { escondoMensagensDe } from "@/features/status/notas";
 import { meMenciona } from "./formato";
 
 export type MsgChat = {
@@ -50,7 +53,23 @@ export const useChat = create<{
   temAntigas: Record<string, boolean>;
   /** canais que eu silenciei (não contam não lidas, só menções) */
   mudos: string[];
-}>()(() => ({ msgs: [], geral: [], porCanal: {}, naoLidas: {}, ok: true, mencoes: {}, reacoes: {}, digitando: {}, temAntigas: {}, mudos: lerMudos() }));
+  /** texto para pôr na caixa do chat que estiver aberto ("Mencionar" do menu de uma pessoa); `n` muda a cada pedido */
+  inserir: { texto: string; n: number } | null;
+}>()(() => ({ msgs: [], geral: [], porCanal: {}, naoLidas: {}, ok: true, mencoes: {}, reacoes: {}, digitando: {}, temAntigas: {}, mudos: lerMudos(), inserir: null }));
+
+/**
+ * "Mencionar", como no Discord: abre o chat (o da minha sala, no Ao vivo; fora de uma sala, o #geral) e põe o @ da
+ * pessoa na caixa de texto.
+ */
+export function mencionarNoChat(nome: string) {
+  if (getApp().minhaSala) setApp({ aba: "live", railTab: "chat" });
+  else abrirCanalTexto("geral");
+  /* espera a tela do chat aparecer (trocar de aba é um render) */
+  setTimeout(() => {
+    const n = (useChat.getState().inserir?.n ?? 0) + 1;
+    useChat.setState({ inserir: { texto: `@${arrobaDe(nome)} `, n } });
+  }, 150);
+}
 
 function lerMudos(): string[] {
   const v = local.json<unknown>("chat-mudos");
@@ -317,7 +336,29 @@ export function avisarDigitandoChat(canal: string) {
   enviar("chat", { t: "digitando", canal });
 }
 const limiteChat = limitePorPessoa(30, 10000);
+const limiteChamar = limitePorPessoa(3, 60_000);
+/** "Iniciar chamada" do Discord: chama alguém para o canal de voz em que estou (aviso para ele, pelo evento `chat`). */
+export function chamarParaCall(fid: string) {
+  const sala = getApp().minhaSala;
+  if (!sala || !getApp().myVozSid) return toast("Entre num canal de voz para chamar alguém.");
+  if (!limiteChamar("eu")) return toast("Calma: espere um pouco para chamar de novo.");
+  enviar("chat", { t: "chamar", para: fid, sala });
+  toast("Chamado. Ele recebe o aviso na tela.");
+}
+function onChamado(m: Record<string, unknown>) {
+  const { myFid, salas, online, friends, minhaSala, myVozSid } = getApp();
+  if (m.para !== myFid || typeof m.sala !== "string" || !estaNaSala(m.from) || !limiteChamar(String(m.from))) return;
+  const sala = salas.find((s) => s.id === m.sala);
+  const fid = online.find((p) => p.key === m.from)?.fid;
+  const quem = friends.find((f) => f.id === fid);
+  if (!sala || !quem || (minhaSala === sala.id && myVozSid)) return;
+  if (escondoMensagensDe(quem.id)) return;
+  somDeLive(1);
+  toast(`📞 ${quem.name} está chamando você para a ${sala.nome}. Entre pelo canal no menu.`);
+}
+
 function onChatEvento(m: Record<string, unknown>) {
+  if (m.t === "chamar") return onChamado(m);
   if (m.t !== "digitando" || typeof m.canal !== "string" || !estaNaSala(m.from) || !limiteChat(String(m.from))) return;
   if (m.canal !== "geral" && !getApp().salas.some((s) => s.id === m.canal)) return;
   /* quem é vem da presença daquela aba, não do que veio escrito */

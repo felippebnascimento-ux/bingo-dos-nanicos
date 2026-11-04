@@ -856,6 +856,10 @@ export const CHANGELOG: EntradaLog[] = [
       "Call como no Discord: clicar em alguém do canal de voz abre o perfil com o volume dele; o clique direito abre o menu com volume, silenciar e perfil",
       "No seu próprio nome (no canal e no seu quadrado da call): ligar e desligar o microfone, parar de ouvir e as configurações de voz",
       "Moderadores também silenciam e tiram da call pelo menu do quadrado; a soundboard ganhou um botão na barra de baixo da call",
+      "Clique direito numa pessoa igual ao do Discord: Perfil, Mencionar (já escreve o @ no chat), Mensagem, Chamar para a call, Adicionar nota (só você vê), Volume do usuário, Silenciar, Silenciar efeitos sonoros, Desativar vídeo, Ignorar, Bloquear, Cargos e Copiar nome de usuário",
+      "No seu próprio nome: Mudar o status, Editar perfil, Silenciar, Ensurdecer, Configurações de voz e Sair da voz",
+      "Ignorar e Bloquear escondem as mensagens da pessoa no seu chat (com \"Mostrar\"); bloquear também silencia a voz dela para você",
+      "Moderadores: Mover para outro canal, Silenciar voz e Desativar áudio no servidor, Desconectar e Castigo (sem chat e sem voz de 1 minuto a 1 dia)",
     ],
   },
 ];

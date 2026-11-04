@@ -114,7 +114,8 @@ export function ligarSoundboard() {
     if (!myVozSid || vozSurdo || !naMinhaSala(m.from) || !deles(m.from)) return;
     const p = onlineSala.find((x) => x.key === m.from);
     /* só de quem está na voz, e não de quem eu silenciei */
-    if (!p?.voz || (p.fid && useAjustesVoz.getState().silenciados.includes(p.fid))) return;
+    const aj = useAjustesVoz.getState();
+    if (!p?.voz || (p.fid && (aj.silenciados.includes(p.fid) || aj.semSoundboard.includes(p.fid)))) return;
     tocarSoundboard(m.s as IdSom, useAjustesVoz.getState().geral);
   });
 }

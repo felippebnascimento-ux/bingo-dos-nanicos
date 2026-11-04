@@ -8408,3 +8408,117 @@ select tablename::text as nome, 'discord 70' as parte from pg_tables
 union all
 select proname::text, 'discord 70' from pg_proc where pronamespace = 'public'::regnamespace and proname = 'eh_moderador'
 order by 1;
+
+-- =====================================================================================================================
+-- 71. Moderação da voz completa, como no Discord (04/11/2026): além de silenciar e desconectar (seção 70), o moderador
+--   ensurdece alguém para todos (a pessoa para de ouvir e de falar; coluna surdo em voz_silenciados) e move alguém para
+--   outro canal de voz (voz_mover: o site de quem foi movido entra na sala nova e na voz dela, pelo tempo real) e põe
+--   alguém de castigo (castigos: sem chat e sem voz por um tempo).
+--   Pode rodar de novo.
+-- =====================================================================================================================
+alter table public.voz_silenciados add column if not exists surdo boolean not null default false;
+grant insert (user_id, surdo) on public.voz_silenciados to authenticated;
+
+create table if not exists public.voz_mover (
+  id      bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  sala    text not null references public.salas(id) on delete cascade,
+  por     uuid default auth.uid() references auth.users(id) on delete set null,
+  em      timestamptz not null default now()
+);
+alter table public.voz_mover enable row level security;
+revoke all on public.voz_mover from public, anon, authenticated;
+grant select on public.voz_mover to authenticated;
+grant insert (user_id, sala) on public.voz_mover to authenticated;
+drop policy if exists voz_mover_ler on public.voz_mover;
+create policy voz_mover_ler on public.voz_mover for select to authenticated using (user_id = auth.uid() or public.eh_moderador());
+drop policy if exists voz_mover_criar on public.voz_mover;
+create policy voz_mover_criar on public.voz_mover for insert to authenticated with check (public.eh_moderador() and user_id <> auth.uid());
+
+-- a mesma proteção da seção 70 (quem fez, a hora, o limite), agora limpando também os pedidos de mover
+create or replace function public.voz_mod_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.por := auth.uid();
+  new.em := now();
+  if not exists (select 1 from public.friends where user_id = new.user_id) then raise exception 'Esse nanico não existe.' using errcode = 'P0001'; end if;
+  perform public.limitar('voz_mod', 30, interval '1 minute', 'Calma: muitas ações de moderador seguidas.');
+  if tg_table_name = 'voz_desconectar' then
+    delete from public.voz_desconectar where em < now() - interval '1 day';
+  elsif tg_table_name = 'voz_mover' then
+    delete from public.voz_mover where em < now() - interval '1 day';
+  end if;
+  return new;
+end $$;
+revoke all on function public.voz_mod_protecao() from public, anon, authenticated;
+drop trigger if exists voz_mod_protecao on public.voz_mover;
+create trigger voz_mod_protecao before insert on public.voz_mover for each row execute function public.voz_mod_protecao();
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.voz_mover; exception when duplicate_object then null; end;
+end $$;
+
+-- Castigo, como no Discord: o moderador deixa alguém sem falar no chat (o banco recusa) e na voz (o site dele obedece)
+-- por um tempo, de 1 minuto a 1 dia. Tirar o castigo é apagar a linha.
+create table if not exists public.castigos (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  ate     timestamptz not null,
+  por     uuid default auth.uid() references auth.users(id) on delete set null,
+  em      timestamptz not null default now()
+);
+alter table public.castigos enable row level security;
+revoke all on public.castigos from public, anon, authenticated;
+grant select, delete on public.castigos to authenticated;
+grant insert (user_id, ate) on public.castigos to authenticated;
+drop policy if exists castigos_ler on public.castigos;
+create policy castigos_ler on public.castigos for select to authenticated using (public.eh_membro());
+drop policy if exists castigos_criar on public.castigos;
+create policy castigos_criar on public.castigos for insert to authenticated with check (public.eh_moderador() and user_id <> auth.uid());
+drop policy if exists castigos_tirar on public.castigos;
+create policy castigos_tirar on public.castigos for delete to authenticated using (public.eh_moderador());
+
+create or replace function public.castigo_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.por := auth.uid();
+  new.em := now();
+  if not exists (select 1 from public.friends where user_id = new.user_id) then raise exception 'Esse nanico não existe.' using errcode = 'P0001'; end if;
+  if new.ate < now() + interval '30 seconds' or new.ate > now() + interval '1 day' then
+    raise exception 'O castigo vai de 1 minuto a 1 dia.' using errcode = 'P0001';
+  end if;
+  perform public.limitar('voz_mod', 30, interval '1 minute', 'Calma: muitas ações de moderador seguidas.');
+  delete from public.castigos where ate < now();
+  return new;
+end $$;
+revoke all on function public.castigo_protecao() from public, anon, authenticated;
+drop trigger if exists castigo_protecao on public.castigos;
+create trigger castigo_protecao before insert on public.castigos for each row execute function public.castigo_protecao();
+
+-- de castigo, o chat recusa a mensagem
+create or replace function public.chat_castigo() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare v_ate timestamptz;
+begin
+  select ate into v_ate from public.castigos where user_id = auth.uid() and ate > now();
+  if v_ate is not null then
+    raise exception 'Você está de castigo até %.', to_char(v_ate at time zone 'America/Sao_Paulo', 'HH24:MI') using errcode = 'P0001';
+  end if;
+  return new;
+end $$;
+revoke all on function public.chat_castigo() from public, anon, authenticated;
+drop trigger if exists chat_castigo on public.chat_messages;
+create trigger chat_castigo before insert on public.chat_messages for each row execute function public.chat_castigo();
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.castigos; exception when duplicate_object then null; end;
+end $$;
+
+-- confere: deve listar voz_mover, castigos e a coluna surdo
+select 'voz_mover' as nome, 'discord 71' as parte from pg_tables where schemaname = 'public' and tablename = 'voz_mover'
+union all
+select 'castigos', 'discord 71' from pg_tables where schemaname = 'public' and tablename = 'castigos'
+union all
+select column_name::text, 'discord 71' from information_schema.columns
+ where table_schema = 'public' and table_name = 'voz_silenciados' and column_name = 'surdo';

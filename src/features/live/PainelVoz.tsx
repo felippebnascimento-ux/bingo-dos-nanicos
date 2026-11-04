@@ -120,9 +120,16 @@ function Janela({ titulo, fechar, children }: { titulo: string; fechar: () => vo
   );
 }
 
-export function Chave({ ligado, onChange, rotulo }: { ligado: boolean; onChange: (v: boolean) => void; rotulo: string }) {
+/** Liga/desliga num menu. `caixa` desenha a caixinha de marcar do Discord no lugar da chave; `perigo` deixa vermelho. */
+export function Chave({ ligado, onChange, rotulo, caixa, perigo }: { ligado: boolean; onChange: (v: boolean) => void; rotulo: string; caixa?: boolean; perigo?: boolean }) {
   return (
-    <button type="button" role="switch" aria-checked={ligado} className={"vz-item vz-chave" + (ligado ? " on" : "")} onClick={() => onChange(!ligado)}>
+    <button
+      type="button"
+      role={caixa ? "checkbox" : "switch"}
+      aria-checked={ligado}
+      className={"vz-item vz-chave" + (caixa ? " vz-caixa" : "") + (perigo ? " perigo" : "") + (ligado ? " on" : "")}
+      onClick={() => onChange(!ligado)}
+    >
       <span>{rotulo}</span>
       <i aria-hidden="true" />
     </button>
