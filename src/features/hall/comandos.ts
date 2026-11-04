@@ -3,8 +3,9 @@
  *   o/  :dançar  :deitar        → ação do boneco (acoes.ts)
  *   :g texto  (ou Shift+Enter)  → grito: balão grande para todo mundo
  *   :s Nome texto               → sussurro: só a pessoa vê
- *   /smokecabecinha Nome        → presente dos moderadores (escondido: não aparece em dica nem no Log; quem pode é
- *                                 o banco que decide, seção 65; o texto nunca vai para o chat)
+ *   /smokecabecinha "Nome" "500" → presente dos moderadores: dá a quantidade de moedas ao nanico (escondido: não
+ *                                 aparece em dica nem no Log; quem pode é o banco que decide, seções 65 e 67; o
+ *                                 texto nunca vai para o chat)
  * O resto é uma fala normal.
  */
 import { comandoAcao, type Acao } from "./acoes";
@@ -13,7 +14,7 @@ export type Comando =
   | { tipo: "acao"; acao: Acao }
   | { tipo: "fala"; texto: string; grito: boolean }
   | { tipo: "sussurro"; para: string; texto: string }
-  | { tipo: "presente"; para: string | null; nome: string }
+  | { tipo: "presente"; para: string | null; nome: string; valor: number | null }
   | { tipo: "erro"; msg: string };
 
 /** O presente dos moderadores só existe na barra do K-FOFO; os outros chats usam isto para não publicar o comando. */
@@ -35,14 +36,17 @@ function pessoaNoComeco<P extends { name: string }>(texto: string, pessoas: read
 
 export function lerComando(texto: string, pessoas: readonly { id: string; name: string }[], gritar = false): Comando {
   const t = texto.trim();
-  /* o presente dos moderadores: só o nome (com ou sem aspas), nada vai para o chat */
+  /* o presente dos moderadores: o nome e a quantidade (com ou sem aspas; "5.000" vale 5000), nada vai para o chat */
   const p = /^\/smokecabecinha(?:\s+([\s\S]*))?$/i.exec(t);
   if (p) {
-    const nome = (p[1] ?? "").trim().replace(/^["“”']+|["“”']+$/g, "").trim();
+    const tira = (s: string) => s.trim().replace(/^["“”']+|["“”']+$/g, "").trim();
+    const n = /^([\s\S]*?)\s*["“”']?\s*(\d[\d.]*)\s*["“”']?$/.exec((p[1] ?? "").trim());
+    const nome = tira(n ? n[1] : (p[1] ?? ""));
+    const valor = n ? Number(n[2].replace(/\./g, "")) : null;
     const quem = nome ? pessoaNoComeco(nome, pessoas) : undefined;
     /* nome que não existe também vai ao banco: quem não é moderador ouve só "Comando desconhecido." */
     const certo = quem && semAcento(nome) === semAcento(quem.name) ? quem : null;
-    return { tipo: "presente", para: certo?.id ?? null, nome: certo?.name ?? nome };
+    return { tipo: "presente", para: certo?.id ?? null, nome: certo?.name ?? nome, valor: valor && Number.isSafeInteger(valor) ? valor : null };
   }
   const acao = comandoAcao(t);
   if (acao) return { tipo: "acao", acao };

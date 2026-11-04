@@ -7410,3 +7410,36 @@ union all
 select proname::text, 'pênalti x1' from pg_proc
  where pronamespace = 'public'::regnamespace and proname in ('duelo_abrir', 'duelo_entrar', 'duelo_cancelar', 'duelo_escolher', 'duelo_estado', 'duelo_lista')
 order by 2, 1;
+
+-- 67) presente dos moderadores com valor (04/11/2026, pedido do Pitoco) ------------------------------------------------
+--   O comando passa a dizer quanto: /smokecabecinha "Nome" "quantidade" (de 1 a 1.000.000 por vez). Quem pode são só
+--   Pitoco, John, Guiperino e Henry (o Gamer saiu). Quem não é moderador continua ouvindo só "Comando desconhecido.",
+--   antes de qualquer outra conferência. O dinheiro sai como na seção 65: motivo 'admin', ref 'mod:<quem deu>'.
+delete from public.moderadores
+ where friend_id not in (select id from public.friends where name in ('John', 'Pitoco', 'Guiperino', 'Henry'));
+insert into public.moderadores (friend_id)
+  select id from public.friends where name in ('John', 'Pitoco', 'Guiperino', 'Henry')
+on conflict (friend_id) do nothing;
+
+drop function if exists public.mod_presente(uuid);
+create or replace function public.mod_presente(p_para uuid, p_valor integer) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+  v_eu uuid;
+  v_alvo record;
+begin
+  select f.id into v_eu from public.friends f join public.moderadores m on m.friend_id = f.id where f.user_id = v_uid;
+  if v_uid is null or v_eu is null then raise exception 'Comando desconhecido.' using errcode = 'P0001'; end if;
+  select id, name, user_id into v_alvo from public.friends
+   where id = p_para and user_id is not null and coalesce(tipo, 'nanico') in ('nanico', 'amigo');
+  if not found then raise exception 'Não achei esse nanico.' using errcode = 'P0001'; end if;
+  if p_valor is null or p_valor < 1 or p_valor > 1000000 then
+    raise exception 'Quantidade de 1 a 1.000.000.' using errcode = 'P0001';
+  end if;
+  perform public.limitar('mod_presente', 10, interval '1 minute', 'Calma: muitos presentes seguidos.');
+  perform public.creditar(v_alvo.user_id, p_valor, 'admin', 'mod:' || v_eu);
+  return jsonb_build_object('nome', v_alvo.name, 'valor', p_valor);
+end $$;
+revoke all on function public.mod_presente(uuid, integer) from public, anon;
+grant execute on function public.mod_presente(uuid, integer) to authenticated;

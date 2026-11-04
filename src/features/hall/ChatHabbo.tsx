@@ -41,9 +41,9 @@ export function ChatBarra() {
     setIndo(true);
     try {
       if (c.tipo === "presente") {
-        const { error } = await sb().rpc("mod_presente", { p_para: c.para });
-        if (error) throw new Error(/Não achei|Calma/.test(error.message) ? error.message : "Comando desconhecido.");
-        toast(`+5.000 moedas para ${c.nome}`);
+        const { error } = await sb().rpc("mod_presente", { p_para: c.para, p_valor: c.valor });
+        if (error) throw new Error(/Não achei|Calma|Quantidade/.test(error.message) ? error.message : "Comando desconhecido.");
+        toast(`+${(c.valor ?? 0).toLocaleString("pt-BR")} moedas para ${c.nome}`);
       } else if (c.tipo === "sussurro") {
         const { error } = await sb().rpc("sussurrar", { p_para: c.para, p_texto: c.texto });
         if (error) throw error;
