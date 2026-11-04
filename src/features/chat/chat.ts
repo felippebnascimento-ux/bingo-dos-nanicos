@@ -14,7 +14,8 @@ import { getApp, setApp, useApp } from "@/lib/store";
 import { q, sb } from "@/lib/supabase";
 import { local, newId } from "@/lib/util";
 import { toast } from "@/lib/toast";
-import { somDeLive } from "@/features/live/sonsVoz";
+import { somDeLive, somDeMencao } from "@/features/live/sonsVoz";
+import { ajuste, avisarNoComputador } from "@/features/config/ajustes";
 import { escondoMensagensDe } from "@/features/status/notas";
 import { meMenciona } from "./formato";
 
@@ -207,7 +208,16 @@ function addChat(r: unknown) {
     return;
   }
   const mudo = useChat.getState().mudos.includes(m.sala);
+  const autor = getApp().friends.find((f) => f.user_id === m.user_id);
+  /* de quem eu ignorei ou bloqueei: não conta nem avisa */
+  if (escondoMensagensDe(autor?.id)) return;
   const mencionou = meMenciona(m.text, meuAt());
+  /* menção, como no Discord: um som e, com o site fora da tela, o aviso do computador */
+  if (mencionou && (!canalVisivel(m.sala) || document.hidden)) {
+    if (ajuste("somMencao") && !getApp().vozSurdo) somDeMencao();
+    const onde = m.sala === "geral" ? "#geral" : (getApp().salas.find((s) => s.id === m.sala)?.nome ?? m.sala);
+    avisarNoComputador(`${autor?.name ?? "Alguém"} mencionou você em ${onde}`, m.text);
+  }
   /* não lidas do menu "Ao vivo": só do chat de onde eu estou */
   if (m.sala === chatAtual() && !chatVisivel() && !mudo) setApp({ chatUnread: getApp().chatUnread + 1 });
   /* não lidas e menções de cada canal de texto */
@@ -356,7 +366,7 @@ function onChamado(m: Record<string, unknown>) {
   const quem = friends.find((f) => f.id === fid);
   if (!sala || !quem || (minhaSala === sala.id && myVozSid)) return;
   if (escondoMensagensDe(quem.id)) return;
-  somDeLive(1);
+  if (ajuste("somChamada")) somDeLive(1);
   toast(`📞 ${quem.name} está chamando você para a ${sala.nome}. Entre pelo canal no menu.`);
 }
 

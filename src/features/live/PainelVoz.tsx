@@ -7,6 +7,7 @@
  * - na linha "eu", o microfone e o fone com a setinha (aparelho, barrinha de teste, ruído, eco, volume da voz);
  * - as janelas de escolher a transmissão (o que mostrar, resolução, fps, som do PC) e a prévia da câmera.
  */
+import { abrirConfiguracoes } from "@/features/config/ajustes";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -28,7 +29,7 @@ import {
 } from "@/components/ui/icones";
 import { listarAparelhos, podeEscolherSaida, restricoesCam, salvarMidia, useMidia, type Dispositivo } from "@/features/config/midia";
 import { entrarSala, nomeDaSala } from "@/features/salas/trocar";
-import { setApp, useApp } from "@/lib/store";
+import { useApp } from "@/lib/store";
 import { toast } from "@/lib/toast";
 import { local } from "@/lib/util";
 import { activeCams, aplicarDesfoque, CAM, mudarDesfoque, openCamPip, podeDesfocar, querDesfoque, startCam, stopCam } from "./camera";
@@ -38,7 +39,7 @@ import { canCam, canShare, chromeVer, isChromium, isMac } from "./rtc";
 import { LIVE, startLive, stopLive } from "./tela";
 import { VideoMudo } from "./Video";
 import { mandarSom, SONS } from "./soundboard";
-import { ajustarVoz, alternarMudo, alternarSurdo, entrarVoz, limiarDaSensib, mudarModoVoz, nivelBruto, nivelDoMeuMic, nomeDaTecla, sinalDaVoz, useAjustesVoz, useModoVoz, useVoz } from "./voz";
+import { ajustarVoz, alternarMudo, alternarSurdo, entrarVoz, limiarAuto, limiarDaSensib, mudarModoVoz, nivelBruto, nivelDoMeuMic, nomeDaTecla, sinalDaVoz, useAjustesVoz, useModoVoz, useVoz } from "./voz";
 
 /* ---------- balão que abre por cima (ou por baixo, no celular, onde o menu fica no alto) ---------- */
 export type Lugar = { left: number; top?: number; bottom?: number };
@@ -302,13 +303,17 @@ export const duracao = (ms: number) => {
 /** Como o microfone abre: detecção de voz (com a sensibilidade) ou apertar para falar, como no Discord. */
 export function ModoEntrada() {
   const m = useModoVoz();
+  const naVoz = useApp((s) => !!s.myVozSid);
   const [gravando, setGravando] = useState(false);
   const barra = useRef<HTMLSpanElement>(null);
+  const trilho = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     let id = 0;
     const anda = () => {
       /* a barra em escala de 0 a 0.066 (o limiar máximo), para combinar com a marca da sensibilidade */
       if (barra.current) barra.current.style.transform = `scaleX(${Math.min(1, nivelBruto() / 0.066)})`;
+      /* na automática, a marca anda com o barulho do ambiente */
+      if (trilho.current && useModoVoz.getState().sensAuto) trilho.current.style.setProperty("--marca", `${Math.min(100, (limiarAuto() / 0.066) * 100)}%`);
       id = requestAnimationFrame(anda);
     };
     id = requestAnimationFrame(anda);
@@ -330,32 +335,46 @@ export function ModoEntrada() {
       <div role="radiogroup" aria-label="Modo de entrada">
         {(["voz", "ptt"] as const).map((x) => (
           <button key={x} type="button" role="radio" aria-checked={m.modo === x} className={"vz-item" + (m.modo === x ? " sel" : "")} onClick={() => mudarModoVoz({ modo: x })}>
-            <span>{x === "voz" ? "Detecção de voz" : "Apertar para falar"}</span>
+            <span>{x === "voz" ? "Detecção de voz" : "Pressione para falar"}</span>
             <i className="vz-radio" aria-hidden="true" />
           </button>
         ))}
       </div>
       {m.modo === "ptt" ? (
         <div className="vz-ptt">
-          <span>Tecla</span>
+          <span>Atalho</span>
           <button type="button" className={"btn soft sm" + (gravando ? " on" : "")} onClick={() => setGravando(true)}>
             {gravando ? "Aperte uma tecla…" : nomeDaTecla(m.tecla)}
           </button>
+          <label className="vz-sensib vz-atraso">
+            <span>
+              Atraso para soltar <b>{m.atrasoPtt} ms</b>
+            </span>
+            <input aria-label="Atraso para soltar o pressione para falar" type="range" min={0} max={2000} step={20} value={m.atrasoPtt} onChange={(e) => mudarModoVoz({ atrasoPtt: Number(e.target.value) })} />
+          </label>
           <p className="vz-dica">Segure para falar. Só funciona com o site na frente (o navegador não deixa ouvir teclas de outros programas).</p>
         </div>
       ) : (
-        <label className="vz-sensib">
-          <span>
-            Sensibilidade <b>{m.sensib <= 0 ? "sempre aberto" : `${Math.round(m.sensib * 100)}%`}</b>
-          </span>
-          <span className="vz-sensib-trilho" style={{ "--marca": `${(limiarDaSensib(m.sensib) / 0.066) * 100}%` } as React.CSSProperties}>
+        <div className="vz-sensib">
+          <h4>Sensibilidade de entrada</h4>
+          <Chave rotulo="Determinar automaticamente a sensibilidade de entrada" ligado={m.sensAuto} onChange={(v) => mudarModoVoz({ sensAuto: v })} />
+          <span ref={trilho} className="vz-sensib-trilho" style={m.sensAuto ? undefined : ({ "--marca": `${(limiarDaSensib(m.sensib) / 0.066) * 100}%` } as React.CSSProperties)}>
             <span ref={barra} className="vz-sensib-nivel" />
           </span>
-          <input aria-label="Sensibilidade do microfone" type="range" min={0} max={100} value={Math.round(m.sensib * 100)} onChange={(e) => mudarModoVoz({ sensib: Number(e.target.value) / 100 })} />
-          <small className="vz-dica">Fale: o microfone só abre quando a barra passa da marca. Em 0, fica sempre aberto.</small>
-        </label>
+          {!m.sensAuto && (
+            <>
+              <span className="vz-sensib-rot">
+                Sensibilidade <b>{m.sensib <= 0 ? "sempre aberto" : `${Math.round(m.sensib * 100)}%`}</b>
+              </span>
+              <input aria-label="Sensibilidade do microfone" type="range" min={0} max={100} value={Math.round(m.sensib * 100)} onChange={(e) => mudarModoVoz({ sensib: Number(e.target.value) / 100 })} />
+            </>
+          )}
+          <small className="vz-dica">
+            {m.sensAuto ? "O site mede o barulho de onde você está e só abre o microfone quando você fala mais alto que ele." : "O microfone só abre quando a barra passa da marca. Em 0, fica sempre aberto."}
+            {!naVoz && " A barra mexe quando você está na voz."}
+          </small>
+        </div>
       )}
-      <p className="vz-dica">Atalhos: Ctrl+Shift+M liga e desliga o microfone; Ctrl+Shift+D, o som.</p>
     </div>
   );
 }
@@ -661,7 +680,7 @@ export function MenuMic({ lugar, ancora, fechar }: { lugar: Lugar; ancora: HTMLE
         className="vz-item"
         onClick={() => {
           fechar();
-          setApp({ configAberto: true });
+          abrirConfiguracoes("voz");
         }}
       >
         <span>Configurações de voz</span>
