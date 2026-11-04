@@ -37,10 +37,10 @@ import { toast } from "@/lib/toast";
 import { local } from "@/lib/util";
 import type { Friend } from "@/lib/tipos";
 import { activeCams, camStreamOf, openCamPip } from "./camera";
-import { opcaoCall, semVideoDe, setLive, useLive } from "./estado";
-import { Balao, botaoCamera, botaoTela, BotaoReacoes, Chave, lugarDe, MenuFone, MenuMic, useBalao, type Lugar } from "./PainelVoz";
+import { opcaoCall, setLive, useLive } from "./estado";
+import { Balao, botaoCamera, botaoTela, BotaoReacoes, BotaoSoundboard, Chave, lugarDe, MenuFone, MenuMic, useBalao, type Lugar } from "./PainelVoz";
 import { canShare } from "./rtc";
-import { OpcoesVoz } from "./MenuPessoa";
+import { CorpoPessoa } from "./MenuPessoa";
 import { ativarSomTelas, ouvirJunto, useOuvindo } from "./somTelas";
 import { LIVE, mudarVolumeTela, stopLive, unwatch, VOLUME_TELA_MAX, volumeDaTela, watch } from "./tela";
 import { VideoMudo } from "./Video";
@@ -146,7 +146,6 @@ function MenuQuadro({
   const chaveTela = q.tipo === "tela" ? q.key : null;
   const junto = useOuvindo((s) => !!chaveTela && s.junto.includes(chaveTela));
   const volQ = volumeDaTela(chaveTela);
-  const semVideo = useLive((s) => s.semVideo);
   const espelho = useLive((s) => s.espelho);
   const naGrade = useLive((s) => s.minhaCamNaGrade);
   const fid = q.tipo === "pessoa" ? q.p.fid : null;
@@ -205,14 +204,6 @@ function MenuQuadro({
           {!principal && <Chave rotulo="Ouvir junto com a principal" ligado={junto} onChange={(x) => ouvirJunto(q.key, x)} />}
         </>
       )}
-      {q.tipo === "pessoa" && !q.eu && fid && (
-        <>
-          <div className="vz-sep" />
-          <OpcoesVoz fid={fid} nome={q.nome} />
-          {/* como no Discord: deixar de ver a câmera dela (só para mim; ela continua ligada para os outros) */}
-          {(q.p.chaveCam || semVideo.includes(fid)) && <Chave rotulo="Desligar o vídeo (só para você)" ligado={semVideo.includes(fid)} onChange={(v) => semVideoDe(fid, v)} />}
-        </>
-      )}
       {q.eu && q.tipo === "pessoa" && (
         <>
           <div className="vz-sep" />
@@ -234,7 +225,14 @@ function MenuQuadro({
           />
         </>
       )}
-      {q.f && (
+      {/* a pessoa: o mesmo menu da lista do canal, na ordem do Discord */}
+      {q.tipo === "pessoa" && (
+        <>
+          <div className="vz-sep" />
+          <CorpoPessoa p={q.p} fid={fid} nome={q.nome} eu={!!q.eu} fechar={fechar} semTela />
+        </>
+      )}
+      {q.tipo === "tela" && q.f && (
         <>
           <div className="vz-sep" />
           <button type="button" className="vz-item" onClick={faz(() => setApp({ fichaAberta: q.f!.id }))}>
@@ -517,6 +515,7 @@ export function BarraCanal() {
           )}
           <span className="cv-reacoes">
             <BotaoReacoes />
+            <BotaoSoundboard />
           </span>
           {mic.lugar && <MenuMic lugar={mic.lugar} ancora={mic.ancora} fechar={mic.fechar} />}
           {fone.lugar && <MenuFone lugar={fone.lugar} ancora={fone.ancora} fechar={fone.fechar} />}

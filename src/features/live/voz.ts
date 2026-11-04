@@ -33,10 +33,11 @@ type Par = {
  * Quem está falando agora (chaves da presença; a minha é MY_KEY), desde quando estou na call e se um moderador me
  * silenciou (seção 70). A tela só lê daqui.
  */
-export const useVoz = create<{ falando: string[]; desde: number | null; silenciadoPorMod: boolean; apertando: boolean }>()(() => ({
+export const useVoz = create<{ falando: string[]; desde: number | null; silenciadoPorMod: boolean; surdoPorMod: boolean; apertando: boolean }>()(() => ({
   falando: [],
   desde: null,
   silenciadoPorMod: false,
+  surdoPorMod: false,
   apertando: false,
 }));
 
@@ -88,6 +89,8 @@ type Ajustes = {
   por: Record<string, number>;
   /** nanicos que eu silenciei (só eu deixo de ouvir) */
   silenciados: string[];
+  /** nanicos cuja soundboard eu não quero ouvir (a voz continua) */
+  semSoundboard: string[];
 };
 const ajSalvo = local.json<Partial<Ajustes>>("voz-ajustes") || {};
 const vol01 = (v: unknown, padrao = 1, max = 1) => (typeof v === "number" && v >= 0 && v <= max ? v : padrao);
@@ -97,12 +100,18 @@ export const useAjustesVoz = create<Ajustes>()(() => ({
   geral: vol01(ajSalvo.geral),
   por: Object.fromEntries(Object.entries(ajSalvo.por && typeof ajSalvo.por === "object" ? ajSalvo.por : {}).map(([k, v]) => [k, vol01(v, 1, VOLUME_MAX)])),
   silenciados: Array.isArray(ajSalvo.silenciados) ? ajSalvo.silenciados.filter((x): x is string => typeof x === "string") : [],
+  semSoundboard: Array.isArray(ajSalvo.semSoundboard) ? ajSalvo.semSoundboard.filter((x): x is string => typeof x === "string") : [],
 }));
 export function ajustarVoz(p: Partial<Ajustes>) {
   useAjustesVoz.setState(p);
   local.setJson("voz-ajustes", useAjustesVoz.getState());
 }
 export const volumeDoNanico = (fid: string | null | undefined) => (fid ? (useAjustesVoz.getState().por[fid] ?? 1) : 1);
+/** Para (ou volta a) ouvir a soundboard de um nanico, só no meu aparelho. */
+export function semSoundboardDe(fid: string, sim: boolean) {
+  const l = useAjustesVoz.getState().semSoundboard.filter((x) => x !== fid);
+  ajustarVoz({ semSoundboard: sim ? [...l, fid] : l });
+}
 export function silenciarNanico(fid: string, sim: boolean) {
   const l = useAjustesVoz.getState().silenciados.filter((x) => x !== fid);
   ajustarVoz({ silenciados: sim ? [...l, fid] : l });
@@ -246,6 +255,7 @@ export async function entrarVoz() {
     st.getAudioTracks().forEach((t) => (t.enabled = !mudo));
     setApp({ myVozSid: VOZ.sid, vozMudo: mudo, vozSurdo: false });
     useVoz.setState({ desde: Date.now() });
+    if (useVoz.getState().surdoPorMod) setTimeout(() => !getApp().vozSurdo && alternarSurdo(), 0);
     medir(MY_KEY, st);
     medirBruto(mic);
     ligarMedidor();
@@ -335,6 +345,16 @@ export function alternarMudo() {
   somDoMudo(mudo ? "mudo" : "falar", useAjustesVoz.getState().geral);
   if (!mudo) acordarMic();
 }
+/** Um moderador me ensurdeceu (ou tirou): paro de ouvir e de falar, sem poder voltar até ele tirar (seção 71). */
+export function ensurdecerPorModerador(sim: boolean) {
+  if (useVoz.getState().surdoPorMod === sim) return;
+  useVoz.setState({ surdoPorMod: sim });
+  if (!VOZ.sid) return;
+  if (sim) {
+    if (!getApp().vozSurdo) alternarSurdo();
+    toast("Um moderador ensurdeceu você na voz.");
+  } else toast("O moderador liberou o seu som. Volte a ouvir quando quiser.");
+}
 /** Um moderador me silenciou (ou tirou): fica mudo e não dá para desmutar até ele tirar. */
 export function silenciarPorModerador(sim: boolean) {
   if (useVoz.getState().silenciadoPorMod === sim) return;
@@ -368,7 +388,8 @@ export function alternarSurdo() {
   if (!VOZ.sid) return;
   const s = getApp();
   const surdo = !s.vozSurdo;
-  const mudo = surdo ? true : VOZ.mudoAntes || useVoz.getState().silenciadoPorMod;
+  if (!surdo && useVoz.getState().surdoPorMod) return void toast("Um moderador ensurdeceu você na voz.");
+  const mudo = surdo ? true : VOZ.mudoAntes || useVoz.getState().silenciadoPorMod || useVoz.getState().surdoPorMod;
   if (surdo) VOZ.mudoAntes = s.vozMudo;
   VOZ.stream?.getAudioTracks().forEach((t) => (t.enabled = !mudo));
   portaAberta = null;

@@ -6,6 +6,7 @@ import { getApp, lineupVazia, salaLol, setApp } from "./store";
 import type { Card, Friend, LineupSlot, Modo, Phrase, Sala } from "./tipos";
 import { byName, local, norm } from "./util";
 import { toast } from "./toast";
+import { notasDaConta } from "@/features/status/notas";
 import { joinRoom } from "./sala";
 import { LANES } from "./dados/campeoes";
 import { VERSION } from "./dados/changelog";
@@ -251,6 +252,7 @@ export async function startSession(session: Session | null) {
   }
   /* "já vi" do Log: o da conta vale em todo aparelho; o do navegador fica de reserva */
   contaVisto = lerVisto(u?.user_metadata?.log_visto);
+  notasDaConta(u?.user_metadata?.notas, u?.user_metadata?.ignorados, u?.user_metadata?.bloqueados);
   setApp({ logVisto: juntarVisto(contaVisto, getApp().logVisto) });
   if (u?.user_metadata?.must_change) {
     setApp({ fase: "primeiraSenha", primeiroUsuario: String(u.email || "").split("@")[0] });

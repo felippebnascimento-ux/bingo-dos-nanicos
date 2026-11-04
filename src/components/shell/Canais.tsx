@@ -19,6 +19,7 @@ import { entrarSala } from "@/features/salas/trocar";
 import type { PresencaNanico } from "@/lib/presenca";
 import { friendDaPresenca, getApp, MY_KEY, setApp, useApp } from "@/lib/store";
 import { ehCelular, local } from "@/lib/util";
+import { abrirCartao } from "./CartaoPerfil";
 import { assistirLive, useNanicosOnline } from "./People";
 
 /** Categoria recolhível; recolhida, mostra só o que `fica` deixar (o canal onde eu estou). */
@@ -50,7 +51,8 @@ function PessoaCanal({ p, falando }: { p: PresencaNanico; falando: boolean }) {
   const nome = f?.name ?? p.name;
   const eu = p.chaves.includes(MY_KEY);
   const naVoz = !!p.voz;
-  /* como no Discord: clique direito (ou segurar o dedo) abre o volume, silenciar, a transmissão e a ficha */
+  /* como no Discord: o clique abre o cartão de perfil (com o volume, se estamos na mesma voz); o clique direito (ou
+     segurar o dedo) abre o menu com o volume, silenciar, a transmissão e a ficha */
   const menu = useMenuDeToque();
   const silenciei = useAjustesVoz((s) => !eu && !!p.fid && s.silenciados.includes(p.fid));
   const vol = useAjustesVoz((s) => (p.fid ? (s.por[p.fid] ?? 1) : 1));
@@ -59,6 +61,10 @@ function PessoaCanal({ p, falando }: { p: PresencaNanico; falando: boolean }) {
       className={"canal-pessoa" + (naVoz ? "" : " sem-voz") + (falando ? " falando" : "") + (eu ? " me" : "") + (menu.lugar ? " menu" : "")}
       title={naVoz ? nome : `${nome}: na sala, fora da voz`}
       {...menu.props}
+      onClick={(e) => {
+        if ((e.target as HTMLElement).closest("button, a")) return;
+        abrirCartao(p.fid, e);
+      }}
     >
       {f ? <Avatar f={f} size="xs" /> : <span className="av xs">{nome[0]}</span>}
       <span className="nm">{nome}</span>

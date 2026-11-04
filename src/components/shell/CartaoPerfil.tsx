@@ -11,16 +11,44 @@ import { useTemCelular } from "@/features/celular/Celular";
 import { abrirCelular, abrirConversa } from "@/features/celular/rede";
 import { riotEmJogo, useRiot } from "@/features/jogar/riot";
 import { OpcoesVoz } from "@/features/live/MenuPessoa";
+import { castigoAte, useVozMod } from "@/features/live/vozMod";
+import { NOTA_MAX, salvarNota, useNotas } from "@/features/status/notas";
 import { nomeDaSala } from "@/features/salas/trocar";
 import { cargosDe, MODOS, mudarStatus, NOME_SITUACAO, recadoValido, situacao, useStatus, type Modo } from "@/features/status/status";
 import { useNanicosOnline } from "./People";
 import { getApp, MY_KEY, setApp, useApp } from "@/lib/store";
 import type { Presence } from "@/lib/tipos";
 
-/** Abre o cartão de alguém (friend id) perto de onde tocou. */
-export function abrirCartao(fid: string | null | undefined, e: { clientX: number; clientY: number }) {
+/** Abre o cartão de alguém (friend id) perto de onde tocou; `nota` já abre escrevendo a nota. */
+export function abrirCartao(fid: string | null | undefined, e: { clientX: number; clientY: number }, nota = false) {
   if (!fid) return;
-  setApp({ cartao: { fid, x: e.clientX, y: e.clientY } });
+  setApp({ cartao: { fid, x: e.clientX, y: e.clientY, nota } });
+}
+
+/** A nota sobre a pessoa, como no Discord: só eu vejo; grava ao sair do campo. */
+function CampoNota({ fid, foco }: { fid: string; foco: boolean }) {
+  const salva = useNotas((s) => s.porFid[fid] ?? "");
+  const [texto, setTexto] = useState(salva);
+  return (
+    <label className="cartao-nota">
+      <span className="cartao-sec">Nota</span>
+      <textarea
+        rows={2}
+        maxLength={NOTA_MAX}
+        autoFocus={foco}
+        placeholder="Clique para adicionar uma nota (só você vê)"
+        value={texto}
+        onChange={(e) => setTexto(e.target.value)}
+        onBlur={() => texto !== salva && salvarNota(fid, texto)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            (e.target as HTMLTextAreaElement).blur();
+          }
+        }}
+      />
+    </label>
+  );
 }
 
 /** A bolinha do status no canto do rosto (verde, amarelo, vermelho ou cinza). */
@@ -53,6 +81,7 @@ export function CartaoPerfil() {
   const f = friends.find((x) => x.id === cartao?.fid);
   const p = pessoas.find((x) => x.fid === cartao?.fid) ?? null;
   const sit = useSituacao(cartao?.fid);
+  const castigos = useVozMod((s) => s.castigos);
   const campeao = useMemo(() => (cartao ? riotEmJogo(jogos).get(cartao.fid) : undefined), [jogos, cartao]);
   useEffect(() => {
     if (!cartao) return;
@@ -70,6 +99,7 @@ export function CartaoPerfil() {
   if (!cartao || !f) return null;
   const eu = f.id === myFid;
   const st = f.user_id ? porUser[f.user_id] : undefined;
+  const ateCastigo = f.user_id ? castigoAte(castigos[f.user_id]) : 0;
   const onde = p?.sala ? nomeDaSala(p.sala, salas) : p ? "No lobby" : null;
   const naMinhaVoz = !eu && naVoz && !!p?.voz && p.sala === getApp().minhaSala;
   /* cabe na tela: perto do toque, sem sair pela borda */
@@ -118,6 +148,13 @@ export function CartaoPerfil() {
             </span>
           ))}
         </div>
+        {ateCastigo > 0 && (
+          <p className="cartao-castigo">
+            <span className="cartao-sec">De castigo</span>
+            Sem falar no chat e na voz até {new Date(ateCastigo).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+          </p>
+        )}
+        {!eu && <CampoNota key={f.id} fid={f.id} foco={!!cartao.nota} />}
         {naMinhaVoz && (
           <div className="cartao-voz vz-balao-dentro">
             <OpcoesVoz fid={f.id} nome={f.name} />

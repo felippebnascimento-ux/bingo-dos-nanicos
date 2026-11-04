@@ -20,6 +20,7 @@ import {
   useChat, type MsgChat,
 } from "./chat";
 import { dia, embedDe, formatar, linksDe, meMenciona, type Trecho } from "./formato";
+import { useNotas } from "@/features/status/notas";
 
 const SEM_MSGS: MsgChat[] = [];
 const RAPIDAS = ["👍", "😂", "❤️", "🔥", "😮", "😢"];
@@ -148,6 +149,9 @@ function Mensagem({ m, primeira, eu, mod, meuAt, acoes, editando, fimEdicao, cit
   const [texto, setTexto] = useState(m.text);
   const segura = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const f = friends.find((x) => x.user_id === m.user_id);
+  const bloqueado = useNotas((st) => !!f && st.bloqueados.includes(f.id));
+  const escondida = useNotas((st) => !!f && (st.ignorados.includes(f.id) || st.bloqueados.includes(f.id)));
+  const [mostrar, setMostrar] = useState(false);
   const autorCitada = citada ? friends.find((x) => x.user_id === citada.user_id) : undefined;
   const novo = chatNovo();
   const mencionaMe = !eu && meMenciona(m.text, meuAt);
@@ -159,6 +163,18 @@ function Mensagem({ m, primeira, eu, mod, meuAt, acoes, editando, fimEdicao, cit
     fimEdicao();
   };
   const lista = Object.entries(reacoes ?? {}).filter(([, q]) => q.length);
+  if (escondida && !mostrar)
+    return (
+      <div data-msg={m.id} className={"msg msg-escondida" + (primeira ? " first" : "")}>
+        <span className="msg-hora" aria-hidden="true" />
+        <div className="tx">
+          {bloqueado ? "Mensagem de alguém que você bloqueou" : "Mensagem de alguém que você ignorou"} ·{" "}
+          <button type="button" className="link" onClick={() => setMostrar(true)}>
+            Mostrar
+          </button>
+        </div>
+      </div>
+    );
   return (
     <div
       data-msg={m.id}
@@ -470,6 +486,22 @@ export function ChatPainel({ canal, placeholder = "Mensagem para a sala" }: { ca
     el.scrollTop = el.scrollHeight;
     noFim.current = true;
   }, [visivel]);
+
+  /* "Mencionar" do menu de uma pessoa: só o chat que está na tela recebe o @ */
+  const naTela = useRef(visivel);
+  useEffect(() => {
+    naTela.current = visivel;
+  }, [visivel]);
+  useEffect(
+    () =>
+      useChat.subscribe((s, p) => {
+        if (!s.inserir || s.inserir === p.inserir || !naTela.current) return;
+        const t = s.inserir.texto;
+        setTexto((x) => (x && !x.endsWith(" ") ? x + " " : x) + t);
+        setTimeout(() => campo.current?.focus(), 50);
+      }),
+    [],
+  );
 
   /* a caixa de texto cresce com o texto (até 6 linhas) */
   useLayoutEffect(() => {
