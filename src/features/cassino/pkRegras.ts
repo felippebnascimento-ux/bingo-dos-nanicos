@@ -14,7 +14,8 @@ export const TEMPO_VEZ_PK_MS = 20_000;
 /** big blinds que dá para abrir (o small é a metade) */
 export const BLINDS = [10, 20, 50] as const;
 export const compraMin = (bb: number) => bb * 20;
-export const compraMax = (bb: number) => bb * 100;
+/** sem teto desde a seção 63: senta com até tudo o que tem (o banco confere o saldo) */
+export const compraMax = (bb: number) => (bb > 0 ? Number.MAX_SAFE_INTEGER : 0);
 
 export type FasePk = "preflop" | "flop" | "turn" | "river" | "fim";
 /** a última jogada na rodada, como o banco guarda (pk_jog.acao) */

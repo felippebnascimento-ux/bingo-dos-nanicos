@@ -2890,7 +2890,7 @@ end $$;
 -- fichas e 1.000 moedas por rodada. Dúzia e coluna pagam 2 para 1 (3× com a aposta); número 36×; o resto 2×.
 -- Fica guardada como uma aposta 'roleta' com escolha {fichas: [...]}, então a conferência continua igual (resultado.casa).
 alter table public.cassino_apostas drop constraint if exists cassino_apostas_aposta_check;
-alter table public.cassino_apostas add constraint cassino_apostas_aposta_check check (aposta between 5 and 1000);
+alter table public.cassino_apostas add constraint cassino_apostas_aposta_check check (aposta >= 5); -- sem teto desde a seção 63 (apostas até o saldo): rodar o arquivo de novo não pode recusar as apostas grandes que já existem
 
 create or replace function public.apostar_roleta_mesa(p_fichas jsonb) returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -7090,6 +7090,75 @@ insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem,
   ('chave-vo-lia', 'Chave da baia da Vó Lia', 'Raro: abre a baia da Vó Lia.', 'chave', 5000, '{"cena":"volia"}', 103, 14, false)
 on conflict (id) do update set nome = excluded.nome, descricao = excluded.descricao, espaco = excluded.espaco,
   preco = excluded.preco, dados = excluded.dados, ordem = excluded.ordem, estoque = excluded.estoque;
+
+-- 63) apostas até o saldo, como num cassino de verdade (03/11/2026, pedido do grupo) --------------------------------
+-- Em todos os jogos com aposta dá para apostar de 5 moedas até tudo o que a pessoa tem: o teto é o saldo, que o
+-- creditar() já confere (sem saldo, falha com 'Saldo insuficiente.' e nada muda). Antes: 100 por aposta (aviãozinho,
+-- pênalti, caça-níquel, apostas no LoL e no truco), 200 no blackjack, 100 por ficha e 1.000 por rodada na roleta e
+-- 100 big blinds no pôquer. Continuam: o mínimo de 5, as 30 fichas por rodada da roleta e os 20 big blinds para sentar
+-- no pôquer. As funções não são escritas de novo aqui: o bloco abaixo pega cada uma como está no banco e troca só o
+-- trecho do limite (como a seção 39 faz), então nada mais muda nelas. Pode rodar de novo.
+alter table public.cassino_apostas drop constraint if exists cassino_apostas_aposta_check;
+alter table public.cassino_apostas add constraint cassino_apostas_aposta_check check (aposta >= 5);
+alter table public.mesa_apostas drop constraint if exists mesa_apostas_aposta_check;
+alter table public.mesa_apostas add constraint mesa_apostas_aposta_check check (aposta >= 5);
+alter table public.aviao_voos drop constraint if exists aviao_voos_aposta_check;
+alter table public.aviao_voos add constraint aviao_voos_aposta_check check (aposta >= 5);
+alter table public.penalti_jogos drop constraint if exists penalti_jogos_aposta_check;
+alter table public.penalti_jogos add constraint penalti_jogos_aposta_check check (aposta >= 5);
+alter table public.bj_maos drop constraint if exists bj_maos_aposta_check;
+alter table public.bj_maos add constraint bj_maos_aposta_check check (aposta >= 5);
+alter table public.apostas drop constraint if exists apostas_valor_check;
+alter table public.apostas add constraint apostas_valor_check check (valor >= 5);
+alter table public.truco_apostas drop constraint if exists truco_apostas_valor_check;
+alter table public.truco_apostas add constraint truco_apostas_valor_check check (valor >= 5);
+
+do $$
+declare
+  v_fn    text;
+  v_def   text;
+  v_novo  text;
+  v_achou boolean;
+  -- {função, obrigatória (as dos jogos na tela; as antigas, fora do site, só se existirem)}
+  v_lista text[][] := array[
+    ['mesa_apostar_roleta', 's'], ['mesa_apostar_aviao', 's'], ['penalti_comecar', 's'], ['apostar_slot', 's'],
+    ['bj_apostar', 's'], ['pk_sentar', 's'], ['apostar_partida', 's'], ['apostar_truco', 's'],
+    ['apostar_roleta', 'n'], ['apostar_limbo', 'n'], ['apostar_dado', 'n'], ['aviao_decolar', 'n'], ['apostar_roleta_mesa', 'n']];
+  i int;
+begin
+  for i in 1 .. array_length(v_lista, 1) loop
+    v_fn := v_lista[i][1];
+    v_achou := false;
+    for v_def in select pg_get_functiondef(oid) from pg_proc where pronamespace = 'public'::regnamespace and proname = v_fn loop
+      v_achou := true;
+      v_novo := v_def;
+      -- uma aposta só: de 5 para cima
+      v_novo := replace(v_novo, 'p_aposta not between 5 and 100', 'p_aposta < 5');
+      v_novo := replace(v_novo, 'p_aposta not between 5 and 200', 'p_aposta < 5');
+      v_novo := replace(v_novo, '''A aposta vai de 5 a 100 moedas.''', '''A aposta mínima é 5 moedas.''');
+      v_novo := replace(v_novo, '''A aposta vai de 5 a 200 moedas.''', '''A aposta mínima é 5 moedas.''');
+      v_novo := replace(v_novo, 'p_valor < 5 or p_valor > 100', 'p_valor < 5');
+      v_novo := replace(v_novo, '''Aposte de 5 a 100 moedas.''', '''A aposta mínima é 5 moedas.''');
+      -- roleta: cada lugar de 5 para cima, sem teto na rodada (as 30 fichas continuam)
+      v_novo := replace(v_novo, 'v_ap not between 5 and 100', 'v_ap < 5');
+      v_novo := replace(v_novo, '''Cada ficha vai de 5 a 100 moedas.''', '''Cada lugar da mesa vai de 5 moedas para cima.''');
+      v_novo := replace(v_novo, '    if v_ant.aposta + v_total > 1000 then raise exception ''No máximo 1.000 moedas por rodada.'' using errcode = ''P0001''; end if;' || chr(10), '');
+      v_novo := replace(v_novo, '  elsif v_total > 1000 then raise exception ''No máximo 1.000 moedas por rodada.'' using errcode = ''P0001'';' || chr(10), '');
+      v_novo := replace(v_novo, '  if v_total > 1000 then raise exception ''No máximo 1.000 moedas por rodada.'' using errcode = ''P0001''; end if;' || chr(10), '');
+      -- pôquer: senta com pelo menos 20 big blinds e até tudo o que tem
+      v_novo := replace(v_novo, 'p_fichas < m.blind * 20 or p_fichas > m.blind * 100', 'p_fichas < m.blind * 20');
+      v_novo := replace(v_novo, '''Nesta mesa se senta com % a % fichas.'', m.blind * 20, m.blind * 100', '''Nesta mesa se senta com pelo menos % fichas.'', m.blind * 20');
+      if v_novo <> v_def then
+        execute v_novo;
+      elsif v_lista[i][2] = 's' and v_def !~ '(p_aposta < 5|p_valor < 5|v_ap < 5|p_fichas < m\.blind \* 20 then)' then
+        raise exception 'Seção 63: não achei o limite em %(): confira se a função mudou.', v_fn;
+      end if;
+    end loop;
+    if not v_achou and v_lista[i][2] = 's' then
+      raise exception 'Seção 63: a função %() não existe no banco.', v_fn;
+    end if;
+  end loop;
+end $$;
 
 -- 12) confere: deve listar as 6 proteções, as 4 funções das moedas, as 2 tabelas da ficha, as 4 funções dos atributos, as 4 salas, as 6 funções do cassino, as 2 da presença, as 4 do rodízio, as 2 da zoeira, as 3 dos troféus, as 2 dos eventos, as 4 da loja, as 5 do truco, as 6 do bingo, a das missões, as 3 tabelas de mídias e links, as 3 da rede nanica, as 3 funções das apostas, as 3 de respeitos e emblemas, a roleta de mesa, as 4 do aviãozinho, as 5 das mesas ao vivo, as 4 do pênalti, as 2 tabelas dos stories e as mensagens, a bolsa, as 3 dos amigos e as 3 tabelas e 6 funções do truco valendo e as 2 tabelas e 3 funções do quarto próprio e as 2 tabelas e 3 funções do blackjack e as 4 tabelas e 6 funções do pôquer
 select tgname::text as item, tgrelid::regclass::text as onde from pg_trigger

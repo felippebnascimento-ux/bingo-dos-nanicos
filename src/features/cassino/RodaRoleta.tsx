@@ -282,7 +282,9 @@ export function RodaRoleta({ giro, onFim, tema = "classica", semSom = false }: {
   return (
     <div className="rr" data-tema={tema}>
       <div className="rr-roda-caixa">
-        <svg className="rr-svg" viewBox="-200 -200 400 400" role="img" aria-label={final !== null ? `Roleta: deu ${final} ${cor}` : rodando ? "Roleta girando" : "Roleta parada"}>
+        {/* a parte parada da roda (aro, madeira com o veio, pista e losangos) num desenho à parte, por baixo: o veio da
+            madeira é caro de desenhar e assim ele é pintado uma vez só, não a cada quadro do giro */}
+        <svg className="rr-svg rr-svg-base" viewBox="-200 -200 400 400" aria-hidden="true">
           <defs>
             <radialGradient id={`${id}-aro`} cx="50%" cy="40%" r="60%">
               <stop offset="0" className="rr-st-aro0" />
@@ -378,6 +380,9 @@ export function RodaRoleta({ giro, onFim, tema = "classica", semSom = false }: {
               </g>
             );
           })}
+        </svg>
+        <svg className="rr-svg" viewBox="-200 -200 400 400" role="img" aria-label={final !== null ? `Roleta: deu ${final} ${cor}` : rodando ? "Roleta girando" : "Roleta parada"}>
+          {/* os gradientes e filtros estão no desenho de baixo (os ids valem para a página inteira) */}
           {/* a roda que gira */}
           {/* o ângulo é posto direto no elemento pela animação (o React não mexe nele) */}
           <g ref={rodaRef}>

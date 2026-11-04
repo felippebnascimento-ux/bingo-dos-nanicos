@@ -9,7 +9,8 @@ import type { CSSProperties, ReactNode } from "react";
 import { Ficha } from "./Pecas";
 
 const fmt = (n: number) => n.toLocaleString("pt-BR");
-const pct = (f: number | null | undefined) => ({ "--p": `${Math.round(Math.max(0, Math.min(1, f ?? 0)) * 100)}%` }) as CSSProperties;
+/* --f é o quanto falta (0 a 1): a barra encolhe por transform, que a placa de vídeo anima sem recalcular a página */
+const pct = (f: number | null | undefined) => ({ "--f": Math.max(0, Math.min(1, f ?? 0)).toFixed(4) }) as CSSProperties;
 
 /** A barra do tempo (de 0 a 1, quanto falta). */
 export function BarraTempo({ falta, urgente, className = "" }: { falta: number | null | undefined; urgente?: boolean; className?: string }) {

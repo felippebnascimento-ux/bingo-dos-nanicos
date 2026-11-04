@@ -750,6 +750,17 @@ export const CHANGELOG: EntradaLog[] = [
   { data: "03/11/2026", itens: ["O corredor dos quartos virou corredor de hotel: papel de parede listrado, lambri de madeira, carpete vinho, portas com almofadas e maçaneta dourada e uma arandela acesa ao lado de cada porta"] },
   { data: "03/11/2026", itens: ["Garagem nova ao ar livre, pelo portão da rua: os 14 veículos da turma desenhados das fotos, cada um na sua vaga, com guarita, cancela e postes (toque num carro para ver qual é)"] },
   { data: "03/11/2026", itens: ["No K-FOFO, junto do aviso de quem entrou, agora aparece também quem saiu do site"] },
+  {
+    data: "03/11/2026",
+    itens: [
+      "Blackjack ao vivo de verdade: estúdio com luzes, mesa em perspectiva e o Veião de crupiê, que dá as cartas, paga, comemora e fala com a mesa",
+      "As cartas do blackjack ficam deitadas no feltro, viradas para cada jogador, e caem do sapato num arco; quem ganha recebe uma chuva de moedas",
+      "Roleta ao vivo com o Henry de crupiê: ele chama as apostas, lança a bola e a câmera chega perto da roda em 3D",
+      "Em todos os jogos dá para apostar até tudo o que você tem: fichas de 500 e 1.000, valor escrito à mão e o botão TUDO",
+      "A ficha de 200 virou laranja, diferente da de 100",
+      "O anel e a barra do tempo andam lisos, sem pular de segundo em segundo",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

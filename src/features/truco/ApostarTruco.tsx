@@ -7,11 +7,11 @@
 import { useEffect, useState } from "react";
 import { useCarteira } from "@/lib/carteira";
 import { useApp } from "@/lib/store";
-import { APOSTA_MAX, APOSTA_MIN, retornoLados, type LadoN } from "@/features/jogar/apostas";
+import { APOSTA_MIN, retornoLados, type LadoN } from "@/features/jogar/apostas";
+import { ValorAposta } from "@/features/cassino/ValorAposta";
 import type { MesaPub } from "./engine";
 import { apostarTruco, ligarApostasTruco, mercadoDaMesa, minhaApostaTruco, useApostasTruco } from "./apostasTruco";
 
-const VALORES = [5, 10, 25, 50, 100];
 
 export function ApostarTruco({ m, rotulo }: { m: MesaPub; rotulo: (t: number) => string }) {
   const mercados = useApostasTruco((s) => s.mercados);
@@ -86,13 +86,8 @@ export function ApostarTruco({ m, rotulo }: { m: MesaPub; rotulo: (t: number) =>
       </div>
       {!minha && pode && (
         <>
-          <div className="seg aposta-valores" role="radiogroup" aria-label="Valor da aposta">
-            {VALORES.map((v) => (
-              <button key={v} type="button" role="radio" aria-checked={valor === v} className={valor === v ? "on" : undefined} onClick={() => setValor(v)}>
-                {v}
-              </button>
-            ))}
-          </div>
+          {/* de 5 até o saldo (seção 63) */}
+          <ValorAposta valor={valor} onValor={setValor} saldo={saldo ?? undefined} />
           <div className="aposta-fim">
             <span className="hint">
               {lado !== null ? (
@@ -106,10 +101,10 @@ export function ApostarTruco({ m, rotulo }: { m: MesaPub; rotulo: (t: number) =>
             <button
               type="button"
               className="btn sm"
-              disabled={lado === null || enviando || valor < APOSTA_MIN || valor > APOSTA_MAX || (saldo !== null && saldo < valor)}
+              disabled={lado === null || enviando || valor < APOSTA_MIN || (saldo !== null && saldo < valor)}
               onClick={() => lado !== null && void apostarTruco(mk, lado, valor)}
             >
-              {saldo !== null && saldo < valor ? "Sem moedas" : `Apostar ${valor}`}
+              {valor < APOSTA_MIN ? "Monte a aposta" : saldo !== null && saldo < valor ? "Sem moedas" : `Apostar ${valor.toLocaleString("pt-BR")}`}
             </button>
           </div>
         </>

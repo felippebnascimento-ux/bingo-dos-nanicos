@@ -15,8 +15,8 @@ import { curva, faixaVoo, multAt, recebe, tempoAte, textoMult } from "./aviao";
 import { msgDe } from "./estado";
 import { faltam, JANELA_MS } from "./mesa";
 import { chamarMesa, useMesa } from "./mesaDados";
-import { FICHAS } from "./regras";
-import { FichaVisual, MesaStatus, useRelogio } from "./RoletaMesa";
+import { ValorAposta, apostaOk } from "./ValorAposta";
+import { MesaStatus, useRelogio } from "./RoletaMesa";
 
 
 /* estrelas e grade do céu, fixas */
@@ -438,13 +438,7 @@ export function Aviaozinho({ ativa = true }: { ativa?: boolean }) {
       <div className="av-grid">
         <div className="av-painel">
           <p className="rm-rotulo">Sua aposta</p>
-          <div className="rm-fichas" role="radiogroup" aria-label="Valor da aposta">
-            {FICHAS.map((v) => (
-              <button key={v} type="button" role="radio" aria-checked={ficha === v} className={ficha === v ? "sel" : undefined} disabled={!!meu} onClick={() => setFicha(v)}>
-                <FichaVisual v={v} />
-              </button>
-            ))}
-          </div>
+          <ValorAposta valor={ficha} onValor={setFicha} saldo={saldo} disabled={!!meu} />
           <p className="rm-rotulo">Sacar automático em</p>
           <div className="av-auto">
             <input
@@ -480,8 +474,8 @@ export function Aviaozinho({ ativa = true }: { ativa?: boolean }) {
               </small>
             </button>
           ) : podeApostar ? (
-            <button type="button" className="rm-girar" disabled={ocupado || (saldo !== undefined && saldo < ficha)} onClick={() => void apostar()}>
-              {saldo !== undefined && saldo < ficha ? "Sem moedas" : fase === "apostas" ? `EMBARCAR · ${ficha} MOEDAS · ${segundos} s` : `APOSTAR · ${ficha} MOEDAS`}
+            <button type="button" className="rm-girar" disabled={ocupado || !apostaOk(ficha, saldo)} onClick={() => void apostar()}>
+              {ficha < 5 ? "MONTE A APOSTA" : saldo !== undefined && saldo < ficha ? "Sem moedas" : fase === "apostas" ? `EMBARCAR · ${formatarMoedas(ficha)} MOEDAS · ${segundos} s` : `APOSTAR · ${formatarMoedas(ficha)} MOEDAS`}
             </button>
           ) : (
             <button type="button" className="rm-girar" disabled>

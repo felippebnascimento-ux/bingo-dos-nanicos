@@ -5,7 +5,8 @@ import { Avatar } from "@/components/ui/Avatar";
 import { useCarteira } from "@/lib/carteira";
 import { friendOf, useApp } from "@/lib/store";
 import { mmss } from "@/lib/util";
-import { APOSTA_MAX, APOSTA_MIN, nomeLado, retornoEstimado, type Lado } from "./apostas";
+import { APOSTA_MIN, nomeLado, retornoEstimado, type Lado } from "./apostas";
+import { ValorAposta } from "@/features/cassino/ValorAposta";
 import { apostaAberta, apostar, useApostas } from "./apostasDados";
 import { riotNossoTime, type RiotJogo, type RiotParticipante, type RiotPartida } from "./partida";
 import { riotPreencher, setRiotAuto, useRelogio, useRiot } from "./riot";
@@ -57,7 +58,6 @@ function RgTempo({ j, em }: { j: RiotJogo; em: number }) {
   return <span className="rg-time">{mmss(ini > 0 ? (agora - ini) / 1000 : (Number(j.duracao) || 0) + (agora - em) / 1000)}</span>;
 }
 
-const VALORES = [5, 10, 25, 50, 100];
 
 /** Painel "Apostar": escolhe o time e o valor, mostra o bolo de cada lado, o retorno estimado e o prazo. */
 function Apostas({ g, aberto, times }: { g: RiotPartida; aberto: boolean; times: number[] }) {
@@ -122,13 +122,8 @@ function Apostas({ g, aberto, times }: { g: RiotPartida; aberto: boolean; times:
       </div>
       {!minha && pode && (
         <>
-          <div className="seg aposta-valores" role="radiogroup" aria-label="Valor da aposta">
-            {VALORES.map((v) => (
-              <button key={v} type="button" role="radio" aria-checked={valor === v} className={valor === v ? "on" : undefined} onClick={() => setValor(v)}>
-                {v}
-              </button>
-            ))}
-          </div>
+          {/* de 5 até o saldo (seção 63) */}
+          <ValorAposta valor={valor} onValor={setValor} saldo={saldo ?? undefined} />
           <div className="aposta-fim">
             <span className="hint">
               {lado ? (
@@ -142,10 +137,10 @@ function Apostas({ g, aberto, times }: { g: RiotPartida; aberto: boolean; times:
             <button
               type="button"
               className="btn sm"
-              disabled={!lado || enviando || valor < APOSTA_MIN || valor > APOSTA_MAX || (saldo !== null && saldo < valor)}
+              disabled={!lado || enviando || valor < APOSTA_MIN || (saldo !== null && saldo < valor)}
               onClick={() => lado && void apostar(game, lado, valor)}
             >
-              {saldo !== null && saldo < valor ? "Sem moedas" : `Apostar ${valor}`}
+              {valor < APOSTA_MIN ? "Monte a aposta" : saldo !== null && saldo < valor ? "Sem moedas" : `Apostar ${valor.toLocaleString("pt-BR")}`}
             </button>
           </div>
         </>

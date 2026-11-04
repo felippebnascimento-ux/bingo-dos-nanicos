@@ -23,7 +23,6 @@ export type RodadaBj = {
 export type EstadoBj = { agora: number; rodada: RodadaBj | null; maos: MaoBj[]; historico: { pontos: number; bj: boolean }[] };
 
 export const APOSTA_MIN = 5;
-export const APOSTA_MAX = 200;
 export const LUGARES = 5;
 export const TEMPO_APOSTAS_MS = 10_000;
 export const TEMPO_VEZ_MS = 15_000;
