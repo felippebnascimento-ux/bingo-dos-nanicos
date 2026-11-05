@@ -1,0 +1,85 @@
+/* =====================================================================================================================
+   O padrão único do site (visual premium, 04/11/2026): o mesmo desenho em todas as abas. Vem por último, então vale
+   por cima do CSS de cada área. Só variáveis da paleta (01-base.css) e as da cor de destaque.
+   - fundo com profundidade (um brilho bem leve da cor de destaque no alto) e painéis em camadas com bordas finas;
+   - cartões (.block) com canto de 16 px, borda fina e sombra suave;
+   - botões e campos com a mesma altura e o mesmo canto; o principal na cor de destaque, o secundário discreto;
+   - o menu com a aba aberta marcada pela cor de destaque e a barrinha, como no Discord.
+   ===================================================================================================================== */
+
+:root{--r-lg:16px;--r-md:12px;--r-sm:10px;--borda:1px solid var(--line);--sombra-card:0 1px 0 color-mix(in srgb,var(--stamp-ink) 4%,transparent) inset,0 12px 32px -20px var(--shadow)}
+
+/* ---------- fundo e painéis ---------- */
+body{background:radial-gradient(1100px 520px at 62% -8%,color-mix(in srgb,var(--accent) 9%,transparent),transparent 62%) fixed,var(--bg)}
+.side{background:color-mix(in srgb,var(--surface) 94%,transparent);border-right:var(--borda)}
+.membros{background:color-mix(in srgb,var(--surface) 94%,transparent);border-left:var(--borda)}
+/* a foto da turma no fundo fica só um sussurro */
+.wm{opacity:.18}
+
+/* ---------- cartões ---------- */
+.block{border:var(--borda);border-radius:var(--r-lg);background:var(--surface);box-shadow:var(--sombra-card)}
+.block h2{font:700 16px var(--display);letter-spacing:-.01em}
+.hero h1{letter-spacing:-.03em}
+.hero p,.hint{color:var(--muted)}
+
+/* ---------- botões ---------- */
+.btn{min-height:40px;padding:10px 18px;border-radius:10px;font:650 14px var(--body);letter-spacing:.005em;box-shadow:inset 0 1px 0 color-mix(in srgb,var(--stamp-ink) 28%,transparent),0 8px 20px -12px color-mix(in srgb,var(--accent) 80%,transparent);transition:transform .08s ease,filter .15s,box-shadow .15s,background-color .15s}
+.btn:hover:not(:disabled){filter:brightness(1.06);box-shadow:inset 0 1px 0 color-mix(in srgb,var(--stamp-ink) 28%,transparent),0 10px 24px -12px color-mix(in srgb,var(--accent) 90%,transparent)}
+.btn.soft{background:var(--surface-2);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+.btn.soft:hover:not(:disabled){filter:none;background:color-mix(in srgb,var(--ink) 9%,var(--surface-2));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ink) 16%,var(--line))}
+.btn.sm{min-height:32px;padding:6px 12px;border-radius:8px;font-size:13px}
+.btn.sq{border-radius:10px}
+
+/* ---------- campos ---------- */
+input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea{border:var(--borda);border-radius:10px;background:var(--surface-2);color:var(--ink);transition:border-color .15s,box-shadow .15s,background-color .15s}
+input:not([type=range]):not([type=checkbox]):not([type=radio]):hover,select:hover,textarea:hover{border-color:color-mix(in srgb,var(--ink) 18%,var(--line))}
+input:not([type=range]):not([type=checkbox]):not([type=radio]):focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+select{padding:9px 12px;font:inherit}
+input[type=range]{accent-color:var(--accent)}
+/* a caixa do chat e a busca já têm o desenho delas */
+.chat .chat-form textarea,.cfgd-busca,.busca-campo{border:0;box-shadow:none;background:transparent}
+.busca-campo{background:var(--surface-2)}
+.cfgd-busca{background:var(--surface);border:var(--borda)}
+
+/* ---------- seletor (1080p / 1440p e afins) ---------- */
+.seg{background:var(--surface-2);border:var(--borda);border-radius:12px;padding:3px}
+.seg button{border-radius:9px}
+.seg button[aria-checked="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 0 color-mix(in srgb,var(--stamp-ink) 5%,transparent) inset,0 4px 10px -6px var(--shadow)}
+
+/* ---------- menu: a aba aberta na cor de destaque, com a barrinha ---------- */
+.nav button{border-radius:9px;padding:9px 11px;color:var(--muted);font-weight:600;transition:background-color .15s,color .15s,transform .08s}
+.nav button:hover{background:color-mix(in srgb,var(--ink) 7%,transparent);color:var(--ink)}
+.nav button[aria-selected="true"]{background:color-mix(in srgb,var(--accent) 17%,transparent);color:var(--ink)}
+.nav button[aria-selected="true"] svg{color:var(--accent-text);opacity:1}
+@media (min-width:861px){
+  .nav button[aria-selected="true"]::after{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--accent)}
+}
+.canal{border-radius:8px}
+.canal.on,.canal-voz.minha>.canal{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.canal:hover{background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.canal-cat-t{letter-spacing:.06em}
+.membros li[role="button"]{border-radius:10px}
+.membros li[role="button"]:hover{background:color-mix(in srgb,var(--ink) 6%,transparent)}
+.membros h3{letter-spacing:.06em}
+/* a linha "eu" e a voz conectada embaixo do menu ficam num cartão */
+.vz{border:var(--borda);border-radius:14px;background:var(--surface-2)}
+
+/* ---------- etiquetas ---------- */
+.live-pill{border-radius:6px;letter-spacing:.06em}
+
+/* ---------- abas de painel (Chat / Cartela) ---------- */
+.rail-tabs{background:var(--surface-2);border:var(--borda);border-radius:12px;padding:3px}
+.rail-tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 4px 10px -6px var(--shadow)}
+
+/* ---------- no celular: a barra de abas de baixo em vidro ---------- */
+@media (max-width:860px){
+  .nav{background:color-mix(in srgb,var(--surface) 86%,transparent);-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);border-top:var(--borda)}
+  .nav button[aria-selected="true"]{background:color-mix(in srgb,var(--accent) 18%,transparent)}
+}
+
+/* ---------- o logo em cima do menu: sem o fundo cinza do botão do navegador ---------- */
+.brand{background:none;border:0;border-radius:14px;padding:8px;color:inherit;font:inherit;text-align:left;cursor:pointer;transition:background-color .15s}
+.brand:hover{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.brand:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px}
+/* seletor com 3 ou 4 opções (Vitrine · Mochila · Mercado): todas numa linha só */
+.seg:has(> :nth-child(3)):not(:has(> :nth-child(5))){grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:1fr}

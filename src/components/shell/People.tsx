@@ -278,6 +278,14 @@ export function Membros() {
         {online.map(({ p, f }) => (
           <Membro key={p.id} p={p} f={f} />
         ))}
+        {/* enquanto os nanicos não chegam do banco: o esqueleto, como num app */}
+        {!friends.length &&
+          [0, 1, 2, 3, 4, 5].map((i) => (
+            <li key={i} className="esq-membro" aria-hidden="true">
+              <span className="esq esq-redondo" />
+              <span className="esq esq-linha" style={{ "--w": `${55 + ((i * 17) % 35)}%` } as React.CSSProperties} />
+            </li>
+          ))}
       </ul>
       {offline.length > 0 && (
         <>
