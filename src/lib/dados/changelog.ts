@@ -900,6 +900,10 @@ export const CHANGELOG: EntradaLog[] = [
       "Na sala mas fora da voz: o \"Entrar na voz\" fica numa linha própria, largo, e o texto não se espreme mais",
     ],
   },
+  {
+    data: "05/11/2026",
+    itens: ["O Le Bitu chegou! Amigo dos nanicos com boneco, poses e tudo o que um nanico pode fazer"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

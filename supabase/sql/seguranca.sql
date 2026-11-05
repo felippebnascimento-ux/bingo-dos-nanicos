@@ -8522,3 +8522,16 @@ select 'castigos', 'discord 71' from pg_tables where schemaname = 'public' and t
 union all
 select column_name::text, 'discord 71' from information_schema.columns
  where table_schema = 'public' and table_name = 'voz_silenciados' and column_name = 'surdo';
+
+-- 68) amigo com os poderes de nanico (05/11/2026, pedido do Pitoco: o Le Bitu) ----------------------------------------
+--   Um amigo dos nanicos pode ter tudo o que um nanico pode fazer: escrever nanicadas, escalação, rodízio, bingo,
+--   votar nos atributos, apostas do LoL. Ele continua aparecendo como amigo (aba Amigos, etiqueta, categoria dos
+--   membros); só o eh_nanico() passa a aceitá-lo. Quem liga é o admin (`friends.poderes_nanico`), nunca o site: a coluna
+--   não tem grant de update. Os 14 continuam sendo os 14 onde o assunto é a pessoa (votarem nele, troféus da semana).
+alter table public.friends add column if not exists poderes_nanico boolean not null default false;
+
+create or replace function public.eh_nanico() returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.friends
+                  where user_id = auth.uid() and (tipo = 'nanico' or (tipo = 'amigo' and poderes_nanico)));
+$$;

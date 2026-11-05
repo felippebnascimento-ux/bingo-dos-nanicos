@@ -13,6 +13,8 @@ export type Friend = {
   tipo?: "nanico" | "amigo" | "inativo";
   /** quem convidou o amigo (friend id de um nanico) */
   convidado_por?: string | null;
+  /** amigo com os poderes de um nanico (seção 68; só o admin liga) */
+  poderes_nanico?: boolean;
 };
 
 /** Algo que dá para desenhar como rosto: um nanico ou só um nome. */

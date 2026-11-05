@@ -67,7 +67,10 @@ function Nav() {
   /* só os 14: os amigos dos nanicos têm a aba Amigos */
   const nAmigos = useApp((s) => soNanicos(s.friends).length);
   /* amigo dos nanicos: sem Nanicadas, Jogar (bingo) e Troféus, que não são para ele (quem barra de verdade é o banco) */
-  const souAmigo = useApp((s) => ehAmigo(friendOf(s.myFid, s.friends)));
+  const souAmigo = useApp((s) => {
+    const eu = friendOf(s.myFid, s.friends);
+    return ehAmigo(eu) && !eu?.poderes_nanico;
+  });
   const temAmigos = useApp((s) => soAmigos(s.friends).length > 0);
   const nLive = useApp((s) => s.onlineSala.filter((p) => p.live && p.key !== MY_KEY).length + (s.myLiveSid ? 1 : 0));
   const nTruco = useApp((s) => s.trucoAbertas);

@@ -15,8 +15,9 @@ const CORPO_W: Readonly<Record<number, number>> = {
 
 /** Amigos dos nanicos (não são um dos 14): nome → arte em `public/arte/amigos/` e boneco em `public/arte/bonecos/`.
  *  Quem é amigo de verdade diz o `friends.tipo` (seção 39); o nome só vale enquanto o SQL não rodou. */
-export const AMIGOS: Readonly<Record<string, { nome: string; arte: string; w: number; boneco: string }>> = {
+export const AMIGOS: Readonly<Record<string, { nome: string; arte: string; w: number; boneco: string; poses?: string }>> = {
   lightzin: { nome: "Lightzin", arte: "lightzin", w: 159, boneco: "lightzin.webp" },
+  "le bitu": { nome: "Le Bitu", arte: "lebitu", w: 189, boneco: "lebitu.webp", poses: "lebitu.webp" },
 };
 
 /** É um amigo dos nanicos (e não um dos 14)? */
@@ -62,7 +63,9 @@ export function bonecoOf(f: Rosto | null | undefined): string | null {
 
 /** A folha de poses desenhadas (sentar, acenar, deitar, dançar, emotes; hall/poses.ts) de quem já tem, ou null. */
 export function posesOf(f: Rosto | null | undefined): string | null {
-  const n = f && !AMIGOS[norm(f.name)] ? NAN_MAP[norm(f.name)] : 0;
+  const amigo = f ? AMIGOS[norm(f.name)] : undefined;
+  if (amigo) return amigo.poses ? `/arte/bonecos/poses/${amigo.poses}` : null;
+  const n = f ? NAN_MAP[norm(f.name)] : 0;
   return n && BONECO_ARQ[n] ? `/arte/bonecos/poses/${BONECO_ARQ[n]}` : null;
 }
 
