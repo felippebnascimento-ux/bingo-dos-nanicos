@@ -828,6 +828,10 @@ export const CHANGELOG: EntradaLog[] = [
       "Perfil com bio e links, notificações completas com a hora certa, busca de publicações, pesquisas recentes e tema claro",
     ],
   },
+  {
+    data: "05/11/2026",
+    itens: ["Bonecos novos no K-FOFO e nos quartos: andando, sentados, acenando, dançando, rindo e deitados", "O Grito de escoteiro e a foto da turma nova"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

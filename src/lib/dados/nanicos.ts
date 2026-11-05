@@ -9,7 +9,7 @@ export const NAN_MAP: Readonly<Record<string, number>> = {
 
 /** Tamanho do corpo inteiro de cada arte (todas têm 440 px de altura). */
 const CORPO_W: Readonly<Record<number, number>> = {
-  1: 203, 2: 188, 3: 182, 4: 187, 5: 217, 6: 185, 7: 207,
+  1: 203, 2: 188, 3: 182, 4: 187, 5: 184, 6: 185, 7: 207,
   8: 197, 9: 186, 10: 192, 11: 206, 12: 207, 13: 185, 14: 210,
 };
 
