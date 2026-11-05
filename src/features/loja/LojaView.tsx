@@ -21,6 +21,8 @@ import { abrirArrumar, iniciarQuartos, useQuartos } from "@/features/quarto/quar
 import { diferenca, podeComprarQuarto } from "@/features/quarto/quarto";
 import { comprar, equipar, useLoja, useMinhaMochila, usar, useRaros } from "./lojaDados";
 import { MercadoAba } from "./MercadoAba";
+import { Haras } from "@/features/corrida/Haras";
+import { DesenhoCavalo } from "@/features/corrida/Cavalo";
 
 const FOCO: Partial<Record<ItemLoja["espaco"], "parede" | "chao" | "mesa" | "poster" | "cadeira" | "planta">> = {
   parede: "parede",
@@ -285,7 +287,7 @@ export function LojaView({ hidden }: { hidden: boolean }) {
   const itens = useLoja((s) => s.itens);
   const saldo = useCarteira((s) => s.carteira?.saldo ?? null);
   const minhas = useMinhaMochila();
-  const [aba, setAba] = useState<"vitrine" | "mochila" | "mercado">("vitrine");
+  const [aba, setAba] = useState<"vitrine" | "mochila" | "mercado" | "haras">("vitrine");
   const [filtro, setFiltro] = useState("tudo");
   const [detalhe, setDetalhe] = useState<string | null>(null);
   const qtd = (id: string) => minhas.find((l) => l.itemId === id)?.qtd ?? 0;
@@ -301,7 +303,7 @@ export function LojaView({ hidden }: { hidden: boolean }) {
       <header className="hero loja-topo">
         <div>
           <h1>Loja</h1>
-          <p>Itens para o seu quarto, títulos, molduras e coisas para usar no K-FOFO.</p>
+          <p>Itens para o seu quarto, o boneco, títulos, molduras, coisas para usar no K-FOFO e cavalos de corrida.</p>
         </div>
         {saldo !== null && (
           <span className="loja-saldo">
@@ -312,7 +314,7 @@ export function LojaView({ hidden }: { hidden: boolean }) {
           </span>
         )}
       </header>
-      <div className="seg loja-abas" role="radiogroup" aria-label="Vitrine, mercado ou mochila">
+      <div className="seg loja-abas" role="radiogroup" aria-label="Vitrine, mochila, mercado ou haras">
         <button type="button" role="radio" aria-checked={aba === "vitrine"} className={aba === "vitrine" ? "on" : undefined} onClick={() => setAba("vitrine")}>
           Vitrine
         </button>
@@ -322,7 +324,22 @@ export function LojaView({ hidden }: { hidden: boolean }) {
         <button type="button" role="radio" aria-checked={aba === "mercado"} className={aba === "mercado" ? "on" : undefined} onClick={() => setAba("mercado")}>
           Mercado
         </button>
+        <button type="button" role="radio" aria-checked={aba === "haras"} className={aba === "haras" ? "on" : undefined} onClick={() => setAba("haras")}>
+          Haras
+        </button>
       </div>
+      {itens && aba === "vitrine" && filtro === "tudo" && (
+        <button type="button" className="block loja-destaque" onClick={() => setAba("haras")}>
+          <span className="loja-destaque-cavalo" aria-hidden="true">
+            <DesenhoCavalo pelagem="alazao" raia={0} />
+          </span>
+          <span>
+            <small>Novo</small>
+            <b>Haras: compre e treine o seu cavalo de corrida</b>
+            <span className="hint">Inscreva no páreo do Cassino, ganhe pelo pódio e aposte com a turma.</span>
+          </span>
+        </button>
+      )}
       {!itens && <p className="hint">Abrindo a loja…</p>}
       {itens && aba === "vitrine" && (
         <div className="loja-filtros" role="radiogroup" aria-label="Filtrar a vitrine">
@@ -348,6 +365,7 @@ export function LojaView({ hidden }: { hidden: boolean }) {
           ))}
       {aberto && <ItemDetalhe it={aberto} tenho={qtd(aberto.id)} equipado={eq(aberto.id)} saldo={saldo} fechar={() => setDetalhe(null)} />}
       {itens && aba === "mercado" && <MercadoAba />}
+      {aba === "haras" && <Haras />}
       {itens && aba === "mochila" && (
         <section className="block">
           <MochilaLista />

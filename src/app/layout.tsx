@@ -41,6 +41,7 @@ import "@/styles/38-habbo.css";
 import "@/styles/39-call.css";
 import "@/styles/40-discord.css";
 import "@/styles/41-premium.css";
+import "@/styles/42-corrida.css";
 
 /* fontes servidas pelo próprio site (a CSP não precisa liberar o Google Fonts) */
 const unbounded = Unbounded({ subsets: ["latin"], weight: ["500", "700", "800"], variable: "--font-unbounded", display: "swap" });

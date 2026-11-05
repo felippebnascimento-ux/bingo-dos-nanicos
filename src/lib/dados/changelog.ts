@@ -904,6 +904,14 @@ export const CHANGELOG: EntradaLog[] = [
     data: "05/11/2026",
     itens: ["O Le Bitu chegou! Amigo dos nanicos com boneco, poses e tudo o que um nanico pode fazer"],
   },
+  {
+    data: "05/11/2026",
+    itens: [
+      "Corrida de cavalos no Cassino: 8 cavalos por páreo, distância e pista sorteadas, apostas em vencedor, placê e exata",
+      "Haras na loja: compre até 3 cavalos, treine velocidade, arrancada, resistência e constância, e inscreva no páreo para ganhar pelo pódio",
+      "Loja nova: chopp, quentão, vinho, palheiro, açaí, 6 títulos, 3 molduras e 3 efeitos para o boneco",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

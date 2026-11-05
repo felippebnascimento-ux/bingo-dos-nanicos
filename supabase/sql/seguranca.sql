@@ -8523,7 +8523,7 @@ union all
 select column_name::text, 'discord 71' from information_schema.columns
  where table_schema = 'public' and table_name = 'voz_silenciados' and column_name = 'surdo';
 
--- 68) amigo com os poderes de nanico (05/11/2026, pedido do Pitoco: o Le Bitu) ----------------------------------------
+-- 73) amigo com os poderes de nanico (05/11/2026, pedido do Pitoco: o Le Bitu) ----------------------------------------
 --   Um amigo dos nanicos pode ter tudo o que um nanico pode fazer: escrever nanicadas, escalação, rodízio, bingo,
 --   votar nos atributos, apostas do LoL. Ele continua aparecendo como amigo (aba Amigos, etiqueta, categoria dos
 --   membros); só o eh_nanico() passa a aceitá-lo. Quem liga é o admin (`friends.poderes_nanico`), nunca o site: a coluna
@@ -8535,3 +8535,396 @@ language sql stable security definer set search_path = public as $$
   select exists (select 1 from public.friends
                   where user_id = auth.uid() and (tipo = 'nanico' or (tipo = 'amigo' and poderes_nanico)));
 $$;
+
+-- 71) corrida de cavalos (05/11/2026, pedido do Pitoco) ----------------------------------------------------------------
+--   Uma corrida ao vivo, como as mesas da seção 32: abre quando alguém olha (corrida_estado) e anda pelo relógio do banco.
+--   20 s de inscrições (cada membro põe 1 cavalo seu), 30 s de apostas, 20 s de corrida, e o resultado fica 10 s na tela.
+--   8 raias: os cavalos inscritos e o resto da casa (12 cavalos fixos), na ordem de random(). A distância (1.000, 1.600 ou
+--   2.400 m) e a pista (leve ou pesada) saem na abertura, para quem inscreve saber onde vai correr.
+--   Pontos de cada cavalo = força (velocidade, arrancada e resistência com o peso da distância e da pista) + sorte; a sorte é
+--   (soma de 4 números de 0 a 1 − 2) × √3 × espalho, com espalho = 12 (leve) ou 18 (pesada) × (1,3 − constância/100). Os 4 números
+--   saem de HMAC-SHA256(segredo, 'corrida:<id>:<raia>') (16 bytes, de 4 em 4, ÷ 2^32); o hash do segredo aparece com as cotações e o
+--   segredo no fim. A mesma conta está em src/features/corrida/corrida.ts.
+--   Apostas com cotação fixa, tirada de 3.000 simulações da corrida com random() no fechamento das inscrições, com 10% da casa:
+--   vencedor, placê (1º ou 2º) e exata (1º e 2º na ordem). De 5 moedas até o saldo, até 10 apostas por corrida. O dinheiro anda com o
+--   motivo 'cassino' (a banca da seção 47 entra e paga), ref 'corrida:<id>'. O dono do cavalo leva 400/200/100 pelo pódio.
+--   Cavalos próprios: cavalo_comprar (2.500 moedas, motivo 'loja', até 3 por pessoa, atributos começam em 40) e cavalo_treinar
+--   (+1 a +10 pontos num atributo; cada ponto custa 10 + 3 × (valor − 30); teto 100).
+create table if not exists public.cavalos (
+  id bigserial primary key,
+  dono uuid,
+  nome text not null check (char_length(nome) between 2 and 20),
+  pelagem text not null default 'castanho' check (pelagem in ('castanho','alazao','tordilho','preto','baio','pampa','rosilho','branco')),
+  velocidade int not null default 40 check (velocidade between 1 and 100),
+  arrancada int not null default 40 check (arrancada between 1 and 100),
+  resistencia int not null default 40 check (resistencia between 1 and 100),
+  constancia int not null default 40 check (constancia between 1 and 100),
+  corridas int not null default 0,
+  vitorias int not null default 0,
+  podios int not null default 0,
+  ganhos int not null default 0,
+  forma int[] not null default '{}',
+  criado_em timestamptz not null default now()
+);
+create unique index if not exists cavalos_nome_unico on public.cavalos (lower(nome));
+create index if not exists cavalos_dono on public.cavalos (dono);
+alter table public.cavalos enable row level security;
+drop policy if exists cavalos_ler on public.cavalos;
+create policy cavalos_ler on public.cavalos for select to authenticated using (public.eh_membro());
+revoke all on public.cavalos from anon, authenticated;
+grant select on public.cavalos to authenticated;
+
+insert into public.cavalos (dono, nome, pelagem, velocidade, arrancada, resistencia, constancia) values
+  (null, 'Relâmpago Nanico', 'castanho', 75, 70, 45, 50),
+  (null, 'Trovão do Sul', 'preto', 60, 50, 75, 60),
+  (null, 'Pé de Pano', 'tordilho', 65, 62, 62, 55),
+  (null, 'Alface Veloz', 'alazao', 70, 55, 50, 45),
+  (null, 'Baron Nashor', 'preto', 58, 45, 72, 70),
+  (null, 'Tilt Total', 'baio', 55, 75, 45, 40),
+  (null, 'Mitz da Pampa', 'pampa', 62, 58, 66, 52),
+  (null, 'Feeder Fujão', 'rosilho', 50, 52, 58, 65),
+  (null, 'Gaúcho Bagual', 'alazao', 64, 48, 70, 58),
+  (null, 'Sítio Express', 'castanho', 68, 66, 52, 48),
+  (null, 'Piano Pesado', 'branco', 52, 40, 78, 62),
+  (null, 'Rift Runner', 'baio', 66, 60, 60, 60)
+on conflict do nothing;
+
+create table if not exists public.corridas (
+  id bigserial primary key,
+  abre_em timestamptz not null default now(),
+  apostas_em timestamptz not null,
+  fecha_em timestamptz not null,
+  fim_em timestamptz not null,
+  distancia int not null check (distancia in (1000, 1600, 2400)),
+  pista text not null check (pista in ('leve', 'pesada')),
+  inscritos bigint[] not null default '{}',
+  campo jsonb,
+  exatas jsonb,
+  segredo bytea,
+  hash text,
+  ordem int[],
+  pontos numeric[],
+  liquidada boolean not null default false
+);
+alter table public.corridas enable row level security;
+revoke all on public.corridas from anon, authenticated;
+
+create table if not exists public.corrida_apostas (
+  id bigserial primary key,
+  corrida_id bigint not null references public.corridas(id) on delete cascade,
+  user_id uuid not null,
+  tipo text not null check (tipo in ('vencedor', 'place', 'exata')),
+  raia int not null check (raia between 0 and 7),
+  raia2 int check (raia2 between 0 and 7),
+  valor int not null check (valor >= 5),
+  odd numeric(8, 2) not null,
+  pagou int,
+  em timestamptz not null default now()
+);
+create index if not exists corrida_apostas_corrida on public.corrida_apostas (corrida_id);
+create index if not exists corrida_apostas_user on public.corrida_apostas (user_id, corrida_id);
+alter table public.corrida_apostas enable row level security;
+revoke all on public.corrida_apostas from anon, authenticated;
+
+-- os pontos de um cavalo (igual ao `pontos` de corrida.ts)
+create or replace function public.corrida_pontos(v int, a int, r int, c int, p_dist int, p_pista text, z float8) returns float8
+language sql immutable as $$
+  select (case p_dist when 1000 then 0.45 * v + 0.40 * a + 0.15 * r
+                      when 1600 then 0.40 * v + 0.25 * a + 0.35 * r
+                      else 0.30 * v + 0.10 * a + 0.60 * r end)
+       + (case when p_pista = 'pesada' then 0.10 * (r - v) else 0 end)
+       + (case when p_pista = 'pesada' then 18 else 12 end) * (1.3 - c / 100.0) * z;
+$$;
+revoke all on function public.corrida_pontos(int, int, int, int, int, text, float8) from public, anon, authenticated;
+
+-- cotações: 3.000 corridas simuladas com random(); 10% da casa
+create or replace function public.corrida_cotacoes(p_campo jsonb, p_dist int, p_pista text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  n int := jsonb_array_length(p_campo);
+  sims int := 3000;
+  v int[]; a int[]; r int[]; c int[];
+  vit int[]; top2 int[]; ex int[];
+  pts float8[]; p1 int; p2 int; b1 float8; b2 float8;
+  i int; s int; k int; exatas jsonb := '{}'; campo jsonb := '[]'; cav jsonb;
+begin
+  for i in 0 .. n - 1 loop
+    cav := p_campo -> i;
+    v[i + 1] := (cav ->> 'v')::int; a[i + 1] := (cav ->> 'a')::int; r[i + 1] := (cav ->> 'r')::int; c[i + 1] := (cav ->> 'c')::int;
+    vit[i + 1] := 0; top2[i + 1] := 0;
+  end loop;
+  ex := array_fill(0, array[n * n]);
+  for s in 1 .. sims loop
+    p1 := 0; p2 := 0; b1 := -1e9; b2 := -1e9;
+    for i in 1 .. n loop
+      pts[i] := public.corrida_pontos(v[i], a[i], r[i], c[i], p_dist, p_pista, (random() + random() + random() + random() - 2) * sqrt(3));
+      if pts[i] > b1 then p2 := p1; b2 := b1; p1 := i; b1 := pts[i];
+      elsif pts[i] > b2 then p2 := i; b2 := pts[i]; end if;
+    end loop;
+    vit[p1] := vit[p1] + 1; top2[p1] := top2[p1] + 1; top2[p2] := top2[p2] + 1;
+    k := (p1 - 1) * n + p2; ex[k] := ex[k] + 1;
+  end loop;
+  for i in 1 .. n loop
+    cav := (p_campo -> (i - 1))
+      || jsonb_build_object('odd_v', least(60, greatest(1.1, floor(0.9 * (sims + 1) / (vit[i] + 0.5) * 100) / 100)),
+                            'odd_p', least(20, greatest(1.05, floor(0.9 * (sims + 1) / (top2[i] + 0.5) * 100) / 100)));
+    campo := campo || jsonb_build_array(cav);
+    for k in 1 .. n loop
+      if k <> i then
+        exatas := exatas || jsonb_build_object((i - 1) || '-' || (k - 1),
+          least(300, greatest(1.5, floor(0.9 * (sims + 1) / (ex[(i - 1) * n + k] + 0.5) * 100) / 100)));
+      end if;
+    end loop;
+  end loop;
+  return jsonb_build_object('campo', campo, 'exatas', exatas);
+end $$;
+revoke all on function public.corrida_cotacoes(jsonb, int, text) from public, anon, authenticated;
+
+-- a corrida anda: abre, fecha as inscrições (campo e cotações), sorteia no fechamento das apostas e paga no fim
+create or replace function public.corrida_avancar(p_abrir boolean default true) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  c public.corridas;
+  v_campo jsonb := '[]'; v_cot jsonb; h bytea; u float8[]; z float8; pts float8[]; v_ordem int[];
+  i int; k int; n int; ap record; v_premio int; v_pos int; cav jsonb;
+begin
+  perform pg_advisory_xact_lock(hashtext('corrida_de_cavalos'));
+  select * into c from public.corridas order by id desc limit 1 for update;
+  if not found or (c.liquidada and now() >= c.fim_em + interval '10 seconds') then
+    if not p_abrir then return; end if;
+    insert into public.corridas (apostas_em, fecha_em, fim_em, distancia, pista)
+    values (now() + interval '20 seconds', now() + interval '50 seconds', now() + interval '70 seconds',
+            (array[1000, 1600, 2400])[1 + floor(random() * 3)::int], case when random() < 0.7 then 'leve' else 'pesada' end);
+    return;
+  end if;
+
+  -- fim das inscrições: os inscritos e a casa completam as 8 raias, em ordem aleatória, e saem as cotações
+  if c.campo is null and now() >= c.apostas_em then
+    select coalesce(jsonb_agg(x.j order by random()), '[]') into v_campo from (
+      select jsonb_build_object('id', id, 'nome', nome, 'pelagem', pelagem, 'dono', dono,
+                                'v', velocidade, 'a', arrancada, 'r', resistencia, 'c', constancia, 'forma', forma) j
+        from public.cavalos where id = any (c.inscritos)
+      union all
+      select casa.j from (select jsonb_build_object('id', id, 'nome', nome, 'pelagem', pelagem, 'dono', null,
+                                'v', velocidade, 'a', arrancada, 'r', resistencia, 'c', constancia, 'forma', forma) j
+                       from public.cavalos where dono is null order by random()
+                       limit greatest(0, 8 - coalesce(array_length(c.inscritos, 1), 0))) casa
+    ) x;
+    v_cot := public.corrida_cotacoes(v_campo, c.distancia, c.pista);
+    c.segredo := extensions.gen_random_bytes(32);
+    update public.corridas set campo = v_cot -> 'campo', exatas = v_cot -> 'exatas', segredo = c.segredo,
+           hash = encode(extensions.digest(c.segredo, 'sha256'), 'hex')
+     where id = c.id returning * into c;
+  end if;
+
+  -- fim das apostas: a ordem de chegada sai do segredo
+  if c.campo is not null and c.ordem is null and now() >= c.fecha_em then
+    n := jsonb_array_length(c.campo);
+    for i in 0 .. n - 1 loop
+      h := extensions.hmac(convert_to('corrida:' || c.id || ':' || i, 'UTF8'), c.segredo, 'sha256');
+      for k in 0 .. 3 loop
+        u[k + 1] := ((get_byte(h, 4 * k)::bigint << 24) + (get_byte(h, 4 * k + 1) << 16) + (get_byte(h, 4 * k + 2) << 8) + get_byte(h, 4 * k + 3)) / 4294967296.0;
+      end loop;
+      z := (u[1] + u[2] + u[3] + u[4] - 2) * sqrt(3);
+      cav := c.campo -> i;
+      pts[i + 1] := public.corrida_pontos((cav ->> 'v')::int, (cav ->> 'a')::int, (cav ->> 'r')::int, (cav ->> 'c')::int, c.distancia, c.pista, z);
+    end loop;
+    select array_agg(g - 1 order by pts[g] desc, g) into v_ordem from generate_series(1, n) g;
+    update public.corridas set ordem = v_ordem, pontos = (select array_agg(round(p::numeric, 4) order by o) from unnest(pts) with ordinality t(p, o))
+     where id = c.id returning * into c;
+  end if;
+
+  -- fim da corrida: paga as apostas, o pódio dos donos e atualiza os cavalos (uma vez só)
+  if c.ordem is not null and not c.liquidada and now() >= c.fim_em then
+    for ap in select * from public.corrida_apostas where corrida_id = c.id and pagou is null loop
+      if (ap.tipo = 'vencedor' and c.ordem[1] = ap.raia)
+         or (ap.tipo = 'place' and (c.ordem[1] = ap.raia or c.ordem[2] = ap.raia))
+         or (ap.tipo = 'exata' and c.ordem[1] = ap.raia and c.ordem[2] = ap.raia2) then
+        v_premio := floor(ap.valor * ap.odd);
+        perform public.creditar(ap.user_id, v_premio, 'cassino', 'corrida:' || c.id);
+      else
+        v_premio := 0;
+      end if;
+      update public.corrida_apostas set pagou = v_premio where id = ap.id;
+    end loop;
+    n := jsonb_array_length(c.campo);
+    for v_pos in 1 .. n loop
+      cav := c.campo -> c.ordem[v_pos];
+      v_premio := case when v_pos <= 3 and cav ->> 'dono' is not null then (array[400, 200, 100])[v_pos] else 0 end;
+      if v_premio > 0 then
+        perform public.creditar((cav ->> 'dono')::uuid, v_premio, 'cassino', 'corrida:' || c.id || ':premio');
+      end if;
+      update public.cavalos set corridas = corridas + 1,
+             vitorias = vitorias + (v_pos = 1)::int, podios = podios + (v_pos <= 3)::int, ganhos = ganhos + v_premio,
+             forma = (array[v_pos] || forma)[1:5]
+       where id = (cav ->> 'id')::bigint;
+    end loop;
+    update public.corridas set liquidada = true where id = c.id;
+  end if;
+end $$;
+revoke all on function public.corrida_avancar(boolean) from public, anon, authenticated;
+
+-- o que a tela vê (o site pergunta a cada 1 a 2 s com a corrida na tela; só trava quando há algo a fazer)
+create or replace function public.corrida_estado() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  c public.corridas;
+begin
+  if not public.eh_membro() then raise exception 'Só para os nanicos e os amigos.' using errcode = 'P0001'; end if;
+  select * into c from public.corridas order by id desc limit 1;
+  if not found or (c.campo is null and now() >= c.apostas_em) or (c.ordem is null and now() >= c.fecha_em)
+     or (not c.liquidada and now() >= c.fim_em) or (c.liquidada and now() >= c.fim_em + interval '10 seconds') then
+    perform public.corrida_avancar(true);
+    select * into c from public.corridas order by id desc limit 1;
+  end if;
+  return jsonb_build_object(
+    'agora', floor(extract(epoch from clock_timestamp()) * 1000),
+    'corrida', jsonb_build_object(
+      'id', c.id, 'abre_em', c.abre_em, 'apostas_em', c.apostas_em, 'fecha_em', c.fecha_em, 'fim_em', c.fim_em,
+      'distancia', c.distancia, 'pista', c.pista,
+      'inscritos', (select coalesce(jsonb_agg(jsonb_build_object('id', id, 'nome', nome, 'pelagem', pelagem, 'dono', dono)), '[]')
+                      from public.cavalos where id = any (c.inscritos)),
+      'campo', c.campo, 'exatas', c.exatas, 'hash', c.hash,
+      'ordem', case when now() >= c.fecha_em then to_jsonb(c.ordem) end,
+      'pontos', case when now() >= c.fecha_em then to_jsonb(c.pontos) end,
+      'segredo', case when c.liquidada then encode(c.segredo, 'hex') end),
+    'minhas', (select coalesce(jsonb_agg(jsonb_build_object('tipo', tipo, 'raia', raia, 'raia2', raia2, 'valor', valor, 'odd', odd, 'pagou', pagou) order by id), '[]')
+                 from public.corrida_apostas where corrida_id = c.id and user_id = auth.uid()),
+    'ultimas', (select coalesce(jsonb_agg(x order by x.id desc), '[]') from (
+                  select k.id, k.campo -> k.ordem[1] ->> 'nome' as nome, k.campo -> k.ordem[1] ->> 'pelagem' as pelagem
+                    from public.corridas k where k.liquidada order by k.id desc limit 8) x));
+end $$;
+revoke all on function public.corrida_estado() from public, anon;
+grant execute on function public.corrida_estado() to authenticated;
+
+create or replace function public.corrida_inscrever(p_cavalo bigint) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  c public.corridas;
+begin
+  if not public.eh_membro() then raise exception 'Só para os nanicos e os amigos.' using errcode = 'P0001'; end if;
+  if not exists (select 1 from public.cavalos where id = p_cavalo and dono = auth.uid()) then
+    raise exception 'Esse cavalo não é seu.' using errcode = 'P0001';
+  end if;
+  perform public.corrida_avancar(true);
+  select * into c from public.corridas order by id desc limit 1 for update;
+  if c.campo is not null or now() >= c.apostas_em then
+    raise exception 'As inscrições desta corrida fecharam. Espere a próxima abrir.' using errcode = 'P0001';
+  end if;
+  if p_cavalo = any (c.inscritos) then raise exception 'Ele já está inscrito.' using errcode = 'P0001'; end if;
+  if exists (select 1 from public.cavalos where id = any (c.inscritos) and dono = auth.uid()) then
+    raise exception 'Um cavalo seu por corrida.' using errcode = 'P0001';
+  end if;
+  if coalesce(array_length(c.inscritos, 1), 0) >= 8 then raise exception 'As 8 raias já estão cheias.' using errcode = 'P0001'; end if;
+  update public.corridas set inscritos = inscritos || p_cavalo where id = c.id;
+  return jsonb_build_object('corrida', c.id);
+end $$;
+revoke all on function public.corrida_inscrever(bigint) from public, anon;
+grant execute on function public.corrida_inscrever(bigint) to authenticated;
+
+create or replace function public.corrida_apostar(p_tipo text, p_raia int, p_raia2 int, p_valor int) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  c public.corridas;
+  v_odd numeric;
+begin
+  if not public.eh_membro() then raise exception 'Só para os nanicos e os amigos.' using errcode = 'P0001'; end if;
+  if p_tipo not in ('vencedor', 'place', 'exata') then raise exception 'Aposta inválida.' using errcode = 'P0001'; end if;
+  if p_valor is null or p_valor < 5 then raise exception 'A aposta mínima é 5.' using errcode = 'P0001'; end if;
+  perform public.corrida_avancar(false);
+  select * into c from public.corridas order by id desc limit 1 for update;
+  if not found or c.campo is null or now() >= c.fecha_em then
+    raise exception 'As apostas não estão abertas agora.' using errcode = 'P0001';
+  end if;
+  if p_raia is null or p_raia < 0 or p_raia >= jsonb_array_length(c.campo) then raise exception 'Escolha um cavalo.' using errcode = 'P0001'; end if;
+  if p_tipo = 'exata' then
+    if p_raia2 is null or p_raia2 = p_raia or p_raia2 < 0 or p_raia2 >= jsonb_array_length(c.campo) then
+      raise exception 'Na exata, escolha o 1º e o 2º (dois cavalos diferentes).' using errcode = 'P0001';
+    end if;
+    v_odd := (c.exatas ->> (p_raia || '-' || p_raia2))::numeric;
+  else
+    p_raia2 := null;
+    v_odd := (c.campo -> p_raia ->> case when p_tipo = 'vencedor' then 'odd_v' else 'odd_p' end)::numeric;
+  end if;
+  if v_odd is null then raise exception 'Cotação não encontrada.' using errcode = 'P0001'; end if;
+  if (select count(*) from public.corrida_apostas where corrida_id = c.id and user_id = auth.uid()) >= 10 then
+    raise exception 'Até 10 apostas por corrida.' using errcode = 'P0001';
+  end if;
+  perform public.creditar(auth.uid(), -p_valor, 'cassino', 'corrida:' || c.id);
+  insert into public.corrida_apostas (corrida_id, user_id, tipo, raia, raia2, valor, odd)
+  values (c.id, auth.uid(), p_tipo, p_raia, p_raia2, p_valor, v_odd);
+  return jsonb_build_object('odd', v_odd);
+end $$;
+revoke all on function public.corrida_apostar(text, int, int, int) from public, anon;
+grant execute on function public.corrida_apostar(text, int, int, int) to authenticated;
+
+create or replace function public.cavalo_comprar(p_nome text, p_pelagem text) returns bigint
+language plpgsql security definer set search_path = public as $$
+declare
+  v_nome text := btrim(regexp_replace(coalesce(p_nome, ''), '\s+', ' ', 'g'));
+  v_id bigint;
+begin
+  if not public.eh_membro() then raise exception 'Só para os nanicos e os amigos.' using errcode = 'P0001'; end if;
+  if v_nome !~ '^[[:alnum:] .''-]{2,20}$' or v_nome !~ '[[:alpha:]]' then
+    raise exception 'Nome de 2 a 20 letras (pode ter número, espaço, ponto, hífen e apóstrofo).' using errcode = 'P0001';
+  end if;
+  if p_pelagem not in ('castanho','alazao','tordilho','preto','baio','pampa','rosilho','branco') then
+    raise exception 'Escolha uma pelagem.' using errcode = 'P0001';
+  end if;
+  perform pg_advisory_xact_lock(hashtext('cavalo:' || auth.uid()));
+  if (select count(*) from public.cavalos where dono = auth.uid()) >= 3 then
+    raise exception 'Até 3 cavalos por pessoa.' using errcode = 'P0001';
+  end if;
+  if exists (select 1 from public.cavalos where lower(nome) = lower(v_nome)) then
+    raise exception 'Já existe um cavalo com esse nome.' using errcode = 'P0001';
+  end if;
+  perform public.creditar(auth.uid(), -2500, 'loja', 'cavalo');
+  insert into public.cavalos (dono, nome, pelagem) values (auth.uid(), v_nome, p_pelagem) returning id into v_id;
+  return v_id;
+end $$;
+revoke all on function public.cavalo_comprar(text, text) from public, anon;
+grant execute on function public.cavalo_comprar(text, text) to authenticated;
+
+create or replace function public.cavalo_treinar(p_cavalo bigint, p_atributo text, p_pontos int) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_atual int; v_n int; v_custo int := 0; k int;
+begin
+  if not public.eh_membro() then raise exception 'Só para os nanicos e os amigos.' using errcode = 'P0001'; end if;
+  if p_atributo not in ('velocidade', 'arrancada', 'resistencia', 'constancia') then raise exception 'Atributo inválido.' using errcode = 'P0001'; end if;
+  if p_pontos is null or p_pontos not between 1 and 10 then raise exception 'Treine de 1 a 10 pontos por vez.' using errcode = 'P0001'; end if;
+  execute format('select %I from public.cavalos where id = $1 and dono = $2 for update', p_atributo) into v_atual using p_cavalo, auth.uid();
+  if v_atual is null then raise exception 'Esse cavalo não é seu.' using errcode = 'P0001'; end if;
+  v_n := least(p_pontos, 100 - v_atual);
+  if v_n <= 0 then raise exception 'Esse atributo já está no máximo.' using errcode = 'P0001'; end if;
+  for k in 0 .. v_n - 1 loop v_custo := v_custo + 10 + 3 * (v_atual + k - 30); end loop;
+  perform public.creditar(auth.uid(), -v_custo, 'loja', 'treino:' || p_cavalo);
+  execute format('update public.cavalos set %I = %I + $1 where id = $2', p_atributo, p_atributo) using v_n, p_cavalo;
+  return jsonb_build_object('valor', v_atual + v_n, 'custo', v_custo);
+end $$;
+revoke all on function public.cavalo_treinar(bigint, text, int) from public, anon;
+grant execute on function public.cavalo_treinar(bigint, text, int) to authenticated;
+
+-- 72) loja reformulada: itens novos (05/11/2026, pedido do Pitoco) -----------------------------------------------------
+--   Mais coisas para os nanicos e os amigos comprarem (comprar() já é de eh_membro, seção 39): consumíveis com desenho próprio
+--   (Itens.tsx), títulos (dois do turfe), molduras e efeitos novos (as cores ficam em 30-loja.css e 38-habbo.css). Rodar de novo
+--   só acerta nome, preço e descrição.
+insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem) values
+  ('chopp', 'Chopp gelado', 'Colarinho de dois dedos. Toma no K-FOFO.', 'consumivel', 25, '{"cor":"chopp","anim":"beber"}', 20),
+  ('quentao', 'Quentão', 'Gengibre, cachaça e canela. Esquenta e deixa tonto.', 'consumivel', 45, '{"cor":"quentao","anim":"tonto"}', 21),
+  ('vinho', 'Taça de vinho', 'Para os momentos de elite.', 'consumivel', 120, '{"cor":"vinho","anim":"tonto"}', 22),
+  ('palheiro', 'Palheiro', 'Fumo de rolo enrolado na palha, do jeito gaúcho.', 'consumivel', 30, '{"anim":"fumar"}', 23),
+  ('acai', 'Açaí', 'Com granola e leite em pó. Dá energia.', 'consumivel', 55, '{"cor":"acai","anim":"tremer"}', 24),
+  ('titulo-jockey', 'Jóquei do K-FOFO', 'O título de quem vive no hipódromo.', 'titulo', 600, '{"texto":"Jóquei do K-FOFO"}', 104),
+  ('titulo-zebra', 'Rei da Zebra', 'Para quem só acerta azarão.', 'titulo', 900, '{"texto":"Rei da Zebra"}', 105),
+  ('titulo-smurf', 'Smurf profissional', 'Conta nova toda semana.', 'titulo', 350, '{"texto":"Smurf profissional"}', 106),
+  ('titulo-suporte', 'Main suporte', 'Alguém tem que comprar a sentinela.', 'titulo', 300, '{"texto":"Main suporte"}', 107),
+  ('titulo-truco', 'Lenda do truco', 'Grita truco até com o 4 de copas.', 'titulo', 1200, '{"texto":"Lenda do truco"}', 108),
+  ('titulo-haras', 'Dono do haras', 'Criador de campeões.', 'titulo', 2500, '{"texto":"Dono do haras"}', 109),
+  ('moldura-ardosia', 'Moldura ardósia', 'Discreta e elegante.', 'moldura', 500, '{"cor":"ardosia"}', 112),
+  ('moldura-gelo', 'Moldura de gelo', 'Brilho frio em volta do rosto.', 'moldura', 1000, '{"cor":"gelo"}', 113),
+  ('moldura-neon', 'Moldura neon', 'Troca de cor sem parar.', 'moldura', 1800, '{"cor":"neon"}', 114),
+  ('efeito-gelo', 'Aura de gelo', 'Uma névoa azul em volta do boneco.', 'efeito', 1100, '{"cor":"gelo"}', 304),
+  ('efeito-sombra', 'Aura sombria', 'Uma sombra escura que acompanha o boneco.', 'efeito', 1300, '{"cor":"sombra"}', 305),
+  ('efeito-pulo', 'Pula-pula', 'O boneco não para quieto.', 'efeito', 900, '{"cor":"pulo"}', 306)
+on conflict (id) do update set nome = excluded.nome, descricao = excluded.descricao, preco = excluded.preco, dados = excluded.dados, ordem = excluded.ordem;

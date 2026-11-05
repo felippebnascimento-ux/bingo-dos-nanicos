@@ -14,6 +14,10 @@
   --loja-bone:#3E4C59; --loja-bone-aba:#2F3A44; --loja-bone-botao:#B08D57; --loja-lente:#1E1E1E; --loja-armacao:#262626;
   --loja-brilho:rgba(255,255,255,.55); --loja-headset:#262626; --loja-headset-luz:#E0705A; --loja-cartola:#1E1E1E;
   --loja-cartola-fita:#B4442F; --loja-cabeca:#E8C39E;
+  /* seção 72: chopp, quentão, vinho, palheiro e açaí; molduras ardósia, gelo e neon */
+  --loja-chopp:rgba(230,170,40,.9); --loja-espuma:#FBF7EC; --loja-caneca:#8A4A2A; --loja-quentao:#9A4A22; --loja-canela:#7A4E2E;
+  --loja-vinho:rgba(120,20,40,.9); --loja-palha:#E2C98A; --loja-palha-risco:#B8975A; --loja-acai:#4A1E4A; --loja-granola:#D9A35A;
+  --loja-gelo-moldura:#9ED8F0;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --loja-papel:#D6D3CC; --loja-lata:#A9ADB2; --loja-cuia:#5B3A22; --loja-fumaca:#8D8780;
@@ -156,3 +160,13 @@ button.loja-previa:focus-visible{outline:2px solid var(--accent);outline-offset:
 /* celular: quanto já juntei (a barra é a mesma das missões) */
 .loja-meta{display:grid;gap:3px}
 .loja-meta small{font-size:11px;color:var(--muted)}
+
+/* seção 72: os consumíveis novos e as molduras ardósia, gelo e neon */
+.l-chopp{fill:var(--loja-chopp)} .l-espuma{fill:var(--loja-espuma)} .l-caneca{fill:var(--loja-caneca)} .l-caneca-asa{stroke:var(--loja-caneca)}
+.l-quentao{fill:var(--loja-quentao)} .l-canela{fill:var(--loja-canela)} .l-vinho{fill:var(--loja-vinho)} .l-palha{fill:var(--loja-palha)}
+.l-palha-risco{stroke:var(--loja-palha-risco)} .l-acai{fill:var(--loja-acai)} .l-granola{fill:var(--loja-granola)}
+.av.mold-ardosia{box-shadow:0 0 0 2px var(--mint),0 0 0 4px color-mix(in srgb,var(--mint) 30%,transparent)}
+.av.mold-gelo{box-shadow:0 0 0 2px var(--loja-gelo-moldura),0 0 10px 2px color-mix(in srgb,var(--loja-gelo-moldura) 70%,transparent)}
+.av.mold-neon{box-shadow:0 0 0 2px var(--accent),0 0 10px 2px var(--accent);animation:mold-neon 3s linear infinite}
+@keyframes mold-neon{from{filter:hue-rotate(0deg) saturate(2)}to{filter:hue-rotate(360deg) saturate(2)}}
+@media (prefers-reduced-motion:reduce){.av.mold-neon{animation:none}}

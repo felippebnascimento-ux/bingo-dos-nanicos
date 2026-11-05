@@ -1,0 +1,171 @@
+/* Corrida de cavalos e Haras (seção 71). O cavalo, as sedas dos jóqueis e a pista são ilustrações com cores próprias,
+   iguais nos dois temas: as pelagens em --cav-* (classe cav-<pelagem>), as sedas de cada raia em --seda (classe raia-<n>,
+   as cores clássicas do turfe) e a pista em --pista-* (exceção como a do hall e da roleta; veja o CLAUDE.md). */
+.cav,.corrida-num,.haras-pelagem,.corrida-pista{
+  --cav-corpo:#7B4A2A; --cav-esc:#5E3720; --cav-crina:#2B1A10; --cav-casco:#2A2420; --cav-olho:#141010;
+  --cav-mancha:#6B4428; --cav-sela:#3A2A1E; --cav-calca:#F4F1EA; --seda:#B08D57; --seda-tx:#1E1E1E;
+  --pista-grama:#4E8A3E; --pista-grama2:#447A36; --pista-areia:#C89B62; --pista-areia2:#B98A52; --pista-pesada:#8C6A44;
+  --pista-cerca:#F4F1EA; --pista-chegada:#1E1E1E;
+}
+.cav-castanho{--cav-corpo:#7B4A2A; --cav-esc:#5E3720; --cav-crina:#2B1A10}
+.cav-alazao{--cav-corpo:#B5602E; --cav-esc:#934B22; --cav-crina:#8A4520}
+.cav-tordilho{--cav-corpo:#B9B9B4; --cav-esc:#9A9A95; --cav-crina:#6E6E6A}
+.cav-preto{--cav-corpo:#2E2A26; --cav-esc:#1E1B18; --cav-crina:#141210}
+.cav-baio{--cav-corpo:#C9A46A; --cav-esc:#AD8A52; --cav-crina:#3A2A18}
+.cav-pampa{--cav-corpo:#EDE7DC; --cav-esc:#D6CEC0; --cav-crina:#3A2A18; --cav-mancha:#6B4428}
+.cav-rosilho{--cav-corpo:#A47F78; --cav-esc:#8A6862; --cav-crina:#4A3530}
+.cav-branco{--cav-corpo:#F2F0EA; --cav-esc:#D8D4CA; --cav-crina:#CFCBC0}
+.raia-1{--seda:#C8322B; --seda-tx:#FFFFFF}
+.raia-2{--seda:#F4F1EA; --seda-tx:#1E1E1E}
+.raia-3{--seda:#2F5DA8; --seda-tx:#FFFFFF}
+.raia-4{--seda:#F2C230; --seda-tx:#1E1E1E}
+.raia-5{--seda:#3E8A47; --seda-tx:#FFFFFF}
+.raia-6{--seda:#1E1E1E; --seda-tx:#F2C230}
+.raia-7{--seda:#E8792B; --seda-tx:#1E1E1E}
+.raia-8{--seda:#E27AA8; --seda-tx:#1E1E1E}
+
+/* ---------- o desenho ---------- */
+.cav{display:block;width:100%;height:auto;overflow:visible}
+.cav-pelo{fill:var(--cav-corpo)} .cav-pelo-esc{fill:var(--cav-esc)} .cav-crina{fill:var(--cav-crina)} .cav-casco{fill:var(--cav-casco)}
+.cav-olho{fill:var(--cav-olho)} .cav-mancha{fill:var(--cav-mancha)} .cav-sela{fill:var(--cav-sela)} .cav-calca{fill:var(--cav-calca)}
+.cav-seda{fill:var(--seda)} .cav-bone{fill:none;stroke:var(--seda-tx);stroke-width:1.4}
+.cav-perna{transform-box:fill-box;transform-origin:50% 0}
+.cav-corre{animation:cav-sobe .42s ease-in-out infinite}
+.cav-corre .cav-perna{animation:galope .42s linear infinite}
+.cav-corre .p2{animation-delay:-.1s} .cav-corre .p3{animation-delay:-.21s} .cav-corre .p4{animation-delay:-.31s}
+@keyframes galope{0%,100%{transform:rotate(30deg)}50%{transform:rotate(-30deg)}}
+@keyframes cav-sobe{0%,100%{translate:0 0}50%{translate:0 -6%}}
+@media (prefers-reduced-motion:reduce){.cav-corre,.cav-corre .cav-perna{animation:none}}
+
+/* ---------- a corrida ---------- */
+.corrida{display:flex;flex-direction:column;gap:12px;min-width:0}
+.corrida-topo{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center}
+.corrida-topo > div:first-child{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline}
+.corrida-topo b{font:700 16px var(--display)}
+.corrida-topo span{color:var(--muted);font-size:13px}
+.corrida-piso.pesada{color:var(--live)}
+.corrida-fase{font:700 13px var(--display);color:var(--accent)}
+.corrida-fase.f-correndo{color:var(--live)}
+.corrida-fase small{font:500 12px var(--body);color:var(--muted)}
+.corrida-tempo{grid-column:1 / -1;display:block;height:4px;border-radius:2px;background:var(--surface-2);overflow:hidden}
+.corrida-tempo i{display:block;height:100%;background:var(--accent);transition:width .25s linear}
+
+.corrida-pista{position:relative;border-radius:14px;padding:10px 6% 10px 10px;overflow:hidden;
+  background:repeating-linear-gradient(90deg,var(--pista-grama) 0 40px,var(--pista-grama2) 40px 80px);
+  box-shadow:inset 0 0 0 3px var(--pista-cerca)}
+.corrida-pista.pesada .corrida-raia{background:var(--pista-pesada)}
+.corrida-chegada{position:absolute;top:0;bottom:0;right:5%;width:8px;z-index:1;
+  background:repeating-linear-gradient(0deg,var(--pista-chegada) 0 6px,var(--pista-cerca) 6px 12px)}
+.corrida-raia{position:relative;height:46px;margin:3px 0;border-radius:6px;
+  background:linear-gradient(180deg,var(--pista-areia),var(--pista-areia2));box-shadow:inset 0 -2px 0 color-mix(in srgb,var(--pista-cerca) 45%,transparent)}
+.corrida-num{position:absolute;left:4px;top:50%;translate:0 -50%;z-index:3;display:grid;place-items:center;width:20px;height:20px;border-radius:5px;
+  background:var(--seda);color:var(--seda-tx);font:700 11px var(--display);box-shadow:0 0 0 1px color-mix(in srgb,var(--pista-chegada) 30%,transparent)}
+.corrida-cavalo{position:absolute;bottom:1px;margin-left:26px;width:12%;min-width:52px;max-width:84px;z-index:2;
+  filter:drop-shadow(0 2px 1px color-mix(in srgb,var(--pista-chegada) 35%,transparent))}
+.corrida-vaga{position:absolute;left:32px;top:50%;translate:0 -50%;font-size:11px;color:color-mix(in srgb,var(--pista-chegada) 55%,transparent)}
+.corrida-nome{position:absolute;right:calc(5% + 14px);top:3px;z-index:1;max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font:600 11px var(--body);color:var(--pista-chegada);opacity:.75}
+.corrida-col{position:absolute;right:calc(5% + 14px);bottom:3px;z-index:3;font:700 12px var(--display);color:var(--pista-chegada)}
+.corrida-col.podio{color:var(--seda-tx);background:var(--accent);padding:0 6px;border-radius:6px}
+
+.corrida-podio{display:flex;flex-wrap:wrap;gap:8px}
+.corrida-podio-item{flex:1 1 140px;padding:8px 10px;border-radius:10px;background:var(--surface-2);font-size:13px}
+.corrida-podio-item b{font:700 14px var(--display);margin-right:4px}
+.corrida-podio-item.p1{background:color-mix(in srgb,var(--accent) 22%,var(--surface-2));box-shadow:inset 0 0 0 1px var(--accent)}
+.corrida-podio-item small{color:var(--muted)}
+
+.corrida-quadro h3,.corrida-inscricao h3,.corrida-minhas h3{margin:0 0 4px}
+.corrida-tabela{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.corrida-linha{display:grid;grid-template-columns:minmax(0,1fr) 64px 46px 72px 72px;gap:6px;align-items:center;padding:4px 0;border-bottom:1px solid var(--line)}
+.corrida-linha.cab{font:600 11px var(--body);color:var(--muted);border:0}
+.corrida-linha.ganhou{background:color-mix(in srgb,var(--accent) 14%,transparent);border-radius:8px}
+.corrida-quem{display:flex;gap:8px;align-items:center;min-width:0}
+.corrida-quem .corrida-num{position:static;translate:none;flex:0 0 auto}
+.corrida-quem > span:last-child{display:flex;flex-direction:column;min-width:0}
+.corrida-quem b{font:600 13px var(--body);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.corrida-quem small{color:var(--muted);font-size:11px}
+.corrida-forma,.corrida-forca{font:600 12px var(--display);color:var(--muted)}
+.corrida-odd{width:100%;padding:6px 4px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:700 13px var(--display);cursor:pointer}
+.corrida-odd:hover:not(:disabled){border-color:var(--accent)}
+.corrida-odd.on{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.corrida-odd:disabled{opacity:.6;cursor:default}
+.corrida-exata{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-top:10px}
+.corrida-exata label{display:flex;gap:6px;align-items:center;font-size:13px}
+.corrida-exata select{max-width:160px}
+.corrida-apostar{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.corrida-escolha{margin:0;font-size:14px}
+.corrida-escolha small{color:var(--muted)}
+
+.corrida-inscritos{list-style:none;margin:8px 0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.corrida-inscritos li{display:flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:var(--surface-2);font-size:13px}
+.corrida-inscritos .cav{width:36px}
+.corrida-inscritos small{color:var(--muted)}
+.corrida-meus{display:flex;flex-wrap:wrap;gap:8px}
+
+.corrida-minhas ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.corrida-minhas li{display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:4px 0;border-bottom:1px solid var(--line)}
+.corrida-minhas li.ganhou b{color:var(--accent)}
+.corrida-minhas li.perdeu{opacity:.7}
+
+.corrida-ultimas{display:flex;flex-direction:column;gap:6px}
+.corrida-ultimas small{color:var(--muted)}
+.corrida-ultimas ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.corrida-ultimas li{display:flex;align-items:center;gap:4px;padding:2px 8px 2px 2px;border-radius:999px;background:var(--surface-2);font-size:12px}
+.corrida-ultimas .cav{width:30px}
+.corrida-regras ul{margin:8px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.corrida-regras code{font-size:11px}
+
+@media (max-width:600px){
+  .corrida-raia{height:36px}
+  .corrida-cavalo{min-width:42px}
+  .corrida-linha{grid-template-columns:minmax(0,1fr) 64px 64px}
+  .corrida-forma,.corrida-forca,.corrida-linha.cab span:nth-child(2),.corrida-linha.cab span:nth-child(3){display:none}
+}
+
+/* ---------- o Haras (loja) ---------- */
+.haras{display:flex;flex-direction:column;gap:12px}
+.haras-topo{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
+.haras-topo p{margin:0;flex:1 1 260px;color:var(--muted);font-size:14px}
+.haras-desenho{display:block;width:96px;flex:0 0 auto}
+.haras-desenho.grande{width:150px}
+.haras-desenho.mini{width:44px}
+.haras-cab{display:flex;gap:12px;align-items:center}
+.haras-cab h3{margin:0}
+.haras-cab small{color:var(--muted)}
+.haras-campanha{margin:4px 0 0;font-size:12px;color:var(--muted)}
+.haras-atributos{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.haras-atributos li{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(80px,1fr) auto;gap:10px;align-items:center}
+.haras-at-nome{display:flex;flex-direction:column;min-width:0}
+.haras-at-nome b{font-size:13px}
+.haras-at-nome small{color:var(--muted);font-size:11px}
+.haras-barra{position:relative;display:block;height:14px;border-radius:7px;background:var(--surface-2);overflow:hidden}
+.haras-barra i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 60%,var(--live)))}
+.haras-barra em{position:absolute;right:6px;top:50%;translate:0 -50%;font:700 10px var(--display);font-style:normal;color:var(--ink)}
+.haras-treino{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.haras-comprar-linha{display:flex;flex-wrap:wrap;gap:16px;align-items:center}
+.haras-form{display:flex;flex-direction:column;gap:10px;flex:1 1 240px;min-width:0}
+.haras-form label{display:flex;flex-direction:column;gap:4px;font-size:13px}
+.haras-pelagens{display:flex;flex-wrap:wrap;gap:6px}
+.haras-pelagem{display:flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:12px;cursor:pointer}
+.haras-pelagem i{width:18px;height:18px;border-radius:50%;background:var(--cav-corpo);box-shadow:inset -4px -3px 0 var(--cav-crina)}
+.haras-pelagem.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.haras-ranking ol{margin:8px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;counter-reset:pos}
+.haras-ranking li{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:8px;align-items:center;font-size:13px;counter-increment:pos}
+.haras-ranking li::before{content:counter(pos) "º";font:700 12px var(--display);color:var(--muted);width:24px}
+.haras-ranking small{color:var(--muted)}
+.haras-placar{font:600 12px var(--display);color:var(--muted)}
+@media (max-width:600px){
+  .haras-atributos li{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"nome treino" "barra barra"}
+  .haras-at-nome{grid-area:nome} .haras-barra{grid-area:barra} .haras-treino{grid-area:treino}
+  .haras-ranking li{grid-template-columns:auto auto minmax(0,1fr)}
+  .haras-placar{grid-column:2 / -1}
+}
+
+/* o destaque do Haras na vitrine */
+.loja-destaque{display:flex;gap:14px;align-items:center;width:100%;text-align:left;cursor:pointer;border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line));
+  background:linear-gradient(100deg,color-mix(in srgb,var(--accent) 16%,var(--surface)),var(--surface));color:var(--ink)}
+.loja-destaque:hover{border-color:var(--accent)}
+.loja-destaque-cavalo{width:96px;flex:0 0 auto}
+.loja-destaque > span:last-child{display:flex;flex-direction:column;gap:2px}
+.loja-destaque small{font:700 11px var(--display);color:var(--accent);text-transform:uppercase;letter-spacing:.06em}
+.loja-destaque b{font:600 15px var(--body)}
