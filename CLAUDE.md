@@ -361,7 +361,7 @@ src/
     tipos.ts           Friend, Phrase, Card, Presence…
     dados/             campeoes.ts (CHAMPS, LANES, LANE_CAMP), nanicos.ts (NAN_MAP, artOf, bonecoOf), changelog.ts,
                        novidades.ts (o que mostrar no Log depois de uma atualização; puro e testado)
-  styles/              CSS global, numerado: 01-base.css … 41-premium.css (o padrão único do site: fundo, cartões, botões, campos e menu iguais em todas as abas; vem por último) (o 27, do Início, saiu) (no celular, as abas ficam numa barra embaixo)
+  styles/              CSS global, numerado: 01-base.css … 41-premium.css (o padrão único do site: fundo, cartões, botões, campos e menu iguais em todas as abas; vem por último; no fim, os ajustes do rodapé do menu: as moedas encolhem para a engrenagem caber e, fora da call, o nome espremido sai) (o 27, do Início, saiu) (no celular, as abas ficam numa barra embaixo)
 public/icones/         app-192.png e app-512.png, os ícones do app instalado (src/app/manifest.ts: nome, cores e `display: standalone`; o botão Instalar fica em Configurações › Sobre)
 public/sons/           sons em mp3 (clique, entrou, saiu, dinheiro, faroeste, pedro), mandados pelo Felippe; use `tocarSom` (lib/sons.ts)
 public/arte/           artes dos nanicos (rosto e corpo), bonecos do hall, foto da turma, reações dos Picarétezzi
