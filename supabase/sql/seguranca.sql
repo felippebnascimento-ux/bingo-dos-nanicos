@@ -8928,3 +8928,223 @@ insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem)
   ('efeito-sombra', 'Aura sombria', 'Uma sombra escura que acompanha o boneco.', 'efeito', 1300, '{"cor":"sombra"}', 305),
   ('efeito-pulo', 'Pula-pula', 'O boneco não para quieto.', 'efeito', 900, '{"cor":"pulo"}', 306)
 on conflict (id) do update set nome = excluded.nome, descricao = excluded.descricao, preco = excluded.preco, dados = excluded.dados, ordem = excluded.ordem;
+
+-- 74) corrida de cavalos: a trifeta (05/11/2026, pedido do Pitoco) ------------------------------------------------------
+--   A aposta mais popular do turfe: acertar o 1º, o 2º e o 3º na ordem. As cotações saem das mesmas 3.000 simulações
+--   (`trifetas`, "i-j-k", de 2× a 1.000×, 10% da casa) e o corrida_apostar ganha o 5º parâmetro (p_raia3).
+alter table public.corridas add column if not exists trifetas jsonb;
+alter table public.corrida_apostas add column if not exists raia3 int check (raia3 between 0 and 7);
+alter table public.corrida_apostas drop constraint if exists corrida_apostas_tipo_check;
+alter table public.corrida_apostas add constraint corrida_apostas_tipo_check check (tipo in ('vencedor', 'place', 'exata', 'trifeta'));
+drop function if exists public.corrida_apostar(text, int, int, int);
+create or replace function public.corrida_cotacoes(p_campo jsonb, p_dist int, p_pista text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  n int := jsonb_array_length(p_campo);
+  sims int := 3000;
+  v int[]; a int[]; r int[]; c int[];
+  vit int[]; top2 int[]; ex int[];
+  pts float8[]; p1 int; p2 int; p3 int; b1 float8; b2 float8; b3 float8; tri int[]; trifetas jsonb := '{}'; j int;
+  i int; s int; k int; exatas jsonb := '{}'; campo jsonb := '[]'; cav jsonb;
+begin
+  for i in 0 .. n - 1 loop
+    cav := p_campo -> i;
+    v[i + 1] := (cav ->> 'v')::int; a[i + 1] := (cav ->> 'a')::int; r[i + 1] := (cav ->> 'r')::int; c[i + 1] := (cav ->> 'c')::int;
+    vit[i + 1] := 0; top2[i + 1] := 0;
+  end loop;
+  ex := array_fill(0, array[n * n]); tri := array_fill(0, array[n * n * n]);
+  for s in 1 .. sims loop
+    p1 := 0; p2 := 0; p3 := 0; b1 := -1e9; b2 := -1e9; b3 := -1e9;
+    for i in 1 .. n loop
+      pts[i] := public.corrida_pontos(v[i], a[i], r[i], c[i], p_dist, p_pista, (random() + random() + random() + random() - 2) * sqrt(3));
+      if pts[i] > b1 then p3 := p2; b3 := b2; p2 := p1; b2 := b1; p1 := i; b1 := pts[i];
+      elsif pts[i] > b2 then p3 := p2; b3 := b2; p2 := i; b2 := pts[i];
+      elsif pts[i] > b3 then p3 := i; b3 := pts[i]; end if;
+    end loop;
+    vit[p1] := vit[p1] + 1; top2[p1] := top2[p1] + 1; top2[p2] := top2[p2] + 1;
+    k := (p1 - 1) * n + p2; ex[k] := ex[k] + 1;
+    k := ((p1 - 1) * n + (p2 - 1)) * n + p3; tri[k] := tri[k] + 1;
+  end loop;
+  for i in 1 .. n loop
+    cav := (p_campo -> (i - 1))
+      || jsonb_build_object('odd_v', least(60, greatest(1.1, floor(0.9 * (sims + 1) / (vit[i] + 0.5) * 100) / 100)),
+                            'odd_p', least(20, greatest(1.05, floor(0.9 * (sims + 1) / (top2[i] + 0.5) * 100) / 100)));
+    campo := campo || jsonb_build_array(cav);
+    for k in 1 .. n loop
+      if k <> i then
+        exatas := exatas || jsonb_build_object((i - 1) || '-' || (k - 1),
+          least(300, greatest(1.5, floor(0.9 * (sims + 1) / (ex[(i - 1) * n + k] + 0.5) * 100) / 100)));
+      end if;
+    end loop;
+  end loop;
+  for i in 1 .. n loop for j in 1 .. n loop for k in 1 .. n loop
+    if i <> j and j <> k and i <> k then
+      trifetas := trifetas || jsonb_build_object((i - 1) || '-' || (j - 1) || '-' || (k - 1),
+        least(1000, greatest(2, floor(0.9 * (sims + 1) / (tri[((i - 1) * n + (j - 1)) * n + k] + 0.5) * 100) / 100)));
+    end if;
+  end loop; end loop; end loop;
+  return jsonb_build_object('campo', campo, 'exatas', exatas, 'trifetas', trifetas);
+end $$;
+revoke all on function public.corrida_cotacoes(jsonb, int, text) from public, anon, authenticated;
+
+-- a corrida anda: abre, fecha as inscrições (campo e cotações), sorteia no fechamento das apostas e paga no fim
+create or replace function public.corrida_avancar(p_abrir boolean default true) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  c public.corridas;
+  v_campo jsonb := '[]'; v_cot jsonb; h bytea; u float8[]; z float8; pts float8[]; v_ordem int[];
+  i int; k int; n int; ap record; v_premio int; v_pos int; cav jsonb;
+begin
+  perform pg_advisory_xact_lock(hashtext('corrida_de_cavalos'));
+  select * into c from public.corridas order by id desc limit 1 for update;
+  if not found or (c.liquidada and now() >= c.fim_em + interval '10 seconds') then
+    if not p_abrir then return; end if;
+    insert into public.corridas (apostas_em, fecha_em, fim_em, distancia, pista)
+    values (now() + interval '20 seconds', now() + interval '50 seconds', now() + interval '70 seconds',
+            (array[1000, 1600, 2400])[1 + floor(random() * 3)::int], case when random() < 0.7 then 'leve' else 'pesada' end);
+    return;
+  end if;
+
+  -- fim das inscrições: os inscritos e a casa completam as 8 raias, em ordem aleatória, e saem as cotações
+  if c.campo is null and now() >= c.apostas_em then
+    select coalesce(jsonb_agg(x.j order by random()), '[]') into v_campo from (
+      select jsonb_build_object('id', id, 'nome', nome, 'pelagem', pelagem, 'dono', dono,
+                                'v', velocidade, 'a', arrancada, 'r', resistencia, 'c', constancia, 'forma', forma) j
+        from public.cavalos where id = any (c.inscritos)
+      union all
+      select casa.j from (select jsonb_build_object('id', id, 'nome', nome, 'pelagem', pelagem, 'dono', null,
+                                'v', velocidade, 'a', arrancada, 'r', resistencia, 'c', constancia, 'forma', forma) j
+                       from public.cavalos where dono is null order by random()
+                       limit greatest(0, 8 - coalesce(array_length(c.inscritos, 1), 0))) casa
+    ) x;
+    v_cot := public.corrida_cotacoes(v_campo, c.distancia, c.pista);
+    c.segredo := extensions.gen_random_bytes(32);
+    update public.corridas set campo = v_cot -> 'campo', exatas = v_cot -> 'exatas', trifetas = v_cot -> 'trifetas', segredo = c.segredo,
+           hash = encode(extensions.digest(c.segredo, 'sha256'), 'hex')
+     where id = c.id returning * into c;
+  end if;
+
+  -- fim das apostas: a ordem de chegada sai do segredo
+  if c.campo is not null and c.ordem is null and now() >= c.fecha_em then
+    n := jsonb_array_length(c.campo);
+    for i in 0 .. n - 1 loop
+      h := extensions.hmac(convert_to('corrida:' || c.id || ':' || i, 'UTF8'), c.segredo, 'sha256');
+      for k in 0 .. 3 loop
+        u[k + 1] := ((get_byte(h, 4 * k)::bigint << 24) + (get_byte(h, 4 * k + 1) << 16) + (get_byte(h, 4 * k + 2) << 8) + get_byte(h, 4 * k + 3)) / 4294967296.0;
+      end loop;
+      z := (u[1] + u[2] + u[3] + u[4] - 2) * sqrt(3);
+      cav := c.campo -> i;
+      pts[i + 1] := public.corrida_pontos((cav ->> 'v')::int, (cav ->> 'a')::int, (cav ->> 'r')::int, (cav ->> 'c')::int, c.distancia, c.pista, z);
+    end loop;
+    select array_agg(g - 1 order by pts[g] desc, g) into v_ordem from generate_series(1, n) g;
+    update public.corridas set ordem = v_ordem, pontos = (select array_agg(round(p::numeric, 4) order by o) from unnest(pts) with ordinality t(p, o))
+     where id = c.id returning * into c;
+  end if;
+
+  -- fim da corrida: paga as apostas, o pódio dos donos e atualiza os cavalos (uma vez só)
+  if c.ordem is not null and not c.liquidada and now() >= c.fim_em then
+    for ap in select * from public.corrida_apostas where corrida_id = c.id and pagou is null loop
+      if (ap.tipo = 'vencedor' and c.ordem[1] = ap.raia)
+         or (ap.tipo = 'place' and (c.ordem[1] = ap.raia or c.ordem[2] = ap.raia))
+         or (ap.tipo = 'exata' and c.ordem[1] = ap.raia and c.ordem[2] = ap.raia2)
+         or (ap.tipo = 'trifeta' and c.ordem[1] = ap.raia and c.ordem[2] = ap.raia2 and c.ordem[3] = ap.raia3) then
+        v_premio := floor(ap.valor * ap.odd);
+        perform public.creditar(ap.user_id, v_premio, 'cassino', 'corrida:' || c.id);
+      else
+        v_premio := 0;
+      end if;
+      update public.corrida_apostas set pagou = v_premio where id = ap.id;
+    end loop;
+    n := jsonb_array_length(c.campo);
+    for v_pos in 1 .. n loop
+      cav := c.campo -> c.ordem[v_pos];
+      v_premio := case when v_pos <= 3 and cav ->> 'dono' is not null then (array[400, 200, 100])[v_pos] else 0 end;
+      if v_premio > 0 then
+        perform public.creditar((cav ->> 'dono')::uuid, v_premio, 'cassino', 'corrida:' || c.id || ':premio');
+      end if;
+      update public.cavalos set corridas = corridas + 1,
+             vitorias = vitorias + (v_pos = 1)::int, podios = podios + (v_pos <= 3)::int, ganhos = ganhos + v_premio,
+             forma = (array[v_pos] || forma)[1:5]
+       where id = (cav ->> 'id')::bigint;
+    end loop;
+    update public.corridas set liquidada = true where id = c.id;
+  end if;
+end $$;
+revoke all on function public.corrida_avancar(boolean) from public, anon, authenticated;
+
+create or replace function public.corrida_estado() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  c public.corridas;
+begin
+  if not public.eh_membro() then raise exception 'Só para os nanicos e os amigos.' using errcode = 'P0001'; end if;
+  select * into c from public.corridas order by id desc limit 1;
+  if not found or (c.campo is null and now() >= c.apostas_em) or (c.ordem is null and now() >= c.fecha_em)
+     or (not c.liquidada and now() >= c.fim_em) or (c.liquidada and now() >= c.fim_em + interval '10 seconds') then
+    perform public.corrida_avancar(true);
+    select * into c from public.corridas order by id desc limit 1;
+  end if;
+  return jsonb_build_object(
+    'agora', floor(extract(epoch from clock_timestamp()) * 1000),
+    'corrida', jsonb_build_object(
+      'id', c.id, 'abre_em', c.abre_em, 'apostas_em', c.apostas_em, 'fecha_em', c.fecha_em, 'fim_em', c.fim_em,
+      'distancia', c.distancia, 'pista', c.pista,
+      'inscritos', (select coalesce(jsonb_agg(jsonb_build_object('id', id, 'nome', nome, 'pelagem', pelagem, 'dono', dono)), '[]')
+                      from public.cavalos where id = any (c.inscritos)),
+      'campo', c.campo, 'exatas', c.exatas, 'trifetas', c.trifetas, 'hash', c.hash,
+      'ordem', case when now() >= c.fecha_em then to_jsonb(c.ordem) end,
+      'pontos', case when now() >= c.fecha_em then to_jsonb(c.pontos) end,
+      'segredo', case when c.liquidada then encode(c.segredo, 'hex') end),
+    'minhas', (select coalesce(jsonb_agg(jsonb_build_object('tipo', tipo, 'raia', raia, 'raia2', raia2, 'raia3', raia3, 'valor', valor, 'odd', odd, 'pagou', pagou) order by id), '[]')
+                 from public.corrida_apostas where corrida_id = c.id and user_id = auth.uid()),
+    'ultimas', (select coalesce(jsonb_agg(x order by x.id desc), '[]') from (
+                  select k.id, k.campo -> k.ordem[1] ->> 'nome' as nome, k.campo -> k.ordem[1] ->> 'pelagem' as pelagem
+                    from public.corridas k where k.liquidada order by k.id desc limit 8) x));
+end $$;
+revoke all on function public.corrida_estado() from public, anon;
+grant execute on function public.corrida_estado() to authenticated;
+
+create or replace function public.corrida_apostar(p_tipo text, p_raia int, p_raia2 int, p_valor int, p_raia3 int default null) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  c public.corridas;
+  v_odd numeric;
+begin
+  if not public.eh_membro() then raise exception 'Só para os nanicos e os amigos.' using errcode = 'P0001'; end if;
+  if p_tipo not in ('vencedor', 'place', 'exata', 'trifeta') then raise exception 'Aposta inválida.' using errcode = 'P0001'; end if;
+  if p_valor is null or p_valor < 5 then raise exception 'A aposta mínima é 5.' using errcode = 'P0001'; end if;
+  perform public.corrida_avancar(false);
+  select * into c from public.corridas order by id desc limit 1 for update;
+  if not found or c.campo is null or now() >= c.fecha_em then
+    raise exception 'As apostas não estão abertas agora.' using errcode = 'P0001';
+  end if;
+  if p_raia is null or p_raia < 0 or p_raia >= jsonb_array_length(c.campo) then raise exception 'Escolha um cavalo.' using errcode = 'P0001'; end if;
+  if p_tipo = 'exata' then
+    if p_raia2 is null or p_raia2 = p_raia or p_raia2 < 0 or p_raia2 >= jsonb_array_length(c.campo) then
+      raise exception 'Na exata, escolha o 1º e o 2º (dois cavalos diferentes).' using errcode = 'P0001';
+    end if;
+    v_odd := (c.exatas ->> (p_raia || '-' || p_raia2))::numeric;
+    p_raia3 := null;
+  elsif p_tipo = 'trifeta' then
+    if p_raia2 is null or p_raia3 is null or p_raia2 = p_raia or p_raia3 = p_raia or p_raia3 = p_raia2
+       or least(p_raia2, p_raia3) < 0 or greatest(p_raia2, p_raia3) >= jsonb_array_length(c.campo) then
+      raise exception 'Na trifeta, escolha o 1º, o 2º e o 3º (três cavalos diferentes).' using errcode = 'P0001';
+    end if;
+    v_odd := (c.trifetas ->> (p_raia || '-' || p_raia2 || '-' || p_raia3))::numeric;
+  else
+    p_raia3 := null;
+    p_raia2 := null;
+    v_odd := (c.campo -> p_raia ->> case when p_tipo = 'vencedor' then 'odd_v' else 'odd_p' end)::numeric;
+  end if;
+  if v_odd is null then raise exception 'Cotação não encontrada.' using errcode = 'P0001'; end if;
+  if (select count(*) from public.corrida_apostas where corrida_id = c.id and user_id = auth.uid()) >= 10 then
+    raise exception 'Até 10 apostas por corrida.' using errcode = 'P0001';
+  end if;
+  perform public.creditar(auth.uid(), -p_valor, 'cassino', 'corrida:' || c.id);
+  insert into public.corrida_apostas (corrida_id, user_id, tipo, raia, raia2, raia3, valor, odd)
+  values (c.id, auth.uid(), p_tipo, p_raia, p_raia2, p_raia3, p_valor, v_odd);
+  return jsonb_build_object('odd', v_odd);
+end $$;
+revoke all on function public.corrida_apostar(text, int, int, int, int) from public, anon;
+grant execute on function public.corrida_apostar(text, int, int, int, int) to authenticated;
+

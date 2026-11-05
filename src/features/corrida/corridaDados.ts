@@ -53,8 +53,8 @@ export function useCorrida(ativo: boolean) {
   return { estado, ligada, dif, atualizar: ler };
 }
 
-export async function apostarCorrida(tipo: TipoAposta, raia: number, raia2: number | null, valor: number) {
-  const { data, error } = await sb().rpc("corrida_apostar", { p_tipo: tipo, p_raia: raia, p_raia2: raia2, p_valor: valor });
+export async function apostarCorrida(tipo: TipoAposta, raia: number, raia2: number | null, valor: number, raia3: number | null = null) {
+  const { data, error } = await sb().rpc("corrida_apostar", { p_tipo: tipo, p_raia: raia, p_raia2: raia2, p_valor: valor, p_raia3: raia3 });
   if (error) {
     toast(errMsg(error, "Não deu para apostar. Tente de novo."));
     return null;

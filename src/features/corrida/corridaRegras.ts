@@ -99,18 +99,20 @@ export function faseEm(t: Tempos, agora: number): Fase {
 }
 
 /* ---------- apostas ---------- */
-export type TipoAposta = "vencedor" | "place" | "exata";
-export const NOME_APOSTA: Readonly<Record<TipoAposta, string>> = { vencedor: "Vencedor", place: "Placê", exata: "Exata" };
+export type TipoAposta = "vencedor" | "place" | "exata" | "trifeta";
+export const NOME_APOSTA: Readonly<Record<TipoAposta, string>> = { vencedor: "Vencedor", place: "Placê", exata: "Exata", trifeta: "Trifeta" };
 export const DICA_APOSTA: Readonly<Record<TipoAposta, string>> = {
   vencedor: "o cavalo chega em 1º",
   place: "o cavalo chega em 1º ou 2º",
   exata: "acerta o 1º e o 2º, na ordem",
+  trifeta: "acerta o 1º, o 2º e o 3º, na ordem",
 };
 /** Se a aposta ganhou, pela ordem de chegada. */
-export function ganhou(tipo: TipoAposta, raia: number, raia2: number | null, ordem: readonly number[]) {
+export function ganhou(tipo: TipoAposta, raia: number, raia2: number | null, ordem: readonly number[], raia3: number | null = null) {
   if (tipo === "vencedor") return ordem[0] === raia;
   if (tipo === "place") return ordem[0] === raia || ordem[1] === raia;
-  return ordem[0] === raia && ordem[1] === raia2;
+  if (tipo === "exata") return ordem[0] === raia && ordem[1] === raia2;
+  return ordem[0] === raia && ordem[1] === raia2 && ordem[2] === raia3;
 }
 /** O que a aposta paga (cotação fixa na hora da aposta, arredondada para baixo, como no banco). */
 export const retorno = (valor: number, odd: number) => Math.floor(valor * odd);
@@ -139,7 +141,7 @@ export function posicao(s: number, est: { a: number; b: number }) {
 
 /* ---------- ler o que vem do banco (corrida_estado) ---------- */
 export type CavaloCampo = Atributos & { id: number; nome: string; pelagem: Pelagem; dono: string | null; oddV: number; oddP: number; forma: number[] };
-export type MinhaAposta = { tipo: TipoAposta; raia: number; raia2: number | null; valor: number; odd: number; pagou: number | null };
+export type MinhaAposta = { tipo: TipoAposta; raia: number; raia2: number | null; raia3: number | null; valor: number; odd: number; pagou: number | null };
 export type EstadoCorrida = {
   agora: number;
   id: number;
@@ -149,6 +151,7 @@ export type EstadoCorrida = {
   inscritos: { id: number; nome: string; pelagem: Pelagem; dono: string | null }[];
   campo: CavaloCampo[] | null;
   exatas: Record<string, number>;
+  trifetas: Record<string, number>;
   hash: string | null;
   ordem: number[] | null;
   pontos: number[] | null;
@@ -198,6 +201,8 @@ export function lerEstado(x: unknown): EstadoCorrida | null {
   const pts = Array.isArray(c.pontos) ? c.pontos.map((n) => num(n)) : null;
   const ex: Record<string, number> = {};
   if (c.exatas && typeof c.exatas === "object") for (const [k, v] of Object.entries(c.exatas as Record<string, unknown>)) if (/^\d-\d$/.test(k)) ex[k] = num(v, 1);
+  const tri: Record<string, number> = {};
+  if (c.trifetas && typeof c.trifetas === "object") for (const [k, v] of Object.entries(c.trifetas as Record<string, unknown>)) if (/^\d-\d-\d$/.test(k)) tri[k] = num(v, 1);
   const ok = (l: number[] | null) => !!l && !!campo && l.length === campo.length;
   return {
     agora: num(o.agora, Date.now()),
@@ -211,14 +216,15 @@ export function lerEstado(x: unknown): EstadoCorrida | null {
       .map(({ id, nome, pelagem, dono }) => ({ id, nome, pelagem, dono })),
     campo,
     exatas: ex,
+    trifetas: tri,
     hash: typeof c.hash === "string" ? c.hash : null,
     ordem: ok(ordem) && ordem!.every((n) => n >= 0 && n < campo!.length) ? ordem : null,
     pontos: ok(pts) ? pts : null,
     segredo: typeof c.segredo === "string" ? c.segredo : null,
     minhas: lista(o.minhas)
       .map((a) => a as Record<string, unknown>)
-      .filter((a) => a.tipo === "vencedor" || a.tipo === "place" || a.tipo === "exata")
-      .map((a) => ({ tipo: a.tipo as TipoAposta, raia: num(a.raia), raia2: a.raia2 == null ? null : num(a.raia2), valor: num(a.valor), odd: num(a.odd, 1), pagou: a.pagou == null ? null : num(a.pagou) })),
+      .filter((a) => a.tipo === "vencedor" || a.tipo === "place" || a.tipo === "exata" || a.tipo === "trifeta")
+      .map((a) => ({ tipo: a.tipo as TipoAposta, raia: num(a.raia), raia2: a.raia2 == null ? null : num(a.raia2), raia3: a.raia3 == null ? null : num(a.raia3), valor: num(a.valor), odd: num(a.odd, 1), pagou: a.pagou == null ? null : num(a.pagou) })),
     ultimas: lista(o.ultimas)
       .map((u) => u as Record<string, unknown>)
       .map((u) => ({ id: num(u.id), nome: txt(u.nome, 20), pelagem: ehPelagem(u.pelagem) ? u.pelagem : "castanho" })),

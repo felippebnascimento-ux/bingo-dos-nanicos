@@ -1,6 +1,6 @@
 "use client";
 /*
- * A corrida de cavalos no Cassino (seção 71): a pista com as 8 raias, o quadro de cotações (vencedor, placê e exata),
+ * A corrida de cavalos no Cassino (seção 71): a pista com as 8 raias, o quadro de cotações (vencedor, placê, exata e trifeta),
  * o valor da aposta, as minhas apostas, a inscrição do meu cavalo e os últimos vencedores. Tudo vem do corrida_estado;
  * o movimento na pista é calculado aqui (corrida.ts) para terminar exatamente na ordem que o banco sorteou.
  */
@@ -103,7 +103,9 @@ export function Pista({ e, agora }: { e: EstadoCorrida; agora: number }) {
   );
 }
 
-type Escolha = { tipo: TipoAposta; raia: number; raia2: number | null };
+type Escolha = { tipo: TipoAposta; raia: number; raia2: number | null; raia3?: number | null };
+/* exata e trifeta: escolher o 1º, o 2º (e o 3º) em listas */
+const COMBOS = { exata: 2, trifeta: 3 } as const;
 
 export function Corrida({ ativa }: { ativa: boolean }) {
   const { estado: e, ligada, dif, atualizar } = useCorrida(ativa);
@@ -115,6 +117,7 @@ export function Corrida({ ativa }: { ativa: boolean }) {
   /* a escolha vale só para o páreo em que foi feita */
   const [sel, setSel] = useState<{ id: number; x: Escolha } | null>(null);
   const [valor, setValor] = useState(10);
+  const [combo, setCombo] = useState<"exata" | "trifeta">("exata");
   const [indo, setIndo] = useState(false);
   const { sure, pedir } = useSure();
 
@@ -136,14 +139,36 @@ export function Corrida({ ativa }: { ativa: boolean }) {
   const meus = (todos ?? []).filter((c) => c.dono && c.dono === myUid);
   const inscritoMeu = e.inscritos.find((c) => c.dono === myUid);
 
-  const oddDa = (x: Escolha) => (x.tipo === "exata" ? (x.raia2 !== null ? e.exatas[`${x.raia}-${x.raia2}`] : undefined) : campo?.[x.raia] ? (x.tipo === "vencedor" ? campo[x.raia].oddV : campo[x.raia].oddP) : undefined);
+  const oddDa = (x: Escolha) =>
+    x.tipo === "exata"
+      ? x.raia2 !== null
+        ? e.exatas[`${x.raia}-${x.raia2}`]
+        : undefined
+      : x.tipo === "trifeta"
+        ? x.raia2 !== null && x.raia3 != null
+          ? e.trifetas[`${x.raia}-${x.raia2}-${x.raia3}`]
+          : undefined
+        : campo?.[x.raia]
+          ? x.tipo === "vencedor"
+            ? campo[x.raia].oddV
+            : campo[x.raia].oddP
+          : undefined;
+  const posDaEscolha = (x: Escolha | null): (number | null)[] => (x && x.tipo === combo ? [x.raia, x.raia2, x.raia3 ?? null] : [null, null, null]);
+  const escolherPos = (k: number, raia: number) => {
+    const pos = posDaEscolha(escolha);
+    pos[k] = raia;
+    /* a mesma raia não pode estar em duas posições */
+    for (let j = 0; j < 3; j++) if (j !== k && pos[j] === raia) pos[j] = null;
+    if (pos[0] === null) return setEscolha(null);
+    setEscolha({ tipo: combo, raia: pos[0], raia2: pos[1], raia3: combo === "trifeta" ? pos[2] : null });
+  };
   const odd = escolha ? oddDa(escolha) : undefined;
   const pronta = f === "apostas" && !!escolha && odd !== undefined && apostaOk(valor, saldo) && e.minhas.length < 10;
 
   const apostar = async () => {
     if (!escolha || !pronta || !pedir()) return;
     setIndo(true);
-    const r = await apostarCorrida(escolha.tipo, escolha.raia, escolha.raia2, valor);
+    const r = await apostarCorrida(escolha.tipo, escolha.raia, escolha.raia2, valor, escolha.raia3 ?? null);
     setIndo(false);
     if (r) {
       setEscolha(null);
@@ -151,7 +176,12 @@ export function Corrida({ ativa }: { ativa: boolean }) {
     }
   };
   const nomeDe = (raia: number | null) => (raia !== null && campo?.[raia] ? `${raia + 1}. ${campo[raia].nome}` : "?");
-  const descreve = (x: { tipo: TipoAposta; raia: number; raia2: number | null }) => (x.tipo === "exata" ? `Exata ${nomeDe(x.raia)} → ${nomeDe(x.raia2)}` : `${NOME_APOSTA[x.tipo]} ${nomeDe(x.raia)}`);
+  const descreve = (x: { tipo: TipoAposta; raia: number; raia2: number | null; raia3?: number | null }) =>
+    x.tipo === "exata"
+      ? `Exata ${nomeDe(x.raia)} → ${nomeDe(x.raia2)}`
+      : x.tipo === "trifeta"
+        ? `Trifeta ${nomeDe(x.raia)} → ${nomeDe(x.raia2)} → ${nomeDe(x.raia3 ?? null)}`
+        : `${NOME_APOSTA[x.tipo]} ${nomeDe(x.raia)}`;
 
   return (
     <div className="corrida">
@@ -256,35 +286,31 @@ export function Corrida({ ativa }: { ativa: boolean }) {
             ))}
           </div>
           <div className="corrida-exata">
-            <b>Exata</b>
-            <label>
-              1º
-              <select value={escolha?.tipo === "exata" ? escolha.raia : ""} disabled={f !== "apostas"} onChange={(ev) => setEscolha({ tipo: "exata", raia: Number(ev.target.value), raia2: escolha?.tipo === "exata" && escolha.raia2 !== Number(ev.target.value) ? escolha.raia2 : null })}>
-                <option value="" disabled>
-                  escolha
-                </option>
-                {campo.map((c, i) => (
-                  <option key={c.id} value={i}>
-                    {i + 1}. {c.nome}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              2º
-              <select value={escolha?.tipo === "exata" && escolha.raia2 !== null ? escolha.raia2 : ""} disabled={f !== "apostas" || escolha?.tipo !== "exata"} onChange={(ev) => escolha?.tipo === "exata" && setEscolha({ ...escolha, raia2: Number(ev.target.value) })}>
-                <option value="" disabled>
-                  escolha
-                </option>
-                {campo.map((c, i) =>
-                  escolha?.tipo === "exata" && escolha.raia === i ? null : (
-                    <option key={c.id} value={i}>
-                      {i + 1}. {c.nome}
+            <div className="seg corrida-combo" role="radiogroup" aria-label="Exata ou trifeta">
+              {(["exata", "trifeta"] as const).map((t) => (
+                <button key={t} type="button" role="radio" aria-checked={combo === t} className={combo === t ? "on" : undefined} onClick={() => setCombo(t)}>
+                  {NOME_APOSTA[t]}
+                </button>
+              ))}
+            </div>
+            {Array.from({ length: COMBOS[combo] }, (_, k) => {
+              const pos = posDaEscolha(escolha);
+              return (
+                <label key={k}>
+                  {k + 1}º
+                  <select value={pos[k] ?? ""} disabled={f !== "apostas" || (k > 0 && pos[0] === null)} onChange={(ev) => escolherPos(k, Number(ev.target.value))}>
+                    <option value="" disabled>
+                      escolha
                     </option>
-                  ),
-                )}
-              </select>
-            </label>
+                    {campo.map((c, i) => (
+                      <option key={c.id} value={i}>
+                        {i + 1}. {c.nome}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              );
+            })}
           </div>
           {f === "apostas" && (
             <div className="corrida-apostar">
@@ -295,7 +321,7 @@ export function Corrida({ ativa }: { ativa: boolean }) {
                     {odd !== undefined && <span> · {textoOdd(odd)}</span>}
                   </>
                 ) : (
-                  <span className="hint">Escolha uma cotação no quadro ou monte a exata.</span>
+                  <span className="hint">Escolha uma cotação no quadro ou monte a exata ou a trifeta.</span>
                 )}
               </p>
               <ValorAposta valor={valor} onValor={setValor} saldo={saldo ?? undefined} disabled={indo} />
@@ -312,7 +338,7 @@ export function Corrida({ ativa }: { ativa: boolean }) {
           <h3>Minhas apostas neste páreo</h3>
           <ul>
             {e.minhas.map((a, k) => {
-              const res = a.pagou !== null ? (a.pagou > 0 ? "ganhou" : "perdeu") : e.ordem && f === "fim" ? (ganhou(a.tipo, a.raia, a.raia2, e.ordem) ? "ganhou" : "perdeu") : null;
+              const res = a.pagou !== null ? (a.pagou > 0 ? "ganhou" : "perdeu") : e.ordem && f === "fim" ? (ganhou(a.tipo, a.raia, a.raia2, e.ordem, a.raia3) ? "ganhou" : "perdeu") : null;
               return (
                 <li key={k} className={res ?? undefined}>
                   <span>{descreve(a)}</span>
@@ -348,7 +374,7 @@ export function Corrida({ ativa }: { ativa: boolean }) {
           <li>Cada páreo tem 20 s de inscrições, 30 s de apostas e a corrida. A distância e a pista saem na abertura.</li>
           <li>Velocidade vale em todas as distâncias; arrancada pesa nos 1.000 m; resistência nos 2.400 m e na pista pesada; constância diminui a zebra contra o cavalo.</li>
           <li>A &quot;força&quot; do quadro é o favoritismo nas condições do páreo (sem a sorte). Na pista pesada a sorte pesa mais.</li>
-          <li>Vencedor: o cavalo chega em 1º. Placê: em 1º ou 2º. Exata: o 1º e o 2º na ordem certa. Até 10 apostas por páreo; a casa leva cerca de 10%.</li>
+          <li>Vencedor: o cavalo chega em 1º. Placê: em 1º ou 2º. Exata: o 1º e o 2º na ordem certa. Trifeta: o 1º, o 2º e o 3º na ordem certa. Até 10 apostas por páreo; a casa leva cerca de 10%.</li>
           <li>
             O resultado sai de um segredo sorteado no fechamento das inscrições: o hash aparece antes da corrida e o segredo depois.
             {e.hash && (

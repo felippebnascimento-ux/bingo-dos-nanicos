@@ -50,6 +50,8 @@ describe("corrida de cavalos", () => {
     expect(ganhou("place", 0, null, ordem)).toBe(false);
     expect(ganhou("exata", 3, 5, ordem)).toBe(true);
     expect(ganhou("exata", 5, 3, ordem)).toBe(false);
+    expect(ganhou("trifeta", 3, 5, ordem, 0)).toBe(true);
+    expect(ganhou("trifeta", 3, 5, ordem, 1)).toBe(false);
   });
   it("o movimento sempre anda para a frente e chega na ordem do banco", () => {
     const pts = [60, 72, 55];
