@@ -932,7 +932,7 @@ export const CHANGELOG: EntradaLog[] = [
       "K-FOFO com acabamento de pixel art: luz da esquerda, contorno escuro, mesas de tábua com pés torneados, sofás com almofadas, baú com cintas de ferro e uma churrasqueira de tijolinho nova",
       "Quartos mais caprichados: lambri de madeira, piso de taco, janela com cortinas, porta nova, e todos os móveis redesenhados (cama, sofá, estante, guarda-roupa, TV, PC, frigobar, plantas, dado, quadro de recados, caixa de som e regulador de luz)",
       "Banheiro do K-FOFO refeito: vaso e pia novos encostados na parede, espelho, toalha e tapete; as pixações não saem mais da parede nem ficam uma em cima da outra",
-      "Na Loja e na Mochila, os móveis aparecem em cima do chão com sombra",
+      "Na Loja e na Mochila, os móveis aparecem em cima do chão com sombra, e os outros itens (bebidas, comidas, chave, celular, escudo e acessórios) ganharam ícones novos em pixel art",
       "Coleção rústica para o quarto: lareira, mesa, banquinho, estante, abajur, candelabro, barril, bar de barril e baú",
     ],
   },

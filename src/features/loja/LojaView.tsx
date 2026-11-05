@@ -13,6 +13,7 @@ import { useCarteira } from "@/lib/carteira";
 import { formatarMoedas } from "@/lib/moedas";
 import { friendOf, setApp, useApp } from "@/lib/store";
 import { DesenhoItem } from "./Itens";
+import { IconePixel, temIconePixel } from "./IconesPixel";
 import { abrirCelular } from "@/features/celular/rede";
 import { acumula, doGrupo, equipavel, estadoRaro, GRUPOS, MAX_MOVEL, NOME_ESPACO, NOME_RARIDADE, podeComprar, posicionavel, progressoCompra, quandoSai, raridade, type ItemLoja } from "./loja";
 import { MovelPrevia, QuartoCena, type MovelCena } from "@/features/quarto/QuartoCena";
@@ -48,7 +49,12 @@ export function Previa({ it }: { it: ItemLoja }) {
   if (foco) return <QuartoPrevia equip={{ [it.espaco]: it.dados.cor } as EquipQuarto} foco={foco} />;
   if (it.espaco === "titulo") return <span className="loja-titulo-previa">{it.dados.texto}</span>;
   /* chave das casas (seção 62) */
-  if (it.espaco === "chave") return <span className="loja-chave" aria-hidden="true">🔑</span>;
+  if (it.espaco === "chave")
+    return (
+      <span className="loja-desenho">
+        <IconePixel id="chave" />
+      </span>
+    );
   /* efeito no boneco (seção 61): o rosto com o efeito */
   if (it.espaco === "efeito")
     return (
@@ -63,9 +69,7 @@ export function Previa({ it }: { it: ItemLoja }) {
       </span>
     );
   return (
-    <span className="loja-desenho">
-      <DesenhoItem id={it.id} />
-    </span>
+    <span className="loja-desenho">{temIconePixel(it.id) ? <IconePixel id={it.id} /> : <DesenhoItem id={it.id} />}</span>
   );
 }
 

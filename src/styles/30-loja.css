@@ -174,3 +174,9 @@ button.loja-previa:focus-visible{outline:2px solid var(--accent);outline-offset:
 .quarto-previa .q-previa-chao{fill:color-mix(in srgb,var(--ink) 7%,var(--surface));stroke:color-mix(in srgb,var(--ink) 14%,transparent);stroke-width:1.5}
 .quarto-previa .q-previa-sombra{fill:var(--shadow);opacity:.35}
 .loja-previa:has(> .quarto-previa){background:radial-gradient(closest-side,color-mix(in srgb,var(--accent) 10%,var(--surface-2)),var(--surface-2))}
+
+/* ícones da Loja em pixel art (IconesPixel.tsx): a paleta, igual nos dois temas, com contorno escuro */
+:root{--px-k:#2B1A12; --px-w:#FFFFFF; --px-g:#CFCFCF; --px-UG:#8E8E8E; --px-d:#4A4A52; --px-r:#E2453C; --px-UR:#A92A25; --px-o:#F28C28; --px-UO:#C0611A; --px-y:#F7D046; --px-UY:#C99A1F; --px-b:#A8693A; --px-UB:#6B3F1D; --px-l:#E7C98C; --px-v:#5DB04A; --px-UV:#3C7F31; --px-UL:#A8DD5B; --px-u:#4A8FE0; --px-UU:#2E5FA8; --px-c:#8FD3F4; --px-p:#8E4FC8; --px-UP:#5E2E8E; --px-m:#F2A93B; --px-UM:#C77A16; --px-f:#FFF6DC;}
+.px-k{fill:var(--px-k)} .px-w{fill:var(--px-w)} .px-g{fill:var(--px-g)} .px-G{fill:var(--px-UG)} .px-d{fill:var(--px-d)} .px-r{fill:var(--px-r)} .px-R{fill:var(--px-UR)} .px-o{fill:var(--px-o)} .px-O{fill:var(--px-UO)} .px-y{fill:var(--px-y)} .px-Y{fill:var(--px-UY)} .px-b{fill:var(--px-b)} .px-B{fill:var(--px-UB)} .px-l{fill:var(--px-l)} .px-v{fill:var(--px-v)} .px-V{fill:var(--px-UV)} .px-L{fill:var(--px-UL)} .px-u{fill:var(--px-u)} .px-U{fill:var(--px-UU)} .px-c{fill:var(--px-c)} .px-p{fill:var(--px-p)} .px-P{fill:var(--px-UP)} .px-m{fill:var(--px-m)} .px-M{fill:var(--px-UM)} .px-f{fill:var(--px-f)}
+.icone-pixel{image-rendering:pixelated;filter:drop-shadow(0 3px 0 color-mix(in srgb,var(--shadow) 60%,transparent))}
+.loja-desenho .icone-pixel{height:100%;width:auto;aspect-ratio:1}
