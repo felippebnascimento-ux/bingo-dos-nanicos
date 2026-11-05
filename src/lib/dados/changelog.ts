@@ -920,6 +920,10 @@ export const CHANGELOG: EntradaLog[] = [
     data: "05/11/2026",
     itens: ["Corrida de cavalos: nova aposta trifeta (acerte o 1º, o 2º e o 3º na ordem, cotação de até 1.000×)"],
   },
+  {
+    data: "05/11/2026",
+    itens: ["A Marvi chegou! Amiga dos nanicos com boneco, poses e tudo o que um nanico pode fazer"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

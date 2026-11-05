@@ -19,6 +19,7 @@ export const AMIGOS: Readonly<Record<string, { nome: string; arte: string; w: nu
   lightzin: { nome: "Lightzin", arte: "lightzin", w: 159, boneco: "lightzin.webp" },
   "le bitu": { nome: "Le Bitu", arte: "lebitu", w: 189, boneco: "lebitu.webp", poses: "lebitu.webp" },
   murlik: { nome: "Murlik", arte: "murlik", w: 175, boneco: "murlik.webp", poses: "murlik.webp" },
+  marvi: { nome: "Marvi", arte: "marvi", w: 161, boneco: "marvi.webp", poses: "marvi.webp" },
 };
 
 /** É um amigo dos nanicos (e não um dos 14)? */
