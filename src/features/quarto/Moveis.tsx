@@ -91,34 +91,8 @@ const DESENHO_QUARTO: Record<string, Desenho> = {
   "cama-casal": (k, r, giro) => DESENHO_QUARTO.cama(k, r, giro),
   /* sofá (05/11/2026, redesenhado): pés torneados de madeira, a base com o friso, o encosto com almofadas capitonê, os braços
      com o rolo em cima, os assentos com o vivo na frente e uma almofada dourada */
-  sofa: (k, r, giro) => {
-    const { W, D, box, boxF } = rel(k, r, giro);
-    const pt = ponto(r, giro), c = tons("cadeira");
-    for (const [u, v] of [[M + 0.08, M + 0.08], [W - M - 0.08, M + 0.08], [M + 0.08, D - M - 0.08], [W - M - 0.08, D - M - 0.08]]) pernaR(k, ...pt(u, v), 0, 5, 0.045, MAD);
-    box(M, M, W - 2 * M, D - 2 * M, 14, ...c, 4);
-    boxF(M, D - M - 0.012, W - 2 * M, 0.012, 2.2, ...MAD, 5);
-    box(M, M, W - 2 * M, 0.24, 36, ...c, 4);
-    const bw = 0.17, a0 = M + bw, a1 = W - M - bw;
-    const n = W - 2 * M >= 1.5 ? 3 : W - 2 * M >= 1 ? 2 : 1, sw = (a1 - a0 - (n - 1) * 0.03) / n;
-    for (let x = 0; x < n; x++) {
-      const u = a0 + x * (sw + 0.03);
-      box(u, M + 0.24, sw, 0.16, 22, ...c, 18);
-      /* capitonê: os botões no encosto */
-      for (const [du, z] of [[0.3, 31], [0.7, 31], [0.5, 25]]) boxF(u + sw * du - 0.015, M + 0.4, 0.03, 0.004, 1.8, "cadeira2", "cadeira2", "cadeira2", z);
-    }
-    for (const u of [M, a1]) {
-      box(u, M + 0.04, bw, D - 2 * M - 0.04, 12, ...c, 18);
-      box(u - 0.01, M + 0.04, bw + 0.02, D - 2 * M - 0.03, 3, ...c, 30);
-    }
-    for (let x = 0; x < n; x++) {
-      const u = a0 + x * (sw + 0.03) + 0.01;
-      box(u, M + 0.4, sw - 0.02, D - 2 * M - 0.42, 7, ...c, 18);
-      boxF(u, D - M - 0.025, sw - 0.02, 0.006, 0.8, "cadeira0", "cadeira0", "cadeira0", 24);
-    }
-    box(a0 + 0.05, M + 0.4, Math.min(0.22, sw - 0.1), 0.08, 10, ...tons("ouro"), 25);
-    boxF(a0 + 0.05 + Math.min(0.22, sw - 0.1) / 2 - 0.01, M + 0.48, 0.02, 0.004, 1.6, "ouro2", "ouro2", "ouro2", 30);
-  },
-  poltrona: (k, r, giro) => DESENHO_QUARTO.sofa(k, r, giro),
+  sofa: (k, r, giro) => estofado(k, r, giro, false),
+  poltrona: (k, r, giro) => estofado(k, r, giro, true),
   /* mesa do PC: pés, gabinete com a faixa RGB e o vidro, tampo com a faixa RGB, mousepad, dois monitores acesos (com as
      janelas na tela), teclado com as fileiras de teclas e o mouse */
   pc: (k, r, giro) => {
@@ -270,7 +244,7 @@ const DESENHO_QUARTO: Record<string, Desenho> = {
      vem do estado, EstadoMovel) */
   dado: (k, r) => {
     const i = r.i + 0.28, j = r.j + 0.28, w = 0.44;
-    k.box(i, j, w, w, 26, "louca0", "louca1", "louca2");
+    k.box(i, j, w, w, 26, "lencol0", "lencol1", "cinza0");
     const pf = (u: number, z: number) => k.poly([projAtual(i + u - 0.035, j + w, z - 2.6), projAtual(i + u + 0.035, j + w, z - 2.6), projAtual(i + u + 0.035, j + w, z + 2.6), projAtual(i + u - 0.035, j + w, z + 2.6)], "preto1");
     const pl = (v: number, z: number) => k.poly([projAtual(i + w, j + v - 0.035, z - 2.6), projAtual(i + w, j + v + 0.035, z - 2.6), projAtual(i + w, j + v + 0.035, z + 2.6), projAtual(i + w, j + v - 0.035, z + 2.6)], "preto1");
     /* frente: o 2; lado: o 5 */
@@ -317,11 +291,32 @@ const DESENHO_QUARTO: Record<string, Desenho> = {
     box(0.36, 0.36, W - 0.72, D - 0.72, 2, "cinza1", "cinza1", "cinza2", 52);
   },
   /* raros (seção 55) */
-  estatua: (k, r) => {
-    k.box(r.i + 0.22, r.j + 0.22, 0.56, 0.56, 22, "madeira0", "madeira1", "madeira2");
-    k.box(r.i + 0.36, r.j + 0.36, 0.28, 0.28, 46, "ouro0", "ouro1", "ouro2", 22);
-    k.box(r.i + 0.33, r.j + 0.33, 0.34, 0.12, 8, "ouro0", "ouro1", "ouro2", 56);
-    k.box(r.i + 0.39, r.j + 0.39, 0.22, 0.22, 20, "ouro0", "ouro1", "ouro2", 68);
+  /* a Estátua Dourada do Nanico: pedestal de madeira escura em degraus com a plaquinha, a coluna e a taça de ouro com
+     as alças e a estrela em cima */
+  estatua: (k, r, giro) => {
+    const { W, D, boxF } = rel(k, r, giro);
+    const pt = ponto(r, giro);
+    boxF(0.16, 0.16, W - 0.32, D - 0.32, 8, ...MAD);
+    boxF(0.22, 0.22, W - 0.44, D - 0.44, 18, ...MAD, 8);
+    boxF(W / 2 - 0.12, D - 0.225, 0.24, 0.006, 8, "ouro0", "ouro0", "ouro1", 13);
+    boxF(0.19, 0.19, W - 0.38, D - 0.38, 3, ...MAD, 26);
+    const [ci, cj] = pt(W / 2, D / 2);
+    redondo(k, ci, cj, 0.16, 29, 4, "ouro0", "ouro1", "ouro2");
+    redondo(k, ci, cj, 0.05, 33, 14, "ouro0", "ouro1", "ouro2");
+    redondo(k, ci, cj, 0.1, 47, 3, "ouro0", "ouro1", "ouro2");
+    /* a taça: fatias cada vez mais largas, de baixo para cima */
+    for (const [rr, z, h] of [[0.12, 50, 4], [0.16, 54, 5], [0.19, 59, 6], [0.21, 65, 7]] as const) redondo(k, ci, cj, rr, z, h, "ouro0", "ouro1", "ouro2", true, false);
+    redondo(k, ci, cj, 0.22, 72, 0, "ouro2", "ouro2", "ouro2");
+    /* as alças nos dois lados */
+    for (const du of [-0.27, 0.23]) boxF(W / 2 + du, D / 2 - 0.02, 0.04, 0.04, 12, "ouro0", "ouro1", "ouro2", 58);
+    /* a estrela em cima */
+    const [x, y] = projAtual(ci, cj, 82);
+    const e = escalaPx();
+    const pts: Pt[] = Array.from({ length: 10 }, (_, n) => {
+      const a = -Math.PI / 2 + (n * Math.PI) / 5, rr = (n % 2 ? 3 : 7) * e;
+      return [x + Math.cos(a) * rr, y + Math.sin(a) * rr];
+    });
+    k.poly(pts, "neon-ouro", true);
   },
   plasma: (k, r) => {
     k.box(r.i + 0.3, r.j + 0.3, 0.4, 0.4, 14, "preto0", "preto1", "preto2");
@@ -418,8 +413,15 @@ const DESENHO_QUARTO: Record<string, Desenho> = {
     k.box(r.i + 0.35, r.j + 0.5, 0.2, 0.2, 8, "madeira1", "madeira1", "madeira2", 60);
   },
   /* os itens de piso que já existiam (fase 11) */
-  "cadeira-gamer": (k, r, giro) => cadeira(k, r, giro, ["preto0", "preto1", "preto2"], 70),
-  "cadeira-trono": (k, r, giro) => cadeira(k, r, giro, ["ouro0", "ouro1", "ouro2"], 90),
+  "cadeira-gamer": (k, r, giro) => {
+    cadeira(k, r, giro, ["preto0", "preto1", "preto2"], 70);
+    /* as faixas vermelhas do encosto e do assento */
+    const { W, boxF } = rel(k, r, giro);
+    boxF(W / 2 - 0.07, 0.335, 0.14, 0.006, 34, "pelucia0", "pelucia0", "pelucia1", 30);
+    boxF(W / 2 - 0.05, 0.31, 0.1, 0.006, 8, "pelucia0", "pelucia0", "pelucia1", 72);
+  },
+  "cadeira-trono": (k, r, giro) => trono(k, r, giro),
+  "cadeira-escritorio": (k, r, giro) => cadeira(k, r, giro, ["cadeira0", "cadeira1", "cadeira2"], 60),
   "mesa-rgb": (k, r, giro) => DESENHO_QUARTO.pc(k, r, giro),
   "tapete-rift": (k, r) => tapete(k, r, "rift0", "rift1"),
   "tapete-pelucia": (k, r) => tapete(k, r, "pelucia0", "pelucia1"),
@@ -824,5 +826,63 @@ function pedrasR(k: Lapis, r: Retangulo, giro: boolean, W: number, D: number, z0
       if (giro) risco(k, p(i + w, j + a, z - 8), p(i + w, j + a, z - 0.5), "pedral");
       else risco(k, p(i + a, j + d, z - 8), p(i + a, j + d, z - 0.5), "pedral");
     }
+  }
+}
+
+/**
+ * Sofá e poltrona (05/11/2026, refeitos): pés torneados de madeira, a base com o friso, os braços baixos com o tampo
+ * arredondado, o encosto mais alto com as almofadas capitonê e os assentos com o vivo na frente. A poltrona tem os
+ * braços mais finos e um assento só, largo. O assento termina na altura 18 (onde o boneco senta).
+ */
+function estofado(k: Lapis, r: Retangulo, giro: boolean, poltrona: boolean) {
+  const { W, D, box, boxF } = rel(k, r, giro);
+  const pt = ponto(r, giro), c = tons("cadeira");
+  for (const [u, v] of [[M + 0.08, M + 0.08], [W - M - 0.08, M + 0.08], [M + 0.08, D - M - 0.08], [W - M - 0.08, D - M - 0.08]]) pernaR(k, ...pt(u, v), 0, 5, 0.045, MAD);
+  const bw = poltrona ? 0.15 : 0.16, a0 = M + bw, a1 = W - M - bw;
+  const n = poltrona ? 1 : W - 2 * M >= 1.5 ? 3 : 2, sw = (a1 - a0 - (n - 1) * 0.025) / n;
+  /* de trás para a frente: encosto, braço do fundo, base, almofadas, braço da frente */
+  box(M, M, W - 2 * M, 0.2, 28, ...c, 4);
+  box(M + 0.01, M, W - 2 * M - 0.02, 0.2, 3, c[0], c[0], c[1], 32);
+  const braco = (u: number) => {
+    box(u, M + 0.02, bw, D - 2 * M - 0.02, 18, ...c, 4);
+    box(u - 0.005, M + 0.01, bw + 0.01, D - 2 * M, 3, c[0], c[0], c[1], 22);
+  };
+  braco(M);
+  box(a0, M + 0.2, a1 - a0, D - 2 * M - 0.2, 8, ...c, 4);
+  for (let x = 0; x < n; x++) {
+    const u = a0 + x * (sw + 0.025);
+    /* almofada de encosto, com os botões */
+    box(u + 0.01, M + 0.2, sw - 0.02, 0.13, 15, ...c, 12);
+    for (const du of poltrona ? [0.3, 0.7] : [0.5]) boxF(u + sw * du - 0.012, M + 0.33, 0.024, 0.004, 1.6, "cadeira2", "cadeira2", "cadeira2", 21);
+    /* assento fofo com o vivo na frente */
+    box(u + 0.005, M + 0.33, sw - 0.01, D - 2 * M - 0.35, 6, ...c, 12);
+    boxF(u + 0.005, D - M - 0.03, sw - 0.01, 0.008, 1, "cadeira0", "cadeira0", "cadeira0", 16);
+  }
+  boxF(M, D - M - 0.012, W - 2 * M, 0.012, 2, ...MAD, 5);
+  braco(a1);
+}
+
+/** O trono dourado: pés de leão, o assento de veludo vermelho, os braços de ouro e o espaldar alto com a coroa em cima. */
+function trono(k: Lapis, r: Retangulo, giro: boolean) {
+  const { W, D, box, boxF } = rel(k, r, giro);
+  const pt = ponto(r, giro);
+  const OURO: [string, string, string] = ["ouro0", "ouro1", "ouro2"];
+  const VEL: [string, string, string] = ["veludo0", "veludo1", "veludo2"];
+  for (const [u, v] of [[0.22, 0.22], [W - 0.22, 0.22], [0.22, D - 0.2], [W - 0.22, D - 0.2]]) pernaR(k, ...pt(u, v), 0, 14, 0.05, OURO);
+  box(0.16, 0.18, W - 0.32, D - 0.34, 4, ...OURO, 14);
+  box(0.2, 0.3, W - 0.4, D - 0.5, 5, ...VEL, 18);
+  /* o espaldar: moldura de ouro, o veludo e a coroa de três pontas */
+  box(0.16, 0.14, W - 0.32, 0.12, 74, ...OURO, 18);
+  boxF(0.24, 0.26, W - 0.48, 0.006, 58, ...VEL, 26);
+  for (let x = 0; x < 3; x++) {
+    const u = 0.2 + x * ((W - 0.48) / 2);
+    box(u, 0.15, 0.08, 0.1, x === 1 ? 16 : 10, ...OURO, 92);
+    const [ci, cj] = pt(u + 0.04, 0.2);
+    redondo(k, ci, cj, 0.035, 92 + (x === 1 ? 16 : 10), 3, ...VEL);
+  }
+  /* os braços de ouro */
+  for (const u of [0.14, W - 0.22]) {
+    box(u, 0.26, 0.08, D - 0.46, 14, ...OURO, 18);
+    box(u - 0.01, 0.26, 0.1, D - 0.44, 3, ...OURO, 32);
   }
 }

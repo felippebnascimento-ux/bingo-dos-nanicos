@@ -43,7 +43,8 @@ export function Previa({ it }: { it: ItemLoja }) {
   const eu = useApp((s) => friendOf(s.myFid, s.friends));
   /* fase 34: móveis com desenho e os quartos próprios (vazios, no tamanho) */
   if (it.espaco === "quarto" && it.dados.tamanho) return <QuartoCena tamanho={it.dados.tamanho} equip={SEM_EQUIP} moveis={SEM_MOVEIS} />;
-  if (posicionavel(it) && it.dados.w && it.dados.d && (it.espaco === "movel" || !FOCO[it.espaco]))
+  /* cadeira e planta também mostram o próprio móvel (o mesmo desenho do quarto), em vez do quarto da ficha */
+  if (posicionavel(it) && it.dados.w && it.dados.d && (it.espaco === "movel" || it.espaco === "cadeira" || it.espaco === "planta" || !FOCO[it.espaco]))
     return <MovelPrevia desenho={desenhoDo(it)} w={it.dados.w} d={it.dados.d} />;
   const foco = FOCO[it.espaco];
   if (foco) return <QuartoPrevia equip={{ [it.espaco]: it.dados.cor } as EquipQuarto} foco={foco} />;
