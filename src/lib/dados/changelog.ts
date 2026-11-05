@@ -912,6 +912,10 @@ export const CHANGELOG: EntradaLog[] = [
       "Loja nova: chopp, quentão, vinho, palheiro, açaí, 6 títulos, 3 molduras e 3 efeitos para o boneco",
     ],
   },
+  {
+    data: "05/11/2026",
+    itens: ["O Murlik chegou! Amigo dos nanicos com boneco, poses e tudo o que um nanico pode fazer"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

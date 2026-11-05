@@ -18,6 +18,7 @@ const CORPO_W: Readonly<Record<number, number>> = {
 export const AMIGOS: Readonly<Record<string, { nome: string; arte: string; w: number; boneco: string; poses?: string }>> = {
   lightzin: { nome: "Lightzin", arte: "lightzin", w: 159, boneco: "lightzin.webp" },
   "le bitu": { nome: "Le Bitu", arte: "lebitu", w: 189, boneco: "lebitu.webp", poses: "lebitu.webp" },
+  murlik: { nome: "Murlik", arte: "murlik", w: 175, boneco: "murlik.webp", poses: "murlik.webp" },
 };
 
 /** É um amigo dos nanicos (e não um dos 14)? */
