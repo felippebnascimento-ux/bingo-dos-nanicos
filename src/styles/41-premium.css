@@ -83,3 +83,15 @@ input[type=range]{accent-color:var(--accent)}
 .brand:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px}
 /* seletor com 3 ou 4 opções (Vitrine · Mochila · Mercado): todas numa linha só */
 .seg:has(> :nth-child(3)):not(:has(> :nth-child(5))){grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:1fr}
+/* rodapé do menu (rosto · moedas · engrenagem): as moedas encolhem para a engrenagem sempre caber dentro do menu */
+.eu-painel .moedas-chip{flex:0 1 auto;min-width:0;gap:6px;padding:6px 9px}
+.eu-painel .moedas-chip .seq{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eu-painel .eu-cfg{flex:none}
+body:not(.side-min) .eu-painel:not(:has(.vz-eu)) .eu-cfg{margin-left:auto}
+/* fora da call o nome não cabia (ficava espremido, invisível) e só roubava espaço: sai, e o "3 dias" cabe inteiro */
+.eu-painel:not(:has(.vz-eu)) .eu{display:none}
+body:not(.side-min) .eu-painel:not(:has(.vz-eu)){gap:4px}
+/* na sala mas fora da voz: o texto numa linha e o "Entrar na voz" embaixo, largo (lado a lado virava três linhas) */
+body:not(.side-min) .vz-topo:has(> .btn.sm){flex-wrap:wrap;row-gap:8px}
+body:not(.side-min) .vz-topo:has(> .btn.sm) .vz-info{flex:1 1 100%}
+body:not(.side-min) .vz-topo > .btn.sm{flex:1;min-height:30px;padding:5px 10px;font-size:13px}

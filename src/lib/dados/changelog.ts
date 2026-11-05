@@ -893,6 +893,13 @@ export const CHANGELOG: EntradaLog[] = [
       "Instale o Bingo dos Nanicos como app (ícone no Dock e na tela inicial do celular): Configurações › Sobre",
     ],
   },
+  {
+    data: "04/11/2026",
+    itens: [
+      "A engrenagem das Configurações não fica mais cortada no canto do menu, e o \"3 dias\" das moedas aparece inteiro",
+      "Na sala mas fora da voz: o \"Entrar na voz\" fica numa linha própria, largo, e o texto não se espreme mais",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
