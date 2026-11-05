@@ -924,6 +924,18 @@ export const CHANGELOG: EntradaLog[] = [
     data: "05/11/2026",
     itens: ["A Marvi chegou! Amiga dos nanicos com boneco, poses e tudo o que um nanico pode fazer"],
   },
+  {
+    data: "05/11/2026",
+    itens: [
+      "Bonecos novos dos 15 nanicos: andam com uma perna e depois a outra, sem borda branca, sem o branco entre as pernas e sempre do mesmo tamanho",
+      "O andar ficou mais natural: o boneco vira antes de sair, o pé não escorrega, assenta ao chegar, respira parado e de vez em quando olha para os lados",
+      "K-FOFO com acabamento de pixel art: luz da esquerda, contorno escuro, mesas de tábua com pés torneados, sofás com almofadas, baú com cintas de ferro e uma churrasqueira de tijolinho nova",
+      "Quartos mais caprichados: lambri de madeira, piso de taco, janela com cortinas, porta nova, e todos os móveis redesenhados (cama, sofá, estante, guarda-roupa, TV, PC, frigobar, plantas, dado, quadro de recados, caixa de som e regulador de luz)",
+      "Banheiro do K-FOFO refeito: vaso e pia novos encostados na parede, espelho, toalha e tapete; as pixações não saem mais da parede nem ficam uma em cima da outra",
+      "Na Loja e na Mochila, os móveis aparecem em cima do chão com sombra",
+      "Coleção rústica para o quarto: lareira, mesa, banquinho, estante, abajur, candelabro, barril, bar de barril e baú",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

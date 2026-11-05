@@ -37,11 +37,12 @@ type Interno = Boneco & {
   alvo: Piso;
   fila: Piso[];
   progresso: number;
-  desde: number;
   /** assento onde vai sentar quando chegar */
   vaiSentar: string | null;
   /** está no primeiro passo depois de parado (acelera nele) */
   arrancou: boolean;
+  /** pisos andados desde que saiu (o quadro da perna sai daqui, então o pé não escorrega no chão) */
+  passos: number;
 };
 
 
@@ -83,10 +84,12 @@ function brilhar(lista: Brilho[]) {
 
 const B = new Map<string, Interno>();
 /** pisos por segundo */
-const VEL = 3;
+const VEL = 2.3;
 const VEL_SEM_MOVIMENTO = 6;
-/** troca de quadro do andar */
-const QUADRO_MS = 120;
+/** quadros do andar por piso andado: os 4 quadros (uma passada) cobrem 1 piso, ~110 ms cada na velocidade normal */
+const QUADROS_POR_PISO = 4;
+/** saindo do lugar para outro lado: primeiro vira (fica um instante parado já virado), depois anda; em pisos */
+const VIRAR = 0.25;
 
 let primeiraLista = true;
 
@@ -101,7 +104,7 @@ function novo(key: string, name: string, fid: string | null, p: Piso & { s?: str
   const a = assentoCena(p.s);
   return {
     key, name, fid, i: p.i, j: p.j, sentido: a?.olha ?? "frente-direita", quadro: 0, senta: a?.id ?? null,
-    de: { i: p.i, j: p.j }, alvo: { i: p.i, j: p.j }, fila: [], progresso: 0, desde: 0, vaiSentar: null, arrancou: false,
+    de: { i: p.i, j: p.j }, alvo: { i: p.i, j: p.j }, fila: [], progresso: 0, vaiSentar: null, arrancou: false, passos: 0,
   };
 }
 
@@ -133,9 +136,12 @@ function proximoPasso(b: Interno) {
   const prox = b.fila.shift();
   if (!prox) return parar(b);
   b.arrancou = !andando(b);
+  b.passos = b.arrancou ? 0 : b.passos + 1;
   b.de = { ...b.alvo };
   b.alvo = prox;
+  const antes = b.sentido;
   b.sentido = sentido(b.de, b.alvo, b.sentido);
+  if (b.arrancou && b.sentido !== antes) b.progresso = -VIRAR;
 }
 
 /** Leva o boneco até `para`. Se estiver no meio de um passo, termina o passo e segue dali. */
@@ -147,10 +153,7 @@ function rota(b: Interno, para: Piso, sentar: string | null = null): boolean {
   pararAcao(b.key);
   b.vaiSentar = sentar;
   b.fila = c.slice(1);
-  if (!andando(b)) {
-    b.desde = performance.now();
-    proximoPasso(b);
-  }
+  if (!andando(b)) proximoPasso(b);
   if (!visivel()) {
     /* com o hall escondido não tem por que animar: vai direto */
     b.alvo = c[c.length - 1];
@@ -199,10 +202,11 @@ function passo(agora: number) {
     if (andando(b)) {
       alguem = true;
       /* calmo (menos movimento): reto, sem acelerar nem frear */
-      const t = calmo ? b.progresso : suavizar(b.progresso, b.arrancou, b.fila.length === 0);
+      const t = calmo ? Math.max(0, b.progresso) : suavizar(Math.max(0, b.progresso), b.arrancou, b.fila.length === 0);
       b.i = b.de.i + (b.alvo.i - b.de.i) * t;
       b.j = b.de.j + (b.alvo.j - b.de.j) * t;
-      b.quadro = calmo ? 0 : 1 + (Math.floor((agora - b.desde) / QUADRO_MS) % 4);
+      /* o quadro sai da distância, não do relógio: arrancando e freando, a perna anda mais devagar junto com o corpo */
+      b.quadro = calmo || b.progresso < 0 ? 0 : 1 + (Math.floor((b.passos + t) * QUADROS_POR_PISO) % 4);
     }
   }
   publicar();

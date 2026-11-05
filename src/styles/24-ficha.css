@@ -75,7 +75,6 @@ button.ficha-selo:hover{border-color:var(--accent)}
   --quarto-lencol0:#C9C6BF; --quarto-lencol1:#B2AEA5; --quarto-cinza0:#9A9EA3; --quarto-cinza1:#82868B; --quarto-cinza2:#6F7378;
 }
 .quarto .q-linha{stroke:var(--quarto-linha);stroke-width:.7;stroke-linejoin:round}
-.quarto .q-st-brilho{stop-color:var(--quarto-brilho)} .quarto .q-st-escuro{stop-color:var(--quarto-escuro)} .quarto .q-st-nada{stop-color:var(--quarto-escuro);stop-opacity:0} .quarto .q-st-escuro2{stop-color:var(--quarto-escuro2)}
 .quarto .q-parede1{fill:var(--quarto-parede1)} .quarto .q-parede2{fill:var(--quarto-parede2)}
 .quarto .q-topo1{fill:var(--quarto-topo1)} .quarto .q-topo2{fill:var(--quarto-topo2)}
 .quarto .q-rodape1{fill:var(--quarto-rodape1)} .quarto .q-rodape2{fill:var(--quarto-rodape2)}
@@ -158,3 +157,44 @@ button.ficha-selo:hover{border-color:var(--accent)}
 .ficha-cs b{margin-right:6px;font:700 12px var(--display);letter-spacing:.06em;color:var(--accent)}
 /* linhas do "No jogo" com o brasão do elo e o círculo da GC na frente (fase 33) */
 .ficha-cs{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+
+/* ---------- coleção rústica dos quartos (05/11/2026): madeira avermelhada, pedra, fogo, ferro, velas e vidro ---------- */
+.ficha-quarto,.loja-previa,.mochila-previa,.quarto-vars{--quarto-contorno:#2A1A10; --quarto-cortica:#C49A64; --quarto-lambri1:#B9A07A; --quarto-lambri2:#C8AF88; --quarto-lambri-l:#9C8460; --quarto-moldura1:#A68A62; --quarto-moldura2:#B79B71; --quarto-porta2:#7C6136; --quarto-cortina:#9A3F3A; --quarto-cortina2:#7E302C; --quarto-taco0:#B8925E; --quarto-taco1:#B28C58; --quarto-taco2:#BD9763; --quarto-taco-l:#8E6E42; --quarto-madeirav:#5C4321; --quarto-vaso0:#D08A5C; --quarto-vaso1:#B06B42; --quarto-vaso2:#8A4F2E; --quarto-rmad0:#C2703F; --quarto-rmad1:#9A4F2A; --quarto-rmad2:#70361B; --quarto-rmadv:#5C2A14; --quarto-pedra0:#A39E97; --quarto-pedra1:#85807A; --quarto-pedra2:#66625D; --quarto-pedral:#3E3B38; --quarto-fogo0:#FFD45A; --quarto-fogo1:#FF8A1F; --quarto-fogo2:#D9381A; --quarto-brasa:#2A120A; --quarto-ferro0:#9AA3A8; --quarto-ferro1:#737C81; --quarto-ferro2:#525A5F; --quarto-vela0:#5B4C6E; --quarto-vela1:#463A57; --quarto-vela2:#352B43; --quarto-chama:#FFE27A; --quarto-cupula0:#F6EBCB; --quarto-cupula1:#E6D3A4; --quarto-cupula2:#CDB580; --quarto-luzq:#FFF4C8; --quarto-garrafa0:#4E9A47; --quarto-garrafa1:#3A7A35; --quarto-garrafa2:#2C5E28; --quarto-garrafb0:#E0A245; --quarto-garrafb1:#B97E2A; --quarto-garrafb2:#8E5F1C; --quarto-brilho:#FFF6E6;}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .ficha-quarto,:root:not([data-theme="light"]) .loja-previa,:root:not([data-theme="light"]) .mochila-previa,:root:not([data-theme="light"]) .quarto-vars{--quarto-contorno:#140C07; --quarto-cortica:#93724A; --quarto-lambri1:#5B4A35; --quarto-lambri2:#66533C; --quarto-lambri-l:#46392A; --quarto-moldura1:#6B5A42; --quarto-moldura2:#77654B; --quarto-porta2:#4F3D22; --quarto-cortina:#7A322E; --quarto-cortina2:#5F2522; --quarto-taco0:#7F6440; --quarto-taco1:#7A603D; --quarto-taco2:#846843; --quarto-taco-l:#5C4729; --quarto-madeirav:#4A361A; --quarto-vaso0:#B37752; --quarto-vaso1:#955B39; --quarto-vaso2:#744227; --quarto-rmad0:#A35E35; --quarto-rmad1:#814224; --quarto-rmad2:#5C2C16; --quarto-rmadv:#4A2210; --quarto-pedra0:#86827C; --quarto-pedra1:#6C6863; --quarto-pedra2:#53504C; --quarto-pedral:#2E2C2A; --quarto-fogo0:#F2C64E; --quarto-fogo1:#E87C1B; --quarto-fogo2:#C23216; --quarto-brasa:#1E0D07; --quarto-ferro0:#7E868B; --quarto-ferro1:#5F676B; --quarto-ferro2:#444A4E; --quarto-vela0:#4B3F5B; --quarto-vela1:#3A3048; --quarto-vela2:#2B2337; --quarto-chama:#F2D46E; --quarto-cupula0:#D6CCB0; --quarto-cupula1:#C4B48D; --quarto-cupula2:#AE9A6C; --quarto-luzq:#F2E6B8; --quarto-garrafa0:#42833C; --quarto-garrafa1:#31682D; --quarto-garrafa2:#255021; --quarto-garrafb0:#C48D3B; --quarto-garrafb1:#A06D24; --quarto-garrafb2:#7B5218; --quarto-brilho:#E6DCCB;}}
+:root[data-theme="dark"] .ficha-quarto,:root[data-theme="dark"] .loja-previa,:root[data-theme="dark"] .mochila-previa,:root[data-theme="dark"] .quarto-vars{--quarto-contorno:#140C07; --quarto-cortica:#93724A; --quarto-lambri1:#5B4A35; --quarto-lambri2:#66533C; --quarto-lambri-l:#46392A; --quarto-moldura1:#6B5A42; --quarto-moldura2:#77654B; --quarto-porta2:#4F3D22; --quarto-cortina:#7A322E; --quarto-cortina2:#5F2522; --quarto-taco0:#7F6440; --quarto-taco1:#7A603D; --quarto-taco2:#846843; --quarto-taco-l:#5C4729; --quarto-madeirav:#4A361A; --quarto-vaso0:#B37752; --quarto-vaso1:#955B39; --quarto-vaso2:#744227; --quarto-rmad0:#A35E35; --quarto-rmad1:#814224; --quarto-rmad2:#5C2C16; --quarto-rmadv:#4A2210; --quarto-pedra0:#86827C; --quarto-pedra1:#6C6863; --quarto-pedra2:#53504C; --quarto-pedral:#2E2C2A; --quarto-fogo0:#F2C64E; --quarto-fogo1:#E87C1B; --quarto-fogo2:#C23216; --quarto-brasa:#1E0D07; --quarto-ferro0:#7E868B; --quarto-ferro1:#5F676B; --quarto-ferro2:#444A4E; --quarto-vela0:#4B3F5B; --quarto-vela1:#3A3048; --quarto-vela2:#2B2337; --quarto-chama:#F2D46E; --quarto-cupula0:#D6CCB0; --quarto-cupula1:#C4B48D; --quarto-cupula2:#AE9A6C; --quarto-luzq:#F2E6B8; --quarto-garrafa0:#42833C; --quarto-garrafa1:#31682D; --quarto-garrafa2:#255021; --quarto-garrafb0:#C48D3B; --quarto-garrafb1:#A06D24; --quarto-garrafb2:#7B5218; --quarto-brilho:#E6DCCB;}
+.quarto .q-rmad0{fill:var(--quarto-rmad0)}
+.quarto .q-rmad1{fill:var(--quarto-rmad1)}
+.quarto .q-rmad2{fill:var(--quarto-rmad2)}
+.quarto .q-rmadv{fill:var(--quarto-rmadv)}
+.quarto .q-pedra0{fill:var(--quarto-pedra0)}
+.quarto .q-pedra1{fill:var(--quarto-pedra1)}
+.quarto .q-pedra2{fill:var(--quarto-pedra2)}
+.quarto .q-pedral{fill:var(--quarto-pedral)}
+.quarto .q-fogo0{fill:var(--quarto-fogo0)}
+.quarto .q-fogo1{fill:var(--quarto-fogo1)}
+.quarto .q-fogo2{fill:var(--quarto-fogo2)}
+.quarto .q-brasa{fill:var(--quarto-brasa)}
+.quarto .q-ferro0{fill:var(--quarto-ferro0)}
+.quarto .q-ferro1{fill:var(--quarto-ferro1)}
+.quarto .q-ferro2{fill:var(--quarto-ferro2)}
+.quarto .q-vela0{fill:var(--quarto-vela0)}
+.quarto .q-vela1{fill:var(--quarto-vela1)}
+.quarto .q-vela2{fill:var(--quarto-vela2)}
+.quarto .q-chama{fill:var(--quarto-chama)}
+.quarto .q-cupula0{fill:var(--quarto-cupula0)}
+.quarto .q-cupula1{fill:var(--quarto-cupula1)}
+.quarto .q-cupula2{fill:var(--quarto-cupula2)}
+.quarto .q-luzq{fill:var(--quarto-luzq)}
+.quarto .q-garrafa0{fill:var(--quarto-garrafa0)}
+.quarto .q-garrafa1{fill:var(--quarto-garrafa1)}
+.quarto .q-garrafa2{fill:var(--quarto-garrafa2)}
+.quarto .q-garrafb0{fill:var(--quarto-garrafb0)}
+.quarto .q-garrafb1{fill:var(--quarto-garrafb1)}
+.quarto .q-garrafb2{fill:var(--quarto-garrafb2)}
+.quarto .q-brilho{fill:var(--quarto-brilho)}
+.quarto .q-madeirav{fill:var(--quarto-madeirav)} .quarto .q-vaso0{fill:var(--quarto-vaso0)} .quarto .q-vaso1{fill:var(--quarto-vaso1)} .quarto .q-vaso2{fill:var(--quarto-vaso2)}
+.quarto .q-brilho{opacity:.7}
+/* o contorno dos móveis mais escuro e fechado, no traço dos bonecos (antes era um marrom translúcido) */
+.quarto .q-linha{stroke:var(--quarto-contorno);stroke-width:.9}
+.quarto .q-lambri1{fill:var(--quarto-lambri1)} .quarto .q-lambri2{fill:var(--quarto-lambri2)} .quarto .q-lambri-l{fill:var(--quarto-lambri-l)} .quarto .q-moldura1{fill:var(--quarto-moldura1)} .quarto .q-moldura2{fill:var(--quarto-moldura2)} .quarto .q-porta2{fill:var(--quarto-porta2)} .quarto .q-cortina{fill:var(--quarto-cortina)} .quarto .q-cortina2{fill:var(--quarto-cortina2)} .quarto .q-taco0{fill:var(--quarto-taco0)} .quarto .q-taco1{fill:var(--quarto-taco1)} .quarto .q-taco2{fill:var(--quarto-taco2)} .quarto .q-taco-l{fill:var(--quarto-taco-l)}
+.quarto .q-cortica{fill:var(--quarto-cortica)}

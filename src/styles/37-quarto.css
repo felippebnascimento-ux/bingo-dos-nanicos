@@ -107,10 +107,11 @@
 /* ---------- banheiro do K-FOFO (cenas.ts) e as pixações (seção 51): cores próprias da ilustração ---------- */
 .quarto-vars{
   --banheiro-azulejo1:#CFE3E6;--banheiro-azulejo2:#DDEEF0;--banheiro-rejunte:#A9C2C6;--banheiro-ladrilho0:#E8E4DC;--banheiro-ladrilho1:#D6D1C6;
-  --banheiro-espelho:#B9D6E6;--banheiro-louca0:#FBFBF9;--banheiro-louca1:#E3E3DF;--banheiro-louca2:#C9C9C4;
+  --banheiro-espelho:#B9D6E6;--banheiro-espelho2:#E4F1F7;--banheiro-agua:#9CCFE6;--banheiro-rodape:#8FB0B5;--banheiro-toalha0:#E9A23B;--banheiro-toalha1:#C9821F;--banheiro-tapete:#6FA3B5;--banheiro-tapete2:#5A8C9E;--banheiro-luz:#FFF4C8;--banheiro-louca0:#FBFBF9;--banheiro-louca1:#E3E3DF;--banheiro-louca2:#C9C9C4;
   --pixo-preto:#1F1F1F;--pixo-vermelho:#D7263D;--pixo-azul:#1B6FD6;--pixo-verde:#1E9E4A;--pixo-rosa:#E04FA8;--pixo-amarelo:#E8B10F;--pixo-borda:rgb(255 255 255 / .55)}
 .quarto .q-azulejo1{fill:var(--banheiro-azulejo1)} .quarto .q-azulejo2{fill:var(--banheiro-azulejo2)} .quarto .q-rejunte-b{fill:var(--banheiro-rejunte)}
 .quarto .q-ladrilho0{fill:var(--banheiro-ladrilho0)} .quarto .q-ladrilho1{fill:var(--banheiro-ladrilho1)} .quarto .q-espelho{fill:var(--banheiro-espelho)}
+.quarto .q-espelho2{fill:var(--banheiro-espelho2)} .quarto .q-agua{fill:var(--banheiro-agua)} .quarto .q-rodape-b{fill:var(--banheiro-rodape)} .quarto .q-toalha0{fill:var(--banheiro-toalha0)} .quarto .q-toalha1{fill:var(--banheiro-toalha1)} .quarto .q-tapete-b{fill:var(--banheiro-tapete)} .quarto .q-tapete-b2{fill:var(--banheiro-tapete2)} .quarto .q-luz-b{fill:var(--banheiro-luz)}
 .quarto .q-louca0{fill:var(--banheiro-louca0)} .quarto .q-louca1{fill:var(--banheiro-louca1)} .quarto .q-louca2{fill:var(--banheiro-louca2)}
 .quarto-pixo{font:800 13px var(--display);letter-spacing:.02em;paint-order:stroke;stroke:var(--pixo-borda);stroke-width:1.5px;stroke-linejoin:round}
 .quarto-pixo.p-preto,.pixar-cor.p-preto{fill:var(--pixo-preto);--spray:var(--pixo-preto)}

@@ -9148,3 +9148,22 @@ end $$;
 revoke all on function public.corrida_apostar(text, int, int, int, int) from public, anon;
 grant execute on function public.corrida_apostar(text, int, int, int, int) to authenticated;
 
+-- 75) coleção rústica para os quartos (05/11/2026, pedido do Henrique) --------------------------------------------------
+--   Nove móveis novos na Loja (espaço 'movel'), desenhados no site (Moveis.tsx): madeira com veios e tábuas, pés
+--   torneados, pedra, fogo, ferro e velas. O banquinho é de sentar. Pode rodar de novo: atualiza os mesmos itens.
+insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem) values
+  ('movel-lareira',         'Lareira de pedra',     'Fogo aceso o ano inteiro, mesmo no verão de 40 graus.',  'movel', 2000, '{"w":2,"d":1,"desenho":"lareira"}', 216),
+  ('movel-mesa-rustica',    'Mesa rústica',         'Tábuas grossas e pés torneados, para o churrasco.',      'movel', 900,  '{"w":2,"d":1,"desenho":"mesa-rustica"}', 217),
+  ('movel-banco-rustico',   'Banquinho de madeira', 'Redondo, com pés torneados. Dá para sentar.',            'movel', 200,  '{"w":1,"d":1,"desenho":"banco-rustico"}', 218),
+  ('movel-estante-rustica', 'Estante de madeira',   'Livros que ninguém leu e uma vela.',                     'movel', 700,  '{"w":1,"d":1,"desenho":"estante-rustica"}', 219),
+  ('movel-abajur',          'Abajur de pé',         'Pé torneado e cúpula de pano, luz amarela.',             'movel', 300,  '{"w":1,"d":1,"desenho":"abajur"}', 220),
+  ('movel-candelabro',      'Candelabro',           'Cinco velas acesas, clima de castelo.',                  'movel', 350,  '{"w":1,"d":1,"desenho":"candelabro"}', 221),
+  ('movel-barril',          'Barril',               'Madeira e cintas de ferro. O que tem dentro, ninguém sabe.', 'movel', 250, '{"w":1,"d":1,"desenho":"barril"}', 222),
+  ('movel-bar-barril',      'Bar de barril',        'Um barril deitado cheio de garrafas.',                   'movel', 1200, '{"w":1,"d":1,"desenho":"bar-barril"}', 223),
+  ('movel-bau-rustico',     'Baú de madeira',       'Cintas de ferro e fecho dourado.',                       'movel', 500,  '{"w":1,"d":1,"desenho":"bau-rustico"}', 224)
+on conflict (id) do update set nome = excluded.nome, descricao = excluded.descricao, espaco = excluded.espaco,
+  preco = excluded.preco, dados = excluded.dados, ordem = excluded.ordem;
+
+-- confere: deve listar os 9 móveis rústicos
+select id, nome, preco from public.loja_itens where ordem between 216 and 224 order by ordem;
+

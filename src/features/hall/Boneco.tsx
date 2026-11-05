@@ -6,7 +6,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { bonecoOf, posesOf } from "@/lib/dados/nanicos";
 import type { Rosto } from "@/lib/tipos";
 import type { Boneco as B } from "./bonecos";
-import { ANCORA, assentoDe, CEL_H, CEL_W, quadroSprite, tela, type Caixa2D } from "./hall";
+import { ANCORA, assentoDe, CEL_H, CEL_W, quadroSprite, tela, type Caixa2D, type Sentido } from "./hall";
 import { abrirMenu } from "./zoeiraSala";
 import { Chapeu } from "./Chapeu";
 import { CartasNaMao } from "./MesaVerde";
@@ -31,7 +31,41 @@ export function usePoseQuadro(pose: Pose | null, costas: boolean) {
   return pose ? quadroPose(pose, costas, anima ? t : 0) : null;
 }
 
+/** O outro lado da mesma linha da folha (frente-direita ↔ frente-esquerda): a olhadinha para o lado. */
+const VIRA: Record<Sentido, Sentido> = {
+  "frente-direita": "frente-esquerda",
+  "frente-esquerda": "frente-direita",
+  "costas-direita": "costas-esquerda",
+  "costas-esquerda": "costas-direita",
+};
+
+/** Parado em pé, de vez em quando o boneco olha para o lado (1,4 a 2,4 s) e volta, cada um no seu tempo. */
+function useOlhadela(ativo: boolean) {
+  const [vira, setVira] = useState(false);
+  useEffect(() => {
+    if (!ativo || reduzMovimento()) return;
+    let t: ReturnType<typeof setTimeout>;
+    const espera = () => (t = setTimeout(olha, 7000 + Math.random() * 9000));
+    const olha = () => {
+      setVira(true);
+      t = setTimeout(() => (setVira(false), espera()), 1400 + Math.random() * 1000);
+    };
+    espera();
+    return () => {
+      clearTimeout(t);
+      setVira(false);
+    };
+  }, [ativo]);
+  return ativo && vira;
+}
+
 const pct = (v: number) => `${v * 100}%`;
+/** Um atraso fixo (0 a 3,4 s) tirado do nome do boneco, para a respiração de cada um começar num ponto diferente. */
+const atrasoDe = (k: string) => {
+  let h = 0;
+  for (let n = 0; n < k.length; n++) h = (h * 31 + k.charCodeAt(n)) | 0;
+  return ((Math.abs(h) % 34) / 10).toFixed(1);
+};
 
 export const Boneco = memo(function Boneco({
   b, f, eu, z, vb, rot = 0, enfeite, cartas, fala,
@@ -40,11 +74,13 @@ export const Boneco = memo(function Boneco({
   const a = assentoDe(b.senta);
   const [x, y] = a ? tela(a.i, a.j) : tela(b.i + 0.5, b.j + 0.5);
   const folha = bonecoOf(f);
-  const olha = a ? a.olha : b.sentido;
-  const q = quadroSprite(olha, a ? 0 : b.quadro);
-  /* acessório da loja (boné, óculos…): o enfeite dos troféus tem prioridade no alto da cabeça */
   /* acenar, dançar ou deitar (acoes.ts) */
   const acao = useAcaoDe(b.key);
+  const andando = !a && b.quadro > 0;
+  const virou = useOlhadela(!a && !andando && !acao);
+  const olha = a ? a.olha : virou ? VIRA[b.sentido] : b.sentido;
+  const q = quadroSprite(olha, a ? 0 : b.quadro, folha);
+  /* acessório da loja (boné, óculos…): o enfeite dos troféus tem prioridade no alto da cabeça */
   /* com a folha de poses (poses.ts): a ação e o sentar viram o desenho; sem ela, o balanço e o corte de antes */
   const poses = posesOf(f);
   const pose: Pose | null = poses ? (acao ?? (a ? "sentar" : null)) : null;
@@ -63,6 +99,8 @@ export const Boneco = memo(function Boneco({
     height: pct(CEL_H / vb.h),
     zIndex: z,
     ...(rot ? { ["--balanco" as string]: `${rot.toFixed(2)}deg` } : {}),
+    /* cada um respira no seu tempo (senão a sala inteira sobe e desce junto) */
+    ["--resp-atraso" as string]: `-${atrasoDe(b.key)}s`,
   };
   const corpo = poses && pose && quadroPoseAgora ? (
     <span
@@ -80,7 +118,7 @@ export const Boneco = memo(function Boneco({
     </span>
   );
   return (
-    <div className={"boneco" + (eu ? " eu" : "") + (a ? " sentado" : "") + (rot ? " balanca" : "") + (enfeite ? " chapeu-" + enfeite : "") + (acess ? " acess-" + acess : "") + (acao ? " acao-" + acao : "") + (pose ? " com-pose" : "") + (efeito ? " efeito-" + efeito : "")} style={caixa}>
+    <div className={"boneco" + (eu ? " eu" : "") + (andando ? " andando " + (olha.endsWith("direita") ? "vai-dir" : "vai-esq") : "") + (a ? " sentado" : "") + (rot ? " balanca" : "") + (enfeite ? " chapeu-" + enfeite : "") + (acess ? " acess-" + acess : "") + (acao ? " acao-" + acao : "") + (pose ? " com-pose" : "") + (efeito ? " efeito-" + efeito : "")} style={caixa}>
       <span className="boneco-nome">{b.name}</span>
       {acao && (
         <span className="boneco-acao" aria-hidden="true">

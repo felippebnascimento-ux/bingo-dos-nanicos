@@ -23,7 +23,22 @@
 
 /* boneco: a célula da spritesheet (84×134) posicionada em % do palco */
 .boneco{position:absolute;pointer-events:none}
-.boneco::before{content:"";position:absolute;left:20%;right:20%;bottom:-2%;height:9%;border-radius:50%;background:var(--shadow)}
+.boneco::before{content:"";position:absolute;left:24%;right:24%;bottom:-1.5%;height:7%;border-radius:50%;background:color-mix(in srgb,var(--hall-contorno,var(--shadow)) 25%,transparent)}
+/* vida (05/11/2026): parado, o boneco respira (sobe e desce de leve, cada um no seu tempo); andando, o corpo sobe
+   no quadro da perna passando e a sombra encolhe. Usa `scale` e `translate` (e não `transform`) para somar com o
+   aceno, a dança e o cambaleio da chinelada sem um apagar o outro. */
+.boneco-img,.boneco-pose,.boneco-pino{transform-origin:50% 100%;transition:translate .09s ease-out,rotate .18s ease-out}
+/* ao parar, o corpo assenta (desce um tiquinho e volta) e logo começa a respirar */
+.boneco:not(.andando) .boneco-img{animation:boneco-pousa .34s ease-out,boneco-respira 3.4s ease-in-out infinite;animation-delay:0s,var(--resp-atraso,0s)}
+.boneco-pose.pose-sentar{animation:boneco-respira 3.4s ease-in-out infinite;animation-delay:var(--resp-atraso,0s)}
+/* andando, o corpo vai um tiquinho inclinado para o lado que está indo (o topo não sobe: a passada é na perna) */
+.boneco.vai-dir .boneco-img{rotate:1.4deg}
+.boneco.vai-esq .boneco-img{rotate:-1.4deg}
+@keyframes boneco-pousa{0%{translate:0 -1.6%}50%{translate:0 .9%}100%{translate:0 0}}
+@keyframes boneco-respira{0%,100%{scale:1 1}45%{scale:1.006 1.022}}
+@media (prefers-reduced-motion:reduce){.boneco-img,.boneco-pose{animation:none!important;translate:none!important}.boneco.andando .boneco-img{rotate:none}}
+html.menos-movimento .boneco-img,html.menos-movimento .boneco-pose{animation:none!important;translate:none!important}
+html.menos-movimento .boneco.andando .boneco-img{rotate:none}
 .boneco-img{position:absolute;inset:0;background-repeat:no-repeat;background-size:500% 200%}
 .boneco-img.espelha{transform:scaleX(-1)}
 /* o boneco é um botão, mas sem nada em volta: nem fundo, nem borda, nem o destaque do toque ou do foco
@@ -395,9 +410,6 @@
 .hall .s-cadl{stroke:var(--hall-cadl)}
 .hall .f-solchao{fill-opacity:.28}
 .hall .st-ceu0{stop-color:var(--hall-ceu0)} .hall .st-ceu1{stop-color:var(--hall-ceu1)} .hall .st-ceu2{stop-color:var(--hall-ceu2)}
-/* o degradê "macio" dos móveis (Sala.tsx), igual ao dos quartos */
-.hall{--hall-macio-brilho:rgba(255,255,255,.1);--hall-macio-escuro:rgba(0,0,0,.13);--hall-macio-escuro2:rgba(0,0,0,.2)}
-.hall .st-macio-brilho{stop-color:var(--hall-macio-brilho)} .hall .st-macio-escuro{stop-color:var(--hall-macio-escuro)} .hall .st-macio-nada{stop-color:var(--hall-macio-escuro);stop-opacity:0} .hall .st-macio-escuro2{stop-color:var(--hall-macio-escuro2)}
 
 /* ---------- zoeira: menu do boneco, chinelo/torta voando, PLAFT!, chantili e revidar (fase 18) ---------- */
 .boneco.balanca .boneco-img,.boneco.balanca .boneco-pino{transform:rotate(var(--balanco,0deg));transform-origin:50% 100%}
@@ -517,7 +529,7 @@
 .hall-area:has(.hall-bolsa) .hall-dica{display:none}
 @media (min-width:761px) and (max-width:1300px){.hall-dica{display:none}}
 /* sombra dos móveis no chão (luz de cima à esquerda) */
-.hall-sombras polygon{fill:var(--accent-ink);opacity:.3}
+.hall-sombras polygon{fill:var(--hall-contorno);opacity:.25}
 .hall-area:has(.habbo-barra) .hall-bolso{pointer-events:none}
 .hall-area:has(.habbo-barra) .hall-bolso > *{pointer-events:auto}
 
@@ -657,3 +669,48 @@
 @keyframes boneco-pula{0%,100%{translate:0 0}45%{translate:0 -14%}}
 @media (prefers-reduced-motion:reduce){.boneco-pose.pose-pula{animation:none}}
 .quarto-boneco.com-pose .quarto-corpo{animation:none;rotate:none;translate:none}
+
+/* ---------- móveis desenhados de novo (05/11/2026): madeira de verdade, almofadas com costura, couro, ferro e os
+   enfeites em cima das mesas; contorno mais grosso, no mesmo traço dos bonecos ---------- */
+.hall{
+  --hall-contorno:#1E140E; --hall-tijr0:#C9694C; --hall-tijr1:#8C3A27; --hall-tijr2:#AA4E35; --hall-tijrl:#3A1A10; --hall-tijrj:#E6C9A8; --hall-concreto0:#D9D4CA; --hall-concreto1:#A9A39A; --hall-concreto2:#C2BCB2; --hall-brilho:#FFF8EC;
+  --hall-mad0:#C48D58; --hall-mad1:#8F5D35; --hall-mad2:#A87245; --hall-madl:#4A2D18; --hall-madv:#9A6A40;
+  --hall-almof0:#EDB143; --hall-almof1:#C98C23; --hall-almof2:#DDA034; --hall-almofl:#7A5212;
+  --hall-colchc:#7894DA; --hall-couro0:#B04A3F; --hall-couro1:#88352D; --hall-couro2:#9C4036; --hall-courol:#4A1A16;
+  --hall-ferro:#8E9196; --hall-ferrol:#3B3D41; --hall-tranca:#E8BD4E; --hall-caneca:#F6F1E8; --hall-cafe:#5C3A21;
+  --hall-ima0:#E2584C; --hall-ima1:#4F9BE0; --hall-ima2:#F2C94C; --hall-folhav:#5DA548; --hall-folhav2:#3F8133;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .hall{
+  --hall-contorno:#120C08; --hall-tijr0:#A85A41; --hall-tijr1:#6E2E1F; --hall-tijr2:#8C412C; --hall-tijrl:#22100A; --hall-tijrj:#B79D80; --hall-concreto0:#ABA69D; --hall-concreto1:#7F7A72; --hall-concreto2:#98928A; --hall-brilho:#E9DFCF;
+  --hall-mad0:#A87A4D; --hall-mad1:#7A5030; --hall-mad2:#8F623C; --hall-madl:#3A2313; --hall-madv:#835A37;
+  --hall-almof0:#C99539; --hall-almof1:#A6741E; --hall-almof2:#B8862C; --hall-almofl:#5E3F0E;
+  --hall-colchc:#6680BF; --hall-couro0:#953F36; --hall-couro1:#732D26; --hall-couro2:#84362E; --hall-courol:#3A1411;
+  --hall-ferro:#787B80; --hall-ferrol:#2F3134; --hall-tranca:#C9A443; --hall-caneca:#D3CFC7; --hall-cafe:#4A2F1B;
+  --hall-ima0:#C04B41; --hall-ima1:#4384BF; --hall-ima2:#CFAC41; --hall-folhav:#4F8C3D; --hall-folhav2:#356D2B;
+}}
+:root[data-theme="dark"] .hall{
+  --hall-contorno:#120C08; --hall-tijr0:#A85A41; --hall-tijr1:#6E2E1F; --hall-tijr2:#8C412C; --hall-tijrl:#22100A; --hall-tijrj:#B79D80; --hall-concreto0:#ABA69D; --hall-concreto1:#7F7A72; --hall-concreto2:#98928A; --hall-brilho:#E9DFCF;
+  --hall-mad0:#A87A4D; --hall-mad1:#7A5030; --hall-mad2:#8F623C; --hall-madl:#3A2313; --hall-madv:#835A37;
+  --hall-almof0:#C99539; --hall-almof1:#A6741E; --hall-almof2:#B8862C; --hall-almofl:#5E3F0E;
+  --hall-colchc:#6680BF; --hall-couro0:#953F36; --hall-couro1:#732D26; --hall-couro2:#84362E; --hall-courol:#3A1411;
+  --hall-ferro:#787B80; --hall-ferrol:#2F3134; --hall-tranca:#C9A443; --hall-caneca:#D3CFC7; --hall-cafe:#4A2F1B;
+  --hall-ima0:#C04B41; --hall-ima1:#4384BF; --hall-ima2:#CFAC41; --hall-folhav:#4F8C3D; --hall-folhav2:#356D2B;
+}
+.hall .f-mad0{fill:var(--hall-mad0)} .hall .f-mad1{fill:var(--hall-mad1)} .hall .f-mad2{fill:var(--hall-mad2)} .hall .f-madl{fill:var(--hall-madl)}
+.hall .s-madl{stroke:var(--hall-madl)} .hall .s-madv{stroke:var(--hall-madv)}
+.hall .f-almof0{fill:var(--hall-almof0)} .hall .f-almof1{fill:var(--hall-almof1)} .hall .f-almof2{fill:var(--hall-almof2)} .hall .s-almofl{stroke:var(--hall-almofl)}
+.hall .s-colchc{stroke:var(--hall-colchc)}
+.hall .f-couro0{fill:var(--hall-couro0)} .hall .f-couro1{fill:var(--hall-couro1)} .hall .f-couro2{fill:var(--hall-couro2)} .hall .s-courol{stroke:var(--hall-courol)}
+.hall .f-ferro{fill:var(--hall-ferro)} .hall .s-ferrol{stroke:var(--hall-ferrol)} .hall .f-tranca{fill:var(--hall-tranca)}
+.hall .f-caneca{fill:var(--hall-caneca)} .hall .f-cafe{fill:var(--hall-cafe)}
+.hall .f-ima0{fill:var(--hall-ima0)} .hall .f-ima1{fill:var(--hall-ima1)} .hall .f-ima2{fill:var(--hall-ima2)}
+.hall .f-folhav{fill:var(--hall-folhav)} .hall .f-folhav2{fill:var(--hall-folhav2)}
+/* o contorno dos móveis no traço dos bonecos; a costura das almofadas e os veios da madeira, finos */
+.hall-camada .s-madl,.hall-camada .s-colchl,.hall-camada .s-courol,.hall-camada .s-almofl,.hall-camada .s-gell,.hall-camada .s-ferrol{stroke-width:1.5}
+.hall-camada .s-colchc,.hall-camada .s-madv{stroke-width:.9;stroke-linecap:round}
+/* acabamento de pixel art (05/11/2026): tudo com o mesmo contorno escuro e fechado, e o brilho fino na quina do tampo */
+.hall-camada .s-madl,.hall-camada .s-madeiral,.hall-camada .s-gell,.hall-camada .s-cartal,.hall-camada .s-ferrol,.hall-camada .s-colchl,.hall-camada .s-courol,.hall-camada .s-almofl{stroke:var(--hall-contorno)}
+.hall .s-brilho{stroke:var(--hall-brilho);stroke-linecap:round;opacity:.75}
+.hall .f-tijr0{fill:var(--hall-tijr0)} .hall .f-tijr1{fill:var(--hall-tijr1)} .hall .f-tijr2{fill:var(--hall-tijr2)} .hall .f-concreto0{fill:var(--hall-concreto0)} .hall .f-concreto1{fill:var(--hall-concreto1)} .hall .f-concreto2{fill:var(--hall-concreto2)}
+.hall .s-tijrl{stroke:var(--hall-tijrl)} .hall .s-tijrj{stroke:var(--hall-tijrj);opacity:.8} .hall .s-ferrol{stroke:var(--hall-ferrol)}
+.hall .f-madv{fill:var(--hall-madv)} .hall .s-boca{stroke:var(--hall-boca)}

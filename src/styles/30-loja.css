@@ -170,3 +170,7 @@ button.loja-previa:focus-visible{outline:2px solid var(--accent);outline-offset:
 .av.mold-neon{box-shadow:0 0 0 2px var(--accent),0 0 10px 2px var(--accent);animation:mold-neon 3s linear infinite}
 @keyframes mold-neon{from{filter:hue-rotate(0deg) saturate(2)}to{filter:hue-rotate(360deg) saturate(2)}}
 @media (prefers-reduced-motion:reduce){.av.mold-neon{animation:none}}
+/* miniatura dos móveis (MovelPrevia): o pedaço de chão embaixo, com borda, e a sombra dura do móvel */
+.quarto-previa .q-previa-chao{fill:color-mix(in srgb,var(--ink) 7%,var(--surface));stroke:color-mix(in srgb,var(--ink) 14%,transparent);stroke-width:1.5}
+.quarto-previa .q-previa-sombra{fill:var(--shadow);opacity:.35}
+.loja-previa:has(> .quarto-previa){background:radial-gradient(closest-side,color-mix(in srgb,var(--accent) 10%,var(--surface-2)),var(--surface-2))}
