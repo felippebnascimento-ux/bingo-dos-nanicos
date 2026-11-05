@@ -42,6 +42,7 @@ import { chatEmbaixoDe, opcaoCall, setLive, useLive } from "./estado";
 import { Balao, botaoCamera, botaoTela, BotaoReacoes, BotaoSoundboard, Chave, lugarDe, MenuFone, MenuMic, useBalao, type Lugar } from "./PainelVoz";
 import { canShare } from "./rtc";
 import { CorpoPessoa } from "./MenuPessoa";
+import { abrirBusca } from "@/components/shell/BuscaRapida";
 import { ativarSomTelas, ouvirJunto, useOuvindo } from "./somTelas";
 import { LIVE, mudarVolumeTela, stopLive, unwatch, VOLUME_TELA_MAX, volumeDaTela, watch } from "./tela";
 import { VideoMudo } from "./Video";
@@ -613,6 +614,12 @@ export function TopoCanal({ sala, chat, alternarChat }: { sala: string | null; c
         </small>
       </span>
       <span className="cv-topo-bts">
+        {/* como no Discord: a busca rápida no alto (Ctrl+K) */}
+        <button type="button" className="cv-busca" onClick={abrirBusca} aria-label="Busca rápida (Ctrl+K)">
+          <IcBuscaTopo />
+          <span>Buscar</span>
+          <kbd>Ctrl K</kbd>
+        </button>
         <button
           type="button"
           className={"cv-tb" + (foco ? "" : " on")}
@@ -706,3 +713,10 @@ export function FaixaFoco() {
     </div>
   );
 }
+
+const IcBuscaTopo = () => (
+  <svg viewBox="0 0 24 24" width={15} height={15} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="11" cy="11" r="6.5" />
+    <path d="m20 20-4.2-4.2" />
+  </svg>
+);

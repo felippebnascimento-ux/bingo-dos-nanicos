@@ -881,6 +881,18 @@ export const CHANGELOG: EntradaLog[] = [
       "O botão das Configurações agora é uma engrenagem, e o \"Configurações de voz\" dos menus já abre direto em Voz e vídeo",
     ],
   },
+  {
+    data: "04/11/2026",
+    itens: [
+      "Visual novo no site inteiro: fundo escuro mais profundo, painéis em camadas com bordas finas, e cartões, botões, campos e menu com o mesmo desenho em todas as abas",
+      "Visual de app: abertura com a marca, as abas aparecem suaves, carregamento com esqueleto no chat e nos membros, barras de rolagem finas e os botões afundam de leve ao tocar",
+      "Avisos novos: empilham no rodapé, cada um com ícone e cor (deu certo, erro, dinheiro, aviso)",
+      "O saldo sobe contando quando você ganha moedas",
+      "Cor de destaque: escolha ouro, roxo, verde, azul ou rosa em Configurações › Aparência",
+      "Busca rápida: Ctrl+K (Cmd+K no Mac) ou o botão Buscar da call, para ir para qualquer aba, canal, nanico ou configuração",
+      "Instale o Bingo dos Nanicos como app (ícone no Dock e na tela inicial do celular): Configurações › Sobre",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

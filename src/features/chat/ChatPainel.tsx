@@ -449,6 +449,7 @@ export function ChatPainel({ canal, placeholder = "Mensagem para a sala" }: { ca
   const msgs = useChat((s) => (canal ? (s.porCanal[canal] ?? SEM_MSGS) : s.msgs));
   const ok = useChat((s) => s.ok);
   const temAntigas = useChat((s) => !!s.temAntigas[chave]);
+  const carregando = useChat((s) => !(chave in s.porCanal));
   const friends = useApp((s) => s.friends);
   const myUid = useApp((s) => s.myUid);
   const myFid = useApp((s) => s.myFid);
@@ -634,6 +635,19 @@ export function ChatPainel({ canal, placeholder = "Mensagem para a sala" }: { ca
       >
         {!ok ? (
           <p className="chat-empty">O chat ainda não está ligado. Peça para o admin rodar o SQL novo no Supabase.</p>
+        ) : carregando ? (
+          /* as mensagens ainda vêm do banco: o esqueleto no formato delas */
+          <div className="esq-chat" aria-label="Carregando as mensagens">
+            {[70, 45, 85, 55].map((w, i) => (
+              <div key={i} className="esq-msg">
+                <span className="esq esq-redondo" />
+                <span>
+                  <span className="esq esq-linha" style={{ "--w": "22%" } as React.CSSProperties} />
+                  <span className="esq esq-linha" style={{ "--w": `${w}%` } as React.CSSProperties} />
+                </span>
+              </div>
+            ))}
+          </div>
         ) : !msgs.length ? (
           <p className="chat-empty">Nenhuma mensagem ainda. Mande a primeira.</p>
         ) : (

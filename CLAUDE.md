@@ -53,7 +53,8 @@ src/
                        (`sem-membros`). O Chat fica fora do menu; no computador, Ao vivo e Perfil saem do menu (abrem
                        pelos canais de voz e pela linha "eu" embaixo) e continuam na barra de abas do celular.
                        A tela de Início (fase 28) saiu na v1.68, a pedido do Felippe
-    shell/             CartaoPerfil.tsx (o cartão de perfil do Discord: rosto com a bolinha do status, recado, "Jogando LoL" pela
+    shell/             BuscaRapida.tsx (Ctrl+K / Cmd+K, ou o "Buscar" da call: abas, canais, nanicos e seções das Configurações),
+                       CartaoPerfil.tsx (o cartão de perfil do Discord: rosto com a bolinha do status, recado, "Jogando LoL" pela
                        Riot, onde está, cargos, volume na voz, mandar mensagem no Direct e ver a ficha; e o `MeuStatus`), Sidebar (parte de cima rola: marca, navegação em grupos `GRUPOS` que recolhem como as categorias
                        de canais (Jogos: K-FOFO, Ao vivo só no celular, Truco, Cassino, Loja; Bingo: Nanicadas e
                        Jogar, sempre à vista; Turma: Nanicos, Mídias, Troféus, Perfil; recolhidos em `menu-min`; no
@@ -65,7 +66,8 @@ src/
                        câmera no círculo, sem o indicador de voz (quem fala aparece só nos canais); `usePessoasNaSala()` também serve o Sítio; `useNanicosOnline()` é a lista
                        um por nanico com o meu estado, usada pelos canais e pelos membros)
     portas/            login, primeira senha, trocar senha, log de versões (modo "tudo" e modo "novidades")
-    ui/                Avatar, FriendPicker, Toast, ícones, useSure (segundo toque)
+    ui/                Avatar, FriendPicker, Toast, ícones, useSure (segundo toque), Contando (número que conta até o valor novo, no saldo)
+    Abertura.tsx       a abertura com a marca enquanto o site conecta (some quando fica "Sincronizado" ou em 3 s)
     Fome.tsx           easter egg das 18h às 22h
   features/            uma pasta por aba / assunto
     moedas/            Moedas.tsx: selinho do saldo no menu (CarteiraChip) e quadro do Perfil (MoedasBloco);
@@ -351,14 +353,16 @@ src/
     carteira.ts        carteira do nanico logado: bater_ponto no login, pulso a cada minuto, extrato; ranking:
                        `carregarRanking()` lê o saldo de todas as carteiras uma vez e o tempo real das carteiras mantém
                        `todas` (e o "▲ subiu" em `subiram`); a ordem vem de `ranking()` em moedas.ts (empate divide a posição)
-    toast.ts           toast("texto")
+    toast.ts           toast("texto", tipo?): avisos que empilham (até 3) com ícone e cor do tipo (ok, erro, dinheiro, aviso, info;
+                       sem dizer, o tipo sai do texto, `tipoDoTexto`); quem desenha é o ui/Toast.tsx
     sons.ts            sons em arquivo (public/sons/): `tocarSom(som, volume, desde)` devolve o <audio> (para parar ou entrar no
                        meio) e `pararSom`; clique do menu, ding/vento da voz, dinheiro do cassino, faroeste do x1 e o Pedro
     util.ts            norm, canon, shuffle, local (localStorage), rolarAte…
     tipos.ts           Friend, Phrase, Card, Presence…
     dados/             campeoes.ts (CHAMPS, LANES, LANE_CAMP), nanicos.ts (NAN_MAP, artOf, bonecoOf), changelog.ts,
                        novidades.ts (o que mostrar no Log depois de uma atualização; puro e testado)
-  styles/              CSS global, numerado: 01-base.css … 40-discord.css (o 27, do Início, saiu) (no celular, as abas ficam numa barra embaixo)
+  styles/              CSS global, numerado: 01-base.css … 41-premium.css (o padrão único do site: fundo, cartões, botões, campos e menu iguais em todas as abas; vem por último) (o 27, do Início, saiu) (no celular, as abas ficam numa barra embaixo)
+public/icones/         app-192.png e app-512.png, os ícones do app instalado (src/app/manifest.ts: nome, cores e `display: standalone`; o botão Instalar fica em Configurações › Sobre)
 public/sons/           sons em mp3 (clique, entrou, saiu, dinheiro, faroeste, pedro), mandados pelo Felippe; use `tocarSom` (lib/sons.ts)
 public/arte/           artes dos nanicos (rosto e corpo), bonecos do hall, foto da turma, reações dos Picarétezzi
 planejamento/          PLANO.md (próximas fases e decisões), prompts/ (um por fase), demos e arte pronta
@@ -456,6 +460,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 - **Exceção: o quarto da ficha** (`24-ficha.css`) segue a mesma regra do hall, com as variáveis `--quarto-*` e as classes `q-<nome>` (valem também no quarto próprio, em `.quarto-vars`) (valem também nas prévias da loja, `.loja-previa` e `.mochila-previa`).
 - **Exceção: a roleta animada do Cassino** (`26-cassino.css`): madeira, ouro, prata e feltro usam as variáveis `--roleta-*` (em `.rr`, com tema escuro), e a mesa usa `--rm-*` e as fichas `--ficha-*` (em `.rm`); o caça-níquel usa `--cn-*` (em `.cn`: vinho, lâmpadas, rolos, LED, alavanca, moedas); a roda tem estilos (`tema` do RodaRoleta, `data-tema` em `.rr`: classica, luxo, monaco, neon; a mesa usa `luxo`, laca preta e ouro, escolhido pelo grupo em 03/11/2026); vermelho, preto e verde das casas, na roda e na mesa, são os de cassino, `--roleta-vermelho`, `--roleta-preto` e `--roleta-verde` (iguais nos dois temas; o `--live` ficava salmão). O céu e o avião do Aviãozinho usam `--av-*` (em `.aviao`) e o estádio, o goleiro e a bola do Pênalti, `--pn-*` (em `.penalti`).
 - **Exceção: o nível da Gamers Club** (`34-perfil.css`): o círculo de cada nível usa as cores próprias da GC, `--gc-<n>-a` e `--gc-<n>-b` (de cima e de baixo de cada nível, de 1 a 20; mais `--gc-borda`, `--gc-brilho` e `--gc-texto`), definidas em `.gc-nivel` e iguais nos dois temas.
+- **Exceção: a cor de destaque** (`40-discord.css`): roxo, verde, azul e rosa, escolhidos em Configurações › Aparência (`cor` em ajustes.ts), trocam `--accent`, `--accent-soft` e `--accent-text` em `html:root[data-cor]`, nos dois temas; o ouro é o padrão e não muda nada.
 - **Exceção: o status e a menção** (`40-discord.css`): as bolinhas do status são as cores do Discord, `--st-on`, `--st-aus`, `--st-np` e `--st-off`, e o amarelo de quando me mencionam é `--mencao`, no `:root` desse arquivo, iguais nos dois temas.
 - **Exceção: a call** (`39-call.css`): `--fala` (o verde de quem está falando, como no Discord) e `--cv-fundo` (o escuro do palco) ficam no `:root` desse arquivo, iguais nos dois temas.
 - **Exceção: os emblemas** (`34-perfil.css`): cada emblema é uma ilustração com cores próprias, iguais nos dois temas. O metal do nível, a tinta, a luz e a fita do ouro usam `--emblema-*` (em `.emblema`); a face e a ilustração de cada um usam `--em-a`/`--em-b` (face) e `--em-1` a `--em-4`, definidas em `.em-d-<id>`. No desenho (`desenhos.tsx`), as classes `ef1`–`ef4`, `efl` e `eft` preenchem e `es1`–`es4`, `esl` e `est` são traços; nada de hex no TSX.

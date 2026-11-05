@@ -1,7 +1,9 @@
 /* Layout: barra lateral esquerda (marca, quem está na sala, navegação) + área principal; no celular a barra vira faixa no topo */
 :root{
-  /* paleta: oliva #4A4E44, ouro #B08D57, off-white #FAF9F6, carvão #353535, ardósia #3E4C59 */
-  --bg:#FAF9F6; --surface:#FFFFFF; --surface-2:#EEEDE7; --line:#E0DED5;
+  /* paleta: oliva #4A4E44, ouro #B08D57, off-white #FAF9F6, carvão #353535, ardósia #3E4C59
+     (visual premium, 04/11/2026: o escuro ficou mais profundo e neutro, em camadas: fundo #151618, painéis #1D1E21,
+     por cima #272A2D, bordas #313439) */
+  --bg:#F4F3EF; --surface:#FFFFFF; --surface-2:#EFEDE7; --line:#E4E1D8;
   --ink:#353535; --muted:#6B6E64; --olive:#4A4E44;
   --accent:#B08D57; --accent-ink:#262626; --accent-soft:#F1E8D9; --accent-text:#8A6A39;
   --mint:#3E4C59; --mint-soft:#E2E7EC; --stamp-ink:#FAF9F6;
@@ -13,19 +15,19 @@
   color-scheme:light;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#2E2E2D; --surface:#383836; --surface-2:#4A4E44; --line:#4B4C46;
-  --ink:#FAF9F6; --muted:#B8B6AC; --olive:#5C6154;
+  --bg:#151618; --surface:#1D1E21; --surface-2:#272A2D; --line:#313439;
+  --ink:#F3F2EE; --muted:#A4A49D; --olive:#3A3F38;
   --accent:#C4A06A; --accent-ink:#262626; --accent-soft:#4A4033; --accent-text:#D8B887;
   --mint:#566B7D; --mint-soft:#3E4C59; --stamp-ink:#FAF9F6;
   --sun:#D8B887; --sun-soft:#4A4033;
-  --shadow:rgba(0,0,0,.45); color-scheme:dark }}
+  --shadow:rgba(0,0,0,.6); color-scheme:dark }}
 :root[data-theme="dark"]{
-  --bg:#2E2E2D; --surface:#383836; --surface-2:#4A4E44; --line:#4B4C46;
-  --ink:#FAF9F6; --muted:#B8B6AC; --olive:#5C6154;
+  --bg:#151618; --surface:#1D1E21; --surface-2:#272A2D; --line:#313439;
+  --ink:#F3F2EE; --muted:#A4A49D; --olive:#3A3F38;
   --accent:#C4A06A; --accent-ink:#262626; --accent-soft:#4A4033; --accent-text:#D8B887;
   --mint:#566B7D; --mint-soft:#3E4C59; --stamp-ink:#FAF9F6;
   --sun:#D8B887; --sun-soft:#4A4033;
-  --shadow:rgba(0,0,0,.45); color-scheme:dark }
+  --shadow:rgba(0,0,0,.6); color-scheme:dark }
 *{box-sizing:border-box}
 html,body{margin:0}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}

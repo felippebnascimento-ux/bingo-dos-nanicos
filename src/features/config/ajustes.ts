@@ -8,8 +8,19 @@ import { create } from "zustand";
 import { setApp } from "@/lib/store";
 import { local } from "@/lib/util";
 
+export const CORES = [
+  { id: "ouro", nome: "Ouro" },
+  { id: "roxo", nome: "Roxo" },
+  { id: "verde", nome: "Verde" },
+  { id: "azul", nome: "Azul" },
+  { id: "rosa", nome: "Rosa" },
+] as const;
+export type Cor = (typeof CORES)[number]["id"];
+
 export type Ajustes = {
   tema: "sistema" | "claro" | "escuro";
+  /** a cor de destaque do site (botões, seleção, "você"), como os temas do Discord; ouro é a do Bingo */
+  cor: Cor;
   /** tamanho do texto do chat, em px */
   fonteChat: number;
   compacto: boolean;
@@ -30,6 +41,7 @@ export type Ajustes = {
 
 const PADRAO: Ajustes = {
   tema: "sistema",
+  cor: "ouro",
   fonteChat: 15,
   compacto: false,
   reduzirMovimento: false,
@@ -58,6 +70,7 @@ export function lerAjustes(v: unknown): Ajustes {
     if (typeof PADRAO[k] === "boolean" && typeof x === "boolean") (out[k] as boolean) = x;
   }
   if (o.tema === "claro" || o.tema === "escuro" || o.tema === "sistema") out.tema = o.tema;
+  if (CORES.some((c) => c.id === o.cor)) out.cor = o.cor as Cor;
   if (typeof o.fonteChat === "number" && o.fonteChat >= FONTE_MIN && o.fonteChat <= FONTE_MAX) out.fonteChat = Math.round(o.fonteChat);
   return out;
 }
@@ -79,6 +92,8 @@ export function aplicarNaPagina() {
   if (a.tema === "sistema") html.removeAttribute("data-theme");
   else html.setAttribute("data-theme", a.tema === "claro" ? "light" : "dark");
   html.style.setProperty("--chat-fonte", `${a.fonteChat}px`);
+  if (a.cor === "ouro") html.removeAttribute("data-cor");
+  else html.setAttribute("data-cor", a.cor);
   html.classList.toggle("chat-compacto", a.compacto);
   html.classList.toggle("menos-movimento", a.reduzirMovimento);
   html.classList.toggle("sem-destaque-fala", !a.destacarFala);
@@ -112,4 +127,29 @@ export function avisarNoComputador(titulo: string, texto: string) {
 export function abrirConfiguracoes(secao?: string) {
   if (secao) local.set("cfg-secao", secao);
   setApp({ configAberto: true });
+}
+
+/* ---------- instalar como app (o navegador avisa quando dá) ---------- */
+type PedidoInstalar = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
+let pedido: PedidoInstalar | null = null;
+export const useInstalar = create<{ pode: boolean; instalado: boolean }>()(() => ({
+  pode: false,
+  instalado: typeof window !== "undefined" && matchMedia("(display-mode: standalone)").matches,
+}));
+if (typeof window !== "undefined") {
+  addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    pedido = e as PedidoInstalar;
+    useInstalar.setState({ pode: true });
+  });
+  addEventListener("appinstalled", () => useInstalar.setState({ pode: false, instalado: true }));
+}
+/** Abre a janela do navegador de instalar o app. */
+export async function instalarApp() {
+  if (!pedido) return false;
+  await pedido.prompt();
+  const r = await pedido.userChoice;
+  pedido = null;
+  useInstalar.setState({ pode: false });
+  return r.outcome === "accepted";
 }

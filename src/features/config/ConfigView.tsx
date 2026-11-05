@@ -20,7 +20,7 @@ import { NOME_SITUACAO, recadoValido, useStatus } from "@/features/status/status
 import { VERSION } from "@/lib/dados/changelog";
 import { sb } from "@/lib/supabase";
 import { local } from "@/lib/util";
-import { aplicarNaPagina, FONTE_MAX, FONTE_MIN, mudarAjuste, pedirAvisoDoComputador, useAjustes, type Ajustes } from "./ajustes";
+import { aplicarNaPagina, CORES, FONTE_MAX, instalarApp, useInstalar, FONTE_MIN, mudarAjuste, pedirAvisoDoComputador, useAjustes, type Ajustes } from "./ajustes";
 import { abrirMic, type MicFiltrado } from "@/features/live/ruido";
 import { volumeDe } from "@/features/live/vozRegras";
 import { logout } from "@/lib/dados";
@@ -754,6 +754,7 @@ function SecNotificacoes() {
 function SecAparencia() {
   const tema = useAjustes((s) => s.tema);
   const fonte = useAjustes((s) => s.fonteChat);
+  const cor = useAjustes((s) => s.cor);
   const chatEmbaixo = useLive((s) => s.chatEmbaixo);
   return (
     <div className="cfgd-sec">
@@ -769,6 +770,15 @@ function SecAparencia() {
           <button key={v} type="button" role="radio" aria-checked={tema === v} className={"cfgd-tema " + v + (tema === v ? " on" : "")} onClick={() => mudarAjuste({ tema: v })}>
             <i aria-hidden="true" />
             {n}
+          </button>
+        ))}
+      </div>
+      <h3>Cor de destaque</h3>
+      <div className="cfgd-cores" role="radiogroup" aria-label="Cor de destaque">
+        {CORES.map((c) => (
+          <button key={c.id} type="button" role="radio" aria-checked={cor === c.id} className={"cfgd-cor cor-" + c.id + (cor === c.id ? " on" : "")} onClick={() => mudarAjuste({ cor: c.id })}>
+            <i aria-hidden="true" />
+            {c.nome}
           </button>
         ))}
       </div>
@@ -823,6 +833,7 @@ function SecAtalhos() {
     ["Editar a sua última mensagem", "Seta para cima"],
     ["Pular linha no chat", "Shift + Enter"],
     ["Histórico do chat no K-FOFO", "Z"],
+    ["Busca rápida (ir para qualquer lugar)", "Ctrl + K"],
     ["Fechar janelas e menus", "Esc"],
   ];
   return (
@@ -850,8 +861,30 @@ function SecNovidades({ fechar }: { fechar: () => void }) {
 
 function SecSobre() {
   const conn = useApp((s) => s.conn);
+  const { pode, instalado } = useInstalar();
+  const mac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.userAgent) && !/Chrome|Edg/.test(navigator.userAgent);
   return (
     <div className="cfgd-sec">
+      <h3>App</h3>
+      <Linha
+        titulo="Instalar como app"
+        dica={
+          instalado
+            ? "Já está instalado: você está usando o app."
+            : pode
+              ? "Ganha um ícone no Dock (ou na tela inicial do celular) e abre sem a barra do navegador."
+              : mac
+                ? "No Safari: Compartilhar › Adicionar ao Dock (Mac) ou Adicionar à Tela de Início (iPhone)."
+                : "No Chrome ou no Edge: o ícone de instalar fica no fim da barra de endereço."
+        }
+      >
+        {pode && !instalado && (
+          <button type="button" className="btn sm" onClick={() => void instalarApp().then((ok) => ok && toast("Pronto: o Bingo dos Nanicos está instalado"))}>
+            Instalar
+          </button>
+        )}
+      </Linha>
+      <h3>Versão</h3>
       <Linha titulo="Versão" dica={VERSION} />
       <Linha titulo="Conexão" dica={conn} />
       <Linha titulo="Navegador" dica={navigator.userAgent.match(/(Edg|Chrome|Firefox|Safari)\/[\d.]+/)?.[0] ?? "—"} />
