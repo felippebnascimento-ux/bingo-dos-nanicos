@@ -55,7 +55,7 @@ export function EstadoNoMovel({ m, p }: { m: MovelCena; p: (i: number, j: number
     );
   }
   if (m.desenho === "recado" && m.estado?.texto) {
-    const [x, y] = p(ci, cj, 96);
+    const [x, y] = p(ci, cj, 86);
     return (
       <g pointerEvents="none">
         <title>{m.estado.texto}</title>

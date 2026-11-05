@@ -13,6 +13,7 @@ import { DURA_ANIM, restanteEfeito } from "./loja";
 import { DesenhoAcessorio, tipoAcessorio } from "./Acessorio";
 import { useConsumo } from "./consumoSala";
 import { useEquipados, useLoja } from "./lojaDados";
+import { IconePixel, temIconePixel } from "./IconesPixel";
 
 /** O desenho do consumível (ou do escudo), em pé, com a ponta/boca para cima. */
 export function DesenhoItem({ id }: { id: string }) {
@@ -234,7 +235,7 @@ export function EfeitoCanto() {
   return (
     <div className="hall-canto hall-efeito" role="status" aria-label={`Seu efeito: ${e.nome}, faltam ${e.falta}`}>
       <span className="hall-efeito-item" aria-hidden="true">
-        <DesenhoItem id={e.id} />
+        {temIconePixel(e.id) ? <IconePixel id={e.id} /> : <DesenhoItem id={e.id} />}
       </span>
       <span>{e.nome}</span>
       <b>{e.falta}</b>

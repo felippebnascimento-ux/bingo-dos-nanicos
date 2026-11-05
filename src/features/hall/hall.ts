@@ -261,8 +261,16 @@ export const SENTIDOS: Readonly<Record<Sentido, readonly [linha: "frente" | "cos
 };
 const LINHA = { frente: 0, costas: 1 } as const;
 
-/** Recorte da folha: `quadro` 0 = parado, 1 a 4 = andando. */
-export function quadroSprite(s: Sentido, quadro: number) {
+/**
+ * Folhas ainda sem a passada com a outra perna (o 3º quadro repete o 1º e o 4º pode olhar para o outro lado): nelas o
+ * andar usa 1, 2, 3, 2. Os 15 nanicos foram redesenhados (05/11/2026); tire o nome daqui quando a folha nova chegar.
+ */
+const PASSADA_ANTIGA = new Set(["lebitu", "murlik", "marvi"]);
+const nomeDaFolha = (folha: string | null | undefined) => (folha ?? "").split("/").pop()?.replace(/\.webp$/, "") ?? "";
+
+/** Recorte da folha: `quadro` 0 = parado, 1 a 4 = andando (`folha` = o caminho da folha, para as de passada antiga). */
+export function quadroSprite(s: Sentido, quadro: number, folha?: string | null) {
+  if (quadro === 4 && PASSADA_ANTIGA.has(nomeDaFolha(folha))) quadro = 2;
   const [linha, espelha] = SENTIDOS[s];
   return { x: -quadro * CEL_W, y: -LINHA[linha] * CEL_H, espelha };
 }

@@ -85,29 +85,121 @@ function fundoBanheiro(n: number, p: (i: number, j: number, z?: number) => Pt): 
   poly([p(0, 0, WH), p(n, 0, WH), p(n, 0, WH + 10), p(0, 0, WH + 10)], "topo2");
   poly([p(0.12, 0), p(0.88, 0), p(0.88, 0, 104), p(0.12, 0, 104)], "porta", true);
   for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) poly([p(i, j), p(i + 1, j), p(i + 1, j + 1), p(i, j + 1)], (i + j) % 2 ? "ladrilho0" : "ladrilho1");
-  /* o espelho em cima da pia */
-  poly([p(0, 4.1, 70), p(0, 4.9, 70), p(0, 4.9, 118), p(0, 4.1, 118)], "espelho", true);
+  /* rodapé de azulejo escuro nas duas paredes */
+  poly([p(0, 0), p(0, n), p(0, n, 8), p(0, 0, 8)], "rodape-b");
+  poly([p(0.88, 0), p(n, 0), p(n, 0, 8), p(0.88, 0, 8)], "rodape-b");
+  /* o espelho em cima da pia, com moldura, o reflexo em faixa e a luminária em cima */
+  poly([p(0, 3.98, 64), p(0, 5.02, 64), p(0, 5.02, 124), p(0, 3.98, 124)], "louca2", true);
+  poly([p(0, 4.06, 69), p(0, 4.94, 69), p(0, 4.94, 119), p(0, 4.06, 119)], "espelho", true);
+  poly([p(0, 4.18, 80), p(0, 4.34, 80), p(0, 4.62, 114), p(0, 4.46, 114)], "espelho2");
+  poly([p(0, 4.62, 76), p(0, 4.7, 76), p(0, 4.86, 96), p(0, 4.78, 96)], "espelho2");
+  poly([p(0, 4.2, 128), p(0, 4.8, 128), p(0, 4.8, 134), p(0, 4.2, 134)], "louca1", true);
+  poly([p(0, 4.26, 126), p(0, 4.74, 126), p(0, 4.74, 128), p(0, 4.26, 128)], "luz-b");
+  /* o toalheiro com a toalha laranja (parede da direita, perto do vaso) */
+  poly([p(1.5, 0, 96), p(2.5, 0, 96), p(2.5, 0, 99), p(1.5, 0, 99)], "louca2", true);
+  poly([p(1.62, 0, 98), p(2.38, 0, 98), p(2.38, 0, 58), p(1.62, 0, 58)], "toalha0", true);
+  poly([p(1.62, 0, 70), p(2.38, 0, 70), p(2.38, 0, 66), p(1.62, 0, 66)], "toalha1");
+  /* o porta-papel higiênico do lado do vaso */
+  poly([p(4.12, 0, 46), p(4.42, 0, 46), p(4.42, 0, 36), p(4.12, 0, 36)], "louca0", true);
+  poly([p(4.16, 0, 44), p(4.38, 0, 44), p(4.38, 0, 47), p(4.16, 0, 47)], "louca2", true);
+  /* o tapetinho na frente da pia, com a barra */
+  poly([p(1.05, 3.95), p(1.85, 3.95), p(1.85, 4.95), p(1.05, 4.95)], "tapete-b", true);
+  poly([p(1.15, 4.05), p(1.75, 4.05), p(1.75, 4.85), p(1.15, 4.85)], "tapete-b2");
   return L;
 }
 
-/** As pixações deitadas nas paredes do banheiro (texto livre de quem escreveu; o React escapa tudo). */
-function Pixos({ lista, p }: { lista: readonly Pixo[]; p: (i: number, j: number, z?: number) => Pt }) {
+/** Largura do texto da pixação na fonte do site (13 px, grossa), em px: medida no navegador, letra a letra, com folga. */
+const largPixo = (t: string) => [...t].reduce((s, c) => s + (c === " " ? 5 : /[A-Z0-9MW@#%&]/.test(c) ? 12.2 : 9.4), 0) * 1.05;
+const PAREDE_PIXO = { esq: [0.15, 4.9], dir: [1.05, 4.9] } as const;
+
+/**
+ * Onde cada pixação fica de verdade (05/11/2026): o lugar vem do banco, mas aqui ela encolhe para caber na parede (não
+ * passa da quina nem da porta) e, se cair em cima de outra mais antiga, sobe ou desce até achar um vão. A conta é a
+ * mesma em todo navegador (só depende da lista), então todo mundo vê igual.
+ */
+export function arrumarPixos(lista: readonly Pixo[], L: number, alturaParede: number) {
+  /* o que já ocupa a parede: o espelho (esquerda), a toalha e o porta-papel (direita) */
+  const ocupados: { parede: string; a0: number; a1: number; z0: number; z1: number }[] = [
+    { parede: "esq", a0: 3.95, a1: 5.05, z0: 60, z1: 138 },
+    { parede: "dir", a0: 1.45, a1: 2.55, z0: 54, z1: 102 },
+    { parede: "dir", a0: 4.05, a1: 4.5, z0: 32, z1: 50 },
+  ];
+  const fora = new Map<number, Pixo & { esc: number }>();
+  /* as mais novas escolhem lugar primeiro (ficam sempre legíveis); as antigas se viram com o que sobrou */
+  for (const x of [...lista].reverse()) {
+    const [ini, fim] = PAREDE_PIXO[x.parede];
+    const larg = largPixo(x.texto) / L;
+    const rot = Math.max(-4, Math.min(4, x.rot));
+    const escMax = Math.max(0.5, Math.min(1, (fim - ini - 0.2) / larg));
+    type Lugar = { a: number; z: number; esc: number; meia: number; alt: number };
+    let achou: Lugar | null = null;
+    /* tenta no tamanho cheio; se a parede estiver cheia, vai encolhendo até achar um vão */
+    for (const f of [1, 0.8, 0.65, 0.5]) {
+      const esc = Math.max(0.4, escMax * f);
+      const meia = (larg * esc) / 2;
+      /* em unidades de altura da parede (1 unidade = ZS px na tela): a letra e a inclinação */
+      const alt = (13 * esc + meia * L * Math.sin((Math.abs(rot) * Math.PI) / 180)) / ZS;
+      const zMin = 14, zMax = alturaParede - 12 - alt;
+      const aMin = ini + meia, aMax = Math.max(aMin, fim - meia);
+      const cabe = (a: number, z: number) => !ocupados.some((o) => o.parede === x.parede && o.a0 < a + meia && o.a1 > a - meia && o.z0 < z + alt && o.z1 > z - 2);
+      const a0 = Math.min(aMax, Math.max(aMin, x.a)), z0 = Math.min(zMax, Math.max(zMin, x.z));
+      if (cabe(a0, z0)) {
+        achou = { a: a0, z: z0, esc, meia, alt };
+        break;
+      }
+      let dist = Infinity;
+      for (let a = aMin; a <= aMax + 1e-6; a += 0.1)
+        for (let z = zMin; z <= zMax; z += 3) {
+          const d = Math.abs(a - a0) * L + Math.abs(z - z0);
+          if (d < dist && cabe(a, z)) {
+            dist = d;
+            achou = { a, z, esc, meia, alt };
+          }
+        }
+      if (achou) break;
+    }
+        /* parede lotada de verdade: a mais antiga fica coberta pelas novas (não aparece), em vez de virar um borrão */
+    if (!achou) continue;
+    const { a, z, esc, meia, alt } = achou;
+    ocupados.push({ parede: x.parede, a0: a - meia, a1: a + meia, z0: z - 2, z1: z + alt });
+    fora.set(x.id, { ...x, a, z, esc, rot });
+  }
+  return lista.flatMap((x) => fora.get(x.id) ?? []);
+}
+
+/** As pixações deitadas nas paredes do banheiro (texto livre de quem escreveu; o React escapa tudo), recortadas na parede. */
+function Pixos({ lista, p, n }: { lista: readonly Pixo[]; p: (i: number, j: number, z?: number) => Pt; n: number }) {
   const L = Math.hypot(TW, TH);
+  const id = useId();
+  const arrumados = useMemo(() => arrumarPixos(lista, L, WH), [lista, L]);
+  const pts = (q: Pt[]) => q.map((v) => v.join(",")).join(" ");
   return (
     <g className="quarto-pixos" pointerEvents="none">
-      {lista.map((x) => {
-        const [ox, oy] = x.parede === "dir" ? p(x.a, 0, x.z) : p(0, x.a, x.z);
-        /* o papel reto entortado para o plano da parede: na da direita +i vai para a direita e desce; na da esquerda o
-           texto anda para −j (sobe para a direita) */
-        const m = x.parede === "dir" ? `matrix(${TW / L} ${TH / L} 0 1 ${ox} ${oy})` : `matrix(${TW / L} ${-TH / L} 0 1 ${ox} ${oy})`;
-        return (
-          <g key={x.id} transform={m}>
-            <text className={"quarto-pixo p-" + x.cor} transform={`rotate(${x.rot})`} textAnchor="middle">
-              {x.texto}
-            </text>
-          </g>
-        );
-      })}
+      <clipPath id={id + "esq"}>
+        <polygon points={pts([p(0, 0.05), p(0, n), p(0, n, WH), p(0, 0.05, WH)])} />
+      </clipPath>
+      <clipPath id={id + "dir"}>
+        <polygon points={pts([p(0.95, 0), p(n, 0), p(n, 0, WH), p(0.95, 0, WH)])} />
+      </clipPath>
+      {(["esq", "dir"] as const).map((parede) => (
+        <g key={parede} clipPath={`url(#${id + parede})`}>
+          {arrumados
+            .filter((x) => x.parede === parede)
+            .map((x) => {
+              const [ox, oy] = parede === "dir" ? p(x.a, 0, x.z) : p(0, x.a, x.z);
+              /* o papel reto entortado para o plano da parede: na da direita +i vai para a direita e desce; na da esquerda o
+                 texto anda para −j (sobe para a direita) */
+              const m = parede === "dir" ? `matrix(${TW / L} ${TH / L} 0 1 ${ox} ${oy})` : `matrix(${TW / L} ${-TH / L} 0 1 ${ox} ${oy})`;
+              return (
+                <g key={x.id} transform={m}>
+                  <text className={"quarto-pixo p-" + x.cor} transform={`rotate(${x.rot}) scale(${x.esc.toFixed(3)})`} textAnchor="middle">
+                    {x.texto}
+                  </text>
+                </g>
+              );
+            })}
+        </g>
+      ))}
     </g>
   );
 }
@@ -285,17 +377,43 @@ function paredes(n: number, p: (i: number, j: number, z?: number) => Pt, e: Equi
     poly([p(0, 0.2, WH - 16), p(0, n - 0.2, WH - 16), p(0, n - 0.2, WH - 11), p(0, 0.2, WH - 11)], "neon-" + e.luz);
     poly([p(0.2, 0, WH - 16), p(n - 0.2, 0, WH - 16), p(n - 0.2, 0, WH - 11), p(0.2, 0, WH - 11)], "neon-" + e.luz);
   }
+  /* papel de parede em listras finas e a meia-parede de lambri embaixo, com a moldura (05/11/2026) */
+  for (let a = 0.25; a < n; a += 0.5) {
+    poly([p(0, a), p(0, a + 0.06), p(0, a + 0.06, WH), p(0, a, WH)], "sombra-leve");
+    poly([p(a, 0), p(a + 0.06, 0), p(a + 0.06, 0, WH), p(a, 0, WH)], "sombra-leve");
+  }
+  poly([p(0, 0), p(0, n), p(0, n, 46), p(0, 0, 46)], "lambri1");
+  poly([p(0, 0), p(n, 0), p(n, 0, 46), p(0, 0, 46)], "lambri2");
+  for (let a = 0.5; a < n; a += 0.5) {
+    poly([p(0, a), p(0, a + 0.025), p(0, a + 0.025, 46), p(0, a, 46)], "lambri-l");
+    poly([p(a, 0), p(a + 0.025, 0), p(a + 0.025, 0, 46), p(a, 0, 46)], "lambri-l");
+  }
+  poly([p(0, 0, 46), p(0, n, 46), p(0, n, 50), p(0, 0, 50)], "moldura1", true);
+  poly([p(0, 0, 46), p(n, 0, 46), p(n, 0, 50), p(0, 0, 50)], "moldura2", true);
   poly([p(0, 0, WH), p(0, n, WH), p(0, n, WH + 10), p(0, 0, WH + 10)], "topo1");
   poly([p(0, 0, WH), p(n, 0, WH), p(n, 0, WH + 10), p(0, 0, WH + 10)], "topo2");
   poly([p(0, 0), p(0, n), p(0, n, 8), p(0, 0, 8)], "rodape1");
   poly([p(0, 0), p(n, 0), p(n, 0, 8), p(0, 0, 8)], "rodape2");
-  /* a porta, na parede da direita, em frente ao piso (0, 0) */
+  /* a porta, na parede da direita, em frente ao piso (0, 0): batente, duas almofadas e a maçaneta */
+  poly([p(0.06, 0), p(0.94, 0), p(0.94, 0, 108), p(0.06, 0, 108)], "moldura2", true);
   poly([p(0.12, 0), p(0.88, 0), p(0.88, 0, 104), p(0.12, 0, 104)], "porta", true);
-  /* janela na parede da esquerda e o pôster na da direita, no meio de cada uma */
+  poly([p(0.22, 0, 60), p(0.78, 0, 60), p(0.78, 0, 96), p(0.22, 0, 96)], "porta2", true);
+  poly([p(0.22, 0, 12), p(0.78, 0, 12), p(0.78, 0, 52), p(0.22, 0, 52)], "porta2", true);
+  poly([p(0.74, 0, 52), p(0.8, 0, 52), p(0.8, 0, 58), p(0.74, 0, 58)], "ouro0", true);
+  /* janela na parede da esquerda: caixilho em cruz, peitoril e cortinas, e a luz dela no chão */
   const jm = n / 2;
   poly([p(0, jm - 1, 60), p(0, jm + 1, 60), p(0, jm + 1, 130), p(0, jm - 1, 130)], "janela", true);
   poly([p(0, jm - 0.85, 66), p(0, jm + 0.85, 66), p(0, jm + 0.85, 124), p(0, jm - 0.85, 124)], "ceu");
   poly([p(0, jm - 0.85, 104), p(0, jm + 0.85, 104), p(0, jm + 0.85, 124), p(0, jm - 0.85, 124)], "ceu-claro");
+  poly([p(0, jm - 0.85, 66), p(0, jm + 0.85, 66), p(0, jm + 0.85, 78), p(0, jm - 0.85, 78)], "planta1");
+  poly([p(0, jm - 0.04, 66), p(0, jm + 0.04, 66), p(0, jm + 0.04, 124), p(0, jm - 0.04, 124)], "janela");
+  poly([p(0, jm - 0.85, 93), p(0, jm + 0.85, 93), p(0, jm + 0.85, 97), p(0, jm - 0.85, 97)], "janela");
+  poly([p(0, jm - 1.15, 54), p(0, jm + 1.15, 54), p(0, jm + 1.15, 60), p(0, jm - 1.15, 60)], "moldura1", true);
+  for (const [a, b] of [[jm - 1.35, jm - 0.92], [jm + 0.92, jm + 1.35]]) {
+    poly([p(0, a, 56), p(0, b, 56), p(0, b, 138), p(0, a, 138)], "cortina", true);
+    poly([p(0, (a + b) / 2 - 0.02, 58), p(0, (a + b) / 2 + 0.02, 58), p(0, (a + b) / 2 + 0.02, 136), p(0, (a + b) / 2 - 0.02, 136)], "cortina2");
+  }
+  poly([p(0, jm - 1.45, 138), p(0, jm + 1.45, 138), p(0, jm + 1.45, 141), p(0, jm - 1.45, 141)], "ouro1", true);
   const im = Math.max(2, n / 2);
   poly([p(im - 1, 0, 64), p(im + 1, 0, 64), p(im + 1, 0, 136), p(im - 1, 0, 136)], "poster", true);
   if (e.poster === "roxo") poly([p(im - 0.85, 0, 70), p(im + 0.85, 0, 70), p(im + 0.85, 0, 130), p(im - 0.85, 0, 130)], "roxo1");
@@ -308,9 +426,20 @@ function paredes(n: number, p: (i: number, j: number, z?: number) => Pt, e: Equi
         const i = im - 0.75 + a * 0.52, z = 74 + b * 19;
         poly([p(i, 0, z), p(i + 0.4, 0, z), p(i + 0.4, 0, z + 14), p(i, 0, z + 14)], (a + b) % 2 ? "cartela1" : "cartela0");
       }
-  /* piso em xadrez e o capacho da porta */
-  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) poly([p(i, j), p(i + 1, j), p(i + 1, j + 1), p(i, j + 1)], (i + j) % 2 ? "piso0" : "piso1");
-  poly([p(0.1, 0.1), p(0.9, 0.1), p(0.9, 0.9), p(0.1, 0.9)], "tapete0");
+  /* piso de taco: em cada piso, três tábuas no sentido i, com as emendas desencontradas */
+  for (let i = 0; i < n; i++)
+    for (let j = 0; j < n; j++)
+      for (let t = 0; t < 3; t++) {
+        const j0 = j + t / 3, j1 = j + (t + 1) / 3;
+        poly([p(i, j0), p(i + 1, j0), p(i + 1, j1), p(i, j1)], (i + j + t) % 3 === 0 ? "taco0" : (i + j + t) % 3 === 1 ? "taco1" : "taco2");
+        poly([p(i, j1 - 0.012), p(i + 1, j1 - 0.012), p(i + 1, j1), p(i, j1)], "taco-l");
+      }
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) poly([p(i, j), p(i + 0.012, j), p(i + 0.012, j + 1), p(i, j + 1)], "taco-l");
+  /* a luz da janela deitada no chão, na frente dela */
+  poly([p(0, jm - 0.85), p(0, jm + 0.85), p(1.8, jm + 1.6), p(1.8, jm - 0.1)], "sol");
+  /* o capacho da porta */
+  poly([p(0.12, 0.12), p(0.88, 0.12), p(0.88, 0.86), p(0.12, 0.86)], "tapete0", true);
+  poly([p(0.2, 0.2), p(0.8, 0.2), p(0.8, 0.78), p(0.2, 0.78)], "tapete1");
   return L;
 }
 
@@ -384,8 +513,6 @@ export const QuartoCena = memo(function QuartoCena({
   }, [ordem, moveis, bonecos]);
   const escala = 1.6;
   const [px, py] = p(0.5, 0.5);
-  /* um filtro por cena: o mesmo id em duas cenas (uma escondida) faria a sombra sumir */
-  const sombraId = useId() + "sombra";
   return (
     <svg className="quarto quarto-cena" viewBox={`0 0 ${largura} ${altura}`} role="img" aria-label={nome ? `Quarto de ${nome}` : "Quarto"}>
       <Poligonos lista={fundo} />
@@ -399,7 +526,7 @@ export const QuartoCena = memo(function QuartoCena({
           <title>{tipo === "garagem" ? "Voltar para a rua" : "Voltar ao K-FOFO"}</title>
         </polygon>
       )}
-      {pixos && <Pixos lista={pixos} p={p} />}
+      {pixos && <Pixos lista={pixos} p={p} n={n} />}
       {pisosCor &&
         Object.entries(pisosCor).map(([k, cor]) => {
           const [i, j] = k.split(",").map(Number);
@@ -408,19 +535,14 @@ export const QuartoCena = memo(function QuartoCena({
       {portas?.map((d) => (
         <PortaNaParede key={d.fid} d={d} p={p} aoTocar={aoTocarPorta} />
       ))}
-      {/* sombra de cada móvel no chão (luz de cima à esquerda: cai para +i), menos dos tapetes */}
-      <defs>
-        <filter id={sombraId} x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="4" />
-        </filter>
-      </defs>
-      <g className="quarto-sombras" filter={`url(#${sombraId})`} pointerEvents="none">
+      {/* sombra de cada móvel no chão: dura e achatada, um pouco para +i (a luz vem de cima à esquerda), menos dos tapetes */}
+      <g className="quarto-sombras" pointerEvents="none">
         {moveis
           .filter((m) => !m.desenho.startsWith("tapete") && m.desenho !== "fora")
           .map((m) => (
             <polygon
               key={m.id}
-              points={[p(m.ret.i + 0.2, m.ret.j + 0.1), p(m.ret.i + m.ret.w + 0.28, m.ret.j + 0.1), p(m.ret.i + m.ret.w + 0.28, m.ret.j + m.ret.d + 0.14), p(m.ret.i + 0.2, m.ret.j + m.ret.d + 0.14)]
+              points={[p(m.ret.i + 0.24, m.ret.j + 0.18), p(m.ret.i + m.ret.w - 0.04, m.ret.j + 0.18), p(m.ret.i + m.ret.w - 0.04, m.ret.j + m.ret.d - 0.14), p(m.ret.i + 0.24, m.ret.j + m.ret.d - 0.14)]
                 .map((v) => v.join(","))
                 .join(" ")}
             />
@@ -502,7 +624,7 @@ function BonecoNoQuarto({ b, p }: { b: BonecoCena; p: (i: number, j: number, z?:
   const quadroPose = usePoseQuadro(pose, b.sentido.startsWith("costas"));
   /* sentado, o quadril desce para o estofado (como o .boneco.sentado do hall); com a pose desenhada, desce menos */
   const y = y0 + (b.sentado ? CEL_H * ESCALA_VISITA * (pose ? 0.09 : 0.19) : 0);
-  const q = quadroSprite(b.sentido, b.sentado ? 0 : b.quadro);
+  const q = quadroSprite(b.sentido, b.sentado ? 0 : b.quadro, b.folha);
   const w = CEL_W * ESCALA_VISITA, h = CEL_H * ESCALA_VISITA;
   const vx = -q.x, vy = -q.y;
   /* sentado, as pernas somem dentro do estofado (como no K-FOFO): a janela do quadro corta o terço de baixo */
@@ -559,15 +681,23 @@ function Veiculo({ id, ret, p }: { id: string; ret: { i: number; j: number; w: n
   );
 }
 
-/** Prévia de um móvel sozinho (loja, mochila e guardados), recortada em volta do desenho. */
+/** Prévia de um móvel sozinho (loja, mochila e guardados): o móvel em cima do pedaço de chão que ele ocupa (com uma borda
+    de piso em volta e a sombra), recortada em volta do desenho. */
 export const MovelPrevia = memo(function MovelPrevia({ desenho, w, d }: { desenho: string; w: number; d: number }) {
   const { p } = projecao(3);
   const L = desenharMovel(p, desenho, { i: 0.5, j: 0.5, w, d }, false);
   if (!L.length) return null;
-  const xs = L.flatMap((f) => f.q.map((v) => v[0])), ys = L.flatMap((f) => f.q.map((v) => v[1]));
-  const x0 = Math.min(...xs) - 6, y0 = Math.min(...ys) - 6;
+  const b = 0.32;
+  const chao = [p(0.5 - b, 0.5 - b), p(0.5 + w + b, 0.5 - b), p(0.5 + w + b, 0.5 + d + b), p(0.5 - b, 0.5 + d + b)];
+  const sombra = [p(0.62, 0.55), p(0.5 + w + 0.12, 0.55), p(0.5 + w + 0.12, 0.5 + d + 0.08), p(0.62, 0.5 + d + 0.08)];
+  const todos = [...L.flatMap((f) => f.q), ...chao];
+  const xs = todos.map((v) => v[0]), ys = todos.map((v) => v[1]);
+  const x0 = Math.min(...xs) - 10, y0 = Math.min(...ys) - 10;
+  const pts = (q: Pt[]) => q.map((v) => v.join(",")).join(" ");
   return (
-    <svg className="quarto quarto-previa" viewBox={`${x0} ${y0} ${Math.max(...xs) + 6 - x0} ${Math.max(...ys) + 6 - y0}`} aria-hidden="true">
+    <svg className="quarto quarto-previa" viewBox={`${x0} ${y0} ${Math.max(...xs) + 10 - x0} ${Math.max(...ys) + 10 - y0}`} aria-hidden="true">
+      <polygon className="q-previa-chao" points={pts(chao)} />
+      <polygon className="q-previa-sombra" points={pts(sombra)} />
       <Poligonos lista={L} />
     </svg>
   );
