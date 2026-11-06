@@ -22,9 +22,10 @@ import { abrirArrumar, iniciarQuartos, useQuartos } from "@/features/quarto/quar
 import { diferenca, podeComprarQuarto } from "@/features/quarto/quarto";
 import { comprar, equipar, useLoja, useMinhaMochila, usar, useRaros } from "./lojaDados";
 import { MercadoAba } from "./MercadoAba";
-import { Haras } from "@/features/corrida/Haras";
+import { ComprarCavalo, Haras } from "@/features/corrida/Haras";
 import { DesenhoCavalo } from "@/features/corrida/Cavalo";
-import { MAX_CAVALOS, NOME_PELAGEM, PELAGENS, PRECO_CAVALO, type Pelagem } from "@/features/corrida/corridaRegras";
+import { MAX_CAVALOS, PELAGENS, PRECO_CAVALO } from "@/features/corrida/corridaRegras";
+import { carregarCavalos, useCavalos } from "@/features/corrida/corridaDados";
 
 const FOCO: Partial<Record<ItemLoja["espaco"], "parede" | "chao" | "mesa" | "poster" | "cadeira" | "planta">> = {
   parede: "parede",
@@ -127,6 +128,51 @@ function ItemDetalhe({ it, fechar, ...estado }: { it: ItemLoja; fechar: () => vo
           <p>{it.descricao}</p>
         </div>
         <AcoesItem it={it} {...estado} />
+      </div>
+    </div>
+  );
+}
+
+/** Janela do cavalo de corrida da vitrine: as pelagens com o desenho de cada uma, o nome e a compra (a mesma do Haras). */
+function CavaloDetalhe({ fechar, irAoHaras }: { fechar: () => void; irAoHaras: () => void }) {
+  const todos = useCavalos((s) => s.todos);
+  const myUid = useApp((s) => s.myUid);
+  const fecharRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    fecharRef.current?.focus();
+    void carregarCavalos();
+  }, []);
+  const meus = (todos ?? []).filter((c) => c.dono && c.dono === myUid).length;
+  return (
+    <div
+      className="gate carteira-gate"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="cavaloTitulo"
+      onKeyDown={(e) => e.key === "Escape" && fechar()}
+      onClick={(e) => e.target === e.currentTarget && fechar()}
+    >
+      <div className="carteira-painel loja-detalhe loja-cavalo-detalhe rar-lendaria">
+        <div className="loja-detalhe-cab">
+          <div className="loja-detalhe-tx">
+            <small>Cavalo de corrida</small>
+            <h2 id="cavaloTitulo">Escolha a pelagem</h2>
+            <p>
+              Você tem {meus} de {MAX_CAVALOS}. Depois treine e inscreva no páreo pelo Haras.
+            </p>
+          </div>
+          <button className="ficha-fechar" type="button" ref={fecharRef} aria-label="Fechar" onClick={fechar}>
+            <IcFechar />
+          </button>
+        </div>
+        {todos && meus >= MAX_CAVALOS ? (
+          <p className="status">Você já tem {MAX_CAVALOS} cavalos, o máximo.</p>
+        ) : (
+          <ComprarCavalo aoComprar={irAoHaras} />
+        )}
+        <button type="button" className="linkish" onClick={irAoHaras}>
+          Ir ao Haras
+        </button>
       </div>
     </div>
   );
@@ -295,12 +341,8 @@ export function LojaView({ hidden }: { hidden: boolean }) {
   const minhas = useMinhaMochila();
   const [aba, setAba] = useState<"vitrine" | "mochila" | "mercado" | "haras">("vitrine");
   const [filtro, setFiltro] = useState("tudo");
-  /* a pelagem escolhida na seção Cavalos, que abre o Haras com ela marcada */
-  const [pelagemHaras, setPelagemHaras] = useState<Pelagem | undefined>(undefined);
-  const comprarCavalo = (p: Pelagem) => {
-    setPelagemHaras(p);
-    setAba("haras");
-  };
+  /* a janela do cavalo da vitrine (escolher a pelagem e comprar) */
+  const [cavaloAberto, setCavaloAberto] = useState(false);
   const [detalhe, setDetalhe] = useState<string | null>(null);
   const qtd = (id: string) => minhas.find((l) => l.itemId === id)?.qtd ?? 0;
   const eq = (id: string) => !!minhas.find((l) => l.itemId === id)?.equipado;
@@ -354,22 +396,20 @@ export function LojaView({ hidden }: { hidden: boolean }) {
         <section className="loja-grupo" aria-labelledby="loja-cavalos">
           <h2 id="loja-cavalos">Cavalos de corrida</h2>
           <p className="hint loja-grupo-dica">
-            {formatarMoedas(PRECO_CAVALO)} moedas cada, até {MAX_CAVALOS} por pessoa. Escolha a pelagem, dê o nome no Haras, treine e inscreva no páreo do Cassino.
+            {formatarMoedas(PRECO_CAVALO)} moedas cada, até {MAX_CAVALOS} por pessoa. Depois de comprar, treine e inscreva no páreo pelo Haras.
           </p>
           <div className="loja-grade">
-            {PELAGENS.map((p) => (
-              <article key={p} className="block loja-item rar-lendaria loja-cavalo">
-                <button type="button" className="loja-previa" aria-label={`Comprar um cavalo ${NOME_PELAGEM[p]}`} onClick={() => comprarCavalo(p)}>
-                  <DesenhoCavalo pelagem={p} semJoquei correndo />
-                  <span className="loja-rar">Cavalo</span>
-                </button>
-                <h3>{NOME_PELAGEM[p]}</h3>
-                <p className="hint">Potro de corrida, começa com 40 em tudo.</p>
-                <button type="button" className="btn sm" onClick={() => comprarCavalo(p)}>
-                  Comprar · {formatarMoedas(PRECO_CAVALO)}
-                </button>
-              </article>
-            ))}
+            <article className="block loja-item rar-lendaria loja-cavalo">
+              <button type="button" className="loja-previa" aria-label="Ver o cavalo de corrida" onClick={() => setCavaloAberto(true)}>
+                <DesenhoCavalo pelagem="castanho" semJoquei />
+                <span className="loja-rar">Cavalo</span>
+              </button>
+              <h3>Cavalo de corrida</h3>
+              <p className="hint">Potro que começa com 40 em tudo. {PELAGENS.length} pelagens para escolher.</p>
+              <button type="button" className="btn sm" onClick={() => setCavaloAberto(true)}>
+                Ver as cores · {formatarMoedas(PRECO_CAVALO)}
+              </button>
+            </article>
           </div>
         </section>
       )}
@@ -388,7 +428,8 @@ export function LojaView({ hidden }: { hidden: boolean }) {
           ))}
       {aberto && <ItemDetalhe it={aberto} tenho={qtd(aberto.id)} equipado={eq(aberto.id)} saldo={saldo} fechar={() => setDetalhe(null)} />}
       {itens && aba === "mercado" && <MercadoAba />}
-      {aba === "haras" && <Haras pelagem={pelagemHaras} />}
+      {aba === "haras" && <Haras />}
+      {cavaloAberto && <CavaloDetalhe fechar={() => setCavaloAberto(false)} irAoHaras={() => { setCavaloAberto(false); setAba("haras"); }} />}
       {itens && aba === "mochila" && (
         <section className="block">
           <MochilaLista />

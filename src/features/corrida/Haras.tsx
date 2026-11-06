@@ -99,9 +99,10 @@ function CartaoCavalo({ c }: { c: Cavalo }) {
   );
 }
 
-function ComprarCavalo({ inicial }: { inicial?: Pelagem }) {
+/** A compra de um potro: nome, pelagem (com o desenho dela) e o botão. Fica no Haras e na janela do cavalo da vitrine da loja. */
+export function ComprarCavalo({ aoComprar }: { aoComprar?: () => void } = {}) {
   const [nome, setNome] = useState("");
-  const [pelagem, setPelagem] = useState<Pelagem>(inicial ?? "castanho");
+  const [pelagem, setPelagem] = useState<Pelagem>("castanho");
   const { sure, pedir } = useSure();
   const ocupado = useCavalos((s) => s.ocupado);
   const saldo = useCarteira((s) => s.carteira?.saldo ?? null);
@@ -132,7 +133,14 @@ function ComprarCavalo({ inicial }: { inicial?: Pelagem }) {
             type="button"
             className={"btn" + (sure ? " sure" : "")}
             disabled={!ok || !!ocupado || falta}
-            onClick={() => pedir() && void comprarCavalo(nome, pelagem).then((r) => r && setNome(""))}
+            onClick={() =>
+              pedir() &&
+              void comprarCavalo(nome, pelagem).then((r) => {
+                if (!r) return;
+                setNome("");
+                aoComprar?.();
+              })
+            }
           >
             {sure ? "Confirmar" : falta ? `Faltam ${formatarMoedas(PRECO_CAVALO - (saldo ?? 0))}` : `Comprar por ${formatarMoedas(PRECO_CAVALO)}`}
           </button>
@@ -143,8 +151,7 @@ function ComprarCavalo({ inicial }: { inicial?: Pelagem }) {
   );
 }
 
-/** `pelagem`: a cor escolhida na vitrine da loja (seção Cavalos), que já vem marcada na compra. */
-export function Haras({ pelagem }: { pelagem?: Pelagem } = {}) {
+export function Haras() {
   const todos = useCavalos((s) => s.todos);
   const myUid = useApp((s) => s.myUid);
   const friends = useApp((s) => s.friends);
@@ -172,7 +179,7 @@ export function Haras({ pelagem }: { pelagem?: Pelagem } = {}) {
       {meus.map((c) => (
         <CartaoCavalo key={c.id} c={c} />
       ))}
-      {todos && meus.length < MAX_CAVALOS && <ComprarCavalo key={pelagem} inicial={pelagem} />}
+      {todos && meus.length < MAX_CAVALOS && <ComprarCavalo />}
       {ranking.length > 0 && (
         <section className="block haras-ranking">
           <h3>Ranking do hipódromo</h3>

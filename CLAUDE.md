@@ -326,7 +326,7 @@ src/
                        dos cavalos; letreiro da fase, placar ao vivo e mapa) e camera3d.ts (as contas da cena: altura e tamanho de cada raia,
                        a câmera que segue o líder; puro e testado; não pode se chamar pista3d.ts por causa do Windows), Corrida.tsx (o jogo
                        `corrida` do Cassino: placa do páreo, pista, pódio, o programa do páreo com um cartão por cavalo e o bilhete ao lado,
-                       inscrição, últimos vencedores) e Haras.tsx (a aba Haras da loja: comprar, treinar, ranking do hipódromo; abre com a pelagem escolhida na seção Cavalos da vitrine, que mostra um cartão por pelagem). As 15 pelagens (seção 76 acrescentou tostado, palomino, lobuno, malhado, apaloosa, mouro e cremelo) estão em `PELAGENS` e no check de `cavalos.pelagem`/`cavalo_comprar`: cor nova muda os três e ganha a arte. As artes vêm
+                       inscrição, últimos vencedores) e Haras.tsx (a aba Haras da loja: comprar, treinar, ranking do hipódromo; `ComprarCavalo` também aparece na janela do cartão da seção Cavalos da vitrine, `CavaloDetalhe` em LojaView.tsx). As 15 pelagens (seção 76 acrescentou tostado, palomino, lobuno, malhado, apaloosa, mouro e cremelo) estão em `PELAGENS` e no check de `cavalos.pelagem`/`cavalo_comprar`: cor nova muda os três e ganha a arte. As artes vêm
                        da ferramenta de imagem com fundo verde #00FF00 e a seda em magenta: `scripts/importar-cavalo.py <folha> <pelagem>`
                        (recorta os 8 quadros, tira o verde e o branco preso entre as pernas, espelha e alinha pelo pano), `scripts/pelagens-cavalo.py`
                        (as outras pelagens a partir da castanha) e `scripts/importar-cenario.py <folha>` (fundo, pista, cerca, poste e portão)

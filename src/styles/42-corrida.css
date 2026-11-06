@@ -243,5 +243,11 @@
 
 /* a seção Cavalos na vitrine da loja: o cavalo galopando na prévia do cartão */
 .loja-cavalo .loja-previa .cav{width:94%}
+.loja-cavalo-detalhe{width:min(640px,100%)}
+.loja-detalhe-cab{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
+.loja-detalhe-cab .ficha-fechar{position:static;flex:0 0 auto}
+.loja-cavalo-detalhe .haras-comprar{padding:0;border:0;background:none;box-shadow:none}
+.loja-cavalo-detalhe .haras-desenho.grande{width:min(240px,100%)}
+.loja-cavalo-detalhe .haras-comprar > h3,.loja-cavalo-detalhe .haras-comprar > .hint{display:none}
 .loja-grupo-dica{margin:-4px 0 10px}
 
