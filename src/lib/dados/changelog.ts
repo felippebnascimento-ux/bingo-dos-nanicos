@@ -940,6 +940,15 @@ export const CHANGELOG: EntradaLog[] = [
     data: "05/11/2026",
     itens: ["Bonecos novos no K-FOFO e nos quartos: andando, sentados, acenando, dançando, rindo e deitados", "O Grito de escoteiro e a foto da turma nova"],
   },
+  {
+    data: "05/11/2026",
+    itens: [
+      "Corrida de cavalos repaginada: hipódromo com arquibancada, portão de largada, câmera que corre junto com o líder, poeira, placar ao vivo e foto do pódio",
+      "Cavalos novos desenhados de verdade, galopando, com o jóquei e o número na cor da raia, nas 8 pelagens (no Haras também)",
+      "Na corrida, o programa do páreo mostra cada cavalo com as últimas chegadas e a força, e o bilhete fica do lado com as fichas e quanto a aposta paga",
+      "As fichas de aposta voltaram a ter cor fora da roleta",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
