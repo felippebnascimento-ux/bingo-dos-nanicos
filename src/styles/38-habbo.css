@@ -117,3 +117,12 @@
 
 /* chaves das casas (seção 62) */
 .loja-chave{display:grid;place-items:center;width:100%;height:100%;font-size:56px;filter:drop-shadow(0 4px 8px var(--shadow))}
+
+/* seção 72: aura de gelo, aura sombria e pula-pula */
+.boneco,.quarto-boneco,.loja-efeito-previa{--efeito-gelo:#9ED8F0; --efeito-sombra:#1A1420}
+.boneco.efeito-gelo > .boneco-toque,.quarto-boneco.efeito-gelo .quarto-corpo,.loja-efeito-previa.efeito-gelo .av{animation:efeito-gelo 2.2s ease-in-out infinite}
+@keyframes efeito-gelo{0%,100%{filter:drop-shadow(0 0 3px var(--efeito-gelo))}50%{filter:drop-shadow(0 0 10px var(--efeito-gelo)) brightness(1.08)}}
+.boneco.efeito-sombra > .boneco-toque,.quarto-boneco.efeito-sombra .quarto-corpo,.loja-efeito-previa.efeito-sombra .av{filter:drop-shadow(0 0 6px var(--efeito-sombra)) drop-shadow(0 0 2px var(--efeito-sombra))}
+.boneco.efeito-pulo > .boneco-toque,.quarto-boneco.efeito-pulo .quarto-corpo,.loja-efeito-previa.efeito-pulo .av{animation:efeito-pulo .9s ease-in-out infinite}
+@keyframes efeito-pulo{0%,100%{translate:0 0}40%{translate:0 -7px}}
+@media (prefers-reduced-motion:reduce){.boneco.efeito-gelo > *,.boneco.efeito-pulo > *,.loja-efeito-previa .av{animation:none}}

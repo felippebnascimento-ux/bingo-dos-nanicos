@@ -1,4 +1,8 @@
 "use client";
+import { CartaoPerfil } from "@/components/shell/CartaoPerfil";
+import { Abertura } from "@/components/Abertura";
+import { BuscaRapida } from "@/components/shell/BuscaRapida";
+import { MiniPlayer } from "@/features/live/MiniPlayer";
 import { useEffect } from "react";
 import { Fome } from "./Fome";
 import { PortaLog, PortaLogin, PortaPrimeiraSenha, PortaTrocarSenha } from "./portas/Portas";
@@ -97,6 +101,10 @@ export default function App() {
         ))}
       </datalist>
       <Celular />
+      <CartaoPerfil />
+      <Abertura />
+      <BuscaRapida />
+      <MiniPlayer />
       <Toast />
       <CamadaReacoesMinha />
     </>

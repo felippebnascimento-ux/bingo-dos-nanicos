@@ -6,6 +6,7 @@
  */
 import { getApp } from "@/lib/store";
 import { tocarSom } from "@/lib/sons";
+import { ajuste } from "@/features/config/ajustes";
 
 let ctx: AudioContext | null = null;
 
@@ -33,9 +34,38 @@ function tom(c: AudioContext, freq: number, ini: number, dur: number, vol: numbe
 }
 
 export function somDaVoz(tipo: "entrou" | "saiu", volumeGeral: number) {
-  if (getApp().vozSurdo || volumeGeral <= 0) return;
+  if (getApp().vozSurdo || volumeGeral <= 0 || !ajuste("somVoz")) return;
   /* o ding é alto: fica a 35% do volume geral; o vento, a 60% */
   tocarSom(tipo, (tipo === "entrou" ? 0.35 : 0.6) * Math.min(1, volumeGeral));
+}
+
+/** O "clique" de mudar o microfone ou o fone, como no Discord: descendo ao desligar, subindo ao ligar. */
+export function somDoMudo(tipo: "mudo" | "falar" | "surdo" | "ouvir", volumeGeral: number) {
+  if (volumeGeral <= 0 || (getApp().vozSurdo && tipo !== "surdo") || !ajuste("somMudo")) return;
+  const c = contexto();
+  if (!c) return;
+  const vol = 0.07 * Math.min(1, volumeGeral);
+  const [a, b] = tipo === "mudo" ? [740, 494] : tipo === "falar" ? [494, 740] : tipo === "surdo" ? [587, 392] : [392, 587];
+  tom(c, a, 0, 0.08, vol);
+  tom(c, b, 0.07, 0.11, vol);
+}
+
+/** O som de quando alguém me menciona: um "plim" curto, como no Discord. */
+export function somDeMencao() {
+  const c = contexto();
+  if (!c) return;
+  tom(c, 987.77, 0, 0.09, 0.07);
+  tom(c, 1318.5, 0.07, 0.18, 0.07);
+}
+
+/** O aviso de quando alguém começa a transmitir no meu canal: duas notas rápidas. */
+export function somDeLive(volumeGeral: number) {
+  if (getApp().vozSurdo || volumeGeral <= 0) return;
+  const c = contexto();
+  if (!c) return;
+  const vol = 0.08 * Math.min(1, volumeGeral);
+  tom(c, 880, 0, 0.12, vol);
+  tom(c, 1318.5, 0.1, 0.22, vol);
 }
 
 /** Campainha de quando alguém abre o site e chega no K-FOFO (Chegadas.tsx): três notas subindo, mais suave que a da voz. */

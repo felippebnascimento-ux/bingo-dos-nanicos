@@ -2,11 +2,22 @@
  * Peças do WebRTC usadas pela tela, pela câmera e pela voz.
  * A imagem vai direto de quem transmite para quem assiste (WebRTC).
  * O Supabase só serve para os dois se acharem (mensagens `rtc` na sala).
- * Se alguém numa rede mais fechada não conseguir assistir, dá para pôr um servidor TURN aqui.
+ * Rede muito fechada (alguns 4G, empresa, faculdade): o WebRTC direto não conecta e precisa de um servidor TURN, que
+ * repassa a imagem e a voz. Ele fica pronto para ligar pela Vercel, sem nada no código: NEXT_PUBLIC_TURN_URL
+ * (uma ou mais, separadas por vírgula, ex.: "turns:turn.exemplo.com:443"), NEXT_PUBLIC_TURN_USER e
+ * NEXT_PUBLIC_TURN_PASS. A senha do TURN vai para o navegador de quem usa (é assim no WebRTC): use uma conta de TURN
+ * só para o site, nunca outra senha. Sem as três, fica só o STUN (como sempre foi).
  */
 import { enviar } from "@/lib/sala";
 
-const TURN_SERVERS: RTCIceServer[] = [];
+const TURN_URLS = (process.env.NEXT_PUBLIC_TURN_URL ?? "")
+  .split(",")
+  .map((u) => u.trim())
+  .filter((u) => /^turns?:[^\s]+$/.test(u));
+const TURN_SERVERS: RTCIceServer[] =
+  TURN_URLS.length && process.env.NEXT_PUBLIC_TURN_USER && process.env.NEXT_PUBLIC_TURN_PASS
+    ? [{ urls: TURN_URLS, username: process.env.NEXT_PUBLIC_TURN_USER, credential: process.env.NEXT_PUBLIC_TURN_PASS }]
+    : [];
 export const ICE: RTCIceServer[] = [
   { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] },
   ...TURN_SERVERS,

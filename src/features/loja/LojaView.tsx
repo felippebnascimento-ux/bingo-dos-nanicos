@@ -13,6 +13,7 @@ import { useCarteira } from "@/lib/carteira";
 import { formatarMoedas } from "@/lib/moedas";
 import { friendOf, setApp, useApp } from "@/lib/store";
 import { DesenhoItem } from "./Itens";
+import { IconePixel, temIconePixel } from "./IconesPixel";
 import { abrirCelular } from "@/features/celular/rede";
 import { acumula, doGrupo, equipavel, estadoRaro, GRUPOS, MAX_MOVEL, NOME_ESPACO, NOME_RARIDADE, podeComprar, posicionavel, progressoCompra, quandoSai, raridade, type ItemLoja } from "./loja";
 import { MovelPrevia, QuartoCena, type MovelCena } from "@/features/quarto/QuartoCena";
@@ -21,6 +22,8 @@ import { abrirArrumar, iniciarQuartos, useQuartos } from "@/features/quarto/quar
 import { diferenca, podeComprarQuarto } from "@/features/quarto/quarto";
 import { comprar, equipar, useLoja, useMinhaMochila, usar, useRaros } from "./lojaDados";
 import { MercadoAba } from "./MercadoAba";
+import { Haras } from "@/features/corrida/Haras";
+import { DesenhoCavalo } from "@/features/corrida/Cavalo";
 
 const FOCO: Partial<Record<ItemLoja["espaco"], "parede" | "chao" | "mesa" | "poster" | "cadeira" | "planta">> = {
   parede: "parede",
@@ -40,13 +43,19 @@ export function Previa({ it }: { it: ItemLoja }) {
   const eu = useApp((s) => friendOf(s.myFid, s.friends));
   /* fase 34: móveis com desenho e os quartos próprios (vazios, no tamanho) */
   if (it.espaco === "quarto" && it.dados.tamanho) return <QuartoCena tamanho={it.dados.tamanho} equip={SEM_EQUIP} moveis={SEM_MOVEIS} />;
-  if (posicionavel(it) && it.dados.w && it.dados.d && (it.espaco === "movel" || !FOCO[it.espaco]))
+  /* cadeira e planta também mostram o próprio móvel (o mesmo desenho do quarto), em vez do quarto da ficha */
+  if (posicionavel(it) && it.dados.w && it.dados.d && (it.espaco === "movel" || it.espaco === "cadeira" || it.espaco === "planta" || !FOCO[it.espaco]))
     return <MovelPrevia desenho={desenhoDo(it)} w={it.dados.w} d={it.dados.d} />;
   const foco = FOCO[it.espaco];
   if (foco) return <QuartoPrevia equip={{ [it.espaco]: it.dados.cor } as EquipQuarto} foco={foco} />;
   if (it.espaco === "titulo") return <span className="loja-titulo-previa">{it.dados.texto}</span>;
   /* chave das casas (seção 62) */
-  if (it.espaco === "chave") return <span className="loja-chave" aria-hidden="true">🔑</span>;
+  if (it.espaco === "chave")
+    return (
+      <span className="loja-desenho">
+        <IconePixel id="chave" />
+      </span>
+    );
   /* efeito no boneco (seção 61): o rosto com o efeito */
   if (it.espaco === "efeito")
     return (
@@ -61,9 +70,7 @@ export function Previa({ it }: { it: ItemLoja }) {
       </span>
     );
   return (
-    <span className="loja-desenho">
-      <DesenhoItem id={it.id} />
-    </span>
+    <span className="loja-desenho">{temIconePixel(it.id) ? <IconePixel id={it.id} /> : <DesenhoItem id={it.id} />}</span>
   );
 }
 
@@ -285,7 +292,7 @@ export function LojaView({ hidden }: { hidden: boolean }) {
   const itens = useLoja((s) => s.itens);
   const saldo = useCarteira((s) => s.carteira?.saldo ?? null);
   const minhas = useMinhaMochila();
-  const [aba, setAba] = useState<"vitrine" | "mochila" | "mercado">("vitrine");
+  const [aba, setAba] = useState<"vitrine" | "mochila" | "mercado" | "haras">("vitrine");
   const [filtro, setFiltro] = useState("tudo");
   const [detalhe, setDetalhe] = useState<string | null>(null);
   const qtd = (id: string) => minhas.find((l) => l.itemId === id)?.qtd ?? 0;
@@ -301,7 +308,7 @@ export function LojaView({ hidden }: { hidden: boolean }) {
       <header className="hero loja-topo">
         <div>
           <h1>Loja</h1>
-          <p>Itens para o seu quarto, títulos, molduras e coisas para usar no K-FOFO.</p>
+          <p>Itens para o seu quarto, o boneco, títulos, molduras, coisas para usar no K-FOFO e cavalos de corrida.</p>
         </div>
         {saldo !== null && (
           <span className="loja-saldo">
@@ -312,7 +319,7 @@ export function LojaView({ hidden }: { hidden: boolean }) {
           </span>
         )}
       </header>
-      <div className="seg loja-abas" role="radiogroup" aria-label="Vitrine, mercado ou mochila">
+      <div className="seg loja-abas" role="radiogroup" aria-label="Vitrine, mochila, mercado ou haras">
         <button type="button" role="radio" aria-checked={aba === "vitrine"} className={aba === "vitrine" ? "on" : undefined} onClick={() => setAba("vitrine")}>
           Vitrine
         </button>
@@ -322,7 +329,22 @@ export function LojaView({ hidden }: { hidden: boolean }) {
         <button type="button" role="radio" aria-checked={aba === "mercado"} className={aba === "mercado" ? "on" : undefined} onClick={() => setAba("mercado")}>
           Mercado
         </button>
+        <button type="button" role="radio" aria-checked={aba === "haras"} className={aba === "haras" ? "on" : undefined} onClick={() => setAba("haras")}>
+          Haras
+        </button>
       </div>
+      {itens && aba === "vitrine" && filtro === "tudo" && (
+        <button type="button" className="block loja-destaque" onClick={() => setAba("haras")}>
+          <span className="loja-destaque-cavalo" aria-hidden="true">
+            <DesenhoCavalo pelagem="alazao" raia={0} />
+          </span>
+          <span>
+            <small>Novo</small>
+            <b>Haras: compre e treine o seu cavalo de corrida</b>
+            <span className="hint">Inscreva no páreo do Cassino, ganhe pelo pódio e aposte com a turma.</span>
+          </span>
+        </button>
+      )}
       {!itens && <p className="hint">Abrindo a loja…</p>}
       {itens && aba === "vitrine" && (
         <div className="loja-filtros" role="radiogroup" aria-label="Filtrar a vitrine">
@@ -348,6 +370,7 @@ export function LojaView({ hidden }: { hidden: boolean }) {
           ))}
       {aberto && <ItemDetalhe it={aberto} tenho={qtd(aberto.id)} equipado={eq(aberto.id)} saldo={saldo} fechar={() => setDetalhe(null)} />}
       {itens && aba === "mercado" && <MercadoAba />}
+      {aba === "haras" && <Haras />}
       {itens && aba === "mochila" && (
         <section className="block">
           <MochilaLista />

@@ -11,13 +11,15 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { IcFoneDesligado, IcHash, IcMicDesligado, IcSemSom, IcSeta, IcVolume } from "@/components/ui/icones";
-import { abrirCanalTexto, useChat } from "@/features/chat/chat";
+import { abrirCanalTexto, marcarComoLido, silenciarCanal, useChat } from "@/features/chat/chat";
+import { Balao } from "@/features/live/PainelVoz";
 import { MenuPessoa, useMenuDeToque } from "@/features/live/MenuPessoa";
 import { entrarVoz, useAjustesVoz, useVoz } from "@/features/live/voz";
 import { entrarSala } from "@/features/salas/trocar";
 import type { PresencaNanico } from "@/lib/presenca";
 import { friendDaPresenca, getApp, MY_KEY, setApp, useApp } from "@/lib/store";
 import { ehCelular, local } from "@/lib/util";
+import { abrirCartao } from "./CartaoPerfil";
 import { assistirLive, useNanicosOnline } from "./People";
 
 /** Categoria recolhível; recolhida, mostra só o que `fica` deixar (o canal onde eu estou). */
@@ -49,7 +51,8 @@ function PessoaCanal({ p, falando }: { p: PresencaNanico; falando: boolean }) {
   const nome = f?.name ?? p.name;
   const eu = p.chaves.includes(MY_KEY);
   const naVoz = !!p.voz;
-  /* como no Discord: clique direito (ou segurar o dedo) abre o volume, silenciar, a transmissão e a ficha */
+  /* como no Discord: o clique abre o cartão de perfil (com o volume, se estamos na mesma voz); o clique direito (ou
+     segurar o dedo) abre o menu com o volume, silenciar, a transmissão e a ficha */
   const menu = useMenuDeToque();
   const silenciei = useAjustesVoz((s) => !eu && !!p.fid && s.silenciados.includes(p.fid));
   const vol = useAjustesVoz((s) => (p.fid ? (s.por[p.fid] ?? 1) : 1));
@@ -58,6 +61,10 @@ function PessoaCanal({ p, falando }: { p: PresencaNanico; falando: boolean }) {
       className={"canal-pessoa" + (naVoz ? "" : " sem-voz") + (falando ? " falando" : "") + (eu ? " me" : "") + (menu.lugar ? " menu" : "")}
       title={naVoz ? nome : `${nome}: na sala, fora da voz`}
       {...menu.props}
+      onClick={(e) => {
+        if ((e.target as HTMLElement).closest("button, a")) return;
+        abrirCartao(p.fid, e);
+      }}
     >
       {f ? <Avatar f={f} size="xs" /> : <span className="av xs">{nome[0]}</span>}
       <span className="nm">{nome}</span>
@@ -97,12 +104,37 @@ function clicarVoz(id: string) {
   setApp(novas ? { aba: "live", railTab: "chat" } : { aba: "live" });
 }
 
+/** Um canal de texto: o clique direito (ou segurar o dedo) abre "Marcar como lido" e "Silenciar canal". */
+function LinhaCanal({ id, nome, children }: { id: string; nome: string; children: ReactNode }) {
+  const menu = useMenuDeToque(220);
+  const mudo = useChat((s) => s.mudos.includes(id));
+  return (
+    <li {...menu.props}>
+      {children}
+      {menu.lugar && (
+        <Balao lugar={menu.lugar} fechar={menu.fechar} rotulo={`Opções de #${nome}`}>
+          <h4>#{nome}</h4>
+          <button type="button" className="vz-item" onClick={() => (menu.fechar(), marcarComoLido(id))}>
+            <span>Marcar como lido</span>
+          </button>
+          <button type="button" className="vz-item" onClick={() => (menu.fechar(), silenciarCanal(id, !mudo))}>
+            <span>{mudo ? "Voltar a avisar" : "Silenciar canal"}</span>
+          </button>
+          <p className="vz-dica">{mudo ? "Silenciado: só as menções a você aparecem." : "Silenciando, as mensagens novas não aparecem; só as menções a você."}</p>
+        </Balao>
+      )}
+    </li>
+  );
+}
+
 export function Canais() {
   const salas = useApp((s) => s.salas);
   const minhaSala = useApp((s) => s.minhaSala);
   const naAbaChat = useApp((s) => s.aba === "chat");
   const canalTexto = useApp((s) => s.canalTexto);
   const naoLidas = useChat((s) => s.naoLidas);
+  const mencoes = useChat((s) => s.mencoes);
+  const mudos = useChat((s) => s.mudos);
   const falando = useVoz((s) => s.falando);
   const friends = useApp((s) => s.friends);
   const pessoas = useNanicosOnline();
@@ -163,14 +195,16 @@ export function Canais() {
               const aberto = naAbaChat && canalTexto === c.id;
               if (min && !aberto) return null;
               const n = naoLidas[c.id] ?? 0;
+              const at = mencoes[c.id] ?? 0;
+              const mudo = mudos.includes(c.id);
               const lendo = pessoas.filter((p) => p.texto === c.id);
               return (
-                <li key={c.id}>
+                <LinhaCanal key={c.id} id={c.id} nome={c.nome}>
                   <button
                     type="button"
-                    className={"canal" + (aberto ? " on" : "") + (n ? " novo" : "")}
+                    className={"canal" + (aberto ? " on" : "") + (n && !mudo ? " novo" : "") + (mudo ? " mudo" : "")}
                     aria-current={aberto ? "page" : undefined}
-                    aria-label={`Canal de texto ${c.nome}` + (n ? `, ${n} ${n === 1 ? "mensagem nova" : "mensagens novas"}` : "")}
+                    aria-label={`Canal de texto ${c.nome}` + (at ? `, ${at} ${at === 1 ? "menção" : "menções"} a você` : "") + (n ? `, ${n} ${n === 1 ? "mensagem nova" : "mensagens novas"}` : "") + (mudo ? ", silenciado" : "")}
                     onClick={() => abrirCanalTexto(c.id)}
                   >
                     <IcHash tam={16} />
@@ -184,9 +218,11 @@ export function Canais() {
                         {lendo.length > 3 && <small>+{lendo.length - 3}</small>}
                       </span>
                     )}
-                    {n > 0 && <span className="canal-novas">{n > 99 ? "99+" : n}</span>}
+                    {mudo && <IcSemSom tam={13} className="canal-mudo" aria-hidden="true" />}
+                    {/* como no Discord: a bolinha vermelha conta só as menções; mensagem nova deixa o nome em destaque */}
+                    {at > 0 ? <span className="canal-novas mencao">@{at > 99 ? "99+" : at}</span> : n > 0 && !mudo ? <span className="canal-ponto" aria-hidden="true" /> : null}
                   </button>
-                </li>
+                </LinhaCanal>
               );
             })}
           </ul>

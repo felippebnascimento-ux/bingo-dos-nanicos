@@ -1,5 +1,6 @@
 "use client";
 /* Moedas na tela: o selinho do menu (saldo e dias seguidos) e o quadro do Perfil (com o extrato). */
+import { Contando } from "@/components/ui/Contando";
 import { useEffect } from "react";
 import { IcMoeda } from "@/components/ui/icones";
 import { carregarExtrato, useCarteira } from "@/lib/carteira";
@@ -14,7 +15,9 @@ export function CarteiraChip() {
   return (
     <button type="button" className="moedas-chip" aria-label={rotulo} title={rotulo} onClick={() => useCarteira.setState({ painel: "ranking" })}>
       <IcMoeda tam={18} />
-      <b>{formatarMoedas(c.saldo)}</b>
+      <b>
+        <Contando valor={c.saldo} formatar={formatarMoedas} />
+      </b>
       {c.seq > 0 && <span className="seq">{c.seq === 1 ? "1 dia" : `${c.seq} dias`}</span>}
     </button>
   );

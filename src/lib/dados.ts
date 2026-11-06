@@ -6,11 +6,13 @@ import { getApp, lineupVazia, salaLol, setApp } from "./store";
 import type { Card, Friend, LineupSlot, Modo, Phrase, Sala } from "./tipos";
 import { byName, local, norm } from "./util";
 import { toast } from "./toast";
+import { notasDaConta } from "@/features/status/notas";
 import { joinRoom } from "./sala";
 import { LANES } from "./dados/campeoes";
 import { VERSION } from "./dados/changelog";
 import { juntarVisto, lerVisto, temNovidade, ULTIMA } from "./dados/novidades";
 import { carregarChat } from "@/features/chat/chat";
+import { iniciarStatus } from "@/features/status/status";
 import { iniciarCarteira } from "./carteira";
 import { iniciarSomPremio } from "@/features/cassino/somPremio";
 import { iniciarPedro } from "@/features/hall/pedroDados";
@@ -53,7 +55,8 @@ export function iniciarLocal() {
 export async function loadFriends() {
   /* se o SQL do smurf, da ficha (Steam) ou do op.gg ainda não rodou, o site segue funcionando sem a coluna */
   const tentativas = [
-    { cols: "opgg,steam,opgg_smurf,tipo,convidado_por", ok: { opggOk: true, steamOk: true, smurfOk: true }, aviso: "" },
+    { cols: "opgg,steam,opgg_smurf,tipo,convidado_por,poderes_nanico", ok: { opggOk: true, steamOk: true, smurfOk: true }, aviso: "" },
+    { cols: "opgg,steam,opgg_smurf,tipo,convidado_por", ok: { opggOk: true, steamOk: true, smurfOk: true }, aviso: "banco sem friends.poderes_nanico: rode a seção 73 do seguranca.sql" },
     { cols: "opgg,steam,opgg_smurf", ok: { opggOk: true, steamOk: true, smurfOk: true }, aviso: "banco sem friends.tipo: rode a seção 39 do seguranca.sql" },
     { cols: "opgg,steam", ok: { opggOk: true, steamOk: true, smurfOk: false }, aviso: "banco sem a coluna opgg_smurf: rode a seção 27 do seguranca.sql" },
     { cols: "opgg", ok: { opggOk: true, steamOk: false, smurfOk: false }, aviso: "banco sem a coluna steam: rode a seção 8 do seguranca.sql" },
@@ -250,6 +253,7 @@ export async function startSession(session: Session | null) {
   }
   /* "já vi" do Log: o da conta vale em todo aparelho; o do navegador fica de reserva */
   contaVisto = lerVisto(u?.user_metadata?.log_visto);
+  notasDaConta(u?.user_metadata?.notas, u?.user_metadata?.ignorados, u?.user_metadata?.bloqueados);
   setApp({ logVisto: juntarVisto(contaVisto, getApp().logVisto) });
   if (u?.user_metadata?.must_change) {
     setApp({ fase: "primeiraSenha", primeiroUsuario: String(u.email || "").split("@")[0] });
@@ -266,6 +270,7 @@ export function enterApp() {
   abrirNovidades();
   joinRoom(recarregar);
   carregarChat();
+  iniciarStatus();
   iniciarCarteira();
   /* o som do dinheiro nos prêmios grandes do cassino e o Pedro do K-FOFO (pelo tempo real) */
   iniciarSomPremio();

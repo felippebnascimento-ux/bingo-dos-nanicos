@@ -19,6 +19,7 @@ import { Poquer } from "./Poquer";
 import { CacaNiquel } from "./CacaNiquel";
 import { Penalti } from "./Penalti";
 import { RoletaMesa } from "./RoletaMesa";
+import { Corrida } from "@/features/corrida/Corrida";
 import { corDa, hashDaSemente, nomeLugar, refazer, resultadoGuardado, rtpSlot, vantagemDaCasa, type TipoAposta } from "./regras";
 
 /** Uma ficha antiga (uma aposta só) ou a mesa inteira: "25 no Número 32" ou "120 em 3 lugares". */
@@ -34,8 +35,10 @@ const JOGOS: { id: Jogo; nome: string }[] = [
   /* o Pênalti e o Pênalti x1 ficam numa aba só, com a escolha dentro (contra o goleiro ou contra um nanico) */
   { id: "penalti", nome: "Pênalti" },
   { id: "slot", nome: "Caça-níquel" },
+  /* corrida de cavalos (seção 71) */
+  { id: "corrida", nome: "Corrida" },
 ];
-const NOME_JOGO: Record<Jogo, string> = { roleta: "Roleta", aviao: "Aviãozinho", limbo: "Limbo", dado: "Maior ou menor", slot: "Caça-níquel", penalti: "Pênalti", blackjack: "Blackjack", poker: "Pôquer", duelo: "Pênalti x1" };
+const NOME_JOGO: Record<Jogo, string> = { roleta: "Roleta", aviao: "Aviãozinho", limbo: "Limbo", dado: "Maior ou menor", slot: "Caça-níquel", penalti: "Pênalti", blackjack: "Blackjack", poker: "Pôquer", duelo: "Pênalti x1", corrida: "Corrida de cavalos" };
 
 /** Uma linha do histórico: o que apostou e o que saiu, em poucas palavras. */
 function descreve(a: Aposta): { aposta: string; saiu: string; cor?: string } {
@@ -100,7 +103,7 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
 
   /* quanto a casa leva no jogo escolhido */
   const casaLeva =
-    jogo === "duelo" ? 0 : jogo === "roleta" ? vantagemDaCasa() : jogo === "blackjack" ? 0.5 : jogo === "poker" ? 3 : jogo === "slot" ? (rolos.length ? Math.round((1 - rtpSlot(rolos, pagamentos)) * 1000) / 10 : 8) : 3;
+    jogo === "duelo" ? 0 : jogo === "corrida" ? 10 : jogo === "roleta" ? vantagemDaCasa() : jogo === "blackjack" ? 0.5 : jogo === "poker" ? 3 : jogo === "slot" ? (rolos.length ? Math.round((1 - rtpSlot(rolos, pagamentos)) * 1000) / 10 : 8) : 3;
 
   /* o x1 fica dentro da aba Pênalti */
   const aba: Jogo = jogo === "duelo" ? "penalti" : jogo;
@@ -163,6 +166,11 @@ export function CassinoView({ hidden }: { hidden: boolean }) {
                   </button>
                 </div>
                 {jogo === "duelo" ? <Duelo ativa={!hidden} /> : <Penalti />}
+              </div>
+            )}
+            {jogo === "corrida" && (
+              <div className="rm-caixa corrida-caixa">
+                <Corrida ativa={!hidden} />
               </div>
             )}
             {jogo === "slot" && (

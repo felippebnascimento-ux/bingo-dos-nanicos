@@ -13,6 +13,8 @@ export type Friend = {
   tipo?: "nanico" | "amigo" | "inativo";
   /** quem convidou o amigo (friend id de um nanico) */
   convidado_por?: string | null;
+  /** amigo com os poderes de um nanico (seção 73; só o admin liga) */
+  poderes_nanico?: boolean;
 };
 
 /** Algo que dá para desenhar como rosto: um nanico ou só um nome. */
@@ -67,6 +69,9 @@ export type Presence = {
   voz?: string | null;
   /** microfone desligado / sem ouvir ninguém (só aparecem para quem está na voz) */
   mudo?: boolean;
+  /** parado há um tempo (Ausente sozinho) e no modo invisível (aparece offline nas listas) */
+  aus?: boolean;
+  inv?: boolean;
   surdo?: boolean;
   /** canal de texto aberto agora ("geral" ou o id de uma sala; null = nenhum) */
   texto?: string | null;

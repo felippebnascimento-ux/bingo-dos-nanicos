@@ -8,7 +8,7 @@ import { JanelaCameras } from "./Cameras";
 import { BarraCanal, DestaqueCanal, FaixaFoco, GradeCanal, TopoCanal } from "./Grade";
 import { useLive } from "./estado";
 import { iniciarLive } from "./live";
-import { Painel } from "./Painel";
+import { ChatFechado, Painel } from "./Painel";
 import { Palco } from "./Palco";
 
 /** Aba Ao vivo: transmissão de tela, câmeras, reações, desenho e o painel (telas, chat, cartela). */
@@ -42,6 +42,38 @@ export function LiveView({ hidden }: { hidden: boolean }) {
   const modo = useLive((s) => s.modo);
   const destaque = useLive((s) => s.destaque);
   const semNomes = useLive((s) => s.semNomes);
+  const chatEmbaixo = useLive((s) => s.chatEmbaixo);
+  /* com o chat embaixo, ele começa fechado numa barrinha: tocar abre e já deixa digitar (a live fica maior) */
+  const [chatAberto, setChatAberto] = useState(() => local.get("cv-chat-aberto") === "1");
+  /* no celular o chat continua como antes (embaixo, aberto): a barrinha é só do computador */
+  const [largo, setLargo] = useState(() => matchMedia("(min-width: 861px)").matches);
+  useEffect(() => {
+    const m = matchMedia("(min-width: 861px)");
+    const muda = () => setLargo(m.matches);
+    m.addEventListener("change", muda);
+    return () => m.removeEventListener("change", muda);
+  }, []);
+  const fechado = chatEmbaixo && !chatAberto && largo;
+  const abrirChat = (sim: boolean) => {
+    setChatAberto(sim);
+    local.set("cv-chat-aberto", sim ? "1" : "0");
+    if (sim) {
+      setApp({ railTab: "chat", chatUnread: 0 });
+      setTimeout(() => (document.getElementById("chatInput") as HTMLTextAreaElement | null)?.focus(), 80);
+    }
+  };
+  useEffect(() => {
+    setApp({ railFechado: fechado });
+  }, [fechado]);
+  /* "Mencionar" pede o chat aberto */
+  useEffect(() => {
+    const abre = () => {
+      setChatAberto(true);
+      local.set("cv-chat-aberto", "1");
+    };
+    addEventListener("abrir-chat-live", abre);
+    return () => removeEventListener("abrir-chat-live", abre);
+  }, []);
 
   return (
     <section id="view-live" className="inner" hidden={hidden}>
@@ -59,11 +91,11 @@ export function LiveView({ hidden }: { hidden: boolean }) {
           </button>
         </div>
       )}
-      <div className={"live-grid" + (railMin ? " no-rail" : "")} id="liveWrap" hidden={noLobby}>
+      <div className={"live-grid" + (railMin && !chatEmbaixo ? " no-rail" : "") + (chatEmbaixo ? " chat-embaixo" : "") + (fechado ? " chat-fechado" : "")} id="liveWrap" hidden={noLobby}>
         <div className={"stage-col cv-call" + (parado ? " parado" : "") + (semNomes ? " sem-nomes" : "")} onPointerMove={mexeu} onPointerLeave={() => setParado(true)}>
           {/* como no Discord: todo mundo em quadrados (grade) ou uma tela grande com o resto embaixo (foco).
               O Palco fica montado também na grade (escondido), para a tela principal seguir com som */}
-          <TopoCanal sala={sala} chat={!railMin} alternarChat={alternaPainel} />
+          <TopoCanal sala={sala} chat={chatEmbaixo ? !fechado : !railMin} alternarChat={chatEmbaixo ? () => abrirChat(fechado) : alternaPainel} />
           <div className="palco-foco" hidden={modo === "grade" || !!destaque}>
             <Palco />
           </div>
@@ -71,7 +103,8 @@ export function LiveView({ hidden }: { hidden: boolean }) {
           {modo === "grade" ? <GradeCanal /> : <FaixaFoco />}
           <BarraCanal />
         </div>
-        <Painel />
+        <Painel fechar={chatEmbaixo ? () => abrirChat(false) : undefined} />
+        {fechado && <ChatFechado abrir={() => abrirChat(true)} />}
         <button
           className="rail-toggle"
           id="railToggle"

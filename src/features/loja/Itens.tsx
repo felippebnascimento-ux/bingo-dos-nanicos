@@ -13,6 +13,7 @@ import { DURA_ANIM, restanteEfeito } from "./loja";
 import { DesenhoAcessorio, tipoAcessorio } from "./Acessorio";
 import { useConsumo } from "./consumoSala";
 import { useEquipados, useLoja } from "./lojaDados";
+import { IconePixel, temIconePixel } from "./IconesPixel";
 
 /** O desenho do consumível (ou do escudo), em pé, com a ponta/boca para cima. */
 export function DesenhoItem({ id }: { id: string }) {
@@ -105,6 +106,52 @@ export function DesenhoItem({ id }: { id: string }) {
           <rect x="2" y="25" width="12" height="9" className="l-papel" />
         </svg>
       );
+    /* consumíveis da seção 72 */
+    case "chopp":
+      return (
+        <svg viewBox="0 0 26 34" aria-hidden="true">
+          <path d="M3 6 L19 6 L18 32 L4 32 Z" className="l-copo" />
+          <path d="M3.6 12 L18.4 12 L18 32 L4 32 Z" className="l-chopp" />
+          <path d="M2 7 Q5 1 9 4 Q12 0 15 4 Q19 1 20 7 Q20 11 17 11 L5 11 Q2 11 2 7 Z" className="l-espuma" />
+          <path d="M19 14 Q25 14 24 21 Q23 26 18.5 25" fill="none" strokeWidth="2.4" className="l-xicara-asa" />
+        </svg>
+      );
+    case "quentao":
+      return (
+        <svg viewBox="0 0 26 30" aria-hidden="true">
+          <path d="M3 8 L19 8 L19 27 Q11 30 3 27 Z" className="l-caneca" />
+          <ellipse cx="11" cy="8.5" rx="8" ry="2" className="l-quentao" />
+          <path d="M19 12 Q25 12 24 17 Q23 21 19 20" fill="none" strokeWidth="2.4" className="l-caneca-asa" />
+          <rect x="12" y="0" width="2" height="12" rx="1" transform="rotate(18 13 6)" className="l-canela" />
+          <path d="M7 6 Q5 3 7 0" fill="none" strokeWidth="1.2" strokeLinecap="round" className="l-vapor" />
+        </svg>
+      );
+    case "vinho":
+      return (
+        <svg viewBox="0 0 20 38" aria-hidden="true">
+          <path d="M3 2 L17 2 Q18 14 10 18 Q2 14 3 2 Z" className="l-copo" />
+          <path d="M3.4 8 L16.6 8 Q16.5 14 10 17 Q3.5 14 3.4 8 Z" className="l-vinho" />
+          <rect x="9" y="17" width="2" height="15" className="l-copo" />
+          <ellipse cx="10" cy="34" rx="6" ry="2" className="l-copo" />
+        </svg>
+      );
+    case "palheiro":
+      return (
+        <svg viewBox="0 0 12 40" aria-hidden="true">
+          <path d="M4 6 L8 6 L8.6 36 L3.4 36 Z" className="l-palha" />
+          <path d="M4 14 L8 14 M3.8 22 L8.2 22 M3.6 30 L8.4 30" strokeWidth=".6" className="l-palha-risco" />
+          <rect x="4" y="3" width="4" height="4" rx="1" className="l-brasa" />
+        </svg>
+      );
+    case "acai":
+      return (
+        <svg viewBox="0 0 26 30" aria-hidden="true">
+          <path d="M2 10 L24 10 L20 29 L6 29 Z" className="l-copo" />
+          <path d="M2.6 13 L23.4 13 L20 29 L6 29 Z" className="l-acai" />
+          <path d="M3 10 Q6 6 9 9 Q12 5 15 9 Q18 6 23 10 Z" className="l-granola" />
+          <rect x="16" y="0" width="2" height="14" transform="rotate(16 17 7)" className="l-canudo" />
+        </svg>
+      );
     case "celular":
       return (
         <svg viewBox="0 0 22 38" aria-hidden="true">
@@ -188,7 +235,7 @@ export function EfeitoCanto() {
   return (
     <div className="hall-canto hall-efeito" role="status" aria-label={`Seu efeito: ${e.nome}, faltam ${e.falta}`}>
       <span className="hall-efeito-item" aria-hidden="true">
-        <DesenhoItem id={e.id} />
+        {temIconePixel(e.id) ? <IconePixel id={e.id} /> : <DesenhoItem id={e.id} />}
       </span>
       <span>{e.nome}</span>
       <b>{e.falta}</b>

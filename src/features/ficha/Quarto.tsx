@@ -8,6 +8,7 @@
 import { memo } from "react";
 import { ANCORA, CEL_H, CEL_W } from "@/features/hall/hall";
 import { FormasAcessorio, type TipoAcessorio } from "@/features/loja/Acessorio";
+import { desenharMovel } from "@/features/quarto/Moveis";
 
 type Pt = [number, number];
 type Poly = { q: Pt[]; c: string; linha?: boolean };
@@ -109,26 +110,10 @@ function desenhar(e: EquipQuarto): Poly[] {
   box(5.45, 0.3, 0.15, 0.5, 36, "teclado", "preto0", "preto1", 44);
   box(5.45, 0.3, 0.15, 0.5, 1, "luz", "luz", "luz", 62);
   if (rgb) ["rgb1", "rgb2", "rgb3"].forEach((c, k) => box(5.45, 0.3, 0.15, 0.5, 1, c, c, c, 50 + k * 8));
-  /* cadeira: a padrão, a gamer (preta com faixa vermelha e encosto alto) ou o trono dourado */
-  const cad = e.cadeira === "gamer" ? ["preto0", "preto1", "preto2"] : e.cadeira === "trono" ? ["ouro0", "ouro1", "ouro2"] : ["cadeira0", "cadeira1", "cadeira2"];
-  const encosto = e.cadeira === "gamer" ? 84 : e.cadeira === "trono" ? 100 : 62;
-  box(4.1, 1.55, 0.9, 0.9, 26, cad[0], cad[1], cad[2]);
-  box(4.1, 1.55, 0.9, 0.18, encosto, cad[0], cad[1], cad[2], 26);
-  if (e.cadeira === "gamer") box(4.4, 1.55, 0.3, 0.19, encosto - 10, "pelucia0", "pelucia0", "pelucia1", 31);
-  if (e.cadeira === "trono") for (const di of [0, 0.35, 0.7]) box(4.1 + di, 1.55, 0.2, 0.18, 12, "ouro2", "ouro1", "ouro0", 26 + encosto);
-  /* planta: a plantinha padrão, a samambaia (mais cheia) ou o cacto */
-  box(0.4, 4.8, 0.6, 0.6, 24, "madeira0", "madeira1", "madeira2");
-  if (e.planta === "cacto") {
-    box(0.55, 4.95, 0.3, 0.3, 70, "cacto0", "cacto1", "cacto1", 24);
-    box(0.35, 5.0, 0.2, 0.2, 26, "cacto0", "cacto1", "cacto1", 54);
-    box(0.85, 5.0, 0.2, 0.2, 20, "cacto0", "cacto1", "cacto1", 66);
-  } else {
-    const folhas =
-      e.planta === "verde"
-        ? [[0.2, 0.2, 40], [0.45, 0.15, 50], [0.3, 0.45, 46], [0.1, 0.4, 34], [0.0, 0.0, 44], [0.6, 0.5, 40], [0.5, 0.0, 60], [0.0, 0.6, 52], [0.3, 0.3, 66]]
-        : [[0.2, 0.2, 40], [0.45, 0.15, 50], [0.3, 0.45, 46], [0.1, 0.4, 34]];
-    for (const [di, dj, dz] of folhas) box(0.4 + di - 0.12, 4.8 + dj - 0.12, 0.3, 0.3, 14, "planta0", "planta1", "planta2", 24 + dz - 30);
-  }
+  /* cadeira e planta com os mesmos desenhos dos quartos e da Loja (Moveis.tsx, 05/11/2026), na mesma escala */
+  const cadeira = e.cadeira === "gamer" ? "cadeira-gamer" : e.cadeira === "trono" ? "cadeira-trono" : "cadeira-escritorio";
+  for (const f of desenharMovel(p, cadeira, { i: 4.05, j: 1.45, w: 1, d: 1 }, false)) L.push(f);
+  for (const f of desenharMovel(p, e.planta === "cacto" ? "planta-cacto" : "planta-samambaia", { i: 0.2, j: 4.6, w: 1, d: 1 }, false)) L.push(f);
   return L;
 }
 /* um desenho por combinação de itens (são poucas) */

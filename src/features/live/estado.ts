@@ -23,7 +23,7 @@ export type LiveUi = {
   res: Res;
   /** o volume da tela principal agora (o de quem está nela, guardado em `volTelas`) */
   vol: number;
-  /** o volume da transmissão de cada nanico (friend id), de 0 a 1, como no Discord */
+  /** o volume da transmissão de cada nanico (friend id), de 0 a 2 (até 200%), como no Discord */
   volTelas: Record<string, number>;
   reacoesVer: boolean;
   voando: Voo[];
@@ -51,6 +51,8 @@ export type LiveUi = {
   semNomes: boolean;
   /** nanicos (friend id) cuja câmera eu desliguei só para mim */
   semVideo: string[];
+  /** o chat e a cartela embaixo da call (a transmissão fica com a largura toda); desligado, ficam do lado */
+  chatEmbaixo: boolean;
 };
 
 const num = (k: string) => parseFloat(local.get(k) ?? "");
@@ -66,8 +68,8 @@ export const useLive = create<LiveUi>()(() => ({
   unmute: false,
   fps: fpsSalvo === 30 ? 30 : 60,
   res: resSalvo === 1440 || resSalvo === 720 ? resSalvo : 1080,
-  vol: volSalvo >= 0 && volSalvo <= 1 ? volSalvo : 1,
-  volTelas: Object.fromEntries(Object.entries(volTelasSalvo).filter((e): e is [string, number] => typeof e[1] === "number" && e[1] >= 0 && e[1] <= 1)),
+  vol: volSalvo >= 0 && volSalvo <= 2 ? volSalvo : 1,
+  volTelas: Object.fromEntries(Object.entries(volTelasSalvo).filter((e): e is [string, number] => typeof e[1] === "number" && e[1] >= 0 && e[1] <= 2)),
   reacoesVer: local.get("reacoes-ver") !== "0",
   voando: [],
   desenhoOn: false,
@@ -85,7 +87,13 @@ export const useLive = create<LiveUi>()(() => ({
   soVideo: local.get("cv-so-video") === "1",
   semNomes: local.get("cv-sem-nomes") === "1",
   semVideo: Array.isArray(semVideoSalvo) ? semVideoSalvo.filter((x): x is string => typeof x === "string") : [],
+  chatEmbaixo: local.get("cv-chat-lado") !== "1",
 }));
+/** Chat embaixo da call ou do lado (fica salvo). */
+export function chatEmbaixoDe(v: boolean) {
+  setLive({ chatEmbaixo: v });
+  local.set("cv-chat-lado", v ? "0" : "1");
+}
 
 export const setLive = (p: Partial<LiveUi>) => useLive.setState(p);
 export const getLive = () => useLive.getState();

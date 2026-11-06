@@ -7,6 +7,7 @@
  * Clique direito (ou o botão ⋯) abre o menu do quadrado: destaque, janela flutuante, tela cheia, volumes e silenciar.
  * Só a tela principal toca som (o Palco continua montado, escondido na grade); as outras abertas vão sem som.
  */
+import { abrirConfiguracoes } from "@/features/config/ajustes";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import {
@@ -37,11 +38,13 @@ import { toast } from "@/lib/toast";
 import { local } from "@/lib/util";
 import type { Friend } from "@/lib/tipos";
 import { activeCams, camStreamOf, openCamPip } from "./camera";
-import { opcaoCall, semVideoDe, setLive, useLive } from "./estado";
-import { Balao, botaoCamera, botaoTela, BotaoReacoes, Chave, lugarDe, MenuFone, MenuMic, useBalao, type Lugar } from "./PainelVoz";
+import { chatEmbaixoDe, opcaoCall, setLive, useLive } from "./estado";
+import { Balao, botaoCamera, botaoTela, BotaoReacoes, BotaoSoundboard, Chave, lugarDe, MenuFone, MenuMic, useBalao, type Lugar } from "./PainelVoz";
 import { canShare } from "./rtc";
-import { OpcoesVoz } from "./MenuPessoa";
-import { LIVE, mudarVolumeTela, stopLive, unwatch, watch } from "./tela";
+import { CorpoPessoa } from "./MenuPessoa";
+import { abrirBusca } from "@/components/shell/BuscaRapida";
+import { ativarSomTelas, ouvirJunto, useOuvindo } from "./somTelas";
+import { LIVE, mudarVolumeTela, stopLive, unwatch, VOLUME_TELA_MAX, volumeDaTela, watch } from "./tela";
 import { VideoMudo } from "./Video";
 import { alternarMudo, alternarSurdo, entrarVoz, useAjustesVoz, useVoz } from "./voz";
 
@@ -141,8 +144,10 @@ function MenuQuadro({
   el: React.RefObject<HTMLDivElement | null>;
   video: HTMLVideoElement | null;
 }) {
-  const vol = useLive((s) => s.vol);
-  const semVideo = useLive((s) => s.semVideo);
+  useLive((s) => s.volTelas);
+  const chaveTela = q.tipo === "tela" ? q.key : null;
+  const junto = useOuvindo((s) => !!chaveTela && s.junto.includes(chaveTela));
+  const volQ = volumeDaTela(chaveTela);
   const espelho = useLive((s) => s.espelho);
   const naGrade = useLive((s) => s.minhaCamNaGrade);
   const fid = q.tipo === "pessoa" ? q.p.fid : null;
@@ -176,31 +181,29 @@ function MenuQuadro({
       <button type="button" className="vz-item" onClick={faz(() => telaCheiaDe(el.current))}>
         <span>Tela cheia</span>
       </button>
-      {principal && (
+      {assistindo && (
         <>
           <div className="vz-sep" />
-          <h4>Volume da transmissão</h4>
-          <label className="vz-vol">
-            <input
-              className="vz-faixa"
-              style={{ "--pct": `${Math.round(vol * 100)}%` } as React.CSSProperties}
-              aria-label="Volume da transmissão"
-              type="range"
-              min={0}
-              max={100}
-              value={Math.round(vol * 100)}
-              onChange={(e) => mudarVolumeTela(Number(e.target.value) / 100)}
-            />
-            <b>{Math.round(vol * 100)}%</b>
-          </label>
-        </>
-      )}
-      {q.tipo === "pessoa" && !q.eu && fid && (
-        <>
-          <div className="vz-sep" />
-          <OpcoesVoz fid={fid} nome={q.nome} />
-          {/* como no Discord: deixar de ver a câmera dela (só para mim; ela continua ligada para os outros) */}
-          {(q.p.chaveCam || semVideo.includes(fid)) && <Chave rotulo="Desligar o vídeo (só para você)" ligado={semVideo.includes(fid)} onChange={(v) => semVideoDe(fid, v)} />}
+          <h4>Som da transmissão</h4>
+          {(principal || junto) && (
+            <label className="vz-vol">
+              <input
+                className="vz-faixa"
+                style={{ "--pct": `${Math.round((volQ / VOLUME_TELA_MAX) * 100)}%` } as React.CSSProperties}
+                aria-label="Volume da transmissão"
+                type="range"
+                min={0}
+                max={VOLUME_TELA_MAX * 100}
+                value={Math.round(volQ * 100)}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  mudarVolumeTela((Math.abs(n - 100) <= 4 ? 100 : n) / 100, q.key);
+                }}
+              />
+              <b>{Math.round(volQ * 100)}%</b>
+            </label>
+          )}
+          {!principal && <Chave rotulo="Ouvir junto com a principal" ligado={junto} onChange={(x) => ouvirJunto(q.key, x)} />}
         </>
       )}
       {q.eu && q.tipo === "pessoa" && (
@@ -224,7 +227,14 @@ function MenuQuadro({
           />
         </>
       )}
-      {q.f && (
+      {/* a pessoa: o mesmo menu da lista do canal, na ordem do Discord */}
+      {q.tipo === "pessoa" && (
+        <>
+          <div className="vz-sep" />
+          <CorpoPessoa p={q.p} fid={fid} nome={q.nome} eu={!!q.eu} fechar={fechar} semTela />
+        </>
+      )}
+      {q.tipo === "tela" && q.f && (
         <>
           <div className="vz-sep" />
           <button type="button" className="vz-item" onClick={faz(() => setApp({ fichaAberta: q.f!.id }))}>
@@ -278,7 +288,7 @@ function ControlesTela({ q, principal, el }: { q: Quadro; principal: boolean; el
           >
             {vol ? <IcVolume tam={18} /> : <IcSemSom tam={18} />}
           </button>
-          <input className="qd-vol" type="range" min={0} max={100} value={Math.round(vol * 100)} aria-label={`Volume da tela de ${q.nome}`} onChange={(e) => mudarVolume(Number(e.target.value) / 100)} />
+          <input className="qd-vol" type="range" min={0} max={VOLUME_TELA_MAX * 100} value={Math.round(vol * 100)} aria-label={`Volume da tela de ${q.nome}`} onChange={(e) => mudarVolume(Number(e.target.value) / 100)} />
         </>
       ) : (
         /* só a tela em destaque toca som: tocar aqui passa o som para esta */
@@ -300,14 +310,7 @@ function ControlesTela({ q, principal, el }: { q: Quadro; principal: boolean; el
 }
 
 /* ---------- um quadrado ---------- */
-function ativarSom() {
-  const v = LIVE.mainVideo;
-  if (!v) return;
-  v.muted = false;
-  v.play()
-    .then(() => setLive({ unmute: false }))
-    .catch(() => {});
-}
+const ativarSom = ativarSomTelas;
 
 function QuadroCanal({ q, pequeno, grande }: { q: Quadro; pequeno?: boolean; grande?: boolean }) {
   useLive((s) => s.v);
@@ -514,6 +517,7 @@ export function BarraCanal() {
           )}
           <span className="cv-reacoes">
             <BotaoReacoes />
+            <BotaoSoundboard />
           </span>
           {mic.lugar && <MenuMic lugar={mic.lugar} ancora={mic.ancora} fechar={mic.fechar} />}
           {fone.lugar && <MenuFone lugar={fone.lugar} ancora={fone.ancora} fechar={fone.fechar} />}
@@ -566,6 +570,7 @@ function MenuTransmissao({ lugar, ancora, fechar }: { lugar: Lugar; ancora: HTML
 function MenuMais({ lugar, ancora, fechar }: { lugar: Lugar; ancora: HTMLElement | null; fechar: () => void }) {
   const soVideo = useLive((s) => s.soVideo);
   const semNomes = useLive((s) => s.semNomes);
+  const chatEmbaixo = useLive((s) => s.chatEmbaixo);
   const ruido = useMidia((s) => s.ruido);
   const nCams = activeCams().length;
   const faz = (f: () => void) => () => (fechar(), f());
@@ -575,6 +580,7 @@ function MenuMais({ lugar, ancora, fechar }: { lugar: Lugar; ancora: HTMLElement
       <Chave rotulo="Mostrar quem está sem câmera" ligado={!soVideo} onChange={(v) => opcaoCall("soVideo", !v)} />
       <Chave rotulo="Mostrar os nomes" ligado={!semNomes} onChange={(v) => opcaoCall("semNomes", !v)} />
       <div className="vz-sep" />
+      <Chave rotulo="Chat embaixo da call" ligado={chatEmbaixo} onChange={chatEmbaixoDe} />
       <Chave rotulo="Supressão de ruído" ligado={ruido} onChange={(v) => salvarMidia({ ruido: v })} />
       <div className="vz-sep" />
       <button type="button" className="vz-item" disabled={!nCams} onClick={faz(() => openCamPip(null))}>
@@ -583,7 +589,7 @@ function MenuMais({ lugar, ancora, fechar }: { lugar: Lugar; ancora: HTMLElement
       <button type="button" className="vz-item" onClick={faz(() => telaCheiaDe(document.getElementById("liveWrap")))}>
         <span>Tela cheia</span>
       </button>
-      <button type="button" className="vz-item" onClick={faz(() => setApp({ configAberto: true }))}>
+      <button type="button" className="vz-item" onClick={faz(() => abrirConfiguracoes("voz"))}>
         <span>Configurações de voz e vídeo</span>
       </button>
     </Balao>
@@ -608,6 +614,12 @@ export function TopoCanal({ sala, chat, alternarChat }: { sala: string | null; c
         </small>
       </span>
       <span className="cv-topo-bts">
+        {/* como no Discord: a busca rápida no alto (Ctrl+K) */}
+        <button type="button" className="cv-busca" onClick={abrirBusca} aria-label="Busca rápida (Ctrl+K)">
+          <IcBuscaTopo />
+          <span>Buscar</span>
+          <kbd>Ctrl K</kbd>
+        </button>
         <button
           type="button"
           className={"cv-tb" + (foco ? "" : " on")}
@@ -701,3 +713,10 @@ export function FaixaFoco() {
     </div>
   );
 }
+
+const IcBuscaTopo = () => (
+  <svg viewBox="0 0 24 24" width={15} height={15} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="11" cy="11" r="6.5" />
+    <path d="m20 20-4.2-4.2" />
+  </svg>
+);

@@ -8184,3 +8184,986 @@ union all
 select proname::text, 'instanico 69' from pg_proc where pronamespace = 'public'::regnamespace
    and proname in ('aceitar_colab', 'eh_do_grupo', 'criar_grupo', 'grupo_adicionar', 'grupo_lido', 'abrir_unica')
 order by 1;
+
+-- 70) o Discord do site perfeito (04/11/2026, pedido do Henrique) -------------------------------------------------------
+--   Chat: responder (`resposta_a`), editar a própria (`editado_em`), apagar a própria (moderador apaga qualquer uma),
+--   foto ou GIF (`midia`, na pasta <uid>/ do bucket midias), fixar no canal (`fixada_em`, qualquer membro) e reações
+--   com emoji (chat_reacoes). As conversas passam a ficar 1 ano (antes eram 30 dias).
+--   Status de cada um (status_nanico: online, ausente, não perturbe, invisível e o recado). Os moderadores ficam
+--   visíveis (cargo no site). Moderador silencia alguém na voz para todos (voz_silenciados) e desconecta da call
+--   (voz_desconectar); o site de quem foi silenciado ou desconectado obedece pelo tempo real.
+
+-- ---------- chat ----------
+alter table public.chat_messages add column if not exists resposta_a bigint references public.chat_messages(id) on delete set null;
+alter table public.chat_messages add column if not exists editado_em timestamptz;
+alter table public.chat_messages add column if not exists midia text;
+alter table public.chat_messages add column if not exists fixada_em timestamptz;
+alter table public.chat_messages add column if not exists fixada_por uuid references auth.users(id) on delete set null;
+alter table public.chat_messages drop constraint if exists chat_messages_text_check;
+alter table public.chat_messages add constraint chat_messages_text_check check (char_length(text) <= 300);
+alter table public.chat_messages drop constraint if exists chat_messages_midia_check;
+alter table public.chat_messages add constraint chat_messages_midia_check
+  check (midia is null or midia ~ '^[0-9a-f-]{36}/chat-[a-z0-9-]{6,40}\.(webp|gif)$');
+create index if not exists chat_messages_fixadas on public.chat_messages (sala, fixada_em) where fixada_em is not null;
+grant insert (text, sala, grito, resposta_a, midia) on public.chat_messages to authenticated;
+grant update (text, fixada_em) on public.chat_messages to authenticated;
+grant delete on public.chat_messages to authenticated;
+
+-- quem é moderador (agora todo membro vê, para o cargo aparecer)
+create or replace function public.eh_moderador() returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.moderadores m join public.friends f on f.id = m.friend_id where f.user_id = auth.uid());
+$$;
+revoke all on function public.eh_moderador() from public, anon;
+grant execute on function public.eh_moderador() to authenticated;
+grant select on public.moderadores to authenticated;
+drop policy if exists moderadores_ler on public.moderadores;
+create policy moderadores_ler on public.moderadores for select to authenticated using (public.eh_membro());
+
+drop policy if exists chat_mudar on public.chat_messages;
+create policy chat_mudar on public.chat_messages for update to authenticated using (public.eh_membro()) with check (public.eh_membro());
+drop policy if exists chat_apagar on public.chat_messages;
+create policy chat_apagar on public.chat_messages for delete to authenticated using (user_id = auth.uid() or public.eh_moderador());
+
+create or replace function public.chat_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.text := left(btrim(regexp_replace(coalesce(new.text, ''), '[\x00-\x09\x0B-\x1F\x7F]', '', 'g')), 300);
+  if char_length(new.text) = 0 and new.midia is null then raise exception 'Mensagem vazia' using errcode = 'P0001'; end if;
+  new.created_at := now();
+  new.editado_em := null;
+  new.fixada_em := null;
+  new.fixada_por := null;
+  if new.midia is not null then
+    if split_part(new.midia, '/', 1) <> auth.uid()::text then raise exception 'A imagem tem que estar na sua pasta.' using errcode = 'P0001'; end if;
+    if not exists (select 1 from storage.objects where bucket_id = 'midias' and name = new.midia) then
+      raise exception 'A imagem não chegou. Tente de novo.' using errcode = 'P0001';
+    end if;
+  end if;
+  if new.resposta_a is not null and not exists (select 1 from public.chat_messages where id = new.resposta_a and sala = new.sala) then
+    new.resposta_a := null;
+  end if;
+  perform public.limitar('chat', 8, interval '10 seconds', 'Calma: muitas mensagens seguidas. Espere alguns segundos.');
+  perform public.limitar('chat_hora', 300, interval '1 hour', 'Calma: limite de mensagens por hora atingido.');
+  return new;
+end $$;
+revoke all on function public.chat_protecao() from public, anon, authenticated;
+
+-- editar: só o autor muda o texto (fica "editado"); fixar e desafixar qualquer membro (como um canal de amigos)
+create or replace function public.chat_edicao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.text is distinct from old.text then
+    if old.user_id <> auth.uid() then raise exception 'Só quem escreveu edita a mensagem.' using errcode = 'P0001'; end if;
+    new.text := left(btrim(regexp_replace(coalesce(new.text, ''), '[\x00-\x09\x0B-\x1F\x7F]', '', 'g')), 300);
+    if char_length(new.text) = 0 and old.midia is null then raise exception 'Mensagem vazia' using errcode = 'P0001'; end if;
+    new.editado_em := now();
+  end if;
+  if new.fixada_em is distinct from old.fixada_em then
+    if new.fixada_em is not null then
+      new.fixada_em := now();
+      new.fixada_por := auth.uid();
+      if (select count(*) from public.chat_messages where sala = old.sala and fixada_em is not null and id <> old.id) >= 50 then
+        raise exception 'Esse canal já tem 50 mensagens fixadas.' using errcode = 'P0001';
+      end if;
+    else
+      new.fixada_por := null;
+    end if;
+  end if;
+  perform public.limitar('chat_editar', 30, interval '1 minute', 'Calma: muitas edições seguidas.');
+  return new;
+end $$;
+revoke all on function public.chat_edicao() from public, anon, authenticated;
+drop trigger if exists chat_edicao on public.chat_messages;
+create trigger chat_edicao before update on public.chat_messages for each row execute function public.chat_edicao();
+
+-- as conversas ficam 1 ano (as fixadas ficam para sempre)
+create or replace function public.limpar_chat_antigo() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  delete from public.chat_messages where created_at < now() - interval '365 days' and fixada_em is null;
+  return null;
+end $$;
+
+create table if not exists public.chat_reacoes (
+  mensagem_id bigint not null references public.chat_messages(id) on delete cascade,
+  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  emoji       text not null check (char_length(emoji) between 1 and 8),
+  em          timestamptz not null default now(),
+  primary key (mensagem_id, user_id, emoji)
+);
+alter table public.chat_reacoes enable row level security;
+revoke all on public.chat_reacoes from public, anon, authenticated;
+grant select, delete on public.chat_reacoes to authenticated;
+grant insert (mensagem_id, emoji) on public.chat_reacoes to authenticated;
+drop policy if exists chat_reacoes_ler on public.chat_reacoes;
+create policy chat_reacoes_ler on public.chat_reacoes for select to authenticated using (public.eh_membro());
+drop policy if exists chat_reacoes_criar on public.chat_reacoes;
+create policy chat_reacoes_criar on public.chat_reacoes for insert to authenticated with check (user_id = auth.uid() and public.eh_membro());
+drop policy if exists chat_reacoes_apagar on public.chat_reacoes;
+create policy chat_reacoes_apagar on public.chat_reacoes for delete to authenticated using (user_id = auth.uid());
+create or replace function public.chat_reacao_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if (select count(distinct emoji) from public.chat_reacoes where mensagem_id = new.mensagem_id) >= 20
+     and not exists (select 1 from public.chat_reacoes where mensagem_id = new.mensagem_id and emoji = new.emoji) then
+    raise exception 'Essa mensagem já tem reações demais.' using errcode = 'P0001';
+  end if;
+  perform public.limitar('chat_reacao', 60, interval '1 minute', 'Calma: reações demais em pouco tempo.');
+  return new;
+end $$;
+revoke all on function public.chat_reacao_protecao() from public, anon, authenticated;
+drop trigger if exists chat_reacao_protecao on public.chat_reacoes;
+create trigger chat_reacao_protecao before insert on public.chat_reacoes for each row execute function public.chat_reacao_protecao();
+
+-- ---------- status (online, ausente, não perturbe, invisível) e o recado ----------
+create table if not exists public.status_nanico (
+  user_id uuid primary key default auth.uid() references auth.users(id) on delete cascade,
+  modo    text not null default 'on' check (modo in ('on', 'aus', 'np', 'inv')),
+  texto   text not null default '' check (char_length(texto) <= 60),
+  emoji   text not null default '' check (char_length(emoji) <= 8),
+  ate     timestamptz,
+  em      timestamptz not null default now()
+);
+alter table public.status_nanico enable row level security;
+revoke all on public.status_nanico from public, anon, authenticated;
+grant select on public.status_nanico to authenticated;
+grant insert (modo, texto, emoji, ate), update (modo, texto, emoji, ate) on public.status_nanico to authenticated;
+-- o invisível só o próprio vê como invisível (para os outros, a linha some: ele aparece offline)
+drop policy if exists status_ler on public.status_nanico;
+create policy status_ler on public.status_nanico for select to authenticated using (public.eh_membro() and (modo <> 'inv' or user_id = auth.uid()));
+drop policy if exists status_criar on public.status_nanico;
+create policy status_criar on public.status_nanico for insert to authenticated with check (user_id = auth.uid() and public.eh_membro());
+drop policy if exists status_mudar on public.status_nanico;
+create policy status_mudar on public.status_nanico for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+create or replace function public.status_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.texto := btrim(regexp_replace(coalesce(new.texto, ''), '[\x00-\x1F\x7F]', ' ', 'g'));
+  new.em := now();
+  perform public.limitar('status', 30, interval '1 hour', 'Calma: mudou o status vezes demais.');
+  return new;
+end $$;
+revoke all on function public.status_protecao() from public, anon, authenticated;
+drop trigger if exists status_protecao on public.status_nanico;
+create trigger status_protecao before insert or update on public.status_nanico for each row execute function public.status_protecao();
+
+-- ---------- moderador: silenciar na voz para todos e desconectar da call ----------
+create table if not exists public.voz_silenciados (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  por     uuid references auth.users(id) on delete set null,
+  em      timestamptz not null default now()
+);
+create table if not exists public.voz_desconectar (
+  id      bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  por     uuid default auth.uid() references auth.users(id) on delete set null,
+  em      timestamptz not null default now()
+);
+alter table public.voz_silenciados enable row level security;
+alter table public.voz_desconectar enable row level security;
+revoke all on public.voz_silenciados, public.voz_desconectar from public, anon, authenticated;
+grant select on public.voz_silenciados, public.voz_desconectar to authenticated;
+grant insert (user_id) on public.voz_silenciados, public.voz_desconectar to authenticated;
+grant delete on public.voz_silenciados to authenticated;
+drop policy if exists voz_sil_ler on public.voz_silenciados;
+create policy voz_sil_ler on public.voz_silenciados for select to authenticated using (public.eh_membro());
+drop policy if exists voz_sil_criar on public.voz_silenciados;
+create policy voz_sil_criar on public.voz_silenciados for insert to authenticated with check (public.eh_moderador() and user_id <> auth.uid());
+drop policy if exists voz_sil_tirar on public.voz_silenciados;
+create policy voz_sil_tirar on public.voz_silenciados for delete to authenticated using (public.eh_moderador());
+drop policy if exists voz_desc_ler on public.voz_desconectar;
+create policy voz_desc_ler on public.voz_desconectar for select to authenticated using (user_id = auth.uid() or public.eh_moderador());
+drop policy if exists voz_desc_criar on public.voz_desconectar;
+create policy voz_desc_criar on public.voz_desconectar for insert to authenticated with check (public.eh_moderador() and user_id <> auth.uid());
+create or replace function public.voz_mod_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.por := auth.uid();
+  new.em := now();
+  if not exists (select 1 from public.friends where user_id = new.user_id) then raise exception 'Esse nanico não existe.' using errcode = 'P0001'; end if;
+  perform public.limitar('voz_mod', 30, interval '1 minute', 'Calma: muitas ações de moderador seguidas.');
+  if tg_table_name = 'voz_desconectar' then
+    delete from public.voz_desconectar where em < now() - interval '1 day';
+  end if;
+  return new;
+end $$;
+revoke all on function public.voz_mod_protecao() from public, anon, authenticated;
+drop trigger if exists voz_mod_protecao on public.voz_silenciados;
+create trigger voz_mod_protecao before insert on public.voz_silenciados for each row execute function public.voz_mod_protecao();
+drop trigger if exists voz_mod_protecao on public.voz_desconectar;
+create trigger voz_mod_protecao before insert on public.voz_desconectar for each row execute function public.voz_mod_protecao();
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.chat_reacoes;    exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.status_nanico;   exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.voz_silenciados; exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.voz_desconectar; exception when duplicate_object then null; end;
+end $$;
+
+-- confere: deve listar as 4 tabelas novas e a função de moderador
+select tablename::text as nome, 'discord 70' as parte from pg_tables
+ where schemaname = 'public' and tablename in ('chat_reacoes', 'status_nanico', 'voz_silenciados', 'voz_desconectar')
+union all
+select proname::text, 'discord 70' from pg_proc where pronamespace = 'public'::regnamespace and proname = 'eh_moderador'
+order by 1;
+
+-- =====================================================================================================================
+-- 71. Moderação da voz completa, como no Discord (04/11/2026): além de silenciar e desconectar (seção 70), o moderador
+--   ensurdece alguém para todos (a pessoa para de ouvir e de falar; coluna surdo em voz_silenciados) e move alguém para
+--   outro canal de voz (voz_mover: o site de quem foi movido entra na sala nova e na voz dela, pelo tempo real) e põe
+--   alguém de castigo (castigos: sem chat e sem voz por um tempo).
+--   Pode rodar de novo.
+-- =====================================================================================================================
+alter table public.voz_silenciados add column if not exists surdo boolean not null default false;
+grant insert (user_id, surdo) on public.voz_silenciados to authenticated;
+
+create table if not exists public.voz_mover (
+  id      bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  sala    text not null references public.salas(id) on delete cascade,
+  por     uuid default auth.uid() references auth.users(id) on delete set null,
+  em      timestamptz not null default now()
+);
+alter table public.voz_mover enable row level security;
+revoke all on public.voz_mover from public, anon, authenticated;
+grant select on public.voz_mover to authenticated;
+grant insert (user_id, sala) on public.voz_mover to authenticated;
+drop policy if exists voz_mover_ler on public.voz_mover;
+create policy voz_mover_ler on public.voz_mover for select to authenticated using (user_id = auth.uid() or public.eh_moderador());
+drop policy if exists voz_mover_criar on public.voz_mover;
+create policy voz_mover_criar on public.voz_mover for insert to authenticated with check (public.eh_moderador() and user_id <> auth.uid());
+
+-- a mesma proteção da seção 70 (quem fez, a hora, o limite), agora limpando também os pedidos de mover
+create or replace function public.voz_mod_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.por := auth.uid();
+  new.em := now();
+  if not exists (select 1 from public.friends where user_id = new.user_id) then raise exception 'Esse nanico não existe.' using errcode = 'P0001'; end if;
+  perform public.limitar('voz_mod', 30, interval '1 minute', 'Calma: muitas ações de moderador seguidas.');
+  if tg_table_name = 'voz_desconectar' then
+    delete from public.voz_desconectar where em < now() - interval '1 day';
+  elsif tg_table_name = 'voz_mover' then
+    delete from public.voz_mover where em < now() - interval '1 day';
+  end if;
+  return new;
+end $$;
+revoke all on function public.voz_mod_protecao() from public, anon, authenticated;
+drop trigger if exists voz_mod_protecao on public.voz_mover;
+create trigger voz_mod_protecao before insert on public.voz_mover for each row execute function public.voz_mod_protecao();
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.voz_mover; exception when duplicate_object then null; end;
+end $$;
+
+-- Castigo, como no Discord: o moderador deixa alguém sem falar no chat (o banco recusa) e na voz (o site dele obedece)
+-- por um tempo, de 1 minuto a 1 dia. Tirar o castigo é apagar a linha.
+create table if not exists public.castigos (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  ate     timestamptz not null,
+  por     uuid default auth.uid() references auth.users(id) on delete set null,
+  em      timestamptz not null default now()
+);
+alter table public.castigos enable row level security;
+revoke all on public.castigos from public, anon, authenticated;
+grant select, delete on public.castigos to authenticated;
+grant insert (user_id, ate) on public.castigos to authenticated;
+drop policy if exists castigos_ler on public.castigos;
+create policy castigos_ler on public.castigos for select to authenticated using (public.eh_membro());
+drop policy if exists castigos_criar on public.castigos;
+create policy castigos_criar on public.castigos for insert to authenticated with check (public.eh_moderador() and user_id <> auth.uid());
+drop policy if exists castigos_tirar on public.castigos;
+create policy castigos_tirar on public.castigos for delete to authenticated using (public.eh_moderador());
+
+create or replace function public.castigo_protecao() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.por := auth.uid();
+  new.em := now();
+  if not exists (select 1 from public.friends where user_id = new.user_id) then raise exception 'Esse nanico não existe.' using errcode = 'P0001'; end if;
+  if new.ate < now() + interval '30 seconds' or new.ate > now() + interval '1 day' then
+    raise exception 'O castigo vai de 1 minuto a 1 dia.' using errcode = 'P0001';
+  end if;
+  perform public.limitar('voz_mod', 30, interval '1 minute', 'Calma: muitas ações de moderador seguidas.');
+  delete from public.castigos where ate < now();
+  return new;
+end $$;
+revoke all on function public.castigo_protecao() from public, anon, authenticated;
+drop trigger if exists castigo_protecao on public.castigos;
+create trigger castigo_protecao before insert on public.castigos for each row execute function public.castigo_protecao();
+
+-- de castigo, o chat recusa a mensagem
+create or replace function public.chat_castigo() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare v_ate timestamptz;
+begin
+  select ate into v_ate from public.castigos where user_id = auth.uid() and ate > now();
+  if v_ate is not null then
+    raise exception 'Você está de castigo até %.', to_char(v_ate at time zone 'America/Sao_Paulo', 'HH24:MI') using errcode = 'P0001';
+  end if;
+  return new;
+end $$;
+revoke all on function public.chat_castigo() from public, anon, authenticated;
+drop trigger if exists chat_castigo on public.chat_messages;
+create trigger chat_castigo before insert on public.chat_messages for each row execute function public.chat_castigo();
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.castigos; exception when duplicate_object then null; end;
+end $$;
+
+-- confere: deve listar voz_mover, castigos e a coluna surdo
+select 'voz_mover' as nome, 'discord 71' as parte from pg_tables where schemaname = 'public' and tablename = 'voz_mover'
+union all
+select 'castigos', 'discord 71' from pg_tables where schemaname = 'public' and tablename = 'castigos'
+union all
+select column_name::text, 'discord 71' from information_schema.columns
+ where table_schema = 'public' and table_name = 'voz_silenciados' and column_name = 'surdo';
+
+-- 73) amigo com os poderes de nanico (05/11/2026, pedido do Pitoco: o Le Bitu) ----------------------------------------
+--   Um amigo dos nanicos pode ter tudo o que um nanico pode fazer: escrever nanicadas, escalação, rodízio, bingo,
+--   votar nos atributos, apostas do LoL. Ele continua aparecendo como amigo (aba Amigos, etiqueta, categoria dos
+--   membros); só o eh_nanico() passa a aceitá-lo. Quem liga é o admin (`friends.poderes_nanico`), nunca o site: a coluna
+--   não tem grant de update. Os 14 continuam sendo os 14 onde o assunto é a pessoa (votarem nele, troféus da semana).
+alter table public.friends add column if not exists poderes_nanico boolean not null default false;
+
+create or replace function public.eh_nanico() returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.friends
+                  where user_id = auth.uid() and (tipo = 'nanico' or (tipo = 'amigo' and poderes_nanico)));
+$$;
+
+-- 71) corrida de cavalos (05/11/2026, pedido do Pitoco) ----------------------------------------------------------------
+--   Uma corrida ao vivo, como as mesas da seção 32: abre quando alguém olha (corrida_estado) e anda pelo relógio do banco.
+--   20 s de inscrições (cada membro põe 1 cavalo seu), 30 s de apostas, 20 s de corrida, e o resultado fica 10 s na tela.
+--   8 raias: os cavalos inscritos e o resto da casa (12 cavalos fixos), na ordem de random(). A distância (1.000, 1.600 ou
+--   2.400 m) e a pista (leve ou pesada) saem na abertura, para quem inscreve saber onde vai correr.
+--   Pontos de cada cavalo = força (velocidade, arrancada e resistência com o peso da distância e da pista) + sorte; a sorte é
+--   (soma de 4 números de 0 a 1 − 2) × √3 × espalho, com espalho = 12 (leve) ou 18 (pesada) × (1,3 − constância/100). Os 4 números
+--   saem de HMAC-SHA256(segredo, 'corrida:<id>:<raia>') (16 bytes, de 4 em 4, ÷ 2^32); o hash do segredo aparece com as cotações e o
+--   segredo no fim. A mesma conta está em src/features/corrida/corrida.ts.
+--   Apostas com cotação fixa, tirada de 3.000 simulações da corrida com random() no fechamento das inscrições, com 10% da casa:
+--   vencedor, placê (1º ou 2º) e exata (1º e 2º na ordem). De 5 moedas até o saldo, até 10 apostas por corrida. O dinheiro anda com o
+--   motivo 'cassino' (a banca da seção 47 entra e paga), ref 'corrida:<id>'. O dono do cavalo leva 400/200/100 pelo pódio.
+--   Cavalos próprios: cavalo_comprar (2.500 moedas, motivo 'loja', até 3 por pessoa, atributos começam em 40) e cavalo_treinar
+--   (+1 a +10 pontos num atributo; cada ponto custa 10 + 3 × (valor − 30); teto 100).
+create table if not exists public.cavalos (
+  id bigserial primary key,
+  dono uuid,
+  nome text not null check (char_length(nome) between 2 and 20),
+  pelagem text not null default 'castanho' check (pelagem in ('castanho','alazao','tordilho','preto','baio','pampa','rosilho','branco')),
+  velocidade int not null default 40 check (velocidade between 1 and 100),
+  arrancada int not null default 40 check (arrancada between 1 and 100),
+  resistencia int not null default 40 check (resistencia between 1 and 100),
+  constancia int not null default 40 check (constancia between 1 and 100),
+  corridas int not null default 0,
+  vitorias int not null default 0,
+  podios int not null default 0,
+  ganhos int not null default 0,
+  forma int[] not null default '{}',
+  criado_em timestamptz not null default now()
+);
+create unique index if not exists cavalos_nome_unico on public.cavalos (lower(nome));
+create index if not exists cavalos_dono on public.cavalos (dono);
+alter table public.cavalos enable row level security;
+drop policy if exists cavalos_ler on public.cavalos;
+create policy cavalos_ler on public.cavalos for select to authenticated using (public.eh_membro());
+revoke all on public.cavalos from anon, authenticated;
+grant select on public.cavalos to authenticated;
+
+insert into public.cavalos (dono, nome, pelagem, velocidade, arrancada, resistencia, constancia) values
+  (null, 'Relâmpago Nanico', 'castanho', 75, 70, 45, 50),
+  (null, 'Trovão do Sul', 'preto', 60, 50, 75, 60),
+  (null, 'Pé de Pano', 'tordilho', 65, 62, 62, 55),
+  (null, 'Alface Veloz', 'alazao', 70, 55, 50, 45),
+  (null, 'Baron Nashor', 'preto', 58, 45, 72, 70),
+  (null, 'Tilt Total', 'baio', 55, 75, 45, 40),
+  (null, 'Mitz da Pampa', 'pampa', 62, 58, 66, 52),
+  (null, 'Feeder Fujão', 'rosilho', 50, 52, 58, 65),
+  (null, 'Gaúcho Bagual', 'alazao', 64, 48, 70, 58),
+  (null, 'Sítio Express', 'castanho', 68, 66, 52, 48),
+  (null, 'Piano Pesado', 'branco', 52, 40, 78, 62),
+  (null, 'Rift Runner', 'baio', 66, 60, 60, 60)
+on conflict do nothing;
+
+create table if not exists public.corridas (
+  id bigserial primary key,
+  abre_em timestamptz not null default now(),
+  apostas_em timestamptz not null,
+  fecha_em timestamptz not null,
+  fim_em timestamptz not null,
+  distancia int not null check (distancia in (1000, 1600, 2400)),
+  pista text not null check (pista in ('leve', 'pesada')),
+  inscritos bigint[] not null default '{}',
+  campo jsonb,
+  exatas jsonb,
+  segredo bytea,
+  hash text,
+  ordem int[],
+  pontos numeric[],
+  liquidada boolean not null default false
+);
+alter table public.corridas enable row level security;
+revoke all on public.corridas from anon, authenticated;
+
+create table if not exists public.corrida_apostas (
+  id bigserial primary key,
+  corrida_id bigint not null references public.corridas(id) on delete cascade,
+  user_id uuid not null,
+  tipo text not null check (tipo in ('vencedor', 'place', 'exata')),
+  raia int not null check (raia between 0 and 7),
+  raia2 int check (raia2 between 0 and 7),
+  valor int not null check (valor >= 5),
+  odd numeric(8, 2) not null,
+  pagou int,
+  em timestamptz not null default now()
+);
+create index if not exists corrida_apostas_corrida on public.corrida_apostas (corrida_id);
+create index if not exists corrida_apostas_user on public.corrida_apostas (user_id, corrida_id);
+alter table public.corrida_apostas enable row level security;
+revoke all on public.corrida_apostas from anon, authenticated;
+
+-- os pontos de um cavalo (igual ao `pontos` de corrida.ts)
+create or replace function public.corrida_pontos(v int, a int, r int, c int, p_dist int, p_pista text, z float8) returns float8
+language sql immutable as $$
+  select (case p_dist when 1000 then 0.45 * v + 0.40 * a + 0.15 * r
+                      when 1600 then 0.40 * v + 0.25 * a + 0.35 * r
+                      else 0.30 * v + 0.10 * a + 0.60 * r end)
+       + (case when p_pista = 'pesada' then 0.10 * (r - v) else 0 end)
+       + (case when p_pista = 'pesada' then 18 else 12 end) * (1.3 - c / 100.0) * z;
+$$;
+revoke all on function public.corrida_pontos(int, int, int, int, int, text, float8) from public, anon, authenticated;
+
+-- cotações: 3.000 corridas simuladas com random(); 10% da casa
+create or replace function public.corrida_cotacoes(p_campo jsonb, p_dist int, p_pista text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  n int := jsonb_array_length(p_campo);
+  sims int := 3000;
+  v int[]; a int[]; r int[]; c int[];
+  vit int[]; top2 int[]; ex int[];
+  pts float8[]; p1 int; p2 int; b1 float8; b2 float8;
+  i int; s int; k int; exatas jsonb := '{}'; campo jsonb := '[]'; cav jsonb;
+begin
+  for i in 0 .. n - 1 loop
+    cav := p_campo -> i;
+    v[i + 1] := (cav ->> 'v')::int; a[i + 1] := (cav ->> 'a')::int; r[i + 1] := (cav ->> 'r')::int; c[i + 1] := (cav ->> 'c')::int;
+    vit[i + 1] := 0; top2[i + 1] := 0;
+  end loop;
+  ex := array_fill(0, array[n * n]);
+  for s in 1 .. sims loop
+    p1 := 0; p2 := 0; b1 := -1e9; b2 := -1e9;
+    for i in 1 .. n loop
+      pts[i] := public.corrida_pontos(v[i], a[i], r[i], c[i], p_dist, p_pista, (random() + random() + random() + random() - 2) * sqrt(3));
+      if pts[i] > b1 then p2 := p1; b2 := b1; p1 := i; b1 := pts[i];
+      elsif pts[i] > b2 then p2 := i; b2 := pts[i]; end if;
+    end loop;
+    vit[p1] := vit[p1] + 1; top2[p1] := top2[p1] + 1; top2[p2] := top2[p2] + 1;
+    k := (p1 - 1) * n + p2; ex[k] := ex[k] + 1;
+  end loop;
+  for i in 1 .. n loop
+    cav := (p_campo -> (i - 1))
+      || jsonb_build_object('odd_v', least(60, greatest(1.1, floor(0.9 * (sims + 1) / (vit[i] + 0.5) * 100) / 100)),
+                            'odd_p', least(20, greatest(1.05, floor(0.9 * (sims + 1) / (top2[i] + 0.5) * 100) / 100)));
+    campo := campo || jsonb_build_array(cav);
+    for k in 1 .. n loop
+      if k <> i then
+        exatas := exatas || jsonb_build_object((i - 1) || '-' || (k - 1),
+          least(300, greatest(1.5, floor(0.9 * (sims + 1) / (ex[(i - 1) * n + k] + 0.5) * 100) / 100)));
+      end if;
+    end loop;
+  end loop;
+  return jsonb_build_object('campo', campo, 'exatas', exatas);
+end $$;
+revoke all on function public.corrida_cotacoes(jsonb, int, text) from public, anon, authenticated;
+
+-- a corrida anda: abre, fecha as inscrições (campo e cotações), sorteia no fechamento das apostas e paga no fim
+create or replace function public.corrida_avancar(p_abrir boolean default true) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  c public.corridas;
+  v_campo jsonb := '[]'; v_cot jsonb; h bytea; u float8[]; z float8; pts float8[]; v_ordem int[];
+  i int; k int; n int; ap record; v_premio int; v_pos int; cav jsonb;
+begin
+  perform pg_advisory_xact_lock(hashtext('corrida_de_cavalos'));
+  select * into c from public.corridas order by id desc limit 1 for update;
+  if not found or (c.liquidada and now() >= c.fim_em + interval '10 seconds') then
+    if not p_abrir then return; end if;
+    insert into public.corridas (apostas_em, fecha_em, fim_em, distancia, pista)
+    values (now() + interval '20 seconds', now() + interval '50 seconds', now() + interval '70 seconds',
+            (array[1000, 1600, 2400])[1 + floor(random() * 3)::int], case when random() < 0.7 then 'leve' else 'pesada' end);
+    return;
+  end if;
+
+  -- fim das inscrições: os inscritos e a casa completam as 8 raias, em ordem aleatória, e saem as cotações
+  if c.campo is null and now() >= c.apostas_em then
+    select coalesce(jsonb_agg(x.j order by random()), '[]') into v_campo from (
+      select jsonb_build_object('id', id, 'nome', nome, 'pelagem', pelagem, 'dono', dono,
+                                'v', velocidade, 'a', arrancada, 'r', resistencia, 'c', constancia, 'forma', forma) j
+        from public.cavalos where id = any (c.inscritos)
+      union all
+      select casa.j from (select jsonb_build_object('id', id, 'nome', nome, 'pelagem', pelagem, 'dono', null,
+                                'v', velocidade, 'a', arrancada, 'r', resistencia, 'c', constancia, 'forma', forma) j
+                       from public.cavalos where dono is null order by random()
+                       limit greatest(0, 8 - coalesce(array_length(c.inscritos, 1), 0))) casa
+    ) x;
+    v_cot := public.corrida_cotacoes(v_campo, c.distancia, c.pista);
+    c.segredo := extensions.gen_random_bytes(32);
+    update public.corridas set campo = v_cot -> 'campo', exatas = v_cot -> 'exatas', segredo = c.segredo,
+           hash = encode(extensions.digest(c.segredo, 'sha256'), 'hex')
+     where id = c.id returning * into c;
+  end if;
+
+  -- fim das apostas: a ordem de chegada sai do segredo
+  if c.campo is not null and c.ordem is null and now() >= c.fecha_em then
+    n := jsonb_array_length(c.campo);
+    for i in 0 .. n - 1 loop
+      h := extensions.hmac(convert_to('corrida:' || c.id || ':' || i, 'UTF8'), c.segredo, 'sha256');
+      for k in 0 .. 3 loop
+        u[k + 1] := ((get_byte(h, 4 * k)::bigint << 24) + (get_byte(h, 4 * k + 1) << 16) + (get_byte(h, 4 * k + 2) << 8) + get_byte(h, 4 * k + 3)) / 4294967296.0;
+      end loop;
+      z := (u[1] + u[2] + u[3] + u[4] - 2) * sqrt(3);
+      cav := c.campo -> i;
+      pts[i + 1] := public.corrida_pontos((cav ->> 'v')::int, (cav ->> 'a')::int, (cav ->> 'r')::int, (cav ->> 'c')::int, c.distancia, c.pista, z);
+    end loop;
+    select array_agg(g - 1 order by pts[g] desc, g) into v_ordem from generate_series(1, n) g;
+    update public.corridas set ordem = v_ordem, pontos = (select array_agg(round(p::numeric, 4) order by o) from unnest(pts) with ordinality t(p, o))
+     where id = c.id returning * into c;
+  end if;
+
+  -- fim da corrida: paga as apostas, o pódio dos donos e atualiza os cavalos (uma vez só)
+  if c.ordem is not null and not c.liquidada and now() >= c.fim_em then
+    for ap in select * from public.corrida_apostas where corrida_id = c.id and pagou is null loop
+      if (ap.tipo = 'vencedor' and c.ordem[1] = ap.raia)
+         or (ap.tipo = 'place' and (c.ordem[1] = ap.raia or c.ordem[2] = ap.raia))
+         or (ap.tipo = 'exata' and c.ordem[1] = ap.raia and c.ordem[2] = ap.raia2) then
+        v_premio := floor(ap.valor * ap.odd);
+        perform public.creditar(ap.user_id, v_premio, 'cassino', 'corrida:' || c.id);
+      else
+        v_premio := 0;
+      end if;
+      update public.corrida_apostas set pagou = v_premio where id = ap.id;
+    end loop;
+    n := jsonb_array_length(c.campo);
+    for v_pos in 1 .. n loop
+      cav := c.campo -> c.ordem[v_pos];
+      v_premio := case when v_pos <= 3 and cav ->> 'dono' is not null then (array[400, 200, 100])[v_pos] else 0 end;
+      if v_premio > 0 then
+        perform public.creditar((cav ->> 'dono')::uuid, v_premio, 'cassino', 'corrida:' || c.id || ':premio');
+      end if;
+      update public.cavalos set corridas = corridas + 1,
+             vitorias = vitorias + (v_pos = 1)::int, podios = podios + (v_pos <= 3)::int, ganhos = ganhos + v_premio,
+             forma = (array[v_pos] || forma)[1:5]
+       where id = (cav ->> 'id')::bigint;
+    end loop;
+    update public.corridas set liquidada = true where id = c.id;
+  end if;
+end $$;
+revoke all on function public.corrida_avancar(boolean) from public, anon, authenticated;
+
+-- o que a tela vê (o site pergunta a cada 1 a 2 s com a corrida na tela; só trava quando há algo a fazer)
+create or replace function public.corrida_estado() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  c public.corridas;
+begin
+  if not public.eh_membro() then raise exception 'Só para os nanicos e os amigos.' using errcode = 'P0001'; end if;
+  select * into c from public.corridas order by id desc limit 1;
+  if not found or (c.campo is null and now() >= c.apostas_em) or (c.ordem is null and now() >= c.fecha_em)
+     or (not c.liquidada and now() >= c.fim_em) or (c.liquidada and now() >= c.fim_em + interval '10 seconds') then
+    perform public.corrida_avancar(true);
+    select * into c from public.corridas order by id desc limit 1;
+  end if;
+  return jsonb_build_object(
+    'agora', floor(extract(epoch from clock_timestamp()) * 1000),
+    'corrida', jsonb_build_object(
+      'id', c.id, 'abre_em', c.abre_em, 'apostas_em', c.apostas_em, 'fecha_em', c.fecha_em, 'fim_em', c.fim_em,
+      'distancia', c.distancia, 'pista', c.pista,
+      'inscritos', (select coalesce(jsonb_agg(jsonb_build_object('id', id, 'nome', nome, 'pelagem', pelagem, 'dono', dono)), '[]')
+                      from public.cavalos where id = any (c.inscritos)),
+      'campo', c.campo, 'exatas', c.exatas, 'hash', c.hash,
+      'ordem', case when now() >= c.fecha_em then to_jsonb(c.ordem) end,
+      'pontos', case when now() >= c.fecha_em then to_jsonb(c.pontos) end,
+      'segredo', case when c.liquidada then encode(c.segredo, 'hex') end),
+    'minhas', (select coalesce(jsonb_agg(jsonb_build_object('tipo', tipo, 'raia', raia, 'raia2', raia2, 'valor', valor, 'odd', odd, 'pagou', pagou) order by id), '[]')
+                 from public.corrida_apostas where corrida_id = c.id and user_id = auth.uid()),
+    'ultimas', (select coalesce(jsonb_agg(x order by x.id desc), '[]') from (
+                  select k.id, k.campo -> k.ordem[1] ->> 'nome' as nome, k.campo -> k.ordem[1] ->> 'pelagem' as pelagem
+                    from public.corridas k where k.liquidada order by k.id desc limit 8) x));
+end $$;
+revoke all on function public.corrida_estado() from public, anon;
+grant execute on function public.corrida_estado() to authenticated;
+
+create or replace function public.corrida_inscrever(p_cavalo bigint) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  c public.corridas;
+begin
+  if not public.eh_membro() then raise exception 'Só para os nanicos e os amigos.' using errcode = 'P0001'; end if;
+  if not exists (select 1 from public.cavalos where id = p_cavalo and dono = auth.uid()) then
+    raise exception 'Esse cavalo não é seu.' using errcode = 'P0001';
+  end if;
+  perform public.corrida_avancar(true);
+  select * into c from public.corridas order by id desc limit 1 for update;
+  if c.campo is not null or now() >= c.apostas_em then
+    raise exception 'As inscrições desta corrida fecharam. Espere a próxima abrir.' using errcode = 'P0001';
+  end if;
+  if p_cavalo = any (c.inscritos) then raise exception 'Ele já está inscrito.' using errcode = 'P0001'; end if;
+  if exists (select 1 from public.cavalos where id = any (c.inscritos) and dono = auth.uid()) then
+    raise exception 'Um cavalo seu por corrida.' using errcode = 'P0001';
+  end if;
+  if coalesce(array_length(c.inscritos, 1), 0) >= 8 then raise exception 'As 8 raias já estão cheias.' using errcode = 'P0001'; end if;
+  update public.corridas set inscritos = inscritos || p_cavalo where id = c.id;
+  return jsonb_build_object('corrida', c.id);
+end $$;
+revoke all on function public.corrida_inscrever(bigint) from public, anon;
+grant execute on function public.corrida_inscrever(bigint) to authenticated;
+
+create or replace function public.corrida_apostar(p_tipo text, p_raia int, p_raia2 int, p_valor int) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  c public.corridas;
+  v_odd numeric;
+begin
+  if not public.eh_membro() then raise exception 'Só para os nanicos e os amigos.' using errcode = 'P0001'; end if;
+  if p_tipo not in ('vencedor', 'place', 'exata') then raise exception 'Aposta inválida.' using errcode = 'P0001'; end if;
+  if p_valor is null or p_valor < 5 then raise exception 'A aposta mínima é 5.' using errcode = 'P0001'; end if;
+  perform public.corrida_avancar(false);
+  select * into c from public.corridas order by id desc limit 1 for update;
+  if not found or c.campo is null or now() >= c.fecha_em then
+    raise exception 'As apostas não estão abertas agora.' using errcode = 'P0001';
+  end if;
+  if p_raia is null or p_raia < 0 or p_raia >= jsonb_array_length(c.campo) then raise exception 'Escolha um cavalo.' using errcode = 'P0001'; end if;
+  if p_tipo = 'exata' then
+    if p_raia2 is null or p_raia2 = p_raia or p_raia2 < 0 or p_raia2 >= jsonb_array_length(c.campo) then
+      raise exception 'Na exata, escolha o 1º e o 2º (dois cavalos diferentes).' using errcode = 'P0001';
+    end if;
+    v_odd := (c.exatas ->> (p_raia || '-' || p_raia2))::numeric;
+  else
+    p_raia2 := null;
+    v_odd := (c.campo -> p_raia ->> case when p_tipo = 'vencedor' then 'odd_v' else 'odd_p' end)::numeric;
+  end if;
+  if v_odd is null then raise exception 'Cotação não encontrada.' using errcode = 'P0001'; end if;
+  if (select count(*) from public.corrida_apostas where corrida_id = c.id and user_id = auth.uid()) >= 10 then
+    raise exception 'Até 10 apostas por corrida.' using errcode = 'P0001';
+  end if;
+  perform public.creditar(auth.uid(), -p_valor, 'cassino', 'corrida:' || c.id);
+  insert into public.corrida_apostas (corrida_id, user_id, tipo, raia, raia2, valor, odd)
+  values (c.id, auth.uid(), p_tipo, p_raia, p_raia2, p_valor, v_odd);
+  return jsonb_build_object('odd', v_odd);
+end $$;
+revoke all on function public.corrida_apostar(text, int, int, int) from public, anon;
+grant execute on function public.corrida_apostar(text, int, int, int) to authenticated;
+
+create or replace function public.cavalo_comprar(p_nome text, p_pelagem text) returns bigint
+language plpgsql security definer set search_path = public as $$
+declare
+  v_nome text := btrim(regexp_replace(coalesce(p_nome, ''), '\s+', ' ', 'g'));
+  v_id bigint;
+begin
+  if not public.eh_membro() then raise exception 'Só para os nanicos e os amigos.' using errcode = 'P0001'; end if;
+  if v_nome !~ '^[[:alnum:] .''-]{2,20}$' or v_nome !~ '[[:alpha:]]' then
+    raise exception 'Nome de 2 a 20 letras (pode ter número, espaço, ponto, hífen e apóstrofo).' using errcode = 'P0001';
+  end if;
+  if p_pelagem not in ('castanho','alazao','tordilho','preto','baio','pampa','rosilho','branco') then
+    raise exception 'Escolha uma pelagem.' using errcode = 'P0001';
+  end if;
+  perform pg_advisory_xact_lock(hashtext('cavalo:' || auth.uid()));
+  if (select count(*) from public.cavalos where dono = auth.uid()) >= 3 then
+    raise exception 'Até 3 cavalos por pessoa.' using errcode = 'P0001';
+  end if;
+  if exists (select 1 from public.cavalos where lower(nome) = lower(v_nome)) then
+    raise exception 'Já existe um cavalo com esse nome.' using errcode = 'P0001';
+  end if;
+  perform public.creditar(auth.uid(), -2500, 'loja', 'cavalo');
+  insert into public.cavalos (dono, nome, pelagem) values (auth.uid(), v_nome, p_pelagem) returning id into v_id;
+  return v_id;
+end $$;
+revoke all on function public.cavalo_comprar(text, text) from public, anon;
+grant execute on function public.cavalo_comprar(text, text) to authenticated;
+
+create or replace function public.cavalo_treinar(p_cavalo bigint, p_atributo text, p_pontos int) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_atual int; v_n int; v_custo int := 0; k int;
+begin
+  if not public.eh_membro() then raise exception 'Só para os nanicos e os amigos.' using errcode = 'P0001'; end if;
+  if p_atributo not in ('velocidade', 'arrancada', 'resistencia', 'constancia') then raise exception 'Atributo inválido.' using errcode = 'P0001'; end if;
+  if p_pontos is null or p_pontos not between 1 and 10 then raise exception 'Treine de 1 a 10 pontos por vez.' using errcode = 'P0001'; end if;
+  execute format('select %I from public.cavalos where id = $1 and dono = $2 for update', p_atributo) into v_atual using p_cavalo, auth.uid();
+  if v_atual is null then raise exception 'Esse cavalo não é seu.' using errcode = 'P0001'; end if;
+  v_n := least(p_pontos, 100 - v_atual);
+  if v_n <= 0 then raise exception 'Esse atributo já está no máximo.' using errcode = 'P0001'; end if;
+  for k in 0 .. v_n - 1 loop v_custo := v_custo + 10 + 3 * (v_atual + k - 30); end loop;
+  perform public.creditar(auth.uid(), -v_custo, 'loja', 'treino:' || p_cavalo);
+  execute format('update public.cavalos set %I = %I + $1 where id = $2', p_atributo, p_atributo) using v_n, p_cavalo;
+  return jsonb_build_object('valor', v_atual + v_n, 'custo', v_custo);
+end $$;
+revoke all on function public.cavalo_treinar(bigint, text, int) from public, anon;
+grant execute on function public.cavalo_treinar(bigint, text, int) to authenticated;
+
+-- 72) loja reformulada: itens novos (05/11/2026, pedido do Pitoco) -----------------------------------------------------
+--   Mais coisas para os nanicos e os amigos comprarem (comprar() já é de eh_membro, seção 39): consumíveis com desenho próprio
+--   (Itens.tsx), títulos (dois do turfe), molduras e efeitos novos (as cores ficam em 30-loja.css e 38-habbo.css). Rodar de novo
+--   só acerta nome, preço e descrição.
+insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem) values
+  ('chopp', 'Chopp gelado', 'Colarinho de dois dedos. Toma no K-FOFO.', 'consumivel', 25, '{"cor":"chopp","anim":"beber"}', 20),
+  ('quentao', 'Quentão', 'Gengibre, cachaça e canela. Esquenta e deixa tonto.', 'consumivel', 45, '{"cor":"quentao","anim":"tonto"}', 21),
+  ('vinho', 'Taça de vinho', 'Para os momentos de elite.', 'consumivel', 120, '{"cor":"vinho","anim":"tonto"}', 22),
+  ('palheiro', 'Palheiro', 'Fumo de rolo enrolado na palha, do jeito gaúcho.', 'consumivel', 30, '{"anim":"fumar"}', 23),
+  ('acai', 'Açaí', 'Com granola e leite em pó. Dá energia.', 'consumivel', 55, '{"cor":"acai","anim":"tremer"}', 24),
+  ('titulo-jockey', 'Jóquei do K-FOFO', 'O título de quem vive no hipódromo.', 'titulo', 600, '{"texto":"Jóquei do K-FOFO"}', 104),
+  ('titulo-zebra', 'Rei da Zebra', 'Para quem só acerta azarão.', 'titulo', 900, '{"texto":"Rei da Zebra"}', 105),
+  ('titulo-smurf', 'Smurf profissional', 'Conta nova toda semana.', 'titulo', 350, '{"texto":"Smurf profissional"}', 106),
+  ('titulo-suporte', 'Main suporte', 'Alguém tem que comprar a sentinela.', 'titulo', 300, '{"texto":"Main suporte"}', 107),
+  ('titulo-truco', 'Lenda do truco', 'Grita truco até com o 4 de copas.', 'titulo', 1200, '{"texto":"Lenda do truco"}', 108),
+  ('titulo-haras', 'Dono do haras', 'Criador de campeões.', 'titulo', 2500, '{"texto":"Dono do haras"}', 109),
+  ('moldura-ardosia', 'Moldura ardósia', 'Discreta e elegante.', 'moldura', 500, '{"cor":"ardosia"}', 112),
+  ('moldura-gelo', 'Moldura de gelo', 'Brilho frio em volta do rosto.', 'moldura', 1000, '{"cor":"gelo"}', 113),
+  ('moldura-neon', 'Moldura neon', 'Troca de cor sem parar.', 'moldura', 1800, '{"cor":"neon"}', 114),
+  ('efeito-gelo', 'Aura de gelo', 'Uma névoa azul em volta do boneco.', 'efeito', 1100, '{"cor":"gelo"}', 304),
+  ('efeito-sombra', 'Aura sombria', 'Uma sombra escura que acompanha o boneco.', 'efeito', 1300, '{"cor":"sombra"}', 305),
+  ('efeito-pulo', 'Pula-pula', 'O boneco não para quieto.', 'efeito', 900, '{"cor":"pulo"}', 306)
+on conflict (id) do update set nome = excluded.nome, descricao = excluded.descricao, preco = excluded.preco, dados = excluded.dados, ordem = excluded.ordem;
+
+-- 74) corrida de cavalos: a trifeta (05/11/2026, pedido do Pitoco) ------------------------------------------------------
+--   A aposta mais popular do turfe: acertar o 1º, o 2º e o 3º na ordem. As cotações saem das mesmas 3.000 simulações
+--   (`trifetas`, "i-j-k", de 2× a 1.000×, 10% da casa) e o corrida_apostar ganha o 5º parâmetro (p_raia3).
+alter table public.corridas add column if not exists trifetas jsonb;
+alter table public.corrida_apostas add column if not exists raia3 int check (raia3 between 0 and 7);
+alter table public.corrida_apostas drop constraint if exists corrida_apostas_tipo_check;
+alter table public.corrida_apostas add constraint corrida_apostas_tipo_check check (tipo in ('vencedor', 'place', 'exata', 'trifeta'));
+drop function if exists public.corrida_apostar(text, int, int, int);
+create or replace function public.corrida_cotacoes(p_campo jsonb, p_dist int, p_pista text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  n int := jsonb_array_length(p_campo);
+  sims int := 3000;
+  v int[]; a int[]; r int[]; c int[];
+  vit int[]; top2 int[]; ex int[];
+  pts float8[]; p1 int; p2 int; p3 int; b1 float8; b2 float8; b3 float8; tri int[]; trifetas jsonb := '{}'; j int;
+  i int; s int; k int; exatas jsonb := '{}'; campo jsonb := '[]'; cav jsonb;
+begin
+  for i in 0 .. n - 1 loop
+    cav := p_campo -> i;
+    v[i + 1] := (cav ->> 'v')::int; a[i + 1] := (cav ->> 'a')::int; r[i + 1] := (cav ->> 'r')::int; c[i + 1] := (cav ->> 'c')::int;
+    vit[i + 1] := 0; top2[i + 1] := 0;
+  end loop;
+  ex := array_fill(0, array[n * n]); tri := array_fill(0, array[n * n * n]);
+  for s in 1 .. sims loop
+    p1 := 0; p2 := 0; p3 := 0; b1 := -1e9; b2 := -1e9; b3 := -1e9;
+    for i in 1 .. n loop
+      pts[i] := public.corrida_pontos(v[i], a[i], r[i], c[i], p_dist, p_pista, (random() + random() + random() + random() - 2) * sqrt(3));
+      if pts[i] > b1 then p3 := p2; b3 := b2; p2 := p1; b2 := b1; p1 := i; b1 := pts[i];
+      elsif pts[i] > b2 then p3 := p2; b3 := b2; p2 := i; b2 := pts[i];
+      elsif pts[i] > b3 then p3 := i; b3 := pts[i]; end if;
+    end loop;
+    vit[p1] := vit[p1] + 1; top2[p1] := top2[p1] + 1; top2[p2] := top2[p2] + 1;
+    k := (p1 - 1) * n + p2; ex[k] := ex[k] + 1;
+    k := ((p1 - 1) * n + (p2 - 1)) * n + p3; tri[k] := tri[k] + 1;
+  end loop;
+  for i in 1 .. n loop
+    cav := (p_campo -> (i - 1))
+      || jsonb_build_object('odd_v', least(60, greatest(1.1, floor(0.9 * (sims + 1) / (vit[i] + 0.5) * 100) / 100)),
+                            'odd_p', least(20, greatest(1.05, floor(0.9 * (sims + 1) / (top2[i] + 0.5) * 100) / 100)));
+    campo := campo || jsonb_build_array(cav);
+    for k in 1 .. n loop
+      if k <> i then
+        exatas := exatas || jsonb_build_object((i - 1) || '-' || (k - 1),
+          least(300, greatest(1.5, floor(0.9 * (sims + 1) / (ex[(i - 1) * n + k] + 0.5) * 100) / 100)));
+      end if;
+    end loop;
+  end loop;
+  for i in 1 .. n loop for j in 1 .. n loop for k in 1 .. n loop
+    if i <> j and j <> k and i <> k then
+      trifetas := trifetas || jsonb_build_object((i - 1) || '-' || (j - 1) || '-' || (k - 1),
+        least(1000, greatest(2, floor(0.9 * (sims + 1) / (tri[((i - 1) * n + (j - 1)) * n + k] + 0.5) * 100) / 100)));
+    end if;
+  end loop; end loop; end loop;
+  return jsonb_build_object('campo', campo, 'exatas', exatas, 'trifetas', trifetas);
+end $$;
+revoke all on function public.corrida_cotacoes(jsonb, int, text) from public, anon, authenticated;
+
+-- a corrida anda: abre, fecha as inscrições (campo e cotações), sorteia no fechamento das apostas e paga no fim
+create or replace function public.corrida_avancar(p_abrir boolean default true) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  c public.corridas;
+  v_campo jsonb := '[]'; v_cot jsonb; h bytea; u float8[]; z float8; pts float8[]; v_ordem int[];
+  i int; k int; n int; ap record; v_premio int; v_pos int; cav jsonb;
+begin
+  perform pg_advisory_xact_lock(hashtext('corrida_de_cavalos'));
+  select * into c from public.corridas order by id desc limit 1 for update;
+  if not found or (c.liquidada and now() >= c.fim_em + interval '10 seconds') then
+    if not p_abrir then return; end if;
+    insert into public.corridas (apostas_em, fecha_em, fim_em, distancia, pista)
+    values (now() + interval '20 seconds', now() + interval '50 seconds', now() + interval '70 seconds',
+            (array[1000, 1600, 2400])[1 + floor(random() * 3)::int], case when random() < 0.7 then 'leve' else 'pesada' end);
+    return;
+  end if;
+
+  -- fim das inscrições: os inscritos e a casa completam as 8 raias, em ordem aleatória, e saem as cotações
+  if c.campo is null and now() >= c.apostas_em then
+    select coalesce(jsonb_agg(x.j order by random()), '[]') into v_campo from (
+      select jsonb_build_object('id', id, 'nome', nome, 'pelagem', pelagem, 'dono', dono,
+                                'v', velocidade, 'a', arrancada, 'r', resistencia, 'c', constancia, 'forma', forma) j
+        from public.cavalos where id = any (c.inscritos)
+      union all
+      select casa.j from (select jsonb_build_object('id', id, 'nome', nome, 'pelagem', pelagem, 'dono', null,
+                                'v', velocidade, 'a', arrancada, 'r', resistencia, 'c', constancia, 'forma', forma) j
+                       from public.cavalos where dono is null order by random()
+                       limit greatest(0, 8 - coalesce(array_length(c.inscritos, 1), 0))) casa
+    ) x;
+    v_cot := public.corrida_cotacoes(v_campo, c.distancia, c.pista);
+    c.segredo := extensions.gen_random_bytes(32);
+    update public.corridas set campo = v_cot -> 'campo', exatas = v_cot -> 'exatas', trifetas = v_cot -> 'trifetas', segredo = c.segredo,
+           hash = encode(extensions.digest(c.segredo, 'sha256'), 'hex')
+     where id = c.id returning * into c;
+  end if;
+
+  -- fim das apostas: a ordem de chegada sai do segredo
+  if c.campo is not null and c.ordem is null and now() >= c.fecha_em then
+    n := jsonb_array_length(c.campo);
+    for i in 0 .. n - 1 loop
+      h := extensions.hmac(convert_to('corrida:' || c.id || ':' || i, 'UTF8'), c.segredo, 'sha256');
+      for k in 0 .. 3 loop
+        u[k + 1] := ((get_byte(h, 4 * k)::bigint << 24) + (get_byte(h, 4 * k + 1) << 16) + (get_byte(h, 4 * k + 2) << 8) + get_byte(h, 4 * k + 3)) / 4294967296.0;
+      end loop;
+      z := (u[1] + u[2] + u[3] + u[4] - 2) * sqrt(3);
+      cav := c.campo -> i;
+      pts[i + 1] := public.corrida_pontos((cav ->> 'v')::int, (cav ->> 'a')::int, (cav ->> 'r')::int, (cav ->> 'c')::int, c.distancia, c.pista, z);
+    end loop;
+    select array_agg(g - 1 order by pts[g] desc, g) into v_ordem from generate_series(1, n) g;
+    update public.corridas set ordem = v_ordem, pontos = (select array_agg(round(p::numeric, 4) order by o) from unnest(pts) with ordinality t(p, o))
+     where id = c.id returning * into c;
+  end if;
+
+  -- fim da corrida: paga as apostas, o pódio dos donos e atualiza os cavalos (uma vez só)
+  if c.ordem is not null and not c.liquidada and now() >= c.fim_em then
+    for ap in select * from public.corrida_apostas where corrida_id = c.id and pagou is null loop
+      if (ap.tipo = 'vencedor' and c.ordem[1] = ap.raia)
+         or (ap.tipo = 'place' and (c.ordem[1] = ap.raia or c.ordem[2] = ap.raia))
+         or (ap.tipo = 'exata' and c.ordem[1] = ap.raia and c.ordem[2] = ap.raia2)
+         or (ap.tipo = 'trifeta' and c.ordem[1] = ap.raia and c.ordem[2] = ap.raia2 and c.ordem[3] = ap.raia3) then
+        v_premio := floor(ap.valor * ap.odd);
+        perform public.creditar(ap.user_id, v_premio, 'cassino', 'corrida:' || c.id);
+      else
+        v_premio := 0;
+      end if;
+      update public.corrida_apostas set pagou = v_premio where id = ap.id;
+    end loop;
+    n := jsonb_array_length(c.campo);
+    for v_pos in 1 .. n loop
+      cav := c.campo -> c.ordem[v_pos];
+      v_premio := case when v_pos <= 3 and cav ->> 'dono' is not null then (array[400, 200, 100])[v_pos] else 0 end;
+      if v_premio > 0 then
+        perform public.creditar((cav ->> 'dono')::uuid, v_premio, 'cassino', 'corrida:' || c.id || ':premio');
+      end if;
+      update public.cavalos set corridas = corridas + 1,
+             vitorias = vitorias + (v_pos = 1)::int, podios = podios + (v_pos <= 3)::int, ganhos = ganhos + v_premio,
+             forma = (array[v_pos] || forma)[1:5]
+       where id = (cav ->> 'id')::bigint;
+    end loop;
+    update public.corridas set liquidada = true where id = c.id;
+  end if;
+end $$;
+revoke all on function public.corrida_avancar(boolean) from public, anon, authenticated;
+
+create or replace function public.corrida_estado() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  c public.corridas;
+begin
+  if not public.eh_membro() then raise exception 'Só para os nanicos e os amigos.' using errcode = 'P0001'; end if;
+  select * into c from public.corridas order by id desc limit 1;
+  if not found or (c.campo is null and now() >= c.apostas_em) or (c.ordem is null and now() >= c.fecha_em)
+     or (not c.liquidada and now() >= c.fim_em) or (c.liquidada and now() >= c.fim_em + interval '10 seconds') then
+    perform public.corrida_avancar(true);
+    select * into c from public.corridas order by id desc limit 1;
+  end if;
+  return jsonb_build_object(
+    'agora', floor(extract(epoch from clock_timestamp()) * 1000),
+    'corrida', jsonb_build_object(
+      'id', c.id, 'abre_em', c.abre_em, 'apostas_em', c.apostas_em, 'fecha_em', c.fecha_em, 'fim_em', c.fim_em,
+      'distancia', c.distancia, 'pista', c.pista,
+      'inscritos', (select coalesce(jsonb_agg(jsonb_build_object('id', id, 'nome', nome, 'pelagem', pelagem, 'dono', dono)), '[]')
+                      from public.cavalos where id = any (c.inscritos)),
+      'campo', c.campo, 'exatas', c.exatas, 'trifetas', c.trifetas, 'hash', c.hash,
+      'ordem', case when now() >= c.fecha_em then to_jsonb(c.ordem) end,
+      'pontos', case when now() >= c.fecha_em then to_jsonb(c.pontos) end,
+      'segredo', case when c.liquidada then encode(c.segredo, 'hex') end),
+    'minhas', (select coalesce(jsonb_agg(jsonb_build_object('tipo', tipo, 'raia', raia, 'raia2', raia2, 'raia3', raia3, 'valor', valor, 'odd', odd, 'pagou', pagou) order by id), '[]')
+                 from public.corrida_apostas where corrida_id = c.id and user_id = auth.uid()),
+    'ultimas', (select coalesce(jsonb_agg(x order by x.id desc), '[]') from (
+                  select k.id, k.campo -> k.ordem[1] ->> 'nome' as nome, k.campo -> k.ordem[1] ->> 'pelagem' as pelagem
+                    from public.corridas k where k.liquidada order by k.id desc limit 8) x));
+end $$;
+revoke all on function public.corrida_estado() from public, anon;
+grant execute on function public.corrida_estado() to authenticated;
+
+create or replace function public.corrida_apostar(p_tipo text, p_raia int, p_raia2 int, p_valor int, p_raia3 int default null) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  c public.corridas;
+  v_odd numeric;
+begin
+  if not public.eh_membro() then raise exception 'Só para os nanicos e os amigos.' using errcode = 'P0001'; end if;
+  if p_tipo not in ('vencedor', 'place', 'exata', 'trifeta') then raise exception 'Aposta inválida.' using errcode = 'P0001'; end if;
+  if p_valor is null or p_valor < 5 then raise exception 'A aposta mínima é 5.' using errcode = 'P0001'; end if;
+  perform public.corrida_avancar(false);
+  select * into c from public.corridas order by id desc limit 1 for update;
+  if not found or c.campo is null or now() >= c.fecha_em then
+    raise exception 'As apostas não estão abertas agora.' using errcode = 'P0001';
+  end if;
+  if p_raia is null or p_raia < 0 or p_raia >= jsonb_array_length(c.campo) then raise exception 'Escolha um cavalo.' using errcode = 'P0001'; end if;
+  if p_tipo = 'exata' then
+    if p_raia2 is null or p_raia2 = p_raia or p_raia2 < 0 or p_raia2 >= jsonb_array_length(c.campo) then
+      raise exception 'Na exata, escolha o 1º e o 2º (dois cavalos diferentes).' using errcode = 'P0001';
+    end if;
+    v_odd := (c.exatas ->> (p_raia || '-' || p_raia2))::numeric;
+    p_raia3 := null;
+  elsif p_tipo = 'trifeta' then
+    if p_raia2 is null or p_raia3 is null or p_raia2 = p_raia or p_raia3 = p_raia or p_raia3 = p_raia2
+       or least(p_raia2, p_raia3) < 0 or greatest(p_raia2, p_raia3) >= jsonb_array_length(c.campo) then
+      raise exception 'Na trifeta, escolha o 1º, o 2º e o 3º (três cavalos diferentes).' using errcode = 'P0001';
+    end if;
+    v_odd := (c.trifetas ->> (p_raia || '-' || p_raia2 || '-' || p_raia3))::numeric;
+  else
+    p_raia3 := null;
+    p_raia2 := null;
+    v_odd := (c.campo -> p_raia ->> case when p_tipo = 'vencedor' then 'odd_v' else 'odd_p' end)::numeric;
+  end if;
+  if v_odd is null then raise exception 'Cotação não encontrada.' using errcode = 'P0001'; end if;
+  if (select count(*) from public.corrida_apostas where corrida_id = c.id and user_id = auth.uid()) >= 10 then
+    raise exception 'Até 10 apostas por corrida.' using errcode = 'P0001';
+  end if;
+  perform public.creditar(auth.uid(), -p_valor, 'cassino', 'corrida:' || c.id);
+  insert into public.corrida_apostas (corrida_id, user_id, tipo, raia, raia2, raia3, valor, odd)
+  values (c.id, auth.uid(), p_tipo, p_raia, p_raia2, p_raia3, p_valor, v_odd);
+  return jsonb_build_object('odd', v_odd);
+end $$;
+revoke all on function public.corrida_apostar(text, int, int, int, int) from public, anon;
+grant execute on function public.corrida_apostar(text, int, int, int, int) to authenticated;
+
+-- 75) coleção rústica para os quartos (05/11/2026, pedido do Henrique) --------------------------------------------------
+--   Nove móveis novos na Loja (espaço 'movel'), desenhados no site (Moveis.tsx): madeira com veios e tábuas, pés
+--   torneados, pedra, fogo, ferro e velas. O banquinho é de sentar. Pode rodar de novo: atualiza os mesmos itens.
+insert into public.loja_itens (id, nome, descricao, espaco, preco, dados, ordem) values
+  ('movel-lareira',         'Lareira de pedra',     'Fogo aceso o ano inteiro, mesmo no verão de 40 graus.',  'movel', 2000, '{"w":2,"d":1,"desenho":"lareira"}', 216),
+  ('movel-mesa-rustica',    'Mesa rústica',         'Tábuas grossas e pés torneados, para o churrasco.',      'movel', 900,  '{"w":2,"d":1,"desenho":"mesa-rustica"}', 217),
+  ('movel-banco-rustico',   'Banquinho de madeira', 'Redondo, com pés torneados. Dá para sentar.',            'movel', 200,  '{"w":1,"d":1,"desenho":"banco-rustico"}', 218),
+  ('movel-estante-rustica', 'Estante de madeira',   'Livros que ninguém leu e uma vela.',                     'movel', 700,  '{"w":1,"d":1,"desenho":"estante-rustica"}', 219),
+  ('movel-abajur',          'Abajur de pé',         'Pé torneado e cúpula de pano, luz amarela.',             'movel', 300,  '{"w":1,"d":1,"desenho":"abajur"}', 220),
+  ('movel-candelabro',      'Candelabro',           'Cinco velas acesas, clima de castelo.',                  'movel', 350,  '{"w":1,"d":1,"desenho":"candelabro"}', 221),
+  ('movel-barril',          'Barril',               'Madeira e cintas de ferro. O que tem dentro, ninguém sabe.', 'movel', 250, '{"w":1,"d":1,"desenho":"barril"}', 222),
+  ('movel-bar-barril',      'Bar de barril',        'Um barril deitado cheio de garrafas.',                   'movel', 1200, '{"w":1,"d":1,"desenho":"bar-barril"}', 223),
+  ('movel-bau-rustico',     'Baú de madeira',       'Cintas de ferro e fecho dourado.',                       'movel', 500,  '{"w":1,"d":1,"desenho":"bau-rustico"}', 224)
+on conflict (id) do update set nome = excluded.nome, descricao = excluded.descricao, espaco = excluded.espaco,
+  preco = excluded.preco, dados = excluded.dados, ordem = excluded.ordem;
+
+-- confere: deve listar os 9 móveis rústicos
+select id, nome, preco from public.loja_itens where ordem between 216 and 224 order by ordem;
+

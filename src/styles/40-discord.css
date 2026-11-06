@@ -1,0 +1,646 @@
+/* ============ o chat, o cartão de perfil e o status como no Discord (seção 70) ============
+ * Exceção de cor (ver CLAUDE.md): as bolinhas do status são as do Discord, iguais nos dois temas:
+ * --st-on (verde, o mesmo --fala da call), --st-aus (amarelo), --st-np (vermelho) e --st-off (cinza);
+ * --mencao é o amarelo de quando alguém me menciona. */
+:root{--st-on:#23A55A;--st-aus:#F0B232;--st-np:#F23F43;--st-off:#80848E;--mencao:#F0B232}
+
+/* ---------- a conversa ---------- */
+.chat{position:relative;display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden}
+.chat>.chat-list{flex:1;min-height:0;gap:0;padding:6px 0 10px}
+.chat-barra{display:flex;justify-content:flex-end;gap:4px;padding:6px 10px;border-bottom:1px solid var(--line)}
+.chat-barra-bt{display:flex;align-items:center;gap:4px;height:28px;padding:0 10px;border:0;border-radius:6px;background:none;color:var(--muted);font:600 12.5px var(--body);cursor:pointer}
+.chat-barra-bt:hover{background:var(--surface-2);color:var(--ink)}
+.chat-barra-bt.on{background:var(--surface-2);color:var(--ink)}
+.chat-painel2{display:grid;gap:8px;max-height:260px;padding:10px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--surface-2) 45%,transparent);overflow:auto}
+.chat-busca{display:flex;gap:6px}
+.chat-busca input{flex:1;min-width:0}
+.chat-painel2-lista{display:grid;gap:4px}
+.chat-achado{display:grid;grid-template-columns:auto auto 1fr;align-items:center;gap:2px 8px;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.chat-achado:hover{border-color:var(--accent)}
+.chat-achado b{font-size:13.5px}
+.chat-achado time{font-size:11.5px;color:var(--muted)}
+.chat-achado span{grid-column:1/-1;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-comeco{margin:10px 16px 6px;padding-bottom:10px;border-bottom:1px solid var(--line);color:var(--muted);font-size:13px}
+
+/* cada mensagem: rosto de 40, nome, hora; as seguidas da mesma pessoa ficam coladas e mostram a hora ao passar o mouse */
+.chat .msg{position:relative;display:grid;grid-template-columns:40px minmax(0,1fr);column-gap:14px;padding:1px 16px 1px 14px;border-left:2px solid transparent}
+.chat .msg.first{margin-top:14px;padding-top:3px}
+.chat .msg:hover,.chat .msg.menu{background:color-mix(in srgb,var(--ink) 4%,transparent)}
+.chat .msg .msg-rosto{grid-row:span 2;align-self:start;margin-top:2px;cursor:pointer;border-radius:50%}
+.chat .msg .msg-rosto .av{width:40px;height:40px}
+.chat .msg .msg-rosto:hover{filter:brightness(1.06)}
+.chat .msg .hd{display:flex;gap:8px;align-items:baseline;min-width:0;font-size:14.5px;line-height:1.35}
+.chat .msg .hd b{font-weight:650;cursor:pointer}
+.chat .msg .hd b:hover{text-decoration:underline}
+.chat .msg .hd time{color:var(--muted);font-size:11.5px;font-weight:500}
+.chat .msg .tx{grid-column:2;min-width:0;overflow-wrap:anywhere;font-size:14.5px;line-height:1.45}
+.msg-hora{grid-row:1;align-self:center;justify-self:end;font-size:10.5px;color:var(--muted);opacity:0;font-variant-numeric:tabular-nums}
+.chat .msg:hover .msg-hora{opacity:1}
+.msg-editado{font-size:11px;color:var(--muted)}
+.msg-fixada{font-size:11px}
+/* quando me mencionam: fundo amarelo e a barrinha na esquerda */
+.chat .msg.mencao{background:color-mix(in srgb,var(--mencao) 12%,transparent);border-left-color:var(--mencao)}
+.chat .msg.mencao:hover{background:color-mix(in srgb,var(--mencao) 17%,transparent)}
+.chat .msg.piscar{animation:msg-piscar 1.6s ease}
+@keyframes msg-piscar{0%,40%{background:color-mix(in srgb,var(--accent) 26%,transparent)}100%{background:transparent}}
+
+/* a resposta: a linha curva e a mensagem citada em cima */
+.msg-citada{grid-column:1/-1;display:flex;align-items:center;gap:6px;min-width:0;margin:0 0 2px 20px;padding:0;border:0;background:none;color:var(--muted);font:inherit;font-size:12.5px;text-align:left;cursor:pointer}
+.msg-citada-linha{flex:none;width:32px;height:10px;margin-top:8px;border-left:2px solid var(--line);border-top:2px solid var(--line);border-top-left-radius:6px}
+.msg-citada .av{width:16px;height:16px;font-size:8px}
+.msg-citada b{flex:none;color:var(--ink);font-weight:600}
+.msg-citada span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.msg-citada:hover span{color:var(--ink)}
+
+/* a barra de ações flutuando no canto da mensagem */
+.msg-acoes{position:absolute;top:-16px;right:14px;z-index:3;display:none;align-items:center;gap:0;padding:2px;border:1px solid var(--line);border-radius:8px;background:var(--surface);box-shadow:0 4px 14px -6px var(--shadow)}
+.chat .msg:hover .msg-acoes,.chat .msg.menu .msg-acoes,.msg-acoes:focus-within{display:flex}
+.msg-acoes button{display:grid;place-items:center;min-width:30px;height:28px;padding:0 6px;border:0;border-radius:6px;background:none;color:var(--muted);font:600 15px var(--body);cursor:pointer}
+.msg-acoes button:hover{background:var(--surface-2);color:var(--ink)}
+.msg-acoes button.perigo:hover,.msg-acoes button.perigo.sure{background:color-mix(in srgb,var(--live) 16%,transparent);color:var(--live)}
+.msg-acoes button.perigo.sure{font-size:12px}
+.chat .msg .chat-emojis{top:16px;right:14px}
+
+/* reações em pílulas, a minha com a borda */
+.msg-reacoes{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.msg-reacao{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px;border:1px solid transparent;border-radius:8px;background:var(--surface-2);color:var(--ink);font:500 14px var(--body);cursor:pointer}
+.msg-reacao b{font-size:12px;font-weight:650;color:var(--muted)}
+.msg-reacao:hover{border-color:var(--line)}
+.msg-reacao.minha{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.msg-reacao.minha b{color:var(--accent-text)}
+.msg-reacao.mais{color:var(--muted);opacity:0}
+.chat .msg:hover .msg-reacao.mais{opacity:1}
+
+/* o texto formatado */
+.chat .tx a{color:var(--mint);text-decoration:none}
+.chat .tx a:hover{text-decoration:underline}
+:root[data-theme="dark"] .chat .tx a{color:var(--accent-text)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .chat .tx a{color:var(--accent-text)}}
+.chat .tx code{padding:1px 5px;border-radius:4px;background:var(--surface-2);font:13px ui-monospace,SFMono-Regular,Menlo,monospace}
+.chat-citacao{margin:2px 0;padding-left:10px;border-left:4px solid color-mix(in srgb,var(--muted) 55%,transparent);color:var(--ink)}
+.chat-mencao{padding:0 3px;border-radius:4px;background:color-mix(in srgb,var(--mint) 18%,transparent);color:var(--mint);font-weight:600}
+.chat-mencao.eu{background:color-mix(in srgb,var(--mencao) 26%,transparent);color:var(--ink)}
+.chat-spoiler{padding:0 2px;border-radius:4px;background:color-mix(in srgb,var(--ink) 35%,var(--bg));color:transparent;cursor:pointer;transition:background .15s}
+.chat-spoiler *{visibility:hidden}
+.chat-spoiler.ver{background:color-mix(in srgb,var(--ink) 12%,transparent);color:inherit;cursor:text}
+.chat-spoiler.ver *{visibility:visible}
+
+/* imagem e vídeo */
+.msg-foto{display:block;max-width:min(400px,100%);margin-top:6px;border-radius:8px;overflow:hidden}
+.msg-foto img{display:block;max-width:100%;max-height:340px;width:auto;height:auto;object-fit:contain;border-radius:8px}
+.chat-embed{display:block;width:min(420px,100%);aspect-ratio:16/9;margin-top:6px;border:0;border-radius:8px;background:var(--cv-fundo)}
+.chat-embed-capa{display:flex;align-items:center;gap:12px;width:min(420px,100%);margin-top:6px;padding:12px 14px;border:0;border-left:4px solid var(--live);border-radius:6px;background:var(--surface-2);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.chat-embed-capa.twitch{border-left-color:var(--mint)}
+.chat-embed-capa.medal{border-left-color:var(--accent)}
+.chat-embed-capa span{display:grid}
+.chat-embed-capa b{font-size:14px}
+.chat-embed-capa small{font-size:12px;color:var(--muted)}
+.chat-embed-play{flex:none;display:grid!important;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--ink);color:var(--bg);font-size:14px}
+.chat-embed-capa:hover .chat-embed-play{background:var(--live)}
+
+/* editar no lugar */
+.msg-editar{display:grid;gap:4px;margin-top:2px}
+.msg-editar textarea{width:100%;resize:none;padding:10px 12px;border:0;border-radius:8px;background:var(--surface-2);color:var(--ink);font:inherit}
+.msg-editar small{font-size:11.5px;color:var(--muted)}
+.chat .link{padding:0;border:0;background:none;color:var(--mint);font:inherit;cursor:pointer}
+.chat .link:hover{text-decoration:underline}
+
+/* separadores: o dia no meio da linha e a linha vermelha de "Novas mensagens" */
+.chat-dia{display:flex;align-items:center;gap:8px;margin:18px 16px 2px;color:var(--muted);font:600 11.5px var(--body)}
+.chat-dia::before,.chat-dia::after{content:"";flex:1;height:1px;background:var(--line)}
+.chat-novas{position:relative;display:flex;justify-content:flex-end;margin:14px 16px 0;height:1px;background:var(--live)}
+.chat-novas span{position:relative;top:-8px;height:16px;padding:0 6px;border-radius:4px;background:var(--live);color:var(--bg);font:700 10px/16px var(--body);text-transform:uppercase;letter-spacing:.04em}
+.chat-novas+.msg{margin-top:6px}
+
+.chat-pular{position:absolute;left:50%;bottom:118px;z-index:4;transform:translateX(-50%);padding:6px 14px;border:0;border-radius:99px;background:var(--mint);color:var(--stamp-ink);font:600 12.5px var(--body);cursor:pointer;box-shadow:0 6px 18px -8px var(--shadow)}
+.chat-pular:hover{filter:brightness(1.1)}
+
+/* quem está digitando: os três pontinhos */
+.chat-digitando{min-height:20px;padding:0 16px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:3px}
+.chat-digitando b{margin-left:4px;color:var(--ink)}
+.chat-digitando i{width:5px;height:5px;border-radius:50%;background:var(--muted);animation:dig 1.2s infinite ease-in-out}
+.chat-digitando i:nth-child(2){animation-delay:.15s}
+.chat-digitando i:nth-child(3){animation-delay:.3s}
+@keyframes dig{0%,60%,100%{transform:none;opacity:.5}30%{transform:translateY(-3px);opacity:1}}
+
+/* respondendo e o anexo, colados em cima da caixa */
+.chat-respondendo,.chat-anexo{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 12px;padding:8px 12px;border-radius:8px 8px 0 0;background:color-mix(in srgb,var(--surface-2) 70%,transparent);font-size:13px;color:var(--muted)}
+.chat-respondendo b{color:var(--ink)}
+.chat-anexo img{max-height:110px;max-width:180px;border-radius:6px;object-fit:cover}
+.chat-respondendo+.chat-anexo{border-radius:0}
+
+/* a caixa de mensagem: uma barra só, arredondada, com o + na esquerda e o emoji na direita */
+.chat .chat-form{position:relative;display:flex;align-items:flex-end;gap:2px;margin:0 12px;padding:4px 6px;border-radius:10px;background:var(--surface-2)}
+.chat-respondendo~.chat-form,.chat-anexo~.chat-form{border-top-left-radius:0;border-top-right-radius:0}
+.chat .chat-form textarea{flex:1;min-width:0;min-height:36px;max-height:140px;resize:none;scrollbar-width:none;padding:8px 6px;border:0;background:none;color:var(--ink);font:14.5px/1.4 var(--body);outline:0}
+.chat .chat-form textarea::placeholder{color:var(--muted)}
+.chat .chat-form:focus-within{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 45%,transparent)}
+.chat-mais{flex:none;display:grid;place-items:center;width:34px;height:34px;margin-bottom:1px;padding:0;border:0;border-radius:50%;background:none;color:var(--muted);font:500 22px/1 var(--body);cursor:pointer}
+.chat-mais:hover{color:var(--ink);background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.chat-emoji-caixa .chat-mais{font-size:19px;filter:grayscale(1);opacity:.75}
+.chat-emoji-caixa .chat-mais:hover{filter:none;opacity:1}
+.chat-emoji-caixa{position:relative;flex:none}
+.chat .chat-form .btn.sq{flex:none;height:34px;margin-bottom:1px;padding:0 14px}
+.chat-conta{align-self:center;padding:0 4px;font-size:11.5px;color:var(--live);font-variant-numeric:tabular-nums}
+.chat-ajuda{display:block;padding:4px 16px 10px;font-size:11px;color:var(--muted);opacity:.8}
+
+/* a caixinha de emojis */
+.chat-emojis{position:absolute;right:0;bottom:calc(100% + 8px);z-index:8;display:grid;gap:8px;width:min(320px,calc(100vw - 32px));max-height:300px;padding:10px;overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:0 12px 32px -12px var(--shadow)}
+.chat .msg .chat-emojis{bottom:auto}
+.chat-emojis small{display:block;margin-bottom:4px;font:700 10.5px var(--display);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.chat-emojis span{display:grid;grid-template-columns:repeat(8,1fr);gap:2px}
+.chat-emojis button{display:grid;place-items:center;aspect-ratio:1;padding:0;border:0;border-radius:6px;background:none;font-size:20px;cursor:pointer}
+.chat-emojis button:hover{background:var(--surface-2);transform:scale(1.08)}
+
+/* as sugestões de @ em cima da caixa */
+.chat-sugestoes{position:absolute;left:0;right:0;bottom:calc(100% + 6px);z-index:8;margin:0;padding:6px;list-style:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);box-shadow:0 12px 28px -12px var(--shadow)}
+.chat-sugestoes button{display:flex;align-items:center;gap:8px;width:100%;padding:6px 8px;border:0;border-radius:6px;background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.chat-sugestoes button:hover,.chat-sugestoes button:focus-visible{background:var(--surface-2)}
+.chat-sugestoes b{font-size:14px}
+.chat-sugestoes small{color:var(--muted);font-size:12px}
+.chat-sugestoes .av.xs{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--surface-2);font-size:12px}
+
+@media (max-width:600px){
+  .chat .msg{grid-template-columns:34px minmax(0,1fr);column-gap:10px;padding-inline:10px}
+  .chat .msg .msg-rosto .av{width:34px;height:34px}
+  .msg-acoes{right:8px}
+  .chat-ajuda{display:none}
+  .chat .chat-form .btn.sq{padding:0 10px}
+}
+@media (prefers-reduced-motion:reduce){.chat-digitando i,.chat .msg.piscar{animation:none}.chat-spoiler{transition:none}}
+
+/* ---------- o nome com a cor do cargo ---------- */
+.nome-mod{color:var(--accent-text)}
+.nome-amigo{color:var(--mint)}
+:root[data-theme="dark"] .nome-amigo{color:var(--mint-soft);filter:brightness(1.9)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .nome-amigo{color:var(--mint-soft);filter:brightness(1.9)}}
+
+/* ---------- a bolinha do status ---------- */
+.ponto-status{--furo:var(--surface);position:absolute;right:-2px;bottom:-2px;width:12px;height:12px;border-radius:50%;background:var(--st-off);box-shadow:0 0 0 3px var(--furo)}
+.ponto-status.on{background:var(--st-on)}
+.ponto-status.aus{background:radial-gradient(circle at 25% 25%,var(--furo) 0 32%,transparent 34%),var(--st-aus)}
+.ponto-status.np{background:linear-gradient(var(--furo),var(--furo)) center/60% 22% no-repeat,var(--st-np)}
+.ponto-status.off{background:radial-gradient(circle,var(--furo) 0 30%,transparent 32%),var(--st-off)}
+
+/* nos membros e no "eu" embaixo do menu: o rosto ganha a bolinha */
+.membro-rosto{position:relative;flex:none;display:inline-flex}
+.membros li.offline .membro-rosto .ponto-status{display:none}
+.membro-sub{display:block;font-size:12px;font-weight:500;color:var(--muted);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.membros li.offline .membro-sub{opacity:.7}
+.eu-rosto{position:relative;flex:none;display:inline-flex;padding:0;border:0;border-radius:50%;background:none;cursor:pointer}
+.eu-rosto .av{width:34px;height:34px}
+.eu-rosto:hover{filter:brightness(1.06)}
+
+/* ---------- o cartão de perfil ---------- */
+.cartao-perfil{position:fixed;z-index:60;max-height:calc(100dvh - 16px);overflow:auto;border-radius:12px;background:var(--surface);color:var(--ink);box-shadow:0 0 0 1px var(--line),0 18px 48px -14px var(--shadow);animation:cartao-abre .14s ease-out}
+@keyframes cartao-abre{from{opacity:0;transform:translateY(4px) scale(.98)}to{opacity:1;transform:none}}
+.cartao-faixa{height:64px;background:linear-gradient(135deg,var(--olive),var(--accent))}
+.cartao-rosto{position:relative;display:inline-flex;margin:-42px 0 0 14px;padding:5px;border-radius:50%;background:var(--surface)}
+.cartao-rosto .av{width:76px;height:76px}
+.cartao-rosto .ponto-status{right:4px;bottom:4px;width:20px;height:20px;box-shadow:0 0 0 5px var(--furo)}
+.cartao-corpo{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin:6px 12px 12px;padding:12px;border-radius:10px;background:color-mix(in srgb,var(--surface-2) 55%,transparent)}
+.cartao-nome{font:700 19px var(--body);line-height:1.15}
+.cartao-at{margin-top:-8px;font-size:13px;color:var(--muted)}
+.cartao-recado{margin:0;font-size:13.5px}
+.cartao-sec{display:block;margin-bottom:3px;font:700 10.5px var(--display);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.cartao-jogando,.cartao-onde{margin:0;padding-top:10px;border-top:1px solid var(--line);font-size:13.5px}
+.cartao-cargos{display:flex;flex-wrap:wrap;gap:4px;padding-top:10px;border-top:1px solid var(--line)}
+.cartao-cargos .cartao-sec{flex-basis:100%}
+.cargo{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:6px;background:var(--surface);font-size:12px;font-weight:600}
+.cargo i{width:10px;height:10px;border-radius:50%;background:var(--muted)}
+.cargo.mod i{background:var(--accent)}
+.cargo.nanico i{background:var(--olive)}
+.cargo.amigo i{background:var(--mint)}
+.cartao-voz{padding-top:10px;border-top:1px solid var(--line)}
+.cartao-bts{display:flex;flex-wrap:wrap;gap:6px}
+.cartao-bts .btn{flex:1}
+
+/* o meu status, dentro do meu cartão */
+.meu-status{display:grid;gap:8px;padding-top:10px;border-top:1px solid var(--line)}
+.meu-status-modos{display:grid;gap:2px}
+.meu-status-modos button{display:flex;align-items:center;gap:10px;padding:7px 8px;border:0;border-radius:6px;background:none;color:var(--ink);font:500 13.5px var(--body);text-align:left;cursor:pointer}
+.meu-status-modos button:hover{background:var(--surface)}
+.meu-status-modos button.on{background:var(--surface);font-weight:650}
+.meu-status-modos .ponto-status{position:relative;inset:auto;flex:none;box-shadow:none}
+.meu-status-modos .ponto-status{--furo:color-mix(in srgb,var(--surface-2) 55%,var(--surface))}
+.meu-status-modos button:hover .ponto-status,.meu-status-modos button.on .ponto-status{--furo:var(--surface)}
+.meu-recado{display:grid;gap:6px}
+.meu-recado-linha{display:flex;gap:6px;min-width:0}
+.meu-recado-linha .btn{flex:none}
+.meu-recado-linha input{flex:1;min-width:0}
+.meu-recado-linha select:first-child{flex:none;width:58px}
+.meu-recado-linha:last-child select{flex:1;width:auto;min-width:0}
+
+@media (prefers-reduced-motion:reduce){.cartao-perfil{animation:none}}
+
+/* ---------- os canais: menção em vermelho, silenciado apagado ---------- */
+.canal-novas.mencao{background:var(--st-np);color:var(--stamp-ink)}
+.canal-ponto{flex:none;width:8px;height:8px;border-radius:50%;background:var(--ink)}
+.canal.novo .nm{font-weight:700}
+.canal.mudo{opacity:.5}
+.canal.mudo:hover{opacity:.8}
+.canal-mudo{flex:none}
+
+/* ---------- voz: tempo de call, soundboard, modo de entrada ---------- */
+.vz-tempo{font-variant-numeric:tabular-nums}
+.vz-sb-lista{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:2px 4px}
+.vz-sb-lista button{display:flex;align-items:center;gap:6px;min-width:0;padding:8px 10px;border:0;border-radius:8px;background:var(--surface-2);color:var(--ink);font:600 13px var(--body);text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vz-sb-lista button:hover{background:color-mix(in srgb,var(--accent) 22%,var(--surface-2))}
+.vz-sb-lista button:active{transform:scale(.97)}
+.vz-sb-lista span{font-size:17px}
+.vz-modo{display:grid;gap:2px}
+.vz-ptt{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:4px 9px}
+.vz-ptt>span{font-size:13px;color:var(--muted)}
+.vz-ptt .btn.on{box-shadow:0 0 0 2px var(--accent)}
+.vz-ptt .vz-dica{flex-basis:100%;margin:0}
+.vz-sensib{display:grid;gap:6px;padding:4px 9px 6px}
+.vz-sensib>span:first-child{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.vz-sensib>span:first-child b{color:var(--ink);font-weight:600}
+.vz-sensib-trilho{position:relative;height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.vz-sensib-trilho::after{content:"";position:absolute;top:0;bottom:0;left:var(--marca);width:2px;background:var(--ink)}
+.vz-sensib-nivel{position:absolute;inset:0;background:var(--st-on);transform-origin:left;transform:scaleX(0)}
+.vz-sensib input{width:100%;accent-color:var(--accent)}
+.vz-sensib .vz-dica{margin:0}
+.vz-info{font-variant-numeric:tabular-nums}
+
+/* ---------- live: a câmera de quem transmite em cima da tela e o mini player ---------- */
+.stage-cam{position:absolute;right:14px;top:14px;z-index:3;width:clamp(84px,14%,150px);aspect-ratio:1;border-radius:50%;overflow:hidden;box-shadow:0 0 0 3px color-mix(in srgb,var(--stamp-ink) 85%,transparent),0 10px 24px -8px var(--shadow)}
+.stage-cam video{width:100%;height:100%;object-fit:cover}
+.stage-cam button{position:absolute;top:8%;right:8%;display:grid;place-items:center;width:22px;height:22px;padding:0;border:0;border-radius:50%;background:color-mix(in srgb,var(--cv-fundo) 80%,transparent);color:var(--stamp-ink);opacity:0;cursor:pointer}
+.stage-cam:hover button,.stage-cam button:focus-visible{opacity:1}
+
+.mini-player{position:fixed;z-index:70;width:min(320px,calc(100vw - 32px));aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:var(--cv-fundo);box-shadow:0 0 0 1px color-mix(in srgb,var(--stamp-ink) 12%,transparent),0 18px 44px -14px var(--shadow);cursor:pointer}
+.mini-player.dir-baixo{right:16px;bottom:16px}
+.mini-player.esq-baixo{left:16px;bottom:16px}
+.mini-player.dir-cima{right:16px;top:16px}
+.mini-player.esq-cima{left:16px;top:16px}
+.mini-player video{width:100%;height:100%;object-fit:contain}
+.mini-nome{position:absolute;left:8px;bottom:8px;display:flex;align-items:center;gap:6px;padding:3px 8px;border-radius:6px;background:color-mix(in srgb,var(--cv-fundo) 75%,transparent);color:var(--stamp-ink);font:600 12px var(--body)}
+.mini-nome i{width:7px;height:7px;border-radius:50%;background:var(--live)}
+.mini-fechar{position:absolute;top:6px;right:6px;display:grid;place-items:center;width:26px;height:26px;padding:0;border:0;border-radius:50%;background:color-mix(in srgb,var(--cv-fundo) 75%,transparent);color:var(--stamp-ink);cursor:pointer;opacity:0}
+.mini-player:hover .mini-fechar,.mini-fechar:focus-visible{opacity:1}
+.mini-player:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px}
+@media (max-width:860px){
+  .mini-player{width:min(200px,50vw)}
+  .mini-player.dir-baixo,.mini-player.esq-baixo{bottom:84px}
+  .mini-fechar{opacity:1}
+}
+
+/* a barra de baixo da call: reações e soundboard lado a lado (no celular a barra esconde os dois, como antes) */
+@media (min-width:861px){.cv-call .cv-reacoes{display:flex;gap:8px}}
+.cartao-voz h4{margin:0 0 4px;font:700 10.5px var(--display);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.cartao-voz .vz-vol{padding:2px 0 6px}
+.cartao-voz .vz-chave{padding-inline:0}
+/* o "Mover para" do moderador: a setinha gira e os canais aparecem um pouco para dentro */
+.vz-seta-dir.aberta{transform:none}
+.vz-item.vz-sub{padding-left:22px;font-size:13px}
+
+/* ---------- o menu da pessoa como o do Discord ---------- */
+/* a caixinha de marcar no lugar da chave */
+.vz-caixa i{width:22px;height:22px;border-radius:6px;background:none;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--muted) 70%,transparent)}
+.vz-caixa i::after{content:"";left:7px;top:3px;width:6px;height:11px;border-radius:0;background:none;border:solid var(--stamp-ink);border-width:0 2.5px 2.5px 0;transform:rotate(45deg);opacity:0}
+.vz-caixa.on i{background:var(--accent);box-shadow:none}
+.vz-caixa.on i::after{left:7px;opacity:1;background:none}
+.vz-caixa.perigo.on i{background:var(--live)}
+.vz-chave.perigo span{color:var(--live)}
+/* "Adicionar nota" com o "Visível apenas para você" embaixo */
+.vz-item.vz-item-2{flex-direction:column;align-items:flex-start;gap:1px}
+.vz-item-2 small,.vz-item-sub{font-size:11.5px;color:var(--muted);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.vz-item-sub{margin-left:auto}
+/* o que abre com a setinha (Cargos, Mover para, Castigo) */
+.vz-subs{display:grid;gap:2px;margin:0 0 4px 10px;padding-left:8px;border-left:2px solid var(--line)}
+.vz-cargo{cursor:default;font-size:13px}
+.vz-cargo:hover{background:none}
+.vz-cargo i{flex:none;width:10px;height:10px;border-radius:50%;background:var(--muted)}
+.vz-cargo.mod i{background:var(--accent)}
+.vz-cargo.nanico i{background:var(--olive)}
+.vz-cargo.amigo i{background:var(--mint)}
+.vz-cargo{justify-content:flex-start;gap:8px}
+
+/* a nota e o castigo no cartão de perfil */
+.cartao-nota{display:grid;padding-top:10px;border-top:1px solid var(--line)}
+.cartao-nota textarea{width:100%;min-height:36px;resize:none;padding:6px 8px;border:0;border-radius:6px;background:none;color:var(--ink);font:13px/1.4 var(--body)}
+.cartao-nota textarea:hover{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.cartao-nota textarea:focus{background:var(--surface);outline:2px solid color-mix(in srgb,var(--accent) 55%,transparent)}
+.cartao-castigo{margin:0;padding-top:10px;border-top:1px solid var(--line);font-size:13px;color:var(--live)}
+
+/* a mensagem de quem eu ignorei ou bloqueei */
+.chat .msg.msg-escondida .tx{font-size:12.5px;color:var(--muted);font-style:italic}
+.chat .msg.msg-escondida .link{font-style:normal}
+
+/* ---------- o chat embaixo da call: a transmissão fica com a largura toda ---------- */
+@media (min-width:861px){
+  .live-grid.chat-embaixo{grid-template-columns:minmax(0,1fr);row-gap:12px;--chat-h:clamp(230px,30vh,340px)}
+  .live-grid.chat-embaixo .cv-call{height:calc(100dvh - 64px - var(--chat-h) - 12px);min-height:380px}
+  .live-grid.chat-embaixo.no-rail .cv-call{height:calc(100dvh - 64px)}
+  .live-grid.chat-embaixo .rail-toggle{display:none}
+  /* as abas Chat e Cartela viram uma coluna estreita à esquerda, e o chat ocupa o resto */
+  .live-grid.chat-embaixo .rail{height:var(--chat-h);grid-template-columns:132px minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:10px;align-content:stretch}
+  .live-grid.chat-embaixo .rail-tabs{grid-template-columns:1fr;align-content:start}
+  .live-grid.chat-embaixo .rail-pane{min-height:0;height:100%;overflow:auto}
+  .live-grid.chat-embaixo .rail-pane .chat{height:100%;min-height:0}
+}
+/* fechado: só uma barrinha com a última mensagem; tocar abre e já deixa digitar */
+@media (min-width:861px){
+  .live-grid.chat-embaixo.chat-fechado .cv-call{height:calc(100dvh - 64px - 52px - 12px)}
+  .live-grid.chat-embaixo.chat-fechado .rail{display:none}
+}
+.chat-fechado-barra{display:flex;align-items:center;gap:10px;width:100%;height:52px;padding:0 16px;border:0;border-radius:var(--r-md);background:var(--surface);box-shadow:0 0 0 1px var(--line);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.chat-fechado-barra:hover{background:var(--surface-2)}
+.chat-fechado-barra>b{flex:none;font-size:14px}
+.chat-fechado-ic{flex:none;font-size:18px}
+.chat-fechado-ultima{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:13.5px;color:var(--muted)}
+.chat-fechado-ultima b{color:var(--ink);font-weight:600}
+.chat-fechado-abrir{flex:none;font:600 12.5px var(--body);color:var(--muted)}
+.rail-fechar{margin-top:auto;padding:8px 6px;border:0;border-radius:var(--r-sm);background:none;color:var(--muted);font:600 12.5px var(--body);cursor:pointer}
+.rail-fechar:hover{background:var(--surface);color:var(--ink)}
+.live-grid.chat-embaixo .rail-tabs{display:flex;flex-direction:column}
+
+/* ---------- as Configurações como as do Discord (ConfigView.tsx) ---------- */
+/* a caixa por cima do site escurecido (como no Discord); no celular ocupa a tela */
+.cfgd{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:32px;background:color-mix(in srgb,var(--cv-fundo) 62%,transparent);animation:cfgd-fundo .16s ease-out}
+.cfgd-caixa{position:relative;display:flex;width:min(1120px,100%);height:min(780px,100%);overflow:hidden;border-radius:14px;background:var(--surface);color:var(--ink);box-shadow:0 0 0 1px var(--line),0 30px 80px -20px var(--shadow);animation:cfgd-abre .18s ease-out}
+@keyframes cfgd-fundo{from{opacity:0}to{opacity:1}}
+@keyframes cfgd-abre{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+.cfgd-nav{flex:0 0 250px;display:flex;overflow-y:auto;background:var(--surface-2)}
+.cfgd-nav-in{width:100%;padding:24px 10px 24px 14px;display:flex;flex-direction:column;gap:2px}
+.cfgd-eu{display:flex;align-items:center;gap:12px;margin-bottom:10px;padding:6px;border:0;border-radius:10px;background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.cfgd-eu:hover{background:color-mix(in srgb,var(--ink) 6%,transparent)}
+.cfgd-eu-rosto{position:relative;flex:none;display:inline-flex}
+.cfgd-eu-rosto .av{width:44px;height:44px}
+.cfgd-eu-rosto .ponto-status{--furo:var(--surface-2)}
+.cfgd-eu b{display:block;font-size:15px}
+.cfgd-eu small{font-size:12.5px;color:var(--muted)}
+.cfgd-busca{width:100%;margin:2px 0 10px}
+.cfgd-grupo h3{margin:14px 10px 4px;font:700 11px var(--display);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.cfgd-it{display:flex;align-items:center;justify-content:space-between;width:100%;padding:8px 10px;border:0;border-radius:7px;background:none;color:var(--muted);font:500 14.5px var(--body);text-align:left;cursor:pointer}
+.cfgd-it:hover{background:color-mix(in srgb,var(--ink) 6%,transparent);color:var(--ink)}
+.cfgd-it.on{background:color-mix(in srgb,var(--ink) 10%,transparent);color:var(--ink)}
+.cfgd-it.sair{color:var(--live)}
+.cfgd-it-seta{display:none;transform:rotate(-90deg)}
+.cfgd-sep{height:1px;margin:10px;background:var(--line)}
+.cfgd-nada{margin:10px;font-size:13px;color:var(--muted)}
+.cfgd-versao{margin:8px 10px 0;font-size:11.5px;color:var(--muted)}
+.cfgd-main{flex:1 1 auto;min-width:0;display:flex;align-items:flex-start;overflow-y:auto}
+.cfgd-main-in{flex:1;min-width:0;max-width:760px;padding:32px 36px 60px}
+.cfgd-topo{display:flex;align-items:center;gap:8px;margin-bottom:18px}
+.cfgd-topo h2{margin:0;font:700 20px var(--body)}
+.cfgd-voltar{display:none;place-items:center;width:36px;height:36px;padding:0;border:0;border-radius:50%;background:none;color:var(--ink);cursor:pointer}
+.cfgd-voltar svg{transform:rotate(90deg)}
+.cfgd-fechar{flex:none;position:sticky;top:0;display:grid;justify-items:center;gap:6px;padding:28px 20px 0}
+.cfgd-fechar button{display:grid;place-items:center;width:38px;height:38px;padding:0;border:2px solid color-mix(in srgb,var(--muted) 70%,transparent);border-radius:50%;background:none;color:var(--muted);cursor:pointer}
+.cfgd-fechar button:hover{border-color:var(--ink);color:var(--ink)}
+.cfgd-fechar small{font:700 11px var(--body);color:var(--muted)}
+.cfgd-sec{display:grid;gap:4px}
+.cfgd-sec h3{margin:22px 0 6px;font:700 12px var(--display);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.cfgd-sec h3:first-child{margin-top:0}
+.cfgd-dica{margin:0 0 8px;font-size:13.5px;color:var(--muted)}
+.cfgd-vazio{margin:0 0 6px;padding:14px;border-radius:10px;background:var(--surface-2);font-size:13.5px;color:var(--muted)}
+.cfgd-linha{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid var(--line)}
+.cfgd-linha b{display:block;font-size:15px;font-weight:600}
+.cfgd-linha small{display:block;margin-top:2px;font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.cfgd-linha .btn{flex:none}
+.cfgd-perigo{color:var(--live)!important}
+.cfgd-chave{padding:4px 0 10px;border-bottom:1px solid var(--line)}
+.cfgd-chave .vz-item{padding-inline:0;font-size:15px;font-weight:600}
+.cfgd-chave .vz-item:hover{background:none}
+.cfgd-chave small{display:block;margin-top:-2px;font-size:13px;color:var(--muted)}
+.cfgd-duas{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.cfgd-faixa-vol{display:grid;gap:6px;margin:10px 0}
+.cfgd-faixa-vol input{width:100%;accent-color:var(--accent)}
+.cfgd-modo{margin:12px 0 0;padding:10px;border-radius:12px;background:var(--surface-2)}
+.cfgd-modo h4{margin:2px 8px 6px;font:700 11px var(--display);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.cfgd-seg-linha{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--line)}
+.cfgd-kbd{flex:none;padding:4px 10px;border-radius:6px;background:var(--surface-2);box-shadow:inset 0 -2px 0 var(--line);font:600 12.5px ui-monospace,Menlo,monospace;color:var(--ink)}
+.cfgd-conta-card{overflow:hidden;border-radius:12px;background:var(--surface-2)}
+.cfgd-faixa{height:90px;background:linear-gradient(135deg,var(--olive),var(--accent))}
+.cfgd-conta-cab{display:flex;align-items:flex-end;gap:14px;margin:-36px 16px 0}
+.cfgd-conta-cab .av{width:84px;height:84px;box-shadow:0 0 0 6px var(--surface-2)}
+.cfgd-conta-cab b{margin-bottom:8px;font:700 19px var(--body)}
+.cfgd-conta-dados{margin:12px 16px 16px;padding:0 14px;border-radius:10px;background:var(--surface)}
+.cfgd-conta-dados .cfgd-linha:last-child{border-bottom:0}
+.cfgd-perfil{grid-template-columns:minmax(0,1fr) 300px;gap:28px;align-items:start}
+.cfgd-previa{position:sticky;top:0;overflow:hidden;border-radius:12px;background:var(--surface-2);box-shadow:0 0 0 1px var(--line)}
+.cfgd-previa .cartao-rosto{--surface:var(--surface-2)}
+.cfgd-previa-txt{display:block;padding:0 14px 12px;font-size:12px;color:var(--muted)}
+.cfgd-temas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.cfgd-tema{display:grid;justify-items:center;gap:8px;padding:14px 8px;border:2px solid var(--line);border-radius:12px;background:none;color:var(--ink);font:600 13.5px var(--body);cursor:pointer}
+.cfgd-tema i{width:46px;height:46px;border-radius:50%;box-shadow:0 0 0 1px var(--line)}
+.cfgd-tema.claro i{background:var(--stamp-ink)}
+.cfgd-tema.escuro i{background:var(--cv-fundo)}
+.cfgd-tema.sistema i{background:linear-gradient(90deg,var(--stamp-ink) 50%,var(--cv-fundo) 50%)}
+.cfgd-tema.on{border-color:var(--accent)}
+.cfgd .cfg-aviso{margin:0 0 10px}
+@media (max-width:760px){
+  .cfgd{display:block;padding:0}
+  .cfgd-caixa{display:block;width:100%;height:100%;border-radius:0;box-shadow:none}
+  .cfgd-nav{position:absolute;inset:0}
+  .cfgd-nav-in{width:100%;padding:16px 14px 40px}
+  .cfgd-it{padding:12px 10px;color:var(--ink)}
+  .cfgd-it-seta{display:block}
+  .cfgd-it.on{background:none}
+  .cfgd-main{position:absolute;inset:0;z-index:2;display:none;background:var(--surface)}
+  .cfgd-main.aberta{display:flex}
+  .cfgd-main-in{padding:12px 16px 60px}
+  .cfgd-voltar{display:grid}
+  .cfgd-fechar{display:none}
+  .cfgd-perfil{grid-template-columns:minmax(0,1fr)}
+  .cfgd-previa{position:static}
+}
+
+/* ---------- os ajustes de Aparência, Acessibilidade e Texto valendo no site ---------- */
+.chat .msg .tx{font-size:var(--chat-fonte,14.5px)}
+html.chat-compacto .chat .msg{grid-template-columns:minmax(0,1fr);padding-left:16px}
+html.chat-compacto .chat .msg .msg-rosto,html.chat-compacto .chat .msg .msg-hora{display:none}
+html.chat-compacto .chat .msg .hd{grid-column:1}
+html.chat-compacto .chat .msg .tx{grid-column:1}
+html.chat-compacto .chat .msg.first{margin-top:6px}
+html.chat-compacto .msg-citada{margin-left:0}
+html.menos-movimento *,html.menos-movimento *::before,html.menos-movimento *::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+html.sem-destaque-fala .qd.fala::after{box-shadow:none}
+html.sem-destaque-fala .qd.fala .qd-rosto .av,html.sem-destaque-fala .canal-pessoa.falando .av,html.sem-destaque-fala .membros li.falando .av,html.sem-destaque-fala .membros li.falando .u{box-shadow:none}
+.msg-foto-mostrar{display:block;margin-top:4px;font-size:13px}
+.cfgd-nav-topo{display:none}
+@media (max-width:760px){
+  .cfgd-nav-topo{display:flex;align-items:center;justify-content:space-between;margin:0 0 10px;padding:0 4px}
+  .cfgd-nav-topo b{font:700 19px var(--body)}
+  .cfgd-nav-topo button{display:grid;place-items:center;width:38px;height:38px;padding:0;border:0;border-radius:50%;background:var(--surface);color:var(--ink);cursor:pointer}
+}
+
+/* ---------- Configurações: cada opção bem separada ---------- */
+/* a lista: ícone em cada seção, a escolhida com a barrinha dourada, e os grupos separados por uma linha */
+.cfgd-it{justify-content:flex-start;gap:10px;position:relative}
+.cfgd-it-nome{flex:1;min-width:0}
+.cfgd-it-ic{flex:none;opacity:.8}
+.cfgd-it.on{background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--ink)}
+.cfgd-it.on .cfgd-it-ic{opacity:1;color:var(--accent-text)}
+.cfgd-it.on::before{content:"";position:absolute;left:-8px;top:7px;bottom:7px;width:3px;border-radius:0 3px 3px 0;background:var(--accent)}
+.cfgd-grupo{margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.cfgd-grupo h3{margin-top:0;color:color-mix(in srgb,var(--ink) 62%,transparent)}
+/* o título da seção com o ícone, e a linha embaixo */
+.cfgd-topo{gap:12px;margin-bottom:22px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.cfgd-topo-ic{display:grid;place-items:center;width:38px;height:38px;border-radius:10px;background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent-text)}
+.cfgd-topo-ic svg{width:20px;height:20px}
+/* os grupos dentro da seção: título forte com linha */
+.cfgd-sec{gap:8px}
+.cfgd-sec h3{margin:28px 0 4px;padding-bottom:8px;border-bottom:2px solid var(--line);font-size:12.5px;color:var(--ink)}
+.cfgd-sec h3:first-child{margin-top:0}
+/* cada opção num cartão próprio */
+.cfgd-linha,.cfgd-chave,.cfgd-faixa-vol,.cfgd-seg-linha,.cfgd .cfg-teste-bloco,.cfgd-duas .cfg-campo,.cfgd > .cfgd-caixa .cfgd-sec > .cfg-campo{margin:0;padding:13px 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+.cfgd-chave{padding:6px 16px 12px}
+.cfgd-chave .vz-item{padding:6px 0}
+.cfgd-chave:has(> .vz-item:only-child){padding-bottom:6px}
+.cfgd-duas{gap:8px}
+.cfgd-duas .cfg-campo{display:grid;gap:6px}
+.cfgd-modo{margin:0;border:1px solid var(--line)}
+.cfgd-vazio{border:1px dashed var(--line);background:none}
+.cfgd-temas .cfgd-tema{background:var(--surface-2)}
+.cfgd-conta-dados .cfgd-linha{padding-inline:0;border:0;border-radius:0;background:none}
+.cfgd .cfg-teste-bloco{display:grid;gap:10px}
+@media (max-width:760px){.cfgd-it.on::before{display:none}.cfgd-grupo{border-top:0}}
+/* os botões dentro dos cartões aparecem nos dois temas */
+.cfgd-linha .btn.soft,.cfgd .cfg-teste-bloco .btn.soft{background:var(--surface);box-shadow:0 0 0 1px var(--line)}
+.cfgd-linha .btn.soft:hover,.cfgd .cfg-teste-bloco .btn.soft:hover{box-shadow:0 0 0 1px var(--accent)}
+.cfgd-chave .vz-chave:not(.on) i{background:color-mix(in srgb,var(--muted) 45%,transparent)}
+.cfgd-chave .vz-chave:not(.on) i::after{background:var(--stamp-ink)}
+
+/* ---------- Voz e vídeo como no Discord ---------- */
+.cfgd-teste-mic{display:grid;gap:4px;padding:13px 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+.cfgd-teste-mic>b{font-size:15px}
+.cfgd-teste-mic>small{font-size:13px;color:var(--muted)}
+.cfgd-teste-mic .cfg-teste-bloco{padding:6px 0 0;border:0;background:none}
+.cfgd-video{display:grid;place-items:center;gap:12px;aspect-ratio:16/9;max-height:300px;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--cv-fundo);overflow:hidden;position:relative}
+.cfgd-video video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cfgd-video.espelho video{transform:scaleX(-1)}
+.cfgd-video .btn{position:relative;z-index:1;align-self:end}
+.cfgd-video-vazio{font-size:40px;opacity:.5;align-self:end}
+.cfgd-seg-linha{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center}
+.cfgd-seg-dica{grid-column:1/-1;font-size:12.5px;color:var(--muted)}
+.cfgd-redefinir{justify-self:start;margin-top:14px;color:var(--live)!important;box-shadow:0 0 0 1px color-mix(in srgb,var(--live) 45%,transparent)}
+.vz-sensib h4{margin:6px 0 2px!important}
+.vz-sensib .vz-chave{padding:4px 0}
+.vz-sensib-rot{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.vz-sensib-rot b{color:var(--ink);font-weight:600}
+.vz-atraso{flex-basis:100%;padding:4px 0 0}
+@media (max-width:600px){.cfgd-seg-linha{grid-template-columns:minmax(0,1fr)}}
+.cfgd .cfg-nivel{background:color-mix(in srgb,var(--muted) 35%,transparent)}
+.cfgd-seg-linha{grid-template-columns:minmax(0,1fr) max-content;gap:8px 14px}
+.cfgd-seg-linha>.seg-lbl{font-size:15px;font-weight:600;color:var(--ink)}
+.cfgd-seg-linha .seg{display:flex;flex-wrap:nowrap;width:auto}
+.cfgd-seg-linha .seg button{white-space:nowrap;flex:none}
+.cfgd-video{width:100%;height:260px;max-height:none;aspect-ratio:auto}
+@media (max-width:600px){.cfgd-seg-linha .seg{flex-wrap:wrap}.cfgd-video{height:200px}}
+.cfgd-seg-linha .seg{margin:0;background:var(--surface);box-shadow:0 0 0 1px var(--line)}
+.cfgd-seg-linha .seg button{padding:7px 12px}
+.cfgd-seg-linha .seg button[aria-checked="true"]{background:var(--accent);color:var(--accent-ink)}
+
+/* =====================================================================================================================
+   Visual premium (04/11/2026): avisos empilhados, abertura, transições, esqueletos, vidro, rolagem fina, toque nos
+   botões, cor de destaque e busca rápida.
+   Exceção de cor (ver CLAUDE.md): as cores de destaque que cada um escolhe nas Configurações (roxo, verde, azul,
+   rosa) trocam --accent, --accent-soft e --accent-text em html[data-cor] (o --accent-ink fica, porque a call pinta o fundo com ele), nos dois temas; o ouro é o
+   padrão do Bingo e não muda nada.
+   ===================================================================================================================== */
+
+/* ---------- avisos: empilham no rodapé, com ícone e cor do tipo ---------- */
+.toasts{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:80;display:flex;flex-direction:column;align-items:center;gap:8px;transform:translateX(-50%);pointer-events:none;width:max-content;max-width:calc(100vw - 32px)}
+.toasts .toast{position:static;transform:none;display:flex;align-items:center;gap:10px;max-width:100%;padding:10px 16px 10px 12px;border-radius:12px;background:color-mix(in srgb,var(--surface) 92%,transparent);color:var(--ink);box-shadow:0 0 0 1px var(--line),0 14px 34px -12px var(--shadow);font:600 14px var(--body);opacity:1;animation:aviso-entra .26s cubic-bezier(.2,.9,.3,1.2);-webkit-backdrop-filter:blur(14px) saturate(1.3);backdrop-filter:blur(14px) saturate(1.3)}
+.toasts .toast.saindo{animation:aviso-sai .3s ease-in forwards}
+.toasts .toast svg{flex:none}
+.toast.t-ok svg{color:var(--st-on)}
+.toast.t-erro{box-shadow:0 0 0 1px color-mix(in srgb,var(--live) 55%,transparent),0 14px 34px -12px var(--shadow)}
+.toast.t-erro svg{color:var(--live)}
+.toast.t-dinheiro svg{color:var(--accent-text)}
+.toast.t-aviso svg{color:var(--st-aus)}
+.toast.t-info svg{color:var(--muted)}
+@keyframes aviso-entra{from{opacity:0;transform:translateY(10px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes aviso-sai{to{opacity:0;transform:translateY(6px) scale(.97)}}
+@media (max-width:860px){.toasts{bottom:calc(74px + env(safe-area-inset-bottom,0px))}}
+
+/* ---------- a abertura com a marca ---------- */
+.abertura{position:fixed;inset:0;z-index:200;display:grid;place-content:center;justify-items:center;gap:14px;background:var(--bg);transition:opacity .45s ease}
+.abertura.saindo{opacity:0;pointer-events:none}
+.abertura img{width:92px;height:92px;animation:abertura-logo .7s cubic-bezier(.2,.9,.3,1.3)}
+.abertura b{font:700 22px var(--display);letter-spacing:-.01em}
+.abertura-barra{width:150px;height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+.abertura-barra i{display:block;height:100%;width:40%;border-radius:2px;background:var(--accent);animation:abertura-anda 1.1s ease-in-out infinite}
+@keyframes abertura-logo{from{opacity:0;transform:scale(.6) rotate(-12deg)}to{opacity:1;transform:none}}
+@keyframes abertura-anda{0%{transform:translateX(-110%)}100%{transform:translateX(260%)}}
+
+/* ---------- trocar de aba: a tela aparece suave ---------- */
+section.inner:not([hidden]){animation:aba-entra .24s ease-out}
+@keyframes aba-entra{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ---------- esqueletos de carregamento ---------- */
+.esq{display:block;border-radius:6px;background:color-mix(in srgb,var(--ink) 10%,transparent);animation:esq-pisca 1.3s ease-in-out infinite}
+.esq-redondo{flex:none;width:36px;height:36px;border-radius:50%}
+.esq-linha{height:10px;width:var(--w,60%)}
+.esq-chat{display:grid;gap:18px;padding:16px}
+.esq-msg{display:flex;gap:12px;align-items:flex-start}
+.esq-msg>span:last-child{flex:1;display:grid;gap:8px;padding-top:4px}
+.esq-membro{display:flex;align-items:center;gap:10px;padding:6px 8px;list-style:none}
+.esq-membro .esq-redondo{width:30px;height:30px}
+.esq-membro .esq-linha{flex:1;max-width:var(--w)}
+@keyframes esq-pisca{0%,100%{opacity:.45}50%{opacity:1}}
+
+/* ---------- vidro nos painéis que ficam por cima ---------- */
+.vz-balao,.cartao-perfil,.chat-emojis,.chat-sugestoes,.busca-caixa{background:color-mix(in srgb,var(--surface) 90%,transparent);-webkit-backdrop-filter:blur(18px) saturate(1.35);backdrop-filter:blur(18px) saturate(1.35)}
+
+/* ---------- barras de rolagem finas, como num app do Mac ---------- */
+:where(*){scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--muted) 40%,transparent) transparent}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{border:2px solid transparent;border-radius:99px;background:color-mix(in srgb,var(--muted) 40%,transparent) padding-box}
+::-webkit-scrollbar-thumb:hover{background-color:color-mix(in srgb,var(--muted) 65%,transparent)}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- toque: botões afundam de leve ---------- */
+.btn,.vz-acao,.cb,.cv-tb,.vz-ib,.msg-reacao,.canal,.cfgd-it{transition:transform .08s ease,background-color .15s,color .15s,box-shadow .15s}
+.btn:active:not(:disabled),.vz-acao:active:not(:disabled),.cb:active,.cv-tb:active:not(:disabled),.vz-ib:active,.msg-reacao:active,.canal:active{transform:scale(.96)}
+.contando{font-variant-numeric:tabular-nums}
+
+/* ---------- busca rápida (Ctrl+K) ---------- */
+.busca-fundo{position:fixed;inset:0;z-index:90;display:grid;place-items:start center;padding:14vh 16px 16px;background:color-mix(in srgb,var(--cv-fundo) 55%,transparent);animation:cfgd-fundo .14s ease-out}
+.busca-caixa{width:min(560px,100%);border-radius:14px;box-shadow:0 0 0 1px var(--line),0 30px 70px -20px var(--shadow);padding:12px;animation:cfgd-abre .16s ease-out}
+.busca-campo{width:100%;height:48px;padding:0 14px;border:0;border-radius:10px;background:var(--surface-2);color:var(--ink);font:500 17px var(--body);outline:0}
+.busca-lista{margin:8px 0 0;padding:0;list-style:none;max-height:min(380px,50vh);overflow:auto}
+.busca-it{display:flex;align-items:center;gap:12px;width:100%;padding:9px 10px;border:0;border-radius:8px;background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.busca-it.on{background:color-mix(in srgb,var(--accent) 20%,transparent)}
+.busca-it b{font-size:15px;font-weight:600}
+.busca-it small{margin-left:auto;font-size:12px;color:var(--muted)}
+.busca-ic{flex:none;display:grid;place-items:center;width:24px;height:24px;color:var(--muted)}
+.busca-ic .av{width:24px;height:24px}
+.busca-ponto{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.busca-nada{padding:14px 10px;color:var(--muted);font-size:14px}
+.busca-dica{margin:8px 4px 0;font-size:12px;color:var(--muted)}
+.busca-dica kbd,.cv-busca kbd{padding:1px 6px;border-radius:5px;box-shadow:inset 0 0 0 1px var(--line);font:600 11px ui-monospace,Menlo,monospace}
+.cv-busca{display:flex;align-items:center;gap:8px;height:30px;margin-right:6px;padding:0 10px;border:0;border-radius:8px;background:color-mix(in srgb,var(--stamp-ink) 10%,transparent);color:color-mix(in srgb,var(--stamp-ink) 70%,transparent);font:500 12.5px var(--body);cursor:pointer}
+.cv-busca:hover{background:color-mix(in srgb,var(--stamp-ink) 16%,transparent);color:var(--stamp-ink)}
+.cv-busca kbd{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--stamp-ink) 25%,transparent)}
+@media (max-width:860px){.cv-busca span,.cv-busca kbd{display:none}}
+
+/* ---------- a cor de destaque (Aparência) ---------- */
+.cfgd-cores{display:flex;flex-wrap:wrap;gap:10px}
+.cfgd-cor{display:grid;justify-items:center;gap:6px;padding:10px 12px;border:2px solid var(--line);border-radius:12px;background:var(--surface-2);color:var(--ink);font:600 12.5px var(--body);cursor:pointer}
+.cfgd-cor i{width:30px;height:30px;border-radius:50%}
+.cfgd-cor.on{border-color:var(--ink)}
+.cor-ouro i{background:#B08D57}
+.cor-roxo i{background:#8B7BD8}
+.cor-verde i{background:#3F9E76}
+.cor-azul i{background:#4A86C8}
+.cor-rosa i{background:#C9628A}
+html:root[data-cor="roxo"]{--accent:#8B7BD8;--accent-soft:#ECE9FA;--accent-text:#5D4FB0}
+html:root[data-cor="verde"]{--accent:#3F9E76;--accent-soft:#E1F2EA;--accent-text:#2E7356}
+html:root[data-cor="azul"]{--accent:#4A86C8;--accent-soft:#E3EDF8;--accent-text:#2F639E}
+html:root[data-cor="rosa"]{--accent:#C9628A;--accent-soft:#F7E6ED;--accent-text:#9B3E62}
+html:root[data-cor="roxo"][data-theme="dark"]{--accent-soft:#3B3653;--accent-text:#B5A9F0}
+html:root[data-cor="verde"][data-theme="dark"]{--accent-soft:#2F4A3E;--accent-text:#7CCBA6}
+html:root[data-cor="azul"][data-theme="dark"]{--accent-soft:#2F3E52;--accent-text:#8DB8E8}
+html:root[data-cor="rosa"][data-theme="dark"]{--accent-soft:#4D3340;--accent-text:#E59AB8}
+@media (prefers-color-scheme:dark){
+  html:root[data-cor="roxo"]:not([data-theme="light"]){--accent-soft:#3B3653;--accent-text:#B5A9F0}
+  html:root[data-cor="verde"]:not([data-theme="light"]){--accent-soft:#2F4A3E;--accent-text:#7CCBA6}
+  html:root[data-cor="azul"]:not([data-theme="light"]){--accent-soft:#2F3E52;--accent-text:#8DB8E8}
+  html:root[data-cor="rosa"]:not([data-theme="light"]){--accent-soft:#4D3340;--accent-text:#E59AB8}
+}
+
+@media (prefers-reduced-motion:reduce){section.inner:not([hidden]),.toasts .toast,.abertura img,.abertura-barra i,.esq,.busca-fundo,.busca-caixa{animation:none}}

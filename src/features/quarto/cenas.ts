@@ -17,8 +17,9 @@ export const NOME_CENA: Record<CenaEspecial, string> = { rua: "A rua", corredor:
 
 /** O banheiro (a porta do canto do K-FOFO): o vaso (dá para sentar) e a pia; as paredes são das pixações (seção 51). */
 export const MOVEIS_BANHEIRO: readonly MovelGrade[] = [
-  { id: -20, desenho: "vaso", ret: { i: 4, j: 1, w: 1, d: 1 }, giro: true },
-  { id: -21, desenho: "pia", ret: { i: 1, j: 4, w: 1, d: 1 }, giro: false },
+  /* encostados nas paredes (05/11/2026): o vaso de costas para a parede da direita, a pia embaixo do espelho */
+  { id: -20, desenho: "vaso", ret: { i: 3, j: 0, w: 1, d: 1 }, giro: false },
+  { id: -21, desenho: "pia", ret: { i: 0, j: 4, w: 1, d: 1 }, giro: true },
 ];
 
 /**

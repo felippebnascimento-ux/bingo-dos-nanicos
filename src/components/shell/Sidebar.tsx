@@ -1,6 +1,7 @@
 "use client";
+import { abrirCartao, PontoStatus, useSituacao } from "./CartaoPerfil";
 import { useEffect, useState, type ComponentType } from "react";
-import { IcAjustes, IcAoVivo, IcCassino, IcJogar, IcLoja, IcMidias, IcSeta, IcSitio, IcNanicadas, IcNanicos, IcAmigos, IcPerfil, IcTaca, IcTruco, IcVoltar } from "@/components/ui/icones";
+import { IcEngrenagem, IcAoVivo, IcCassino, IcJogar, IcLoja, IcMidias, IcSeta, IcSitio, IcNanicadas, IcNanicos, IcAmigos, IcPerfil, IcTaca, IcTruco, IcVoltar } from "@/components/ui/icones";
 import { fecharSeletores } from "@/components/ui/FriendPicker";
 import { Avatar } from "@/components/ui/Avatar";
 import { CamBotoes } from "@/features/live/CamBotoes";
@@ -66,7 +67,10 @@ function Nav() {
   /* só os 14: os amigos dos nanicos têm a aba Amigos */
   const nAmigos = useApp((s) => soNanicos(s.friends).length);
   /* amigo dos nanicos: sem Nanicadas, Jogar (bingo) e Troféus, que não são para ele (quem barra de verdade é o banco) */
-  const souAmigo = useApp((s) => ehAmigo(friendOf(s.myFid, s.friends)));
+  const souAmigo = useApp((s) => {
+    const eu = friendOf(s.myFid, s.friends);
+    return ehAmigo(eu) && !eu?.poderes_nanico;
+  });
   const temAmigos = useApp((s) => soAmigos(s.friends).length > 0);
   const nLive = useApp((s) => s.onlineSala.filter((p) => p.live && p.key !== MY_KEY).length + (s.myLiveSid ? 1 : 0));
   const nTruco = useApp((s) => s.trucoAbertas);
@@ -167,13 +171,18 @@ function EuPainel() {
   const naAba = useApp((s) => s.aba === "perfil");
   const naConfig = useApp((s) => s.configAberto);
   const naVoz = useApp((s) => !!s.myVozSid);
+  const sitEu = useSituacao(eu?.id);
   if (!myName) return null;
   /* na voz a linha "eu" fica como a do Discord (rosto, microfone, fone, engrenagem) e as moedas descem uma linha */
   return (
     <>
       <div className="eu-painel">
-        <button type="button" className={"eu" + (naAba ? " on" : "")} aria-current={naAba ? "page" : undefined} title="Abrir o meu perfil" onClick={() => setApp({ aba: "perfil" })}>
+        {/* como no Discord: o rosto abre o meu cartão com o status; o nome abre o Perfil */}
+        <button type="button" className="eu-rosto" aria-label="Meu status" title="Mudar o status" onClick={(e) => abrirCartao(eu?.id, e)}>
           {eu ? <Avatar f={eu} /> : <span className="av">{myName[0]}</span>}
+          <PontoStatus sit={sitEu} />
+        </button>
+        <button type="button" className={"eu" + (naAba ? " on" : "")} aria-current={naAba ? "page" : undefined} title="Abrir o meu perfil" onClick={() => setApp({ aba: "perfil" })}>
           <span className="eu-txt">
             <b>{eu?.name ?? myName}</b>
             {temSalas && <small>{sala ?? "No lobby"}</small>}
@@ -182,7 +191,7 @@ function EuPainel() {
         <BotoesVozEu />
         {!naVoz && <CarteiraChip />}
         <button type="button" className={"eu-cfg" + (naConfig ? " on" : "")} aria-label="Configurações" data-dica="Configurações" data-dica-fim="" aria-expanded={naConfig} onClick={() => setApp({ configAberto: true })}>
-          <IcAjustes />
+          <IcEngrenagem />
         </button>
       </div>
       {naVoz && (
