@@ -942,6 +942,10 @@ export const CHANGELOG: EntradaLog[] = [
   },
   {
     data: "05/11/2026",
+    itens: ["O Romildo chegou! Amigo dos nanicos com boneco no traço novo, poses e tudo o que um nanico pode fazer"],
+  },
+  {
+    data: "05/11/2026",
     itens: [
       "Corrida de cavalos repaginada: hipódromo com arquibancada, portão de largada, câmera que corre junto com o líder, poeira, placar ao vivo e foto do pódio",
       "Cavalos novos desenhados de verdade, galopando, com o jóquei e o número na cor da raia, nas 8 pelagens (no Haras também)",
