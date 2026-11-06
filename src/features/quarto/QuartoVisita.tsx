@@ -9,7 +9,7 @@ import { andarAte, andarUmPiso, useHall } from "@/features/hall/bonecos";
 import { useAcoes } from "@/features/hall/acoes";
 import { useEquipados, useLoja } from "@/features/loja/lojaDados";
 import { IcQuarto } from "@/components/ui/icones";
-import { bonecoOf, posesOf } from "@/lib/dados/nanicos";
+import { bonecoOf, hotelOf, posesOf } from "@/lib/dados/nanicos";
 import { umPorNanico } from "@/lib/presenca";
 import { friendDaPresenca, MY_KEY, useApp } from "@/lib/store";
 import { assentoDoQuarto, gradeDoQuarto } from "./grade";
@@ -67,6 +67,7 @@ export function QuartoVisita({ dono }: { dono: string }) {
           nome: b.name,
           folha: bonecoOf(friendDaPresenca(b, friends) || { name: b.name }),
           poses: posesOf(friendDaPresenca(b, friends) || { name: b.name }),
+          hotel: hotelOf(friendDaPresenca(b, friends) || { name: b.name }),
           i: b.i,
           j: b.j,
           sentido: a?.olha ?? b.sentido,

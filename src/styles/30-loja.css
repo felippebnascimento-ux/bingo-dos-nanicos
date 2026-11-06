@@ -127,6 +127,12 @@ button.loja-previa:focus-visible{outline:2px solid var(--accent);outline-offset:
 .consumo-item svg{display:block;width:100%;height:auto}
 /* o gole e o trago se repetem enquanto o efeito dura */
 .consumo.bebe .consumo-item{animation:gole var(--dura,4500ms) ease-in-out infinite}
+/* na mão do boneco do Nanico Hotel: o desenho do boneco já leva o item à boca, então o item não tem animação própria */
+.consumo.na-mao{width:1.3%;transform:translate(-50%,-62%)}
+.consumo.na-mao.bebe{width:1.5%}
+.consumo.na-mao .consumo-item{animation:none}
+.consumo.na-mao.fuma .consumo-item{rotate:-35deg}
+.consumo.na-mao.fuma.espelha .consumo-item{rotate:35deg}
 .consumo.fuma .consumo-item{animation:trago var(--dura,6000ms) ease-in-out infinite}
 @keyframes gole{
   0%{opacity:0;transform:translate(60%,190%) rotate(0)}
@@ -180,3 +186,6 @@ button.loja-previa:focus-visible{outline:2px solid var(--accent);outline-offset:
 .px-k{fill:var(--px-k)} .px-w{fill:var(--px-w)} .px-g{fill:var(--px-g)} .px-G{fill:var(--px-UG)} .px-d{fill:var(--px-d)} .px-r{fill:var(--px-r)} .px-R{fill:var(--px-UR)} .px-o{fill:var(--px-o)} .px-O{fill:var(--px-UO)} .px-y{fill:var(--px-y)} .px-Y{fill:var(--px-UY)} .px-b{fill:var(--px-b)} .px-B{fill:var(--px-UB)} .px-l{fill:var(--px-l)} .px-v{fill:var(--px-v)} .px-V{fill:var(--px-UV)} .px-L{fill:var(--px-UL)} .px-u{fill:var(--px-u)} .px-U{fill:var(--px-UU)} .px-c{fill:var(--px-c)} .px-p{fill:var(--px-p)} .px-P{fill:var(--px-UP)} .px-m{fill:var(--px-m)} .px-M{fill:var(--px-UM)} .px-f{fill:var(--px-f)}
 .icone-pixel{image-rendering:pixelated;filter:drop-shadow(0 3px 0 color-mix(in srgb,var(--shadow) 60%,transparent))}
 .loja-desenho .icone-pixel{height:100%;width:auto;aspect-ratio:1}
+
+/* a chave do Nanico Hotel na prévia da loja */
+.loja-chave{display:block;width:78%;aspect-ratio:1;margin:auto;background:url(/arte/hotel/chave.webp) no-repeat center/contain}

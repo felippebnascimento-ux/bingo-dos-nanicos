@@ -955,6 +955,16 @@ export const CHANGELOG: EntradaLog[] = [
       "7 pelagens novas para o seu cavalo: tostado, palomino, lobuno, malhado, apaloosa, mouro e cremelo",
     ],
   },
+  {
+    data: "05/11/2026",
+    itens: [
+      "Nanico Hotel, parte 1: bonecos novos dos 14 nanicos e do Lightzin no K-FOFO e nos quartos, com desenho próprio de frente e de costas e o passo trocando as pernas",
+      "Sentar, acenar, dançar, deitar, rir, joinha, pular e sentar no chão com os desenhos novos, inclusive de costas",
+      "Ações novas no menu do boneco: aplaudir, mexer no celular e dormir (:aplaudir, :celular, :dormir no chat)",
+      "Bebida, cigarro e comida na mão do boneco: ele segura e leva à boca de tempos em tempos",
+      "Moeda Nanica com o N no lugar do cifrão, e a chave nova das casas na loja",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

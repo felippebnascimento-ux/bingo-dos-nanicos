@@ -59,3 +59,7 @@
 @keyframes ranking-subiu{0%,80%{opacity:1}100%{opacity:0}}
 @media (prefers-reduced-motion:reduce){.ranking-subiu{animation:none}}
 .ranking-amigo{margin-left:6px;padding:0 6px;border-radius:99px;background:color-mix(in srgb,var(--mint) 22%,transparent);font:700 9.5px var(--display);font-style:normal;text-transform:uppercase;letter-spacing:.05em;color:var(--ink)}
+
+/* a moeda Nanica no selo do menu e no bloco do Perfil */
+.moedas-chip-ic{width:18px;height:18px}
+.moedas-saldo-ic{width:28px;height:28px}

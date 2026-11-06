@@ -50,3 +50,11 @@ export function quadroPose(pose: Pose, costas: boolean, t: number): readonly [nu
 
 /** background-position (em %) do quadro numa folha de 4×4. */
 export const posicaoPose = ([c, l]: readonly [number, number]) => `${(c / (POSE_COLS - 1)) * 100}% ${(l / (POSE_LINHAS - 1)) * 100}%`;
+
+/** A pose da folha antiga para uma ação do site: as de 05/11/2026 (do Nanico Hotel) usam a mais parecida. */
+export function poseDaAcao(acao: string): Pose {
+  if (acao === "aplaude") return "acena";
+  if (acao === "celular") return "ri";
+  if (acao === "dorme") return "deita";
+  return acao as Pose;
+}

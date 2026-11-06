@@ -14,6 +14,10 @@ import { DesenhoAcessorio, tipoAcessorio } from "./Acessorio";
 import { useConsumo } from "./consumoSala";
 import { useEquipados, useLoja } from "./lojaDados";
 import { IconePixel, temIconePixel } from "./IconesPixel";
+import { useRelogio } from "@/features/hall/Boneco";
+import { useAcoes } from "@/features/hall/acoes";
+import { HOTEL_ESC, HOTEL_PE, alturaHotel, direcaoHotel, jeitoDeConsumir, quadroConsumo } from "@/features/hall/hotel";
+import { hotelOf } from "@/lib/dados/nanicos";
 
 /** O desenho do consumível (ou do escudo), em pé, com a ponta/boca para cima. */
 export function DesenhoItem({ id }: { id: string }) {
@@ -182,6 +186,9 @@ const emPct = (x: number, y: number, vb: Caixa2D) => ({ left: `${((x - vb.x) / v
 export function ConsumoCamada({ bonecos, vb }: { bonecos: Boneco[]; vb: Caixa2D }) {
   const ativos = useConsumo((s) => s.ativos);
   const itens = useLoja((s) => s.itens);
+  const acoes = useAcoes((s) => s.por);
+  /* com o boneco do Nanico Hotel, o item vai na mão do desenho e anda junto com ele (hall/hotel.ts) */
+  const agora = useRelogio(ativos.some((c) => hotelOf({ name: bonecos.find((x) => x.fid === c.fid)?.name ?? "" })), 200);
   if (!ativos.length) return null;
   return (
     <div className="consumo-camada" aria-hidden="true">
@@ -191,6 +198,29 @@ export function ConsumoCamada({ bonecos, vb }: { bonecos: Boneco[]; vb: Caixa2D 
         /* a boca do boneco: um pouco à direita do meio, perto do topo da cabeça */
         const [x, y] = peNaTela(b);
         const fumaca = c.anim === "fumar" || c.anim === "charuto";
+        const hotel = hotelOf({ name: b.name });
+        if (hotel) {
+          /* sentado, andando ou num gesto o boneco não segura nada; de costas, a mão fica atrás do corpo */
+          const dir = direcaoHotel(b.sentido);
+          if (b.senta || b.quadro > 0 || acoes[b.key] || dir.costas) return null;
+          const q = quadroConsumo(jeitoDeConsumir(c.anim, c.item), false, agora - c.inicio, alturaHotel(hotel));
+          const mx = x + (q.mao[0] - HOTEL_PE.x) * HOTEL_ESC * (dir.espelha ? -1 : 1);
+          const my = y + (q.mao[1] - HOTEL_PE.y) * HOTEL_ESC;
+          return (
+            <span key={c.id} className={"consumo na-mao " + (fumaca ? "fuma" : "bebe") + (q.naBoca ? " na-boca" : "") + (dir.espelha ? " espelha" : "")} style={emPct(mx, my, vb)} title={itens?.find((i) => i.id === c.item)?.nome}>
+              <span className="consumo-item">
+                <DesenhoItem id={c.item} />
+              </span>
+              {fumaca && q.naBoca && (
+                <span className="consumo-fumaca">
+                  <i />
+                  <i />
+                  <i />
+                </span>
+              )}
+            </span>
+          );
+        }
         const it: ItemLoja | undefined = itens?.find((i) => i.id === c.item);
         return (
           <span

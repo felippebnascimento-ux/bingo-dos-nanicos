@@ -99,7 +99,8 @@ html.menos-movimento .boneco.andando .boneco-img{rotate:none}
 .hall-ganho.velho{opacity:.55}
 @keyframes hall-entra{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.hall-ganho{animation:none}}
-.hall-moeda{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 35%,color-mix(in srgb,var(--accent) 60%,#fff),var(--accent) 60%,var(--accent-text));color:var(--accent-ink);font:800 11px var(--display)}
+/* a moeda Nanica (Nanico Hotel, 05/11/2026): a arte com o N; o texto "$" que fica dentro dos spans antigos some */
+.hall-moeda{flex:none;width:26px;height:26px;display:inline-block;background:url(/arte/hotel/moeda.webp) no-repeat center/contain;color:transparent;font-size:0;overflow:hidden;vertical-align:middle}
 /* carteira e mochila lado a lado no canto de baixo */
 .hall-bolso{position:absolute;z-index:120;left:16px;bottom:16px;display:flex;align-items:center;gap:8px}
 .hall-bolso .hall-canto{position:static}
@@ -714,3 +715,13 @@ html.menos-movimento .boneco.andando .boneco-img{rotate:none}
 .hall .f-tijr0{fill:var(--hall-tijr0)} .hall .f-tijr1{fill:var(--hall-tijr1)} .hall .f-tijr2{fill:var(--hall-tijr2)} .hall .f-concreto0{fill:var(--hall-concreto0)} .hall .f-concreto1{fill:var(--hall-concreto1)} .hall .f-concreto2{fill:var(--hall-concreto2)}
 .hall .s-tijrl{stroke:var(--hall-tijrl)} .hall .s-tijrj{stroke:var(--hall-tijrj);opacity:.8} .hall .s-ferrol{stroke:var(--hall-ferrol)}
 .hall .f-madv{fill:var(--hall-madv)} .hall .s-boca{stroke:var(--hall-boca)}
+
+/* o boneco do Nanico Hotel (hotel.ts, 05/11/2026): a célula do atlas (5 × 8) maior que a do boneco, com o pé no mesmo
+   ponto; as medidas vêm do Boneco.tsx. Respira parado, como o de antes; os gestos são desenhos, sem balanço por cima */
+.boneco-hotel{position:absolute;background-repeat:no-repeat;background-size:500% 800%;transform-origin:50% 93.75%}
+.boneco-hotel.espelha{transform:scaleX(-1)}
+.boneco-hotel.hotel-idle{animation:boneco-respira 3.4s ease-in-out infinite;animation-delay:var(--resp-atraso,0s)}
+.boneco.sentado.com-hotel{transform:translateY(16%)}
+.boneco.balanca .boneco-hotel{rotate:var(--balanco,0deg)}
+@media (prefers-reduced-motion:reduce){.boneco-hotel{animation:none!important}}
+html.menos-movimento .boneco-hotel{animation:none!important}
