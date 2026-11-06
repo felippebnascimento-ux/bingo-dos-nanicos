@@ -716,6 +716,8 @@ button.pk-livre:hover,.pk-livre.on{background:rgb(210 174 106 / .22)}
 .mesa-slider .mesa-tudo:disabled{opacity:.45;cursor:default}
 /* o valor da aposta (ValorAposta.tsx): fichas que somam, o valor escrito à mão, ½, 2×, TUDO e zerar */
 .va{display:grid;gap:8px}
+/* as cores das fichas valem em qualquer jogo que use o valor da aposta (antes só existiam dentro da mesa da roleta) */
+.va{--ficha-5:#F4F4F0; --ficha-5b:#1E3A8A; --ficha-10:#D11F35; --ficha-25:#1F9D55; --ficha-50:#2563EB; --ficha-100:#151515; --ficha-500:#6F3FA8; --ficha-1000:#C9A04E; --ficha-1000b:#3A2A0E}
 .va-fichas{flex-wrap:wrap;justify-content:center}
 .va-fichas button:disabled{opacity:.35;cursor:default}
 .va-linha{display:flex;align-items:stretch;gap:6px;flex-wrap:wrap}

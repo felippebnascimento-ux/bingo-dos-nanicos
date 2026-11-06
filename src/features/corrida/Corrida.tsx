@@ -1,34 +1,29 @@
 "use client";
 /*
- * A corrida de cavalos no Cassino (seção 71): a pista com as 8 raias, o quadro de cotações (vencedor, placê, exata e trifeta),
- * o valor da aposta, as minhas apostas, a inscrição do meu cavalo e os últimos vencedores. Tudo vem do corrida_estado;
- * o movimento na pista é calculado aqui (corrida.ts) para terminar exatamente na ordem que o banco sorteou.
+ * A corrida de cavalos no Cassino (seção 71; página refeita em 05/11/2026): a placa do páreo, a pista (Pista3D.tsx), o pódio,
+ * o programa do páreo (um cartão por cavalo, com a forma, a força e as cotações de vencedor e placê), o bilhete (exata,
+ * trifeta, valor, apostar e as minhas apostas), a inscrição do meu cavalo e os últimos vencedores. Tudo vem do
+ * corrida_estado; o movimento na pista termina exatamente na ordem que o banco sorteou.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSure } from "@/components/ui/useSure";
 import { ValorAposta, apostaOk } from "@/features/cassino/ValorAposta";
 import { useCarteira } from "@/lib/carteira";
 import { formatarMoedas } from "@/lib/moedas";
 import { setApp, useApp } from "@/lib/store";
-import { reduzMovimento } from "@/lib/util";
 import { DesenhoCavalo } from "./Cavalo";
+import { Pista3D } from "./Pista3D";
 import {
   DICA_APOSTA,
   NOME_APOSTA,
   NOME_DISTANCIA,
   NOME_PISTA,
   PREMIO_DONO,
-  RAIAS,
-  estilo,
   faseEm,
   forca,
   ganhou,
-  posicao,
   retorno,
-  temposDeChegada,
   textoOdd,
-  type CavaloCampo,
-  type EstadoCorrida,
   type Tempos,
   type TipoAposta,
 } from "./corridaRegras";
@@ -60,47 +55,6 @@ const ORDINAL = ["1º", "2º", "3º", "4º", "5º", "6º", "7º", "8º"];
 function useNomeDono() {
   const friends = useApp((s) => s.friends);
   return (uid: string | null) => (uid ? (friends.find((f) => f.user_id === uid)?.name ?? "um nanico") : null);
-}
-
-/** A pista: 8 raias, a linha de chegada e cada cavalo onde a conta manda. */
-export function Pista({ e, agora }: { e: EstadoCorrida; agora: number }) {
-  const fase = faseEm(e.tempos, agora);
-  const campo = e.campo;
-  const tempos = useMemo(() => (e.pontos ? temposDeChegada(e.pontos) : null), [e.pontos]);
-  const estilos = useMemo(() => campo?.map((c, i) => estilo(c, i)) ?? [], [campo]);
-  const desde = agora - e.tempos.fechaEm;
-  const posDe = (i: number) => {
-    if (!campo || !tempos || fase === "inscricoes" || fase === "apostas") return 0;
-    if (fase === "fim" || reduzMovimento()) return 1;
-    return posicao(desde / tempos[i], estilos[i]);
-  };
-  const colocacao = (i: number) => (e.ordem && (fase === "fim" || (tempos && desde >= tempos[i])) ? e.ordem.indexOf(i) : -1);
-  const linhas: { nome: string; pelagem: CavaloCampo["pelagem"] | null }[] = campo
-    ? campo.map((c) => ({ nome: c.nome, pelagem: c.pelagem }))
-    : Array.from({ length: RAIAS }, (_, i) => (e.inscritos[i] ? { nome: e.inscritos[i].nome, pelagem: e.inscritos[i].pelagem } : { nome: "", pelagem: null }));
-  return (
-    <div className={"corrida-pista" + (e.pista === "pesada" ? " pesada" : "")} role="img" aria-label={campo ? "A pista com os 8 cavalos" : "Os portões de largada"}>
-      <span className="corrida-chegada" aria-hidden="true" />
-      {linhas.map((l, i) => {
-        const p = posDe(i);
-        const col = colocacao(i);
-        return (
-          <div key={i} className="corrida-raia">
-            <span className={`corrida-num raia-${i + 1}`}>{i + 1}</span>
-            {l.pelagem ? (
-              <span className="corrida-cavalo" style={{ left: `calc(${(p * 100).toFixed(3)}% * 0.86)` }}>
-                <DesenhoCavalo pelagem={l.pelagem} raia={i} correndo={fase === "correndo" && p < 1} />
-              </span>
-            ) : (
-              <span className="corrida-vaga">{campo ? "" : "vaga da casa"}</span>
-            )}
-            <span className="corrida-nome">{l.nome}</span>
-            {col >= 0 && <span className={"corrida-col" + (col < 3 ? " podio" : "")}>{ORDINAL[col]}</span>}
-          </div>
-        );
-      })}
-    </div>
-  );
 }
 
 type Escolha = { tipo: TipoAposta; raia: number; raia2: number | null; raia3?: number | null };
@@ -136,6 +90,7 @@ export function Corrida({ ativa }: { ativa: boolean }) {
   const falta = Math.max(0, ate - agora);
   const textoFase = f === "inscricoes" ? "Inscrições abertas" : f === "apostas" ? "Apostas abertas" : f === "correndo" ? "Correndo!" : "Resultado";
   const campo = e.campo;
+  const forcaMax = campo ? Math.max(1, ...campo.map((c) => forca(c, e.distancia, e.pista))) : 1;
   const meus = (todos ?? []).filter((c) => c.dono && c.dono === myUid);
   const inscritoMeu = e.inscritos.find((c) => c.dono === myUid);
 
@@ -200,168 +155,209 @@ export function Corrida({ ativa }: { ativa: boolean }) {
         </span>
       </header>
 
-      <Pista e={e} agora={agora} />
+      <Pista3D e={e} agora={agora} />
 
       {f === "fim" && e.ordem && campo && (
         <div className="corrida-podio" role="status">
           {e.ordem.slice(0, 3).map((r, k) => (
-            <span key={r} className={"corrida-podio-item p" + (k + 1)}>
-              <b>{ORDINAL[k]}</b> {r + 1}. {campo[r].nome}
-              {campo[r].dono && <small> de {nomeDono(campo[r].dono)}</small>}
-            </span>
+            <div key={r} className={"corrida-podio-item p" + (k + 1)}>
+              <span className="corrida-podio-pos">{ORDINAL[k]}</span>
+              <span className="corrida-podio-cav">
+                <DesenhoCavalo pelagem={campo[r].pelagem} raia={r} />
+              </span>
+              <span className="corrida-podio-nome">
+                <b>{campo[r].nome}</b>
+                <small>{campo[r].dono ? `de ${nomeDono(campo[r].dono)} · +${formatarMoedas(PREMIO_DONO[k])}` : "da casa"}</small>
+              </span>
+            </div>
           ))}
         </div>
       )}
 
-      {f === "inscricoes" && (
-        <section className="block corrida-inscricao">
-          <h3>Inscrições</h3>
-          <p className="hint">
-            Cada um põe 1 cavalo seu por corrida; a casa completa as 8 raias. O dono leva {PREMIO_DONO.map((p) => formatarMoedas(p)).join(", ")} pelo 1º, 2º e 3º lugar.
-          </p>
-          {e.inscritos.length > 0 && (
-            <ul className="corrida-inscritos">
-              {e.inscritos.map((c) => (
-                <li key={c.id}>
-                  <DesenhoCavalo pelagem={c.pelagem} semJoquei />
-                  <span>
-                    {c.nome} <small>de {nomeDono(c.dono)}</small>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-          {inscritoMeu ? (
-            <p className="status">{inscritoMeu.nome} está inscrito.</p>
-          ) : meus.length ? (
-            <div className="corrida-meus">
-              {meus.map((c) => (
-                <button key={c.id} type="button" className="btn sm" onClick={() => void inscreverCavalo(c.id).then((ok) => { if (ok) void atualizar(); })}>
-                  Inscrever {c.nome}
+      <div className="corrida-grade">
+        <div className="corrida-esq">
+          {f === "inscricoes" && (
+            <section className="block corrida-inscricao">
+              <h3>Inscrições</h3>
+              <p className="hint">
+                Cada um põe 1 cavalo seu por páreo; a casa completa as 8 raias. O dono leva {PREMIO_DONO.map((p) => formatarMoedas(p)).join(", ")} pelo 1º, 2º e 3º lugar.
+              </p>
+              {e.inscritos.length > 0 && (
+                <ul className="corrida-inscritos">
+                  {e.inscritos.map((c) => (
+                    <li key={c.id}>
+                      <span className="corrida-mini">
+                        <DesenhoCavalo pelagem={c.pelagem} semJoquei />
+                      </span>
+                      <span>
+                        <b>{c.nome}</b>
+                        <small>de {nomeDono(c.dono)}</small>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {inscritoMeu ? (
+                <p className="status">{inscritoMeu.nome} está inscrito. Boa sorte!</p>
+              ) : meus.length ? (
+                <div className="corrida-meus">
+                  {meus.map((c) => (
+                    <button key={c.id} type="button" className="corrida-meu" onClick={() => void inscreverCavalo(c.id).then((ok) => { if (ok) void atualizar(); })}>
+                      <span className="corrida-mini">
+                        <DesenhoCavalo pelagem={c.pelagem} semJoquei />
+                      </span>
+                      <span>
+                        <b>{c.nome}</b>
+                        <small>Inscrever</small>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <button type="button" className="btn soft sm" onClick={() => setApp({ aba: "loja" })}>
+                  Comprar um cavalo no Haras
                 </button>
-              ))}
-            </div>
-          ) : (
-            <button type="button" className="linkish" onClick={() => setApp({ aba: "loja" })}>
-              Compre um cavalo no Haras da loja e ponha ele para correr
-            </button>
+              )}
+            </section>
           )}
-        </section>
-      )}
 
-      {campo && (
-        <section className="block corrida-quadro">
-          <h3>Cotações</h3>
-          <p className="hint">Toque numa cotação para escolher. Cada aposta paga o valor vezes a cotação que você pegou.</p>
-          <div className="corrida-tabela" role="table" aria-label="Cavalos e cotações">
-            <div role="row" className="corrida-linha cab">
-              <span role="columnheader">Cavalo</span>
-              <span role="columnheader">Forma</span>
-              <span role="columnheader">Força</span>
-              <span role="columnheader">Vencedor</span>
-              <span role="columnheader">Placê</span>
-            </div>
-            {campo.map((c, i) => (
-              <div role="row" key={c.id} className={"corrida-linha" + (e.ordem && f === "fim" && e.ordem[0] === i ? " ganhou" : "")}>
-                <span role="cell" className="corrida-quem">
-                  <span className={`corrida-num raia-${i + 1}`}>{i + 1}</span>
-                  <span>
-                    <b>{c.nome}</b>
-                    <small>{c.dono ? `de ${nomeDono(c.dono)}` : "da casa"}</small>
-                  </span>
-                </span>
-                <span role="cell" className="corrida-forma">{c.forma.length ? c.forma.join("-") : "estreia"}</span>
-                <span role="cell" className="corrida-forca">{Math.round(forca(c, e.distancia, e.pista))}</span>
-                {(["vencedor", "place"] as const).map((t) => {
-                  const on = escolha?.tipo === t && escolha.raia === i;
+          {campo && (
+            <section className="block corrida-programa">
+              <div className="corrida-sec-topo">
+                <h3>Programa do páreo</h3>
+                <span className="hint">Toque numa cotação para apostar</span>
+              </div>
+              <ul className="corrida-cavalos" aria-label="Cavalos e cotações">
+                {campo.map((c, i) => {
+                  const forcaC = forca(c, e.distancia, e.pista);
+                  const chegou = e.ordem && f === "fim" ? e.ordem.indexOf(i) : -1;
                   return (
-                    <span role="cell" key={t}>
-                      <button type="button" className={"corrida-odd" + (on ? " on" : "")} aria-pressed={on} disabled={f !== "apostas"} onClick={() => setEscolha(on ? null : { tipo: t, raia: i, raia2: null })}>
-                        {textoOdd(t === "vencedor" ? c.oddV : c.oddP)}
-                      </button>
-                    </span>
+                    <li key={c.id} className={"corrida-cav" + (chegou === 0 ? " ganhou" : "")}>
+                      <span className={`corrida-num raia-${i + 1}`}>{i + 1}</span>
+                      <span className="corrida-mini">
+                        <DesenhoCavalo pelagem={c.pelagem} raia={i} />
+                      </span>
+                      <span className="corrida-cav-info">
+                        <b>
+                          {c.nome}
+                          {chegou >= 0 && chegou < 3 && <em className={"corrida-chegou p" + (chegou + 1)}>{ORDINAL[chegou]}</em>}
+                        </b>
+                        <small>{c.dono ? `de ${nomeDono(c.dono)}` : "da casa"}</small>
+                        <span className="corrida-forma" aria-label={c.forma.length ? `Últimas chegadas: ${c.forma.join(", ")}` : "Estreia"}>
+                          {c.forma.length ? c.forma.map((p, k) => <i key={k} className={p <= 3 ? "p" + p : undefined}>{p}</i>) : <small>estreia</small>}
+                        </span>
+                      </span>
+                      <span className="corrida-forca" title="Favoritismo nas condições do páreo">
+                        <i style={{ width: `${Math.round((forcaC / forcaMax) * 100)}%` }} />
+                        <small>{Math.round(forcaC)}</small>
+                      </span>
+                      <span className="corrida-odds">
+                        {(["vencedor", "place"] as const).map((t) => {
+                          const on = escolha?.tipo === t && escolha.raia === i;
+                          return (
+                            <button key={t} type="button" className={"corrida-odd" + (on ? " on" : "")} aria-pressed={on} disabled={f !== "apostas"} onClick={() => setEscolha(on ? null : { tipo: t, raia: i, raia2: null })}>
+                              <small>{t === "vencedor" ? "Vencedor" : "Placê"}</small>
+                              {textoOdd(t === "vencedor" ? c.oddV : c.oddP)}
+                            </button>
+                          );
+                        })}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
+        </div>
+
+        <aside className="block corrida-bilhete" aria-label="Seu bilhete">
+          <h3>Seu bilhete</h3>
+          {f === "apostas" && campo ? (
+            <>
+              <div className="corrida-exata">
+                <div className="seg corrida-combo" role="radiogroup" aria-label="Exata ou trifeta">
+                  {(["exata", "trifeta"] as const).map((t) => (
+                    <button key={t} type="button" role="radio" aria-checked={combo === t} className={combo === t ? "on" : undefined} onClick={() => setCombo(t)}>
+                      {NOME_APOSTA[t]}
+                    </button>
+                  ))}
+                </div>
+                {Array.from({ length: COMBOS[combo] }, (_, k) => {
+                  const pos = posDaEscolha(escolha);
+                  return (
+                    <label key={k}>
+                      <span>{k + 1}º</span>
+                      <select value={pos[k] ?? ""} disabled={k > 0 && pos[0] === null} onChange={(ev) => escolherPos(k, Number(ev.target.value))}>
+                        <option value="" disabled>
+                          escolha o cavalo
+                        </option>
+                        {campo.map((c, i) => (
+                          <option key={c.id} value={i}>
+                            {i + 1}. {c.nome}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                   );
                 })}
               </div>
-            ))}
-          </div>
-          <div className="corrida-exata">
-            <div className="seg corrida-combo" role="radiogroup" aria-label="Exata ou trifeta">
-              {(["exata", "trifeta"] as const).map((t) => (
-                <button key={t} type="button" role="radio" aria-checked={combo === t} className={combo === t ? "on" : undefined} onClick={() => setCombo(t)}>
-                  {NOME_APOSTA[t]}
-                </button>
-              ))}
-            </div>
-            {Array.from({ length: COMBOS[combo] }, (_, k) => {
-              const pos = posDaEscolha(escolha);
-              return (
-                <label key={k}>
-                  {k + 1}º
-                  <select value={pos[k] ?? ""} disabled={f !== "apostas" || (k > 0 && pos[0] === null)} onChange={(ev) => escolherPos(k, Number(ev.target.value))}>
-                    <option value="" disabled>
-                      escolha
-                    </option>
-                    {campo.map((c, i) => (
-                      <option key={c.id} value={i}>
-                        {i + 1}. {c.nome}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              );
-            })}
-          </div>
-          {f === "apostas" && (
-            <div className="corrida-apostar">
-              <p className="corrida-escolha">
+              <div className={"corrida-escolha" + (escolha ? " on" : "")}>
                 {escolha ? (
                   <>
-                    <b>{descreve(escolha)}</b> <small>({DICA_APOSTA[escolha.tipo]})</small>
-                    {odd !== undefined && <span> · {textoOdd(odd)}</span>}
+                    <b>{descreve(escolha)}</b>
+                    <small>{DICA_APOSTA[escolha.tipo]}</small>
+                    {odd !== undefined && <span className="corrida-escolha-odd">{textoOdd(odd)}</span>}
                   </>
                 ) : (
-                  <span className="hint">Escolha uma cotação no quadro ou monte a exata ou a trifeta.</span>
+                  <span className="hint">Toque numa cotação do programa ou monte a exata ou a trifeta aqui em cima.</span>
                 )}
-              </p>
+              </div>
               <ValorAposta valor={valor} onValor={setValor} saldo={saldo ?? undefined} disabled={indo} />
-              <button type="button" className={"btn" + (sure ? " sure" : "")} disabled={!pronta || indo} onClick={() => void apostar()}>
-                {sure ? "Confirmar" : pronta && odd !== undefined ? `Apostar ${formatarMoedas(valor)} (paga ${formatarMoedas(retorno(valor, odd))})` : "Apostar"}
+              <button type="button" className={"btn corrida-apostar" + (sure ? " sure" : "")} disabled={!pronta || indo} onClick={() => void apostar()}>
+                {sure ? "Confirmar" : pronta && odd !== undefined ? `Apostar ${formatarMoedas(valor)} · paga ${formatarMoedas(retorno(valor, odd))}` : "Apostar"}
               </button>
+            </>
+          ) : (
+            <p className="corrida-fechado">
+              {f === "inscricoes" ? `As apostas abrem em ${Math.ceil(falta / 1000)} s.` : f === "correndo" ? "Apostas fechadas: os cavalos estão na pista." : "Páreo encerrado. O próximo abre já."}
+            </p>
+          )}
+          {e.minhas.length > 0 && (
+            <div className="corrida-minhas">
+              <h4>Minhas apostas neste páreo</h4>
+              <ul>
+                {e.minhas.map((a, k) => {
+                  const res = a.pagou !== null ? (a.pagou > 0 ? "ganhou" : "perdeu") : e.ordem && f === "fim" ? (ganhou(a.tipo, a.raia, a.raia2, e.ordem, a.raia3) ? "ganhou" : "perdeu") : null;
+                  return (
+                    <li key={k} className={res ?? undefined}>
+                      <span>{descreve(a)}</span>
+                      <span>
+                        {formatarMoedas(a.valor)} a {textoOdd(a.odd)}
+                        {res === "ganhou" && <b> +{formatarMoedas(a.pagou ?? retorno(a.valor, a.odd))}</b>}
+                        {res === "perdeu" && <small> perdeu</small>}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           )}
-        </section>
-      )}
-
-      {e.minhas.length > 0 && (
-        <section className="block corrida-minhas">
-          <h3>Minhas apostas neste páreo</h3>
-          <ul>
-            {e.minhas.map((a, k) => {
-              const res = a.pagou !== null ? (a.pagou > 0 ? "ganhou" : "perdeu") : e.ordem && f === "fim" ? (ganhou(a.tipo, a.raia, a.raia2, e.ordem, a.raia3) ? "ganhou" : "perdeu") : null;
-              return (
-                <li key={k} className={res ?? undefined}>
-                  <span>{descreve(a)}</span>
-                  <span>
-                    {formatarMoedas(a.valor)} a {textoOdd(a.odd)}
-                    {res === "ganhou" && <b> +{formatarMoedas(a.pagou ?? retorno(a.valor, a.odd))}</b>}
-                    {res === "perdeu" && <small> perdeu</small>}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
+        </aside>
+      </div>
 
       {e.ultimas.length > 0 && (
         <section className="corrida-ultimas" aria-label="Últimos vencedores">
-          <small>Últimos vencedores</small>
+          <h4>Últimos vencedores</h4>
           <ul>
             {e.ultimas.map((u) => (
               <li key={u.id} title={`Páreo ${u.id}`}>
-                <DesenhoCavalo pelagem={u.pelagem} semJoquei />
-                {u.nome}
+                <span className="corrida-mini">
+                  <DesenhoCavalo pelagem={u.pelagem} semJoquei />
+                </span>
+                <span>
+                  <b>{u.nome}</b>
+                  <small>Páreo {u.id}</small>
+                </span>
               </li>
             ))}
           </ul>

@@ -99,7 +99,8 @@ function CartaoCavalo({ c }: { c: Cavalo }) {
   );
 }
 
-function ComprarCavalo() {
+/** A compra de um potro: nome, pelagem (com o desenho dela) e o botão. Fica no Haras e na janela do cavalo da vitrine da loja. */
+export function ComprarCavalo({ aoComprar }: { aoComprar?: () => void } = {}) {
   const [nome, setNome] = useState("");
   const [pelagem, setPelagem] = useState<Pelagem>("castanho");
   const { sure, pedir } = useSure();
@@ -132,7 +133,14 @@ function ComprarCavalo() {
             type="button"
             className={"btn" + (sure ? " sure" : "")}
             disabled={!ok || !!ocupado || falta}
-            onClick={() => pedir() && void comprarCavalo(nome, pelagem).then((r) => r && setNome(""))}
+            onClick={() =>
+              pedir() &&
+              void comprarCavalo(nome, pelagem).then((r) => {
+                if (!r) return;
+                setNome("");
+                aoComprar?.();
+              })
+            }
           >
             {sure ? "Confirmar" : falta ? `Faltam ${formatarMoedas(PRECO_CAVALO - (saldo ?? 0))}` : `Comprar por ${formatarMoedas(PRECO_CAVALO)}`}
           </button>

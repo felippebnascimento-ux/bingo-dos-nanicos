@@ -317,9 +317,19 @@ src/
     corrida/           corrida de cavalos (seção 71): corridaRegras.ts (pesos por distância e pista, pontos = força + sorte, igual ao
                        corrida_pontos do SQL; custo do treino; fases; o movimento na pista que termina na ordem do banco; ler o estado;
                        puro e testado; não pode se chamar corrida.ts por causa do Windows), corridaDados.ts (`useCorrida`: corrida_estado
-                       pelo `useLaco`; apostar, inscrever; `useCavalos`: a tabela cavalos; comprar e treinar), Cavalo.tsx (`DesenhoCavalo`, o
-                       cavalo com o jóquei na cor da raia), Corrida.tsx (o jogo `corrida` do Cassino: pista, cotações, exata, minhas apostas,
-                       inscrição, últimos vencedores) e Haras.tsx (a aba Haras da loja: comprar, treinar, ranking do hipódromo)
+                       pelo `useLaco`; apostar, inscrever; `useCavalos`: a tabela cavalos; comprar e treinar), Cavalo.tsx (desde 05/11/2026 o
+                       cavalo é a ilustração do galope em 8 quadros, `public/arte/corrida/cavalo-<pelagem>.webp`: a seda, o capacete, o capuz e
+                       o pano vêm em cinza e a cor da raia é pintada por cima, multiplicando, pela máscara `cavalo-seda.webp`; `DesenhoCavalo`
+                       solto e `CavaloSvg` dentro da pista; `quadroNaPista` troca o quadro pelo caminho andado, para a pata não escorregar),
+                       Pista3D.tsx (a pista como na transmissão, em camadas com as artes de `public/arte/corrida/`: fundo com a arquibancada
+                       que desliza devagar, a pista que emenda sem fim, postes, chegada, portão com os números e a cerca de fora na frente
+                       dos cavalos; letreiro da fase, placar ao vivo e mapa) e camera3d.ts (as contas da cena: altura e tamanho de cada raia,
+                       a câmera que segue o líder; puro e testado; não pode se chamar pista3d.ts por causa do Windows), Corrida.tsx (o jogo
+                       `corrida` do Cassino: placa do páreo, pista, pódio, o programa do páreo com um cartão por cavalo e o bilhete ao lado,
+                       inscrição, últimos vencedores) e Haras.tsx (a aba Haras da loja: comprar, treinar, ranking do hipódromo; `ComprarCavalo` também aparece na janela do cartão da seção Cavalos da vitrine, `CavaloDetalhe` em LojaView.tsx). As 15 pelagens (seção 76 acrescentou tostado, palomino, lobuno, malhado, apaloosa, mouro e cremelo) estão em `PELAGENS` e no check de `cavalos.pelagem`/`cavalo_comprar`: cor nova muda os três e ganha a arte. As artes vêm
+                       da ferramenta de imagem com fundo verde #00FF00 e a seda em magenta: `scripts/importar-cavalo.py <folha> <pelagem>`
+                       (recorta os 8 quadros, tira o verde e o branco preso entre as pernas, espelha e alinha pelo pano), `scripts/pelagens-cavalo.py`
+                       (as outras pelagens a partir da castanha) e `scripts/importar-cenario.py <folha>` (fundo, pista, cerca, poste e portão)
     troca/             troca entre nanicos (seção 54): trocas.ts (linha da troca pelo tempo real, abrirTroca, oferecer, aceitar,
                        cancelar; lerTroca puro e testado) e Troca.tsx (janela de dois lados e a pílula que reabre; montada no App)
     salas/             salas tipo lan house: trocar.ts (entrarSala: encerra tela e voz, mantém a câmera, troca o canal,
@@ -475,7 +485,7 @@ vercel.json            cabeçalhos de segurança (CSP etc.) e framework
 - **Exceção: o iPhone e o InstaNanico** (`33-celular.css`): a moldura usa `--iph-*` e o app as cores do modo escuro do Instagram, `--ig-*` (preto, cinzas, azul dos botões, o degradê do anel dos stories e os fundos dos stories de texto e o verde `--ig-proximo` dos melhores amigos), definidas em `.iphone`; o tema claro redefine as mesmas `--ig-*` em `.ig.claro`.
 - **Exceção: os desenhos dos itens da loja** (`30-loja.css`): cigarro, latas, cuia, copo e fumaça usam as variáveis `--loja-*` (com tema escuro) e as classes `l-<nome>`.
 - **A garagem** (cena `garagem` em cenas.ts, 14×14): entra pelo portão da rua (`PORTAO_GARAGEM`) e a saída volta para a rua; os veículos são imagens (`veiculo-<id>` → `public/arte/carros/<id>.svg`), e o chão usa `--garagem-*` em 37-quarto.css.
-- **Exceção: a corrida de cavalos** (`42-corrida.css`): pelagens em `--cav-*` (classe `cav-<pelagem>`), as sedas clássicas de cada raia em `--seda`/`--seda-tx` (classe `raia-<n>`) e a pista em `--pista-*`, iguais nos dois temas. Os itens da seção 72 usam `--loja-*` (30-loja.css) e `--efeito-gelo`/`--efeito-sombra` (38-habbo.css).
+- **Exceção: a corrida de cavalos** (`42-corrida.css`): pelagens em `--cav-*` (classe `cav-<pelagem>`, usadas nas bolinhas do Haras), as sedas clássicas de cada raia em `--seda`/`--seda-tx` (classe `raia-<n>`), a cena da pista em `--p3-*` (céu, poeira, sombra, placar) e as medalhas do pódio em `--med-*`, iguais nos dois temas. As cores das fichas de aposta (`--ficha-*`) valem também em `.va` (36-mesas.css), para o `ValorAposta` fora da roleta. Os itens da seção 72 usam `--loja-*` (30-loja.css) e `--efeito-gelo`/`--efeito-sombra` (38-habbo.css).
 - **Exceção: a rua e o corredor dos quartos** (`36-quarto.css`): gramado, céu de dia, fachada, árvore, carros, gol e as portas usam `--rua-*`, `--corredor-*` e, no corredor de hotel (papel listrado, lambri, carpete, arandelas), `--hotel-*` (em `.quarto-vars`), iguais nos dois temas (a rua é sempre de dia); o Mural usa `--hall-cortica*`, `--hall-nota-*` e `--hall-tachinha` (em `.hall` e `.mural-painel`).
 - **Exceção: o cômodo do hall** (`22-hall.css`). Ele é uma ilustração com cores próprias (tijolo, madeira, lajota), definidas como variáveis `--hall-*` em `.hall`, cada uma com uma versão mais escura no tema escuro. O SVG usa as classes `f-<nome>` (preenchimento) e `s-<nome>` (traço). A interface em volta (placas com nome, TV, botões) continua com a paleta acima.
 
