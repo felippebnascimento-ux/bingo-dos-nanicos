@@ -29,8 +29,25 @@ export type Pista = "leve" | "pesada";
 export const NOME_DISTANCIA: Readonly<Record<Distancia, string>> = { 1000: "1.000 m · tiro curto", 1600: "1.600 m · milha", 2400: "2.400 m · fundo" };
 export const NOME_PISTA: Readonly<Record<Pista, string>> = { leve: "Pista leve", pesada: "Pista pesada" };
 
-/** As pelagens (a cor do cavalo; as cores ficam em --cav-* no 42-corrida.css). */
-export const PELAGENS = ["castanho", "alazao", "tordilho", "preto", "baio", "pampa", "rosilho", "branco"] as const;
+/** As pelagens (a cor do cavalo: a arte é public/arte/corrida/cavalo-<pelagem>.webp e a bolinha do Haras usa --cav-* do 42-corrida.css;
+ * as 7 depois do branco vieram na seção 76, a mesma lista do check de cavalos.pelagem e do cavalo_comprar). */
+export const PELAGENS = [
+  "castanho",
+  "alazao",
+  "tostado",
+  "tordilho",
+  "preto",
+  "baio",
+  "palomino",
+  "lobuno",
+  "pampa",
+  "malhado",
+  "apaloosa",
+  "rosilho",
+  "mouro",
+  "cremelo",
+  "branco",
+] as const;
 export type Pelagem = (typeof PELAGENS)[number];
 export const NOME_PELAGEM: Readonly<Record<Pelagem, string>> = {
   castanho: "Castanho",
@@ -41,6 +58,13 @@ export const NOME_PELAGEM: Readonly<Record<Pelagem, string>> = {
   pampa: "Pampa",
   rosilho: "Rosilho",
   branco: "Branco",
+  tostado: "Tostado",
+  palomino: "Palomino",
+  lobuno: "Lobuno",
+  malhado: "Malhado",
+  apaloosa: "Apaloosa",
+  mouro: "Mouro",
+  cremelo: "Cremelo",
 };
 export const ehPelagem = (x: unknown): x is Pelagem => typeof x === "string" && (PELAGENS as readonly string[]).includes(x);
 

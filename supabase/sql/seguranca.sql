@@ -9167,3 +9167,42 @@ on conflict (id) do update set nome = excluded.nome, descricao = excluded.descri
 -- confere: deve listar os 9 móveis rústicos
 select id, nome, preco from public.loja_itens where ordem between 216 and 224 order by ordem;
 
+
+-- 76) corrida de cavalos: mais pelagens (05/11/2026, pedido do Henrique) -----------------------------------------------
+--   Sete cores novas para o cavalo próprio, além das 8 da seção 71: tostado, palomino, lobuno, malhado, apaloosa, mouro e
+--   cremelo. Muda só o check da tabela e a lista do cavalo_comprar (o resto da função é o mesmo da seção 71). Pode rodar de novo.
+alter table public.cavalos drop constraint if exists cavalos_pelagem_check;
+alter table public.cavalos add constraint cavalos_pelagem_check check (pelagem in (
+  'castanho','alazao','tordilho','preto','baio','pampa','rosilho','branco',
+  'tostado','palomino','lobuno','malhado','apaloosa','mouro','cremelo'));
+
+create or replace function public.cavalo_comprar(p_nome text, p_pelagem text) returns bigint
+language plpgsql security definer set search_path = public as $$
+declare
+  v_nome text := btrim(regexp_replace(coalesce(p_nome, ''), '\s+', ' ', 'g'));
+  v_id bigint;
+begin
+  if not public.eh_membro() then raise exception 'Só para os nanicos e os amigos.' using errcode = 'P0001'; end if;
+  if v_nome !~ '^[[:alnum:] .''-]{2,20}$' or v_nome !~ '[[:alpha:]]' then
+    raise exception 'Nome de 2 a 20 letras (pode ter número, espaço, ponto, hífen e apóstrofo).' using errcode = 'P0001';
+  end if;
+  if p_pelagem is null or p_pelagem not in ('castanho','alazao','tordilho','preto','baio','pampa','rosilho','branco',
+                                            'tostado','palomino','lobuno','malhado','apaloosa','mouro','cremelo') then
+    raise exception 'Escolha uma pelagem.' using errcode = 'P0001';
+  end if;
+  perform pg_advisory_xact_lock(hashtext('cavalo:' || auth.uid()));
+  if (select count(*) from public.cavalos where dono = auth.uid()) >= 3 then
+    raise exception 'Até 3 cavalos por pessoa.' using errcode = 'P0001';
+  end if;
+  if exists (select 1 from public.cavalos where lower(nome) = lower(v_nome)) then
+    raise exception 'Já existe um cavalo com esse nome.' using errcode = 'P0001';
+  end if;
+  perform public.creditar(auth.uid(), -2500, 'loja', 'cavalo');
+  insert into public.cavalos (dono, nome, pelagem) values (auth.uid(), v_nome, p_pelagem) returning id into v_id;
+  return v_id;
+end $$;
+revoke all on function public.cavalo_comprar(text, text) from public, anon;
+grant execute on function public.cavalo_comprar(text, text) to authenticated;
+
+-- confere: deve mostrar o check com as 15 pelagens
+select pg_get_constraintdef(oid) from pg_constraint where conname = 'cavalos_pelagem_check';

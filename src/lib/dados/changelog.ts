@@ -951,6 +951,8 @@ export const CHANGELOG: EntradaLog[] = [
       "Cavalos novos desenhados de verdade, galopando, com o jóquei e o número na cor da raia, nas 8 pelagens (no Haras também)",
       "Na corrida, o programa do páreo mostra cada cavalo com as últimas chegadas e a força, e o bilhete fica do lado com as fichas e quanto a aposta paga",
       "As fichas de aposta voltaram a ter cor fora da roleta",
+      "Na Loja, os cavalos ganharam a seção Cavalos na vitrine, com um cartão para cada pelagem",
+      "7 pelagens novas para o seu cavalo: tostado, palomino, lobuno, malhado, apaloosa, mouro e cremelo",
     ],
   },
 ];

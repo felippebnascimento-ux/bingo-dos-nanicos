@@ -4,11 +4,12 @@ trocando só a cor do pelo (os tons marrons): crina, patas pretas, jóquei e sed
 fora pela posição (o pano da sela está no mesmo ponto em todos os quadros). O pampa ganha manchas brancas no corpo.
 Uma folha gerada de verdade para a pelagem (scripts/importar-cavalo.py) fica melhor e substitui esta.
 
-Uso: python3 scripts/pelagens-cavalo.py
+Uso: python3 scripts/pelagens-cavalo.py [pelagem ...]   (sem nada, faz todas)
 """
 import colorsys
 import math
 import os
+import sys
 from PIL import Image
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
@@ -23,7 +24,19 @@ PELAGENS = {
     "tordilho": (None, 0.04, lambda v: min(1, 0.5 + v * 0.62)),
     "branco": (None, 0.05, lambda v: min(1, 0.8 + v * 0.26)),
     "rosilho": (8, 0.5, lambda v: min(1, 0.36 + v * 0.62)),
+    # as 7 de 05/11/2026 (seção 76)
+    "tostado": (11, 1.05, lambda v: v * 0.66),
+    "palomino": (41, 0.8, lambda v: min(1, v * 1.38 + 0.14)),
+    "lobuno": (30, 0.2, lambda v: min(1, 0.26 + v * 0.55)),
+    "cremelo": (40, 0.2, lambda v: min(1, 0.72 + v * 0.3)),
+    "mouro": (215, 0.12, lambda v: min(1, 0.2 + v * 0.55)),
+    "malhado": (None, 0.3, lambda v: v * 0.36),
+    "apaloosa": (None, 0.05, lambda v: min(1, 0.78 + v * 0.26)),
 }
+# crina, rabo e canelas claros (as outras ficam pretas): a cor (r, g, b) para o escuro dessas partes
+CRINA_CLARA = {"palomino": (238, 220, 176), "cremelo": (242, 232, 210)}
+# manchas brancas por cima da cor do corpo
+MANCHAS = {"pampa", "malhado"}
 
 
 def pelo(r, g, b, x, y, claro=False):
@@ -33,13 +46,24 @@ def pelo(r, g, b, x, y, claro=False):
     return h, s, v
 
 
+def ruido(x, y, sem):
+    """Um ruído suave (soma de ondas) para as manchas terem borda irregular, sempre igual no mesmo ponto do corpo."""
+    return (math.sin(x * 0.045 + sem) * math.cos(y * 0.06 - sem * 0.7) + 0.6 * math.sin((x + y) * 0.09 + sem * 1.3)
+            + 0.35 * math.cos((x - y) * 0.16 + sem * 2.1))
+
+
 def mancha(x, y):
-    """Manchas do pampa, presas ao corpo (coordenadas do quadro)."""
-    blobs = ((150, 124, 40, 22), (98, 110, 22, 30), (258, 140, 18, 30))
-    for cx, cy, rx, ry in blobs:
-        d = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 + 0.25 * math.sin(x * 0.13 + y * 0.07) * math.cos(y * 0.11)
-        if d < 1: return True
-    return False
+    """Manchas brancas grandes e irregulares do pampa e do malhado, no corpo e na anca (coordenadas do quadro)."""
+    if not (60 <= x <= 290 and 60 <= y <= 185): return False
+    # perto da borda da área a mancha precisa de mais ruído: ela some aos poucos, sem corte reto
+    d = min(x - 60, 290 - x, y - 60, 185 - y)
+    return ruido(x * 0.7 + 40, y * 0.7, 2.3) > 0.25 + max(0, (26 - d) / 26) * 1.6
+
+
+def pinta(x, y):
+    """As pintas do apaloosa: manta clara na anca com pintas escuras de tamanhos diferentes."""
+    if not (55 <= x <= 200 and 78 <= y <= 180): return False
+    return ruido(x * 2.6, y * 2.6, 0.4) > 1.15
 
 
 def fazer(nome, base):
@@ -48,12 +72,21 @@ def fazer(nome, base):
         for x in range(W):
             r, g, b, a = px[x, y]
             if a == 0: continue
-            hsv = pelo(r, g, b, x % QW, y, nome in ('tordilho', 'branco', 'rosilho', 'pampa'))
+            if nome in CRINA_CLARA and crina_ou_canela(x % QW, y):
+                h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+                if v < 0.42 and s < 0.5:
+                    cr, cg, cb = CRINA_CLARA[nome]; t = 0.45 + v * 1.3
+                    px[x, y] = (min(255, round(cr * t)), min(255, round(cg * t)), min(255, round(cb * t)), a)
+                    continue
+            hsv = pelo(r, g, b, x % QW, y, nome in ('tordilho', 'branco', 'rosilho', 'pampa', 'apaloosa', 'cremelo', 'palomino'))
             if not hsv: continue
             h, s, v = hsv
-            if nome == "pampa":
-                if not mancha(x % QW, y): continue
+            if nome in MANCHAS and mancha(x % QW, y):
                 nh, ns, nv = h, 0.04, min(1, 0.6 + v * 0.55)
+            elif nome == "pampa":
+                continue
+            elif nome == "apaloosa" and pinta(x % QW, y):
+                nh, ns, nv = 0.07, 0.35, 0.12 + v * 0.3
             else:
                 mh, ms, fv = PELAGENS[nome]
                 nh = h if mh is None else mh / 360 + (h - 25 / 360) * 0.4
@@ -66,5 +99,6 @@ def fazer(nome, base):
 
 if __name__ == "__main__":
     base = Image.open(os.path.join(PASTA, "cavalo-castanho.webp")).convert("RGBA")
-    for n in list(PELAGENS) + ["pampa"]:
+    so = [a for a in sys.argv[1:] if not a.startswith("-")]
+    for n in so or (list(PELAGENS) + ["pampa"]):
         fazer(n, base)

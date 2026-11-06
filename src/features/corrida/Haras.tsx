@@ -99,9 +99,9 @@ function CartaoCavalo({ c }: { c: Cavalo }) {
   );
 }
 
-function ComprarCavalo() {
+function ComprarCavalo({ inicial }: { inicial?: Pelagem }) {
   const [nome, setNome] = useState("");
-  const [pelagem, setPelagem] = useState<Pelagem>("castanho");
+  const [pelagem, setPelagem] = useState<Pelagem>(inicial ?? "castanho");
   const { sure, pedir } = useSure();
   const ocupado = useCavalos((s) => s.ocupado);
   const saldo = useCarteira((s) => s.carteira?.saldo ?? null);
@@ -143,7 +143,8 @@ function ComprarCavalo() {
   );
 }
 
-export function Haras() {
+/** `pelagem`: a cor escolhida na vitrine da loja (seção Cavalos), que já vem marcada na compra. */
+export function Haras({ pelagem }: { pelagem?: Pelagem } = {}) {
   const todos = useCavalos((s) => s.todos);
   const myUid = useApp((s) => s.myUid);
   const friends = useApp((s) => s.friends);
@@ -171,7 +172,7 @@ export function Haras() {
       {meus.map((c) => (
         <CartaoCavalo key={c.id} c={c} />
       ))}
-      {todos && meus.length < MAX_CAVALOS && <ComprarCavalo />}
+      {todos && meus.length < MAX_CAVALOS && <ComprarCavalo key={pelagem} inicial={pelagem} />}
       {ranking.length > 0 && (
         <section className="block haras-ranking">
           <h3>Ranking do hipódromo</h3>

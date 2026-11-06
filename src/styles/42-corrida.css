@@ -15,6 +15,13 @@
 .cav-pampa{--cav-corpo:#EDE7DC; --cav-esc:#D6CEC0; --cav-crina:#3A2A18; --cav-mancha:#6B4428}
 .cav-rosilho{--cav-corpo:#A47F78; --cav-esc:#8A6862; --cav-crina:#4A3530}
 .cav-branco{--cav-corpo:#F2F0EA; --cav-esc:#D8D4CA; --cav-crina:#CFCBC0}
+.cav-tostado{--cav-corpo:#5E2A1A; --cav-crina:#1E120C}
+.cav-palomino{--cav-corpo:#E2B865; --cav-crina:#F3E6C4}
+.cav-lobuno{--cav-corpo:#8C8273; --cav-crina:#1E1C1A}
+.cav-malhado{--cav-corpo:#2E2A27; --cav-crina:#F2EEE6}
+.cav-apaloosa{--cav-corpo:#EEECE6; --cav-crina:#4A3426}
+.cav-mouro{--cav-corpo:#6E7884; --cav-crina:#1E1E22}
+.cav-cremelo{--cav-corpo:#EADFC6; --cav-crina:#F6EFE0}
 .raia-1{--seda:#C8322B; --seda-tx:#FFFFFF}
 .raia-2{--seda:#F4F1EA; --seda-tx:#1E1E1E}
 .raia-3{--seda:#2F5DA8; --seda-tx:#FFFFFF}
@@ -234,11 +241,7 @@
   .haras-placar{grid-column:2 / -1}
 }
 
-/* o destaque do Haras na vitrine */
-.loja-destaque{display:flex;gap:14px;align-items:center;width:100%;text-align:left;cursor:pointer;border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line));
-  background:linear-gradient(100deg,color-mix(in srgb,var(--accent) 16%,var(--surface)),var(--surface));color:var(--ink)}
-.loja-destaque:hover{border-color:var(--accent)}
-.loja-destaque-cavalo{width:96px;flex:0 0 auto}
-.loja-destaque > span:last-child{display:flex;flex-direction:column;gap:2px}
-.loja-destaque small{font:700 11px var(--display);color:var(--accent);text-transform:uppercase;letter-spacing:.06em}
-.loja-destaque b{font:600 15px var(--body)}
+/* a seção Cavalos na vitrine da loja: o cavalo galopando na prévia do cartão */
+.loja-cavalo .loja-previa .cav{width:94%}
+.loja-grupo-dica{margin:-4px 0 10px}
+
