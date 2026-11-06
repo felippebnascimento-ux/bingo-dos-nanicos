@@ -10,8 +10,9 @@ import { memo, useId, useMemo } from "react";
 import { ANCORA, caixaDoBoneco, CEL_H, CEL_W, ordemZ, quadroSprite, type Caixa, type Sentido } from "@/features/hall/hall";
 import { BaloesSvg } from "@/features/hall/ChatHabbo";
 import { iconeAcao, type Acao } from "@/features/hall/acoes";
-import { usePoseQuadro } from "@/features/hall/Boneco";
-import { POSE_ANCORA, POSE_COLS, POSE_H, POSE_LINHAS, POSE_W, type Pose } from "@/features/hall/poses";
+import { usePoseQuadro, useQuadroHotel } from "@/features/hall/Boneco";
+import { ACAO_DO_SITE, HOTEL_CEL, HOTEL_COLS, HOTEL_ESC, HOTEL_LINHAS, HOTEL_PE, direcaoHotel, type AcaoHotel } from "@/features/hall/hotel";
+import { POSE_ANCORA, POSE_COLS, POSE_H, POSE_LINHAS, POSE_W, poseDaAcao, type Pose } from "@/features/hall/poses";
 import { EstadoNoMovel, TintaQuarto } from "./EstadoMovel";
 import { useEquipados } from "@/features/loja/lojaDados";
 import { corDoQuarto, ehInterativo, type EstadoMovel } from "./interativo";
@@ -31,6 +32,8 @@ export type BonecoCena = {
   folha: string | null;
   /** a folha de poses desenhadas (hall/poses.ts), de quem já tem */
   poses?: string | null;
+  /** o atlas do Nanico Hotel (hall/hotel.ts), de quem já tem: vale antes das poses */
+  hotel?: string | null;
   i: number;
   j: number;
   sentido: Sentido;
@@ -620,19 +623,36 @@ function BonecoNoQuarto({ b, p }: { b: BonecoCena; p: (i: number, j: number, z?:
   const efeito = useEquipados(b.uid).efeito?.dados.cor;
   const [x, y0] = b.sentado ? p(b.sentado.i, b.sentado.j) : p(b.i + 0.5, b.j + 0.5);
   /* com a folha de poses, a ação e o sentar viram o desenho (hall/poses.ts); sem ela, o balanço e o corte de antes */
-  const pose: Pose | null = b.poses ? (b.acao ?? (b.sentado ? "sentar" : null)) : null;
+  const pose: Pose | null = b.poses && !b.hotel ? (b.acao ? poseDaAcao(b.acao) : b.sentado ? "sentar" : null) : null;
   const quadroPose = usePoseQuadro(pose, b.sentido.startsWith("costas"));
+  /* o boneco do Nanico Hotel: a ação, o lado e o passo (hall/hotel.ts) */
+  const acaoHotel: AcaoHotel = b.sentado ? "sit" : b.acao ? (ACAO_DO_SITE[b.acao] ?? "idle") : b.quadro > 0 ? "walk" : "idle";
+  const dirHotel = direcaoHotel(b.sentido);
+  const qh = useQuadroHotel(acaoHotel, dirHotel.costas, b.quadro);
   /* sentado, o quadril desce para o estofado (como o .boneco.sentado do hall); com a pose desenhada, desce menos */
-  const y = y0 + (b.sentado ? CEL_H * ESCALA_VISITA * (pose ? 0.09 : 0.19) : 0);
+  const y = y0 + (b.sentado ? CEL_H * ESCALA_VISITA * (b.hotel ? 0.16 : pose ? 0.09 : 0.19) : 0);
   const q = quadroSprite(b.sentido, b.sentado ? 0 : b.quadro, b.folha);
   const w = CEL_W * ESCALA_VISITA, h = CEL_H * ESCALA_VISITA;
   const vx = -q.x, vy = -q.y;
   /* sentado, as pernas somem dentro do estofado (como no K-FOFO): a janela do quadro corta o terço de baixo */
   const corte = b.sentado && !pose ? 0.68 : 1;
   return (
-    <g className={"quarto-boneco" + (b.eu ? " eu" : "") + (b.acao ? " acao-" + b.acao : "") + (pose ? " com-pose" : "") + (efeito ? " efeito-" + efeito : "")} pointerEvents="none">
+    <g className={"quarto-boneco" + (b.eu ? " eu" : "") + (b.acao ? " acao-" + b.acao : "") + (pose || b.hotel ? " com-pose" : "") + (efeito ? " efeito-" + efeito : "")} pointerEvents="none">
       <g className="quarto-corpo">
-      {b.poses && quadroPose ? (
+      {b.hotel ? (
+        <svg
+          x={x - HOTEL_PE.x * HOTEL_ESC * ESCALA_VISITA}
+          y={y - HOTEL_PE.y * HOTEL_ESC * ESCALA_VISITA}
+          width={HOTEL_CEL * HOTEL_ESC * ESCALA_VISITA}
+          height={HOTEL_CEL * HOTEL_ESC * ESCALA_VISITA}
+          viewBox={`${qh.col * HOTEL_CEL} ${qh.lin * HOTEL_CEL} ${HOTEL_CEL} ${HOTEL_CEL}`}
+          className={"quarto-hotel hotel-" + acaoHotel}
+        >
+          <g transform={dirHotel.espelha ? `translate(${2 * qh.col * HOTEL_CEL + HOTEL_CEL} 0) scale(-1 1)` : undefined}>
+            <image href={b.hotel} width={HOTEL_CEL * HOTEL_COLS} height={HOTEL_CEL * HOTEL_LINHAS} />
+          </g>
+        </svg>
+      ) : b.poses && quadroPose ? (
         <svg
           x={x - POSE_ANCORA.x * ESCALA_VISITA}
           y={y - POSE_ANCORA.y * ESCALA_VISITA}

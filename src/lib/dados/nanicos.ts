@@ -64,6 +64,18 @@ export function bonecoOf(f: Rosto | null | undefined): string | null {
   return n && BONECO_ARQ[n] ? `/arte/bonecos/${BONECO_ARQ[n]}` : null;
 }
 
+/** Quem tem o boneco do Nanico Hotel (pacote de 05/11/2026): os 14 nanicos e o Lightzin. Os outros amigos seguem com a folha de antes. */
+const HOTEL_AMIGOS: ReadonlySet<string> = new Set(["lightzin"]);
+/** O atlas do Nanico Hotel (hall/hotel.ts: 16 ações em 4 direções) de quem já tem, ou null. */
+export function hotelOf(f: Rosto | null | undefined): string | null {
+  if (!f) return null;
+  const nome = norm(f.name);
+  const amigo = AMIGOS[nome];
+  if (amigo) return HOTEL_AMIGOS.has(nome) ? `/arte/hotel/${amigo.boneco}` : null;
+  const n = NAN_MAP[nome];
+  return n && BONECO_ARQ[n] ? `/arte/hotel/${BONECO_ARQ[n]}` : null;
+}
+
 /** A folha de poses desenhadas (sentar, acenar, deitar, dançar, emotes; hall/poses.ts) de quem já tem, ou null. */
 export function posesOf(f: Rosto | null | undefined): string | null {
   const amigo = f ? AMIGOS[norm(f.name)] : undefined;

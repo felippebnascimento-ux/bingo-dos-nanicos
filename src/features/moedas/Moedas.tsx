@@ -2,7 +2,6 @@
 /* Moedas na tela: o selinho do menu (saldo e dias seguidos) e o quadro do Perfil (com o extrato). */
 import { Contando } from "@/components/ui/Contando";
 import { useEffect } from "react";
-import { IcMoeda } from "@/components/ui/icones";
 import { carregarExtrato, useCarteira } from "@/lib/carteira";
 import { bonusDoDia, diasSeguidos, formatarMoedas, MOTIVOS, textoTempo } from "@/lib/moedas";
 import { useApp } from "@/lib/store";
@@ -14,7 +13,7 @@ export function CarteiraChip() {
   const rotulo = `${formatarMoedas(c.saldo)} moedas` + (c.seq ? `, ${diasSeguidos(c.seq)}` : "") + ". Abrir o ranking";
   return (
     <button type="button" className="moedas-chip" aria-label={rotulo} title={rotulo} onClick={() => useCarteira.setState({ painel: "ranking" })}>
-      <IcMoeda tam={18} />
+      <span className="hall-moeda moedas-chip-ic" aria-hidden="true" />
       <b>
         <Contando valor={c.saldo} formatar={formatarMoedas} />
       </b>
@@ -43,7 +42,7 @@ export function MoedasBloco() {
     <div className="block moedas-block">
       <h2>Moedas</h2>
       <div className="moedas-saldo">
-        <IcMoeda tam={28} />
+        <span className="hall-moeda moedas-saldo-ic" aria-hidden="true" />
         <b>{formatarMoedas(c.saldo)}</b>
         <span>moedas</span>
       </div>

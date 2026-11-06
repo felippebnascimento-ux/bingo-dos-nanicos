@@ -3,7 +3,7 @@
    `rot` é o cambaleio de quem levou uma chinelada (graus). */
 import { memo, useEffect, useState, type CSSProperties } from "react";
 import { Avatar } from "@/components/ui/Avatar";
-import { bonecoOf, posesOf } from "@/lib/dados/nanicos";
+import { bonecoOf, hotelOf, posesOf } from "@/lib/dados/nanicos";
 import type { Rosto } from "@/lib/tipos";
 import type { Boneco as B } from "./bonecos";
 import { ANCORA, assentoDe, CEL_H, CEL_W, quadroSprite, tela, type Caixa2D, type Sentido } from "./hall";
@@ -14,8 +14,10 @@ import { Acessorio, noAlto, tipoAcessorio } from "@/features/loja/Acessorio";
 import { useEquipados } from "@/features/loja/lojaDados";
 import type { Enfeite } from "@/features/trofeus/trofeus";
 import { iconeAcao, useAcaoDe } from "./acoes";
-import { posicaoPose, quadroPose, sequenciaPose, type Pose } from "./poses";
+import { poseDaAcao, posicaoPose, quadroPose, sequenciaPose, type Pose } from "./poses";
 import { reduzMovimento } from "@/lib/util";
+import { ACAO_DO_SITE, HOTEL_CEL, HOTEL_ESC, HOTEL_PE, alturaHotel, direcaoHotel, jeitoDeConsumir, posicaoHotel, quadroAndando, quadroConsumo, quadroHotel, sequenciaHotel, type AcaoHotel } from "./hotel";
+import { useConsumo } from "@/features/loja/consumoSala";
 
 /** O quadro da folha de poses, andando pelos quadros da pose no tempo dela (parado com menos movimento). */
 export function usePoseQuadro(pose: Pose | null, costas: boolean) {
@@ -30,6 +32,38 @@ export function usePoseQuadro(pose: Pose | null, costas: boolean) {
   }, [anima, s]);
   return pose ? quadroPose(pose, costas, anima ? t : 0) : null;
 }
+
+/** O desenho do boneco do Nanico Hotel (hotel.ts) para a ação, o lado e o passo, andando no tempo da ação. */
+export function useQuadroHotel(acao: AcaoHotel, costas: boolean, passo: number) {
+  const [t, setT] = useState(() => performance.now());
+  const s = sequenciaHotel(acao, costas);
+  const anima = acao !== "walk" && s.q.length > 1 && !reduzMovimento();
+  useEffect(() => {
+    if (!anima) return;
+    const id = setInterval(() => setT(performance.now()), s.ms);
+    return () => clearInterval(id);
+  }, [anima, s.ms]);
+  return acao === "walk" ? quadroAndando(costas, passo) : quadroHotel(acao, costas, anima ? t : 0);
+}
+
+/** Um relógio (Date.now()) que bate a cada `ms` enquanto `ativo`: o consumo na mão anda por ele. */
+export function useRelogio(ativo: boolean, ms: number) {
+  const [agora, setAgora] = useState(() => Date.now());
+  useEffect(() => {
+    if (!ativo || reduzMovimento()) return;
+    const id = setInterval(() => setAgora(Date.now()), ms);
+    return () => clearInterval(id);
+  }, [ativo, ms]);
+  return agora;
+}
+
+/** A célula do atlas do hotel dentro da célula do boneco (CEL_W × CEL_H), com o pé no mesmo ponto (ANCORA). */
+const CAIXA_HOTEL: CSSProperties = {
+  left: `${((ANCORA.x - HOTEL_PE.x * HOTEL_ESC) / CEL_W) * 100}%`,
+  top: `${((ANCORA.y - HOTEL_PE.y * HOTEL_ESC) / CEL_H) * 100}%`,
+  width: `${((HOTEL_CEL * HOTEL_ESC) / CEL_W) * 100}%`,
+  height: `${((HOTEL_CEL * HOTEL_ESC) / CEL_H) * 100}%`,
+};
 
 /** O outro lado da mesma linha da folha (frente-direita ↔ frente-esquerda): a olhadinha para o lado. */
 const VIRA: Record<Sentido, Sentido> = {
@@ -82,10 +116,20 @@ export const Boneco = memo(function Boneco({
   const q = quadroSprite(olha, a ? 0 : b.quadro, folha);
   /* acessório da loja (boné, óculos…): o enfeite dos troféus tem prioridade no alto da cabeça */
   /* com a folha de poses (poses.ts): a ação e o sentar viram o desenho; sem ela, o balanço e o corte de antes */
-  const poses = posesOf(f);
-  const pose: Pose | null = poses ? (acao ?? (a ? "sentar" : null)) : null;
+  /* o boneco do Nanico Hotel (16 ações em 4 direções) vale antes da folha de poses */
+  const hotel = hotelOf(f);
+  const poses = hotel ? null : posesOf(f);
+  const pose: Pose | null = poses ? (acao ? poseDaAcao(acao) : a ? "sentar" : null) : null;
   const costas = olha.startsWith("costas");
   const quadroPoseAgora = usePoseQuadro(pose, costas);
+  const acaoHotel: AcaoHotel = a ? "sit" : acao ? (ACAO_DO_SITE[acao] ?? "idle") : andando ? "walk" : "idle";
+  const dirHotel = direcaoHotel(olha);
+  const quadroHotelAgora = useQuadroHotel(acaoHotel, dirHotel.costas, b.quadro);
+  /* com um consumível (loja/consumoSala.ts), parado em pé: segura o item e leva à boca de tempos em tempos */
+  const consumo = useConsumo((s) => s.ativos.find((c) => c.fid === b.fid));
+  const consome = !!hotel && !!consumo && !a && !andando && !acao;
+  const agoraConsumo = useRelogio(consome, 200);
+  const qConsumo = consome && consumo ? quadroConsumo(jeitoDeConsumir(consumo.anim, consumo.item), dirHotel.costas, agoraConsumo - consumo.inicio, alturaHotel(hotel)) : null;
   const equip = useEquipados(f.user_id);
   const cabeca = tipoAcessorio(equip.cabeca?.dados.cor);
   /* efeito comprado na loja (seção 61): brilho, fogo, fantasma ou arco-íris */
@@ -102,7 +146,12 @@ export const Boneco = memo(function Boneco({
     /* cada um respira no seu tempo (senão a sala inteira sobe e desce junto) */
     ["--resp-atraso" as string]: `-${atrasoDe(b.key)}s`,
   };
-  const corpo = poses && pose && quadroPoseAgora ? (
+  const corpo = hotel ? (
+    <span
+      className={"boneco-hotel hotel-" + (qConsumo ? "consome" : acaoHotel) + (dirHotel.espelha ? " espelha" : "")}
+      style={{ ...CAIXA_HOTEL, backgroundImage: `url(${hotel})`, backgroundPosition: posicaoHotel(qConsumo ?? quadroHotelAgora) }}
+    />
+  ) : poses && pose && quadroPoseAgora ? (
     <span
       className={"boneco-pose pose-" + pose + (q.espelha ? " espelha" : "")}
       style={{ backgroundImage: `url(${poses})`, backgroundPosition: posicaoPose(quadroPoseAgora) }}
@@ -118,7 +167,7 @@ export const Boneco = memo(function Boneco({
     </span>
   );
   return (
-    <div className={"boneco" + (eu ? " eu" : "") + (andando ? " andando " + (olha.endsWith("direita") ? "vai-dir" : "vai-esq") : "") + (a ? " sentado" : "") + (rot ? " balanca" : "") + (enfeite ? " chapeu-" + enfeite : "") + (acess ? " acess-" + acess : "") + (acao ? " acao-" + acao : "") + (pose ? " com-pose" : "") + (efeito ? " efeito-" + efeito : "")} style={caixa}>
+    <div className={"boneco" + (eu ? " eu" : "") + (andando ? " andando " + (olha.endsWith("direita") ? "vai-dir" : "vai-esq") : "") + (a ? " sentado" : "") + (rot ? " balanca" : "") + (enfeite ? " chapeu-" + enfeite : "") + (acess ? " acess-" + acess : "") + (acao ? " acao-" + acao : "") + (pose || hotel ? " com-pose" : "") + (hotel ? " com-hotel" : "") + (efeito ? " efeito-" + efeito : "")} style={caixa}>
       <span className="boneco-nome">{b.name}</span>
       {acao && (
         <span className="boneco-acao" aria-hidden="true">

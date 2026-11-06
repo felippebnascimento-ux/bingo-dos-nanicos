@@ -51,11 +51,11 @@ export function Previa({ it }: { it: ItemLoja }) {
   const foco = FOCO[it.espaco];
   if (foco) return <QuartoPrevia equip={{ [it.espaco]: it.dados.cor } as EquipQuarto} foco={foco} />;
   if (it.espaco === "titulo") return <span className="loja-titulo-previa">{it.dados.texto}</span>;
-  /* chave das casas (seção 62) */
+  /* chave das casas (seção 62): a chave do Nanico Hotel (05/11/2026) */
   if (it.espaco === "chave")
     return (
       <span className="loja-desenho">
-        <IconePixel id="chave" />
+        <span className="loja-chave" />
       </span>
     );
   /* efeito no boneco (seção 61): o rosto com o efeito */
