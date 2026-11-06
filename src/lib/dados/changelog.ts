@@ -940,6 +940,10 @@ export const CHANGELOG: EntradaLog[] = [
     data: "05/11/2026",
     itens: ["Bonecos novos no K-FOFO e nos quartos: andando, sentados, acenando, dançando, rindo e deitados", "O Grito de escoteiro e a foto da turma nova"],
   },
+  {
+    data: "05/11/2026",
+    itens: ["O Romildo chegou! Amigo dos nanicos com boneco no traço novo, poses e tudo o que um nanico pode fazer"],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");
