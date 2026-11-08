@@ -139,3 +139,7 @@
   .cb-sep,.cv-call .cv-reacoes{display:none}
 }
 @media (prefers-reduced-motion:reduce){.qd{animation:none}.cv-call .cv-barra,.qd::after{transition:none}}
+
+/* tela cheia de uma transmissão (telaCheiaDaLive): só a imagem, na tela inteira, como no Discord */
+.stage:fullscreen,.cv-call .palco-foco .stage:fullscreen{width:100%;height:100%;max-width:none;aspect-ratio:auto;border-radius:0;box-shadow:none;background:var(--cv-fundo)}
+.stage:fullscreen .stage-bar{padding:44px 20px 16px}

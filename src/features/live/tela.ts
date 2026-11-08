@@ -20,6 +20,8 @@ export type Watch = {
   queue: RTCIceCandidateInit[];
   state: "connecting" | "live" | "failed";
   to?: ReturnType<typeof setTimeout>;
+  /** o próximo pedido de assistir, enquanto a oferta de quem transmite não chega */
+  re?: ReturnType<typeof setTimeout>;
 };
 
 export const LIVE = {
@@ -38,12 +40,14 @@ export const LIVE = {
 
 /* qualidade: resolução (1080p ou 1440p) x fluidez (30 ou 60 fps; o WebRTC dos navegadores não passa de 60) */
 export const RES = { 720: { w: 1280, h: 720, nome: "720p" }, 1080: { w: 1920, h: 1080, nome: "1080p · Full HD" }, 1440: { w: 2560, h: 1440, nome: "1440p · 2K" } };
-/* teto por pessoa que assiste e o upload total que dá para dividir entre todos */
+/* teto por pessoa que assiste e o upload total que dá para dividir entre todos. Cada pessoa que assiste é uma
+   imagem a mais saindo da internet de quem transmite: com os tetos antigos (até 30 Mbps no total), a internet de
+   casa não aguentava 3 ou 4 assistindo e a imagem travava para todos. */
 const liveCap = () => {
   const { res, fps } = getLive();
-  return { 720: { 60: 6e6, 30: 4e6 }, 1080: { 60: 12e6, 30: 8e6 }, 1440: { 60: 20e6, 30: 13e6 } }[res][fps];
+  return { 720: { 60: 5e6, 30: 3.5e6 }, 1080: { 60: 9e6, 30: 6e6 }, 1440: { 60: 14e6, 30: 10e6 } }[res][fps];
 };
-const liveBudget = () => ({ 720: 18e6, 1080: 30e6, 1440: 40e6 })[getLive().res];
+const liveBudget = () => ({ 720: 12e6, 1080: 18e6, 1440: 24e6 })[getLive().res];
 
 /** Quem está transmitindo agora (menos eu), em ordem de nome. */
 export const liveStreams = (online: Presence[] = getApp().onlineSala) =>
@@ -216,12 +220,12 @@ function closeViewer(key: string, silent?: boolean) {
 /* qualidade que se adapta: com a internet ruim, o navegador baixa um pouco a resolução e os quadros juntos
    ("balanced"), em vez de travar a imagem; quando melhora, volta sozinho */
 function tuneSenders() {
-  /* por pessoa: 1080p até 12 Mbps (60 fps) ou 8 (30); 1440p até 20 ou 13. Com muita gente, divide o upload.
-     A rede ainda ajusta sozinha para baixo se a internet não aguentar. */
+  /* por pessoa: 1080p até 9 Mbps (60 fps) ou 6 (30); 1440p até 14 ou 10. Com muita gente, divide o upload.
+     A rede ainda ajusta sozinha para baixo se a internet não aguentar (sem piso: travar é pior que borrar). */
   const n = Math.max(1, LIVE.viewers.size),
     cap = liveCap(),
     fps = getLive().fps;
-  const br = Math.round(Math.min(cap, Math.max(2.5e6, liveBudget() / n)));
+  const br = Math.round(Math.min(cap, Math.max(1.5e6, liveBudget() / n)));
   for (const v of LIVE.viewers.values())
     for (const sd of v.pc.getSenders()) {
       if (!sd.track) continue;
@@ -284,9 +288,10 @@ export async function onAnswer(m: MsgRtc) {
 }
 
 /* ---------- quem assiste ---------- */
-function openWatch(p: Presence): Watch {
+/** A conexão de quem assiste (nova a cada oferta repetida: vale sempre a última que quem transmite mandou). */
+function ligarPc(w: Watch) {
   const pc = novaConexao();
-  const w: Watch = { key: p.key, sid: p.live || "", fid: p.fid, name: p.name, pc, stream: null, queue: [], state: "connecting" };
+  w.pc = pc;
   pc.ontrack = (e) => {
     const st = e.streams && e.streams[0];
     /* um MediaStream novo a cada mudança, para o React perceber e trocar o srcObject */
@@ -301,11 +306,16 @@ function openWatch(p: Presence): Watch {
     if (e.candidate) sendRtc({ t: "ice", to: w.key, sid: w.sid, role: "v", c: e.candidate.toJSON() });
   };
   pc.onconnectionstatechange = () => {
-    if (pc.connectionState === "failed") {
+    if (pc.connectionState === "failed" && w.pc === pc) {
       w.state = "failed";
       avisar();
     }
   };
+}
+
+function openWatch(p: Presence): Watch {
+  const w: Watch = { key: p.key, sid: p.live || "", fid: p.fid, name: p.name, pc: null as unknown as RTCPeerConnection, stream: null, queue: [], state: "connecting" };
+  ligarPc(w);
   w.to = setTimeout(() => {
     if (w.state === "connecting") {
       w.state = "failed";
@@ -313,7 +323,15 @@ function openWatch(p: Presence): Watch {
     }
   }, 20000);
   LIVE.watching.set(p.key, w);
-  sendRtc({ t: "watch", to: p.key, sid: w.sid });
+  /* quem transmite ignora o pedido se ainda não me viu entrar na sala (acabei de chegar nela): pede de novo até a
+     oferta chegar. Antes ia uma vez só e a tela ficava em "Conectando…" até dar erro. */
+  let pedidos = 0;
+  const pedir = () => {
+    if (LIVE.watching.get(p.key) !== w || w.state !== "connecting" || w.pc.remoteDescription) return;
+    sendRtc({ t: "watch", to: p.key, sid: w.sid });
+    if (++pedidos < 6) w.re = setTimeout(pedir, 2500);
+  };
+  pedir();
   return w;
 }
 
@@ -321,6 +339,7 @@ function closeWatch(key: string, silent?: boolean) {
   const w = LIVE.watching.get(key);
   if (!w) return;
   clearTimeout(w.to);
+  clearTimeout(w.re);
   try {
     w.pc.close();
   } catch {}
@@ -384,6 +403,15 @@ export function unwatch(key: string) {
 export async function onOffer(m: MsgRtc) {
   const w = LIVE.watching.get(m.from);
   if (!w || w.sid !== m.sid || !m.sdp) return;
+  /* oferta repetida (pedi de novo e as duas chegaram): quem transmite já trocou de conexão, então troco também */
+  if (w.pc.remoteDescription) {
+    if (w.pc.connectionState === "connected") return;
+    try {
+      w.pc.close();
+    } catch {}
+    w.queue = [];
+    ligarPc(w);
+  }
   try {
     await w.pc.setRemoteDescription({ type: "offer", sdp: m.sdp });
     for (const c of w.queue.splice(0)) await w.pc.addIceCandidate(c).catch(() => {});

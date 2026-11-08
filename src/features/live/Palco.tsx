@@ -1,9 +1,10 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { IcAjustes, IcFechar, IcJanela, IcLapis, IcReagir, IcTelaCheia, IcVolume } from "@/components/ui/icones";
 import { useApp } from "@/lib/store";
 import { toast } from "@/lib/toast";
-import { useLive } from "./estado";
+import { setLive, useLive } from "./estado";
 import {
   alternarLapis,
   DCORES,
@@ -73,6 +74,28 @@ function BolhaCam({ fid }: { fid: string | null }) {
 
 type Pop = null | "react" | "opt";
 
+/**
+ * Tela cheia de uma transmissão, como no Discord: só a imagem ocupa a tela inteira (com a barra de controles do
+ * Palco por cima). Antes ia o Ao vivo inteiro e a imagem ficava com metade da tela, espremida entre o chat e a faixa.
+ * Com `key`, abre a tela dessa pessoa no Palco antes (o quadrinho da grade não vira tela cheia: ele some ao trocar
+ * de modo e a tela cheia caía junto). Já em tela cheia, sai.
+ */
+export function telaCheiaDaLive(key?: string | null) {
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(() => {});
+    return;
+  }
+  if (key)
+    flushSync(() => {
+      watch(key, true);
+      setLive({ modo: "foco", destaque: null });
+    });
+  const el = document.getElementById("stage");
+  const pr = el?.requestFullscreen?.();
+  if (!pr) toast("Seu navegador não abriu a tela cheia.");
+  else pr.catch(() => toast("Seu navegador não abriu a tela cheia."));
+}
+
 /** Palco do Ao vivo: a tela principal, o desenho, as reações e a barra de controles. */
 export function Palco() {
   useLive((s) => s.v);
@@ -136,7 +159,7 @@ export function Palco() {
     };
   }, []);
 
-  /* tela cheia: a área inteira (vídeo + chat/cartela) */
+  /* tela cheia: só o palco (telaCheiaDaLive) ou o Ao vivo inteiro (botão do topo, na grade) */
   useEffect(() => {
     const f = () => setFs(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", f);
@@ -162,11 +185,7 @@ export function Palco() {
     setPop(pop === qual ? null : qual);
   };
 
-  function telaCheia() {
-    const el = document.getElementById("liveWrap");
-    const pr = document.fullscreenElement ? document.exitFullscreen() : el?.requestFullscreen?.();
-    pr?.catch?.(() => toast("Seu navegador não abriu a tela cheia."));
-  }
+  const telaCheia = () => telaCheiaDaLive();
 
   async function janela() {
     try {

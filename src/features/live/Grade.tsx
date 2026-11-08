@@ -46,6 +46,7 @@ import { abrirBusca } from "@/components/shell/BuscaRapida";
 import { ativarSomTelas, ouvirJunto, useOuvindo } from "./somTelas";
 import { LIVE, mudarVolumeTela, stopLive, unwatch, VOLUME_TELA_MAX, volumeDaTela, watch } from "./tela";
 import { VideoMudo } from "./Video";
+import { telaCheiaDaLive } from "./Palco";
 import { alternarMudo, alternarSurdo, entrarVoz, useAjustesVoz, useVoz } from "./voz";
 
 type Quadro =
@@ -102,6 +103,12 @@ function telaCheiaDe(el: HTMLElement | null) {
   const pr = document.fullscreenElement ? document.exitFullscreen() : el.requestFullscreen?.();
   pr?.catch?.(() => toast("Seu navegador não abriu a tela cheia."));
 }
+/** Tela cheia de um quadro: a tela de alguém vai inteira para o Palco; a minha tela e as câmeras, o próprio quadro. */
+const telaCheiaDoQuadro = (q: Quadro, el: HTMLElement | null) => (q.tipo === "tela" && !q.eu ? telaCheiaDaLive(q.key) : telaCheiaDe(el));
+/** Tela cheia da barra de cima: com uma transmissão aberta, só ela (como no Discord); sem nenhuma, a call inteira. */
+const telaCheiaDoCanal = () => (LIVE.main && !document.fullscreenElement ? telaCheiaDaLive(LIVE.main) : telaCheiaDe(document.getElementById("liveWrap")));
+/* com um quadro em tela cheia, clicar nele não troca o modo (ele sumiria e a tela cheia cairia junto) */
+const quadroEmTelaCheia = () => !!document.fullscreenElement?.classList.contains("qd");
 
 async function janelaDe(v: HTMLVideoElement | null | undefined) {
   try {
@@ -119,11 +126,13 @@ useLive.subscribe((s) => {
 
 /** Abrir uma tela grande (com som) no modo foco. */
 function destacar(key: string) {
+  if (quadroEmTelaCheia()) return;
   watch(key, true);
   setLive({ modo: "foco", destaque: null });
 }
 /** Clicou num quadro: a tela de alguém vai para o Palco; a minha tela ou uma pessoa ficam grandes como estão. */
 function destacarQuadro(q: Quadro) {
+  if (quadroEmTelaCheia()) return;
   if (q.tipo === "tela" && !q.eu) return destacar(q.key);
   setLive({ modo: "foco", destaque: q.id });
 }
@@ -178,7 +187,7 @@ function MenuQuadro({
           <span>Abrir em janela flutuante</span>
         </button>
       )}
-      <button type="button" className="vz-item" onClick={faz(() => telaCheiaDe(el.current))}>
+      <button type="button" className="vz-item" onClick={faz(() => telaCheiaDoQuadro(q, el.current))}>
         <span>Tela cheia</span>
       </button>
       {assistindo && (
@@ -296,7 +305,7 @@ function ControlesTela({ q, principal, el }: { q: Quadro; principal: boolean; el
           <IcSemSom tam={18} />
         </button>
       )}
-      <button type="button" className="qd-ctrl-b" aria-label="Tela cheia" title="Tela cheia" onClick={() => telaCheiaDe(el.current)}>
+      <button type="button" className="qd-ctrl-b" aria-label="Tela cheia" title="Tela cheia" onClick={() => telaCheiaDoQuadro(q, el.current)}>
         <IcTelaCheia tam={18} />
       </button>
       {/* como no Discord: parar de assistir sem precisar abrir o menu */}
@@ -586,7 +595,7 @@ function MenuMais({ lugar, ancora, fechar }: { lugar: Lugar; ancora: HTMLElement
       <button type="button" className="vz-item" disabled={!nCams} onClick={faz(() => openCamPip(null))}>
         <span>{nCams ? "Câmeras numa janela flutuante" : "Ninguém com câmera"}</span>
       </button>
-      <button type="button" className="vz-item" onClick={faz(() => telaCheiaDe(document.getElementById("liveWrap")))}>
+      <button type="button" className="vz-item" onClick={faz(telaCheiaDoCanal)}>
         <span>Tela cheia</span>
       </button>
       <button type="button" className="vz-item" onClick={faz(() => abrirConfiguracoes("voz"))}>
@@ -641,7 +650,7 @@ export function TopoCanal({ sala, chat, alternarChat }: { sala: string | null; c
         >
           <IcJanela tam={20} />
         </button>
-        <button type="button" className="cv-tb" aria-label="Tela cheia" title="Tela cheia" onClick={() => telaCheiaDe(document.getElementById("liveWrap"))}>
+        <button type="button" className="cv-tb" aria-label="Tela cheia" title="Tela cheia" onClick={telaCheiaDoCanal}>
           <IcTelaCheia tam={20} />
         </button>
         <span className="cv-topo-sep" aria-hidden="true" />
