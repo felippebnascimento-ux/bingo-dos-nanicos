@@ -965,6 +965,14 @@ export const CHANGELOG: EntradaLog[] = [
       "Moeda Nanica com o N no lugar do cifrão, e a chave nova das casas na loja",
     ],
   },
+  {
+    data: "08/11/2026",
+    itens: [
+      "Transmissão de tela mais estável: a imagem não trava mais quando várias pessoas assistem ou a internet de quem transmite oscila",
+      "Assistir uma transmissão conecta de primeira, sem ficar parado em “Conectando…”",
+      "Tela cheia da transmissão ocupa a tela inteira, só com a imagem e os controles por cima, como no Discord",
+    ],
+  },
 ];
 
 export const versionAt = (i: number) => "v1." + String(i).padStart(2, "0");

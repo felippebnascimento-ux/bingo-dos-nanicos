@@ -60,6 +60,8 @@ export function preferH264(pc: RTCPeerConnection) {
   }
 }
 
+/* Começa alto (a imagem já chega nítida) mas sem piso: antes o mínimo de 3 Mbps impedia o navegador de baixar
+   quando a internet de quem transmite não aguentava (vários assistindo), e a imagem travava e quebrava em blocos. */
 export function hiBitrate(sdp: string) {
   const vids = new Set<string>();
   sdp.replace(/a=rtpmap:(\d+) (H264|VP8|VP9|AV1)\//gi, (a, pt: string) => {
@@ -68,7 +70,7 @@ export function hiBitrate(sdp: string) {
   });
   return sdp.replace(/a=fmtp:(\d+) ([^\r\n]*)/g, (all, pt: string, par: string) =>
     vids.has(pt) && !par.includes("x-google-")
-      ? `a=fmtp:${pt} ${par};x-google-start-bitrate=8000;x-google-min-bitrate=3000;x-google-max-bitrate=20000`
+      ? `a=fmtp:${pt} ${par};x-google-start-bitrate=4000;x-google-min-bitrate=300;x-google-max-bitrate=14000`
       : all,
   );
 }
